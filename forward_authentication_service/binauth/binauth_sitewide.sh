@@ -1,5 +1,5 @@
 #!/bin/sh
-#Copyright (C) The Nodogsplash Contributors 2004-2020
+#Copyright (C) The openNDS Contributors 2004-2020
 #Copyright (C) BlueWave Projects and Services 2015-2020
 #This software is released under the GNU GPL license.
 
@@ -54,7 +54,7 @@ case "$METHOD" in
 		# timeout_deauth: Client was deauthenticated because the session timed out.
 		# ndsctl_auth: Client was authenticated by the ndsctl tool.
 		# ndsctl_deauth: Client was deauthenticated by the ndsctl tool.
-		# shutdown_deauth: Client was deauthenticated by Nodogsplash terminating.
+		# shutdown_deauth: Client was deauthenticated by openNDS terminating.
 		;;
 esac
 

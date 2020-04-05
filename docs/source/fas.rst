@@ -3,7 +3,7 @@ Forwarding Authentication Service (FAS)
 
 Overview
 ********
-Nodogsplash (NDS) has the ability to forward requests to a third party authentication service (FAS). This is enabled via simple configuration options.
+openNDS (NDS) has the ability to forward requests to a third party authentication service (FAS). This is enabled via simple configuration options.
 
 These options are:
  1. **fasport**. This enables Forwarding Authentication Service (FAS). Redirection is changed from splash.html to a FAS. The value is the IP port number of the FAS.
@@ -55,12 +55,12 @@ Security
 
    The "php-cli" package and the "php-openssl" module must both be installed for fas_secure level 2.
 
-   Nodogsplash does not depend on this package and module, but will exit gracefully if this package and module are not installed when this level is set.
+   openNDS does not depend on this package and module, but will exit gracefully if this package and module are not installed when this level is set.
 
-   The FAS must use the query string passed initialisation vector and the pre shared fas_key to decrypt the query string. An example FAS level 2 php script (fas-aes.php) is preinstalled in the /etc/nodogsplash directory and also supplied in the source code.
+   The FAS must use the query string passed initialisation vector and the pre shared fas_key to decrypt the query string. An example FAS level 2 php script (fas-aes.php) is preinstalled in the /etc/opennds directory and also supplied in the source code.
 
    **If set to "3"** The FAS is enforced by NDS to use **https** protocol.
-   Level 3 is the same as level 2 except the use of https protocol is enforced for FAS. In addition, the "authmon" daemon is loaded. This allows the external FAS, after client verification, to effectively traverse inbound firewalls and address translation to achieve NDS authentication without generating browser security warnings or errors. An example FAS level 3 php script (fas-aes-https.php) is preinstalled in the /etc/nodogsplash directory and also supplied in the source code.
+   Level 3 is the same as level 2 except the use of https protocol is enforced for FAS. In addition, the "authmon" daemon is loaded. This allows the external FAS, after client verification, to effectively traverse inbound firewalls and address translation to achieve NDS authentication without generating browser security warnings or errors. An example FAS level 3 php script (fas-aes-https.php) is preinstalled in the /etc/opennds directory and also supplied in the source code.
 
 **Option faskey must be set** if fas secure is set to levels 2 and 3 but is optional for level 1.
 
@@ -79,7 +79,7 @@ Example FAS Query strings
 
   **Level 0** (fas_secure_enabled = 0), NDS sends the token and other information to FAS as clear text.
 
-  `http://fasremoteip:fasport/faspath?authaction=http://gatewayaddress:gatewayport/nodogsplash_auth/?clientip=[clientip]&gatewayname=[gatewayname]&tok=[token]&redir=[requested_url]`
+  `http://fasremoteip:fasport/faspath?authaction=http://gatewayaddress:gatewayport/opennds_auth/?clientip=[clientip]&gatewayname=[gatewayname]&tok=[token]&redir=[requested_url]`
 
    Although the simplest to set up, a knowledgeable user could bypass FAS, so running fas_secure_enabled at level 1 or 2 is recommended.
 
@@ -102,7 +102,7 @@ Example FAS Query strings
 
    The client's unique access token will be obtained from NDS by the FAS making a call to the get_client_token library utility:
 
-   ``/usr/lib/nodogsplash/./get_client_token $clientip``
+   ``/usr/lib/opennds/./get_client_token $clientip``
 
    A json parser could be used to extract all the client variables supplied by ndsctl, an example can be found in the default PreAuth Login script in /usr/lib/nogogsplash/login.sh.
 
@@ -202,7 +202,7 @@ If the user of an already authenticated client device manually accesses the NDS 
 
 FAS should then serve a suitable error page informing the client user that they are already logged in.
 
-Running FAS on your Nodogsplash router
+Running FAS on your openNDS router
 **************************************
 
 FAS has been tested using uhttpd, lighttpd, ngnix, apache and libmicrohttpd.
@@ -259,7 +259,7 @@ Example Script File fas-aes.php
 
 Assuming you have installed your web server of choice, configured it for port 2080 and added PHP support using the package php7-cgi, you can do the following.
 
- (Under other operating systems you may need to edit the nodogsplash.conf file in /etc/nodogsplash instead, but the process is very similar.)
+ (Under other operating systems you may need to edit the opennds.conf file in /etc/opennds instead, but the process is very similar.)
 
  * Install the packages php7-cli and php7-mod-openssl
 
@@ -267,9 +267,9 @@ Assuming you have installed your web server of choice, configured it for port 20
 
  * Place the file fas-aes.php in /[server-web-root]/nds/
 
-   (You can find it in the /etc/nodogsplash directory.)
+   (You can find it in the /etc/opennds directory.)
 
- * Edit the file /etc/config/nodogsplash
+ * Edit the file /etc/config/opennds
 
   adding the lines:
 
@@ -281,14 +281,14 @@ Assuming you have installed your web server of choice, configured it for port 20
 
     ``option faskey '1234567890'``
 
- * Restart NDS using the command ``service nodogsplash restart``
+ * Restart NDS using the command ``service opennds restart``
 
 Example Script File fas-aes-https.php
 =====================================
 
 Assuming you have access to an Internet based https web server you can do the following.
 
- (Under other operating systems you may need to edit the nodogsplash.conf file in /etc/nodogsplash instead, but the process is very similar.)
+ (Under other operating systems you may need to edit the opennds.conf file in /etc/opennds instead, but the process is very similar.)
 
  * Install the packages php7-cli and php7-mod-openssl on your NDS router
 
@@ -296,9 +296,9 @@ Assuming you have access to an Internet based https web server you can do the fo
 
  * Place the file fas-aes.php in /[server-web-root]/nds/
 
-   (You can find it in the /etc/nodogsplash directory.)
+   (You can find it in the /etc/opennds directory.)
 
- * Edit the file /etc/config/nodogsplash
+ * Edit the file /etc/config/opennds
 
   adding the lines:
 
@@ -314,7 +314,7 @@ Assuming you have access to an Internet based https web server you can do the fo
 
     ``option fasremotefqdn 'blue-wave.net'`` (change this to the actual FQDN of the remote server)
 
- * Restart NDS using the command ``service nodogsplash restart``
+ * Restart NDS using the command ``service opennds restart``
 
 
 Changing faskey

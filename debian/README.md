@@ -1,5 +1,5 @@
 
-To create a Debian package of NoDogSplash (a \*.deb file),
+To create a Debian package of openNDS (a \*.deb file),
 you first need to have installed the following programs and libraries:
 
 ```

@@ -1,10 +1,11 @@
 [Unit]
-Description=NoDogSplash Captive Portal
+Description=openNDS Captive Portal
 After=network.target
 
 [Service]
 Type=forking
-ExecStart=/usr/bin/nodogsplash $OPTIONS
+ExecStartPre=sleep 10
+ExecStart=/usr/bin/opennds $OPTIONS
 Restart=on-failure
 
 [Install]

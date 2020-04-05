@@ -14,11 +14,11 @@ for v0.9.
 
  * **FAS**
 
-  A forwarding authentication service. FAS supports development of "Credential Verification" running on any dynamic web serving platform, on the same device as NoDogSplash, on another device on the local network, or on an Internet hosted web server.
+  A forwarding authentication service. FAS supports development of "Credential Verification" running on any dynamic web serving platform, on the same device as openNDS, on another device on the local network, or on an Internet hosted web server.
 
  * **PreAuth**
 
-  An implementation of FAS running on the same device as Nodogsplash and using NoDogSplash's own web server to generate dynamic web pages. Any scripting language or even a compiled application program can be used. This has the advantage of not requiring the resources of a separate web server.
+  An implementation of FAS running on the same device as openNDS and using openNDS's own web server to generate dynamic web pages. Any scripting language or even a compiled application program can be used. This has the advantage of not requiring the resources of a separate web server.
 
  * **BinAuth**
 
@@ -91,7 +91,7 @@ The original pre version 1 feature has been broken since OpenWrt 12.09 (Attitude
 
  **Pull Requests are welcome!**
 
- However the OpenWrt package, SQM Scripts (Smart Queue Management), is fully compatible with Nodogsplash and if configured to operate on the Nodogsplash interface (br-lan by default) will provide efficient IP connection based traffic control to ensure fair usage of available bandwidth.
+ However the OpenWrt package, SQM Scripts (Smart Queue Management), is fully compatible with openNDS and if configured to operate on the openNDS interface (br-lan by default) will provide efficient IP connection based traffic control to ensure fair usage of available bandwidth.
 
 Is https capture supported?
 ***************************

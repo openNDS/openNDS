@@ -1,7 +1,7 @@
 <?php
 /* (c) Blue Wave Projects and Services 2015-2019. This software is released under the GNU GPL license.
 
- This is a FAS script providing an example of remote Forward Authentication for Nodogsplash (NDS) on an http web server supporting PHP.
+ This is a FAS script providing an example of remote Forward Authentication for openNDS (NDS) on an http web server supporting PHP.
 
  The following NDS configurations must be set:
  1. fasport: Set to the port number the remote webserver is using (typically port 80)
@@ -29,7 +29,7 @@
 	
 	The "php-cli" package and the "php-openssl" module must both be installed for fas_secure level 2.
 
- Nodogsplash does not have "php-cli" and "php-openssl" as dependencies, but will exit gracefully at runtime if this package and module
+ openNDS does not have "php-cli" and "php-openssl" as dependencies, but will exit gracefully at runtime if this package and module
  are not installed when fas_secure_enabled is set to level 2.
 
  The FAS must use the initialisation vector passed with the query string and the pre shared faskey to decrypt the required information.
@@ -40,7 +40,7 @@
  in the same folder as this script.
 
  This script requests the client CPD to display the NDS splash.jpg image directly from the 
-	/etc/nodogsplash/htdocs/images folder of the NDS device.
+	/etc/opennds/htdocs/images folder of the NDS device.
 
  This script displays an example Terms of Service. You should modify this for your local legal juristiction.
 
@@ -109,7 +109,7 @@ if (isset($_GET['fas']) and isset($_GET['iv']))  {
 }
 
 if (!isset($gatewayname)) {
-	$gatewayname="NoDogSplash";
+	$gatewayname="openNDS";
 }
 
 $landing=false;
@@ -167,7 +167,7 @@ if (isset($gatewayaddress)) {
 $footer="<hr>
 	<div style=\"font-size:0.5em;\">
 	$image
-	&copy; The Nodogsplash Contributors 2004-".date("Y")."<br>
+	&copy; The openNDS Contributors 2004-".date("Y")."<br>
 	&copy; Blue Wave Projects and Services 2015-".date("Y")."<br>
 	This software is released under the GNU GPL license.<br><br><br><br><br>
 	</div>
@@ -257,7 +257,7 @@ if ($fullname == "" or $email == "") {
 
 	$logpath="";
 
-	if (file_exists("/etc/nodogsplash")) {
+	if (file_exists("/etc/opennds")) {
 		$logpath="/tmp/";
 	}
 

@@ -1,5 +1,5 @@
 #!/bin/sh
-#Copyright (C) The Nodogsplash Contributors 2004-2020
+#Copyright (C) The openNDS Contributors 2004-2020
 #Copyright (C) BlueWave Projects and Services 2015-2020
 #This software is released under the GNU GPL license.
 #
@@ -65,7 +65,7 @@ get_client_zone () {
 	# This zone name is only displayed here but could be used to customise the login form for each zone
 
 	client_mac=$(ip -4 neigh |grep "$clientip" | awk '{print $5}')
-	client_if_string=$(/usr/lib/nodogsplash/get_client_interface.sh $client_mac)
+	client_if_string=$(/usr/lib/opennds/get_client_interface.sh $client_mac)
 	client_if=$(echo "$client_if_string" | awk '{printf $1}')
 	client_meshnode=$(echo "$client_if_string" | awk '{printf $2}' | awk -F ':' '{print $1$2$3$4$5$6}')
 	local_mesh_if=$(echo "$client_if_string" | awk '{printf $3}')
@@ -92,7 +92,7 @@ write_log () {
 		echo "$datetime, New log file created" > $logfile
 	fi
 
-	ndspid=$(ps | grep nodogsplash | awk -F ' ' 'NR==2 {print $1}')
+	ndspid=$(ps | grep opennds | awk -F ' ' 'NR==2 {print $1}')
 	filesize=$(ls -s -1 $logfile | awk -F' ' '{print $1}')
 	available=$(df | grep "$mountpoint" | eval "$awkcmd")
 	sizeratio=$(($available/$filesize))
@@ -102,7 +102,7 @@ write_log () {
 		clientinfo="macaddress=$clientmac, clientzone=$client_zone, useragent=$user_agent"
 		echo "$datetime, $userinfo, $clientinfo" >> $logfile
 	else
-		echo "PreAuth - log file too big, please archive contents" | logger -p "daemon.err" -s -t "nodogsplash[$ndspid]: "
+		echo "PreAuth - log file too big, please archive contents" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 	fi
 }
 
@@ -126,7 +126,7 @@ user_agent=$(printf "${user_agent_enc//%/\\x}")
 # If we want to show a sequence of forms or information pages we can do this easily.
 #
 # To return to this script and show additional pages, the form action must be set to:
-#	<form action=\"/nodogsplash_preauth/\" method=\"get\">
+#	<form action=\"/opennds_preauth/\" method=\"get\">
 # Note: quotes ( " ) must be escaped with the "\" character.
 #
 # Any variables we need to preserve and pass back to ourselves or NDS must be added 
@@ -137,7 +137,7 @@ user_agent=$(printf "${user_agent_enc//%/\\x}")
 #
 # When the logic of this script decides we should allow the client to access the Internet
 # we inform NDS with a final page displaying a continue button with the form action set to:
-#	"<form action=\"/nodogsplash_auth/\" method=\"get\">"
+#	"<form action=\"/opennds_auth/\" method=\"get\">"
 #
 # We must also send NDS the client token as a hidden variable, but first we must obtain
 # the token from ndsctl using a suitable command such as:
@@ -246,7 +246,7 @@ footer="
 
 	<copy-right>
 		<br><br>
-		Nodogsplash $version.
+		openNDS $version.
 	</copy-right>
 	</div>
 	</div>
@@ -256,7 +256,7 @@ footer="
 
 # Define a login form
 login_form="
-	<form action=\"/nodogsplash_preauth/\" method=\"get\">
+	<form action=\"/opennds_preauth/\" method=\"get\">
 	<input type=\"hidden\" name=\"clientip\" value=\"$clientip\">
 	<input type=\"hidden\" name=\"gatewayname\" value=\"$gatewaynamehtml\">
 	<input type=\"hidden\" name=\"hid\" value=\"$hid\">
@@ -337,7 +337,7 @@ else
 	# as this router has Internet access whilst the client device does not (yet).
 	echo "<br><italic-black> Your News or Advertising could be here, contact the owners of this Hotspot to find out how!</italic-black>"
 
-	echo "<form action=\"/nodogsplash_auth/\" method=\"get\">"
+	echo "<form action=\"/opennds_auth/\" method=\"get\">"
 	echo "<input type=\"hidden\" name=\"tok\" value=\"$tok\">"
 	echo "<input type=\"hidden\" name=\"redir\" value=\"$requested\"><br>"
 	echo "<input type=\"submit\" value=\"Continue\" >"

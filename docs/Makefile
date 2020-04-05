@@ -1,6 +1,6 @@
 # Makefile for Sphinx documentation
 # run command "make man" in this folder
-# then copy nodogsplash.1 to the Debian docs folder
+# then copy opennds.1 to the Debian docs folder
 #
 
 # You can set these variables from the command line.
@@ -93,9 +93,9 @@ qthelp:
 	@echo
 	@echo "Build finished; now you can run "qcollectiongenerator" with the" \
 	      ".qhcp project file in $(BUILDDIR)/qthelp, like this:"
-	@echo "# qcollectiongenerator $(BUILDDIR)/qthelp/nodogsplash.qhcp"
+	@echo "# qcollectiongenerator $(BUILDDIR)/qthelp/opennds.qhcp"
 	@echo "To view the help file:"
-	@echo "# assistant -collectionFile $(BUILDDIR)/qthelp/nodogsplash.qhc"
+	@echo "# assistant -collectionFile $(BUILDDIR)/qthelp/opennds.qhc"
 
 .PHONY: applehelp
 applehelp:
@@ -112,8 +112,8 @@ devhelp:
 	@echo
 	@echo "Build finished."
 	@echo "To view the help file:"
-	@echo "# mkdir -p $$HOME/.local/share/devhelp/nodogsplash"
-	@echo "# ln -s $(BUILDDIR)/devhelp $$HOME/.local/share/devhelp/nodogsplash"
+	@echo "# mkdir -p $$HOME/.local/share/devhelp/opennds"
+	@echo "# ln -s $(BUILDDIR)/devhelp $$HOME/.local/share/devhelp/opennds"
 	@echo "# devhelp"
 
 .PHONY: epub

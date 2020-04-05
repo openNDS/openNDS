@@ -1,9 +1,9 @@
 Using ndsctl
 ############
 
-A nodogsplash install includes ndsctl, a separate application which provides some control over a running nodogsplash process by communicating with it over a unix socket. Some command line options:
+A openNDS install includes ndsctl, a separate application which provides some control over a running openNDS process by communicating with it over a unix socket. Some command line options:
 
-* To print to stdout some information about your nodogsplash process:
+* To print to stdout some information about your openNDS process:
 
     ``/usr/bin/ndsctl status``
 
@@ -52,5 +52,5 @@ A nodogsplash install includes ndsctl, a separate application which provides som
   All other levels are undefined and will result in debug level 3 being set.
 
 
-For more options, run ndsctl -h. (Note that if you want the effect of ndsctl commands to to persist across nodogsplash restarts, you have to edit the configuration file.)
+For more options, run ndsctl -h. (Note that if you want the effect of ndsctl commands to to persist across openNDS restarts, you have to edit the configuration file.)
 

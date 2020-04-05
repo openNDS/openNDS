@@ -1,10 +1,10 @@
-Debugging NoDogSplash
+Debugging openNDS
 #####################
 
 Syslog Logging
 **************
 
-NoDogSplash supports four levels of debugging to syslog.
+openNDS supports four levels of debugging to syslog.
 
   * debuglevel 0 : Silent (only LOG_ERR and LOG_EMERG messages will be seen, otherwise there will be no logging.)
   * debuglevel 1 : LOG_ERR, LOG_EMERG, LOG_WARNING and LOG_NOTICE (this is the default level).
@@ -13,7 +13,7 @@ NoDogSplash supports four levels of debugging to syslog.
 
   All other levels are undefined and will result in debug level 3 being set.
 
- To see maximally verbose debugging output from NoDogSplash, set log level to 3. This can be done in the UCI configuration file on OpenWrt adding the line:
+ To see maximally verbose debugging output from openNDS, set log level to 3. This can be done in the UCI configuration file on OpenWrt adding the line:
 
   ``option debuglevel '3'``
 
@@ -26,16 +26,16 @@ NoDogSplash supports four levels of debugging to syslog.
 Firewall Cleanup
 ****************
 
- When stopped, NoDogSplash deletes its iptables rules, attempting to leave the router's firewall in its original state. If not (for example, if NoDogSplash crashes instead of exiting cleanly) subsequently starting and stopping NoDogSplash should remove its rules.
+ When stopped, openNDS deletes its iptables rules, attempting to leave the router's firewall in its original state. If not (for example, if openNDS crashes instead of exiting cleanly) subsequently starting and stopping openNDS should remove its rules.
 
- On OpenWrt, restarting the firewall will overwrite NoDogSplash's iptables rules, so when the firewall is restarted it will automatically restart NoDogSplash if it is running.
+ On OpenWrt, restarting the firewall will overwrite openNDS's iptables rules, so when the firewall is restarted it will automatically restart openNDS if it is running.
 
 Packet Marking
 **************
 
- NoDogSplash operates by marking packets. Many packages, such as mwan3 and SQM scripts, also mark packets.
+ openNDS operates by marking packets. Many packages, such as mwan3 and SQM scripts, also mark packets.
 
- By default, NoDogSplash marks its packets in such a way that conflicts are unlikely to occur but the masks used by NoDogSplash can be changed if necessary in the configuration file.
+ By default, openNDS marks its packets in such a way that conflicts are unlikely to occur but the masks used by openNDS can be changed if necessary in the configuration file.
 
 IPtables Conflicts
 ******************

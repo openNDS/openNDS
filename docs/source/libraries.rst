@@ -8,7 +8,7 @@ A number of library utilities are included. These may be used by NDS itself, FAS
 
 By default, library utilities will be installed in the folder
 
-``/usr/lib/nodogsplash/``
+``/usr/lib/opennds/``
 
 List of Library Utilities
 *************************

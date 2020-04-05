@@ -472,7 +472,7 @@ ndsctl_status(FILE *fp)
 
 	config = config_get_config();
 
-	fprintf(fp, "==================\openNDS Status\n====\n");
+	fprintf(fp, "==================\nopenNDS Status\n====\n");
 	sysuptime = get_system_uptime ();
 	now = time(NULL);
 

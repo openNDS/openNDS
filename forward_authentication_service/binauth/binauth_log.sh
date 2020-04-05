@@ -1,5 +1,5 @@
 #!/bin/sh
-#Copyright (C) The Nodogsplash Contributors 2004-2020
+#Copyright (C) The openNDS Contributors 2004-2020
 #Copyright (C) BlueWave Projects and Services 2015-2020
 #This software is released under the GNU GPL license.
 
@@ -67,7 +67,7 @@ write_log () {
 		echo "$datetime, New log file created" > $logfile
 	fi
 
-	ndspid=$(ps | grep nodogsplash | awk -F ' ' 'NR==2 {print $1}')
+	ndspid=$(ps | grep opennds | awk -F ' ' 'NR==2 {print $1}')
 	filesize=$(ls -s -1 $logfile | awk -F' ' '{print $1}')
 	available=$(df | grep "$mountpoint" | eval "$awkcmd")
 	sizeratio=$(($available/$filesize))
@@ -75,7 +75,7 @@ write_log () {
 	if [ $sizeratio -ge $min_freespace_to_log_ratio ]; then
 		echo "$datetime, $log_entry" >> $logfile
 	else
-		echo "BinAuth - log file too big, please archive contents" | logger -p "daemon.err" -s -t "nodogsplash[$ndspid]: "
+		echo "BinAuth - log file too big, please archive contents" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 	fi
 }
 

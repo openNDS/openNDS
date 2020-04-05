@@ -1,12 +1,12 @@
-How NoDogSplash (NDS) works
+How openNDS (NDS) works
 ###########################
 
-NoDogSplash is a Captive Portal Engine. Any Captive Portal, including NDS, will have two main components:
+openNDS is a Captive Portal Engine. Any Captive Portal, including NDS, will have two main components:
 
  * Something that does the capturing, and
  * Something to provide a Portal for client users to log in.
 
-NoDogSplash MUST run on a device configured as an IPv4 router.
+openNDS MUST run on a device configured as an IPv4 router.
 
 A wireless router will typically be running OpenWrt or some other Linux distribution.
 
@@ -137,17 +137,17 @@ NDS detects which zone is being used by a client and a relevant login page can b
 Packet filtering
 ****************
 
-Nodogsplash considers four kinds of packets coming into the router over the managed interface. Each packet is one of these kinds:
+openNDS considers four kinds of packets coming into the router over the managed interface. Each packet is one of these kinds:
 
  1. **Blocked**, if the MAC mechanism is block, and the source MAC address of the packet matches one listed in the BlockedMACList; or if the MAC mechanism is allow, and source MAC address of the packet does not match one listed in the AllowedMACList or the TrustedMACList. These packets are dropped.
- 2. **Trusted**, if the source MAC address of the packet matches one listed in the TrustedMACList. By default, these packets are accepted and routed to all destination addresses and ports. If desired, this behavior can be customized by FirewallRuleSet trusted-users and FirewallRuleSet trusted-users-to-router lists in the nodogsplash.conf configuration file, or by the EmptyRuleSetPolicy trusted-users EmptyRuleSetPolicy trusted-users-to-router directives.
- 3. **Authenticated**, if the packet's IP and MAC source addresses have gone through the nodogsplash authentication process and has not yet expired. These packets are accepted and routed to a limited set of addresses and ports (see FirewallRuleSet authenticated-users and FirewallRuleSet users-to-router in the nodogsplash.conf configuration file).
- 4. **Preauthenticated**. Any other packet. These packets are accepted and routed to a limited set of addresses and ports (see FirewallRuleSet      preauthenticated-users and FirewallRuleSet users-to-router in the nodogsplash.conf configuration file). Any other packet is dropped, except that a packet for destination port 80 at any address is redirected to port 2050 on the router, where nodogsplash's built in libhttpd-based web server is listening. This begins the 'authentication' process. The server will serve a splash page back to the source IP address of the packet. The user clicking the appropriate link on the splash page will complete the process, causing future packets from this IP/MAC address to be marked as Authenticated until the inactive or forced timeout is reached, and its packets revert to being Preauthenticated.
+ 2. **Trusted**, if the source MAC address of the packet matches one listed in the TrustedMACList. By default, these packets are accepted and routed to all destination addresses and ports. If desired, this behavior can be customized by FirewallRuleSet trusted-users and FirewallRuleSet trusted-users-to-router lists in the opennds.conf configuration file, or by the EmptyRuleSetPolicy trusted-users EmptyRuleSetPolicy trusted-users-to-router directives.
+ 3. **Authenticated**, if the packet's IP and MAC source addresses have gone through the openNDS authentication process and has not yet expired. These packets are accepted and routed to a limited set of addresses and ports (see FirewallRuleSet authenticated-users and FirewallRuleSet users-to-router in the opennds.conf configuration file).
+ 4. **Preauthenticated**. Any other packet. These packets are accepted and routed to a limited set of addresses and ports (see FirewallRuleSet      preauthenticated-users and FirewallRuleSet users-to-router in the opennds.conf configuration file). Any other packet is dropped, except that a packet for destination port 80 at any address is redirected to port 2050 on the router, where openNDS's built in libhttpd-based web server is listening. This begins the 'authentication' process. The server will serve a splash page back to the source IP address of the packet. The user clicking the appropriate link on the splash page will complete the process, causing future packets from this IP/MAC address to be marked as Authenticated until the inactive or forced timeout is reached, and its packets revert to being Preauthenticated.
 
 
-NoDogSplash implements these actions by inserting rules in the router's iptables mangle PREROUTING chain to mark packets, and by inserting rules in the nat PREROUTING, filter INPUT and filter FORWARD chains which match on those marks.
+openNDS implements these actions by inserting rules in the router's iptables mangle PREROUTING chain to mark packets, and by inserting rules in the nat PREROUTING, filter INPUT and filter FORWARD chains which match on those marks.
 
-Because it inserts its rules at the beginning of existing chains, NoDogSplash should be insensitive to most typical existing firewall configurations.
+Because it inserts its rules at the beginning of existing chains, openNDS should be insensitive to most typical existing firewall configurations.
 
 Traffic control
 ***************

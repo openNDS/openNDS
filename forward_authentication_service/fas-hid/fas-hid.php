@@ -1,7 +1,7 @@
 <?php
 /* (c) Blue Wave Projects and Services 2015-2020. This software is released under the GNU GPL license.
 
- This is a FAS script providing an example of remote Forward Authentication for Nodogsplash (NDS) on an http web server supporting PHP.
+ This is a FAS script providing an example of remote Forward Authentication for openNDS (NDS) on an http web server supporting PHP.
 
  The following NDS configurations must be set:
  1. fasport: Set to the port number the remote webserver is using (typically port 80)
@@ -30,7 +30,7 @@
  in /tmp or the same folder as this script.
 
  This script requests the client CPD to display the NDS splash.jpg image directly from the 
-	/etc/nodogsplash/htdocs/images folder of the NDS device.
+	/etc/opennds/htdocs/images folder of the NDS device.
 
  This script displays an example Terms of Service. You should modify this for your local legal juristiction.
 
@@ -40,7 +40,7 @@
 */
 
 $key="1234567890";
-$authdir="nodogsplash_auth";
+$authdir="opennds_auth";
 
 date_default_timezone_set("UTC");
 
@@ -80,7 +80,7 @@ if (isset($_GET["status"])) {
 }
 
 if (!isset($gatewayname)) {
-	$gatewayname="NoDogSplash";
+	$gatewayname="openNDS";
 }
 
 $landing=false;
@@ -205,7 +205,7 @@ if ($fullname == "" or $email == "") {
 
 	$logpath="";
 
-	if (file_exists("/etc/nodogsplash")) {
+	if (file_exists("/etc/opennds")) {
 		$logpath="/tmp/";
 	}
 
@@ -230,7 +230,7 @@ footer();
 function footer() {
 	echo "<hr>\n</div>\n";
 	echo "<div style=\"font-size:0.7em;\">\n";
-	echo "&copy; The Nodogsplash Contributors 2004-".date("Y")."<br>";
+	echo "&copy; The openNDS Contributors 2004-".date("Y")."<br>";
 	echo "&copy; Blue Wave Projects and Services 2015-".date("Y")."<br>".
 		"This software is released under the GNU GPL license.\n";
 	echo "</div>\n";

@@ -1,8 +1,8 @@
 .\" Man page generated from reStructuredText.
 .
-.TH "NODOGSPLASH" "1" "Mar 03, 2020" "4.5.0" "NoDogSplash"
+.TH "OPENNDS" "1" "Apr 05, 2020" "5.0.0beta" "openNDS"
 .SH NAME
-nodogsplash \- nodogsplash Documentation
+opennds \- opennds Documentation
 .
 .nr rst2man-indent-level 0
 .
@@ -31,15 +31,13 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
 .sp
-Nodogspash is a high performance, small footprint Captive Portal,
+openNDS is a high performance, small footprint Captive Portal,
 offering by default a simple splash page restricted Internet connection, yet incorporates an API that allows the creation of sophisticated authentication applications.
 .sp
 It was derived originally from the codebase of the Wifi Guard Dog project.
 .sp
-Nodogsplash is released under the GNU General Public License.
+openNDS is released under the GNU General Public License.
 .INDENT 0.0
-.IP \(bu 2
-Mailing List: \fI\%http://ml.ninux.org/mailman/listinfo/nodogsplash\fP
 .IP \(bu 2
 Original Homepage \fIdown\fP: \fI\%http://kokoro.ucsd.edu/nodogsplash\fP
 .IP \(bu 2
@@ -48,13 +46,13 @@ Wifidog: \fI\%http://dev.wifidog.org/\fP
 GNU GPL: \fI\%http://www.gnu.org/copyleft/gpl.html\fP
 .UNINDENT
 .sp
-The following describes what Nodogsplash does, how to get it and run it, and
+The following describes what openNDS does, how to get it and run it, and
 how to customize its behavior for your application.
 .sp
 Contents:
 .SH OVERVIEW
 .sp
-\fBNoDogSplash\fP (NDS) is a high performance, small footprint Captive Portal, offering by default a simple splash page restricted Internet connection, yet incorporates an API that allows the creation of sophisticated authentication applications.
+\fBopenNDS\fP (NDS) is a high performance, small footprint Captive Portal, offering by default a simple splash page restricted Internet connection, yet incorporates an API that allows the creation of sophisticated authentication applications.
 .SS Captive Portal Detection (CPD)
 .INDENT 0.0
 .INDENT 3.5
@@ -92,19 +90,19 @@ NDS can be used as the "Engine" behind the most sophisticated Captive Portal sys
 .UNINDENT
 .UNINDENT
 .UNINDENT
-.SH INSTALLING NODOGSPLASH
+.SH INSTALLING OPENNDS
 .SS OpenWrt
 .INDENT 0.0
 .IP \(bu 2
-Have a router working with OpenWrt. At the time of writing, Nodogsplash has been tested with OpenWrt 18.06.x, 19.7.x and Snapshot.
+Have a router working with OpenWrt. At the time of writing, openNDS has been tested with OpenWrt 18.06.x, 19.7.x and Snapshot.
 .IP \(bu 2
 It may or may not work on older versions of OpenWrt or on other kinds of Linux\-based router firmware.
 .IP \(bu 2
-Make sure your router is basically working before you try to install  Nodogsplash. In particular, make sure your DHCP daemon is serving addresses on the interface that nodogsplash will manage.
+Make sure your router is basically working before you try to install  openNDS. In particular, make sure your DHCP daemon is serving addresses on the interface that openNDS will manage.
 .sp
-The default is br\-lan but can be changed to any interface by editing the /etc/config/nodogsplash file.
+The default is br\-lan but can be changed to any interface by editing the /etc/config/opennds file.
 .IP \(bu 2
-To install Nodogsplash, you may use the OpenWrt Luci web interface or alternatively, ssh to your router and run the command:
+To install openNDS, you may use the OpenWrt Luci web interface or alternatively, ssh to your router and run the command:
 .INDENT 2.0
 .INDENT 3.5
 \fBopkg update\fP
@@ -114,50 +112,50 @@ To install Nodogsplash, you may use the OpenWrt Luci web interface or alternativ
 followed by
 .INDENT 2.0
 .INDENT 3.5
-\fBopkg install nodogsplash\fP
+\fBopkg install opennds\fP
 .UNINDENT
 .UNINDENT
 .IP \(bu 2
-Nodogsplash is enabled by default and will start automatically on reboot or can be started and stopped manually.
+openNDS is enabled by default and will start automatically on reboot or can be started and stopped manually.
 .IP \(bu 2
-If the interface that you want Nodogsplash to manage is not br\-lan,
-edit /etc/config/nodogsplash and set GatewayInterface.
+If the interface that you want openNDS to manage is not br\-lan,
+edit /etc/config/opennds and set GatewayInterface.
 .IP \(bu 2
-To start Nodogsplash, run the following, or just reboot the router:
+To start openNDS, run the following, or just reboot the router:
 .INDENT 2.0
 .INDENT 3.5
-\fBservice nodogsplash start\fP
+\fBservice opennds start\fP
 .UNINDENT
 .UNINDENT
 .IP \(bu 2
-To test the installation, connect a client device to the interface on your router that is managed by Nodogsplash (for example, connect to the router\(aqs wireless lan).
+To test the installation, connect a client device to the interface on your router that is managed by openNDS (for example, connect to the router\(aqs wireless lan).
 .UNINDENT
 .INDENT 0.0
 .INDENT 3.5
 Most client device operating systems and browsers support Captive Portal Detection (CPD) and the operating system or browser on that device will attempt to contact a pre defined port 80 web page.
 .sp
-CPD will trigger Nodogsplash to serve the default splash page where you can click or tap Continue to access the Internet.
+CPD will trigger openNDS to serve the default splash page where you can click or tap Continue to access the Internet.
 .sp
 See the Authentication section for details of setting up a proper authentication process.
 .sp
 If your client device does not display the splash page it most likely does not support CPD.
 .sp
-You should then manually trigger Nodogsplash by trying to access a port 80 web site (for example, google.com:80 is a good choice).
+You should then manually trigger openNDS by trying to access a port 80 web site (for example, google.com:80 is a good choice).
 .UNINDENT
 .UNINDENT
 .INDENT 0.0
 .IP \(bu 2
-To stop Nodogsplash:
+To stop openNDS:
 .INDENT 2.0
 .INDENT 3.5
-\fBservice nodogsplash stop\fP
+\fBservice opennds stop\fP
 .UNINDENT
 .UNINDENT
 .IP \(bu 2
-To uninstall Nodogsplash:
+To uninstall openNDS:
 .INDENT 2.0
 .INDENT 3.5
-\fBopkg remove nodogsplash\fP
+\fBopkg remove opennds\fP
 .UNINDENT
 .UNINDENT
 .UNINDENT
@@ -173,10 +171,10 @@ libmicrohttpd\-dev (>= 0.9.51) [avaiable in \fBstretch\fP]
 .sp
 But you can also compile libmicrohttpd your self if you\(aqre still running jessie or older.
 .sp
-To compile NoDogSplash and create the Debian package, see the chapter "How to Compile Nodogsplash".
-.SH HOW NODOGSPLASH (NDS) WORKS
+To compile openNDS and create the Debian package, see the chapter "How to Compile openNDS".
+.SH HOW OPENNDS (NDS) WORKS
 .sp
-NoDogSplash is a Captive Portal Engine. Any Captive Portal, including NDS, will have two main components:
+openNDS is a Captive Portal Engine. Any Captive Portal, including NDS, will have two main components:
 .INDENT 0.0
 .INDENT 3.5
 .INDENT 0.0
@@ -188,7 +186,7 @@ Something to provide a Portal for client users to log in.
 .UNINDENT
 .UNINDENT
 .sp
-NoDogSplash MUST run on a device configured as an IPv4 router.
+openNDS MUST run on a device configured as an IPv4 router.
 .sp
 A wireless router will typically be running OpenWrt or some other Linux distribution.
 .sp
@@ -332,25 +330,25 @@ However, SSID "Customers" is configured on virtual interface wlan0\-1, and consi
 NDS detects which zone is being used by a client and a relevant login page can be served.
 .SS Packet filtering
 .sp
-Nodogsplash considers four kinds of packets coming into the router over the managed interface. Each packet is one of these kinds:
+openNDS considers four kinds of packets coming into the router over the managed interface. Each packet is one of these kinds:
 .INDENT 0.0
 .INDENT 3.5
 .INDENT 0.0
 .IP 1. 3
 \fBBlocked\fP, if the MAC mechanism is block, and the source MAC address of the packet matches one listed in the BlockedMACList; or if the MAC mechanism is allow, and source MAC address of the packet does not match one listed in the AllowedMACList or the TrustedMACList. These packets are dropped.
 .IP 2. 3
-\fBTrusted\fP, if the source MAC address of the packet matches one listed in the TrustedMACList. By default, these packets are accepted and routed to all destination addresses and ports. If desired, this behavior can be customized by FirewallRuleSet trusted\-users and FirewallRuleSet trusted\-users\-to\-router lists in the nodogsplash.conf configuration file, or by the EmptyRuleSetPolicy trusted\-users EmptyRuleSetPolicy trusted\-users\-to\-router directives.
+\fBTrusted\fP, if the source MAC address of the packet matches one listed in the TrustedMACList. By default, these packets are accepted and routed to all destination addresses and ports. If desired, this behavior can be customized by FirewallRuleSet trusted\-users and FirewallRuleSet trusted\-users\-to\-router lists in the opennds.conf configuration file, or by the EmptyRuleSetPolicy trusted\-users EmptyRuleSetPolicy trusted\-users\-to\-router directives.
 .IP 3. 3
-\fBAuthenticated\fP, if the packet\(aqs IP and MAC source addresses have gone through the nodogsplash authentication process and has not yet expired. These packets are accepted and routed to a limited set of addresses and ports (see FirewallRuleSet authenticated\-users and FirewallRuleSet users\-to\-router in the nodogsplash.conf configuration file).
+\fBAuthenticated\fP, if the packet\(aqs IP and MAC source addresses have gone through the openNDS authentication process and has not yet expired. These packets are accepted and routed to a limited set of addresses and ports (see FirewallRuleSet authenticated\-users and FirewallRuleSet users\-to\-router in the opennds.conf configuration file).
 .IP 4. 3
-\fBPreauthenticated\fP\&. Any other packet. These packets are accepted and routed to a limited set of addresses and ports (see FirewallRuleSet      preauthenticated\-users and FirewallRuleSet users\-to\-router in the nodogsplash.conf configuration file). Any other packet is dropped, except that a packet for destination port 80 at any address is redirected to port 2050 on the router, where nodogsplash\(aqs built in libhttpd\-based web server is listening. This begins the \(aqauthentication\(aq process. The server will serve a splash page back to the source IP address of the packet. The user clicking the appropriate link on the splash page will complete the process, causing future packets from this IP/MAC address to be marked as Authenticated until the inactive or forced timeout is reached, and its packets revert to being Preauthenticated.
+\fBPreauthenticated\fP\&. Any other packet. These packets are accepted and routed to a limited set of addresses and ports (see FirewallRuleSet      preauthenticated\-users and FirewallRuleSet users\-to\-router in the opennds.conf configuration file). Any other packet is dropped, except that a packet for destination port 80 at any address is redirected to port 2050 on the router, where openNDS\(aqs built in libhttpd\-based web server is listening. This begins the \(aqauthentication\(aq process. The server will serve a splash page back to the source IP address of the packet. The user clicking the appropriate link on the splash page will complete the process, causing future packets from this IP/MAC address to be marked as Authenticated until the inactive or forced timeout is reached, and its packets revert to being Preauthenticated.
 .UNINDENT
 .UNINDENT
 .UNINDENT
 .sp
-NoDogSplash implements these actions by inserting rules in the router\(aqs iptables mangle PREROUTING chain to mark packets, and by inserting rules in the nat PREROUTING, filter INPUT and filter FORWARD chains which match on those marks.
+openNDS implements these actions by inserting rules in the router\(aqs iptables mangle PREROUTING chain to mark packets, and by inserting rules in the nat PREROUTING, filter INPUT and filter FORWARD chains which match on those marks.
 .sp
-Because it inserts its rules at the beginning of existing chains, NoDogSplash should be insensitive to most typical existing firewall configurations.
+Because it inserts its rules at the beginning of existing chains, openNDS should be insensitive to most typical existing firewall configurations.
 .SS Traffic control
 .sp
 Data rate control on an IP connection basis can be achieved using Smart Queue Management (SQM) configured separately, with NDS being fully compatible.
@@ -358,7 +356,7 @@ Data rate control on an IP connection basis can be achieved using Smart Queue Ma
 It should be noted that while setup options and BinAuth do accept traffic/quota settings, these values currently have no effect and are reserved for future development.
 .SH THE SPLASH PAGE
 .sp
-As you will see mentioned in the "How Nodogsplash (NDS) Works" section, an initial port 80 request is generated on a client device, either by the user manually browsing to an http web page, or, more usually, automatically by the client device\(aqs built in Captive Portal Detection (CPD).
+As you will see mentioned in the "How openNDS (NDS) Works" section, an initial port 80 request is generated on a client device, either by the user manually browsing to an http web page, or, more usually, automatically by the client device\(aqs built in Captive Portal Detection (CPD).
 .sp
 This request is intercepted by NDS and an html Splash Page is served to the user of the client device to enable them to authenticate and obtain Internet access.
 .SS Types of Splash Page
@@ -428,7 +426,7 @@ section of the PreAuth chapter.
 .SH FORWARDING AUTHENTICATION SERVICE (FAS)
 .SS Overview
 .sp
-Nodogsplash (NDS) has the ability to forward requests to a third party authentication service (FAS). This is enabled via simple configuration options.
+openNDS (NDS) has the ability to forward requests to a third party authentication service (FAS). This is enabled via simple configuration options.
 .INDENT 0.0
 .TP
 .B These options are:
@@ -491,12 +489,12 @@ The cipher used is "AES\-256\-CBC".
 .sp
 The "php\-cli" package and the "php\-openssl" module must both be installed for fas_secure level 2.
 .sp
-Nodogsplash does not depend on this package and module, but will exit gracefully if this package and module are not installed when this level is set.
+openNDS does not depend on this package and module, but will exit gracefully if this package and module are not installed when this level is set.
 .sp
-The FAS must use the query string passed initialisation vector and the pre shared fas_key to decrypt the query string. An example FAS level 2 php script (fas\-aes.php) is preinstalled in the /etc/nodogsplash directory and also supplied in the source code.
+The FAS must use the query string passed initialisation vector and the pre shared fas_key to decrypt the query string. An example FAS level 2 php script (fas\-aes.php) is preinstalled in the /etc/opennds directory and also supplied in the source code.
 .sp
 \fBIf set to "3"\fP The FAS is enforced by NDS to use \fBhttps\fP protocol.
-Level 3 is the same as level 2 except the use of https protocol is enforced for FAS. In addition, the "authmon" daemon is loaded. This allows the external FAS, after client verification, to effectively traverse inbound firewalls and address translation to achieve NDS authentication without generating browser security warnings or errors. An example FAS level 3 php script (fas\-aes\-https.php) is preinstalled in the /etc/nodogsplash directory and also supplied in the source code.
+Level 3 is the same as level 2 except the use of https protocol is enforced for FAS. In addition, the "authmon" daemon is loaded. This allows the external FAS, after client verification, to effectively traverse inbound firewalls and address translation to achieve NDS authentication without generating browser security warnings or errors. An example FAS level 3 php script (fas\-aes\-https.php) is preinstalled in the /etc/opennds directory and also supplied in the source code.
 .UNINDENT
 .UNINDENT
 .sp
@@ -518,7 +516,7 @@ Option faskey must be pre\-shared with FAS.
 .INDENT 3.5
 \fBLevel 0\fP (fas_secure_enabled = 0), NDS sends the token and other information to FAS as clear text.
 .sp
-\fIhttp://fasremoteip:fasport/faspath?authaction=http://gatewayaddress:gatewayport/nodogsplash_auth/?clientip=[clientip]&gatewayname=[gatewayname]&tok=[token]&redir=[requested_url]\fP
+\fIhttp://fasremoteip:fasport/faspath?authaction=http://gatewayaddress:gatewayport/opennds_auth/?clientip=[clientip]&gatewayname=[gatewayname]&tok=[token]&redir=[requested_url]\fP
 .INDENT 0.0
 .INDENT 3.5
 Although the simplest to set up, a knowledgeable user could bypass FAS, so running fas_secure_enabled at level 1 or 2 is recommended.
@@ -547,7 +545,7 @@ The return url will be constructed by FAS from predetermined knowledge of the co
 .sp
 The client\(aqs unique access token will be obtained from NDS by the FAS making a call to the get_client_token library utility:
 .sp
-\fB/usr/lib/nodogsplash/./get_client_token $clientip\fP
+\fB/usr/lib/opennds/./get_client_token $clientip\fP
 .sp
 A json parser could be used to extract all the client variables supplied by ndsctl, an example can be found in the default PreAuth Login script in /usr/lib/nogogsplash/login.sh.
 .UNINDENT
@@ -669,7 +667,7 @@ This will be of the form:
 .UNINDENT
 .sp
 FAS should then serve a suitable error page informing the client user that they are already logged in.
-.SS Running FAS on your Nodogsplash router
+.SS Running FAS on your openNDS router
 .sp
 FAS has been tested using uhttpd, lighttpd, ngnix, apache and libmicrohttpd.
 .sp
@@ -734,7 +732,7 @@ You can run the FAS example script, fas\-aes\-https.php, remotely on an Internet
 Assuming you have installed your web server of choice, configured it for port 2080 and added PHP support using the package php7\-cgi, you can do the following.
 .INDENT 0.0
 .INDENT 3.5
-(Under other operating systems you may need to edit the nodogsplash.conf file in /etc/nodogsplash instead, but the process is very similar.)
+(Under other operating systems you may need to edit the opennds.conf file in /etc/opennds instead, but the process is very similar.)
 .INDENT 0.0
 .IP \(bu 2
 Install the packages php7\-cli and php7\-mod\-openssl
@@ -743,9 +741,9 @@ Create a folder for the FAs script eg: /[server\-web\-root]/nds/ on the Internet
 .IP \(bu 2
 Place the file fas\-aes.php in /[server\-web\-root]/nds/
 .sp
-(You can find it in the /etc/nodogsplash directory.)
+(You can find it in the /etc/opennds directory.)
 .IP \(bu 2
-Edit the file /etc/config/nodogsplash
+Edit the file /etc/config/opennds
 .UNINDENT
 .INDENT 0.0
 .INDENT 3.5
@@ -765,7 +763,7 @@ adding the lines:
 .UNINDENT
 .INDENT 0.0
 .IP \(bu 2
-Restart NDS using the command \fBservice nodogsplash restart\fP
+Restart NDS using the command \fBservice opennds restart\fP
 .UNINDENT
 .UNINDENT
 .UNINDENT
@@ -774,7 +772,7 @@ Restart NDS using the command \fBservice nodogsplash restart\fP
 Assuming you have access to an Internet based https web server you can do the following.
 .INDENT 0.0
 .INDENT 3.5
-(Under other operating systems you may need to edit the nodogsplash.conf file in /etc/nodogsplash instead, but the process is very similar.)
+(Under other operating systems you may need to edit the opennds.conf file in /etc/opennds instead, but the process is very similar.)
 .INDENT 0.0
 .IP \(bu 2
 Install the packages php7\-cli and php7\-mod\-openssl on your NDS router
@@ -783,9 +781,9 @@ Create a folder for the FAs script eg: /[server\-web\-root]/nds/ on the Internet
 .IP \(bu 2
 Place the file fas\-aes.php in /[server\-web\-root]/nds/
 .sp
-(You can find it in the /etc/nodogsplash directory.)
+(You can find it in the /etc/opennds directory.)
 .IP \(bu 2
-Edit the file /etc/config/nodogsplash
+Edit the file /etc/config/opennds
 .UNINDENT
 .INDENT 0.0
 .INDENT 3.5
@@ -809,7 +807,7 @@ adding the lines:
 .UNINDENT
 .INDENT 0.0
 .IP \(bu 2
-Restart NDS using the command \fBservice nodogsplash restart\fP
+Restart NDS using the command \fBservice opennds restart\fP
 .UNINDENT
 .UNINDENT
 .UNINDENT
@@ -839,7 +837,7 @@ A PreAuth program could be, for example, a compiled program written in C or any 
 The PreAuth script or program will parse the url encoded command line (query string) passed to it and output html depending on the contents of the query string it receives from NDS. In turn, NDS will serve this html to the client device that is attempting to access the Internet.
 .SS Selecting Pre\-Installed Username / Email Login Script (v4.3.0 onwards)
 .sp
-The default preauth login script is installed as part of the NoDogSplash package providing username/emailaddress login as an alternative to the basic splash page.
+The default preauth login script is installed as part of the openNDS package providing username/emailaddress login as an alternative to the basic splash page.
 .sp
 It is enabled by setting in config:
 .sp
@@ -859,9 +857,9 @@ No additional FAS or PreAuth config settings are required.
 This option overrides any other FAS configuration and takes the form of the path to the PreAuth script.
 The path to the preinstalled login script is included in option preauth in the default config files, for example in OpenWrt:
 .sp
-\fI#option preauth \(aq/usr/lib/nodogsplash/login.sh\(aq\fP
+\fI#option preauth \(aq/usr/lib/opennds/login.sh\(aq\fP
 .sp
-The "#" symbol means the line is commented. To activate, remove the "#". save and restart Nodogsplash.
+The "#" symbol means the line is commented. To activate, remove the "#". save and restart opennds.
 .SS Using PreAuth version 3.3.1 to version 4.0.1
 .sp
 From version 3.3.1 to version 4.0.1, PreAuth is set up using the standard NDS configuration for FAS
@@ -875,7 +873,7 @@ In addition a single PreAuth configuration option is required to inform NDS of t
 .IP 1. 3
 \fBfasport\fP\&. This enables FAS and \fImust\fP be set to the same value as the gateway port.
 .IP 2. 3
-\fBfaspath\fP\&. This \fImust\fP be set to the PreAuth virtual url, "/nodogsplash_preauth/" by default.
+\fBfaspath\fP\&. This \fImust\fP be set to the PreAuth virtual url, "/opennds_preauth/" by default.
 .IP 3. 3
 \fBpreauth\fP\&. This the path to the PreAuth script.
 .UNINDENT
@@ -901,14 +899,14 @@ From version 3.3.1 onwards, the example PreAuth script is preinstalled.
 .UNINDENT
 .SS Enabling the Preinstalled Login Script (v3.3.1 to 4.0.1)
 .sp
-On Openwrt, edit (to uncomment) following lines in the /etc/config/nodogsplash file:
+On Openwrt, edit (to uncomment) following lines in the /etc/config/opennds file:
 .INDENT 0.0
 .INDENT 3.5
 \fI#option fasport \(aq2050\(aq\fP
 .sp
-\fI#option faspath \(aq/nodogsplash_preauth/\(aq\fP
+\fI#option faspath \(aq/opennds_preauth/\(aq\fP
 .sp
-\fI#option preauth \(aq/usr/lib/nodogsplash/login.sh\(aq\fP
+\fI#option preauth \(aq/usr/lib/opennds/login.sh\(aq\fP
 .UNINDENT
 .UNINDENT
 .sp
@@ -917,28 +915,28 @@ To read:
 .INDENT 3.5
 \fIoption fasport \(aq2050\(aq\fP
 .sp
-\fIoption faspath \(aq/nodogsplash_preauth/\(aq\fP
+\fIoption faspath \(aq/opennds_preauth/\(aq\fP
 .sp
-\fIoption preauth \(aq/usr/lib/nodogsplash/login.sh\(aq\fP
+\fIoption preauth \(aq/usr/lib/opennds/login.sh\(aq\fP
 .UNINDENT
 .UNINDENT
 .SS Enabling the Preinstalled Login Script (v4.0.2 onwards)
 .sp
-On Openwrt, edit (to uncomment) following line in the /etc/config/nodogsplash file:
+On Openwrt, edit (to uncomment) following line in the /etc/config/opennds file:
 .INDENT 0.0
 .INDENT 3.5
-\fI#option preauth \(aq/usr/lib/nodogsplash/login.sh\(aq\fP
+\fI#option preauth \(aq/usr/lib/opennds/login.sh\(aq\fP
 .UNINDENT
 .UNINDENT
 .sp
 To read:
 .INDENT 0.0
 .INDENT 3.5
-\fIoption preauth \(aq/usr/lib/nodogsplash/login.sh\(aq\fP
+\fIoption preauth \(aq/usr/lib/opennds/login.sh\(aq\fP
 .UNINDENT
 .UNINDENT
 .sp
-For other operating systems edit the equivalent lines in the /etc/nodogsplash/nodogsplash.conf file
+For other operating systems edit the equivalent lines in the /etc/opennds/opennds.conf file
 .sp
 After making the change, save the file and restart the router.
 .SS What Does the Example Login Script Do?
@@ -958,7 +956,7 @@ This is a simple example of a script to demonstrate how to use PreAuth as a buil
 An additional example PreAuth script, demo\-preauth\-remote\-image.sh, is available in the source code:
 .INDENT 0.0
 .INDENT 3.5
-\fIhttps://github.com/nodogsplash/nodogsplash/archive/master.zip\fP
+\fIhttps://github.com/opennds/opennds/archive/master.zip\fP
 .UNINDENT
 .UNINDENT
 .sp
@@ -971,17 +969,17 @@ and extracting from the folder:
 .sp
 This is an enhancement of the preinstalled login.sh, giving an example of how to display images pulled in from remote web servers, both http and https.
 .sp
-The example displays the NodogSplash avatar image dynamically retreived from Github.
+The example displays the opennds avatar image dynamically retreived from Github.
 .SS Writing A Preauth Script
 .sp
 A Preauth script can be written as a shell script or any other language that the system has an interpreter for. It could also be a complied program.
 .sp
 NDS calls the preauth script with a command line equivalent to an html query string but with ", " (comma space) in place of "&" (ampersand).
 .sp
-Full details are included in the example script demo\-preauth.sh available by downloading the Nodogsplash zip file from
+Full details are included in the example script demo\-preauth.sh available by downloading the opennds zip file from
 .INDENT 0.0
 .INDENT 3.5
-\fIhttps://github.com/nodogsplash/nodogsplash/\fP
+\fIhttps://github.com/opennds/opennds/\fP
 .UNINDENT
 .UNINDENT
 .sp
@@ -1017,7 +1015,7 @@ To return to the script and show additional pages, the form action must be set t
 .sp
 .nf
 .ft C
-<form action=\e"/nodogsplash_preauth/\e" method=\e"get\e">
+<form action=\e"/opennds_preauth/\e" method=\e"get\e">
 .ft P
 .fi
 .UNINDENT
@@ -1059,7 +1057,7 @@ When the logic of this script decides we should allow the client to access the I
 .sp
 .nf
 .ft C
-"<form action=\e"/nodogsplash_auth/\e" method=\e"get\e">"
+"<form action=\e"/opennds_auth/\e" method=\e"get\e">"
 .ft P
 .fi
 .UNINDENT
@@ -1113,7 +1111,7 @@ A modified version of the Username/Email\-address login script is available that
 This additional example PreAuth script, demo\-preauth\-remote\-image.sh, is available in the source code:
 .INDENT 0.0
 .INDENT 3.5
-\fIhttps://github.com/nodogsplash/nodogsplash/archive/master.zip\fP
+\fIhttps://github.com/opennds/opennds/archive/master.zip\fP
 .UNINDENT
 .UNINDENT
 .sp
@@ -1126,7 +1124,7 @@ and extracting from the folder:
 .sp
 This is an enhancement of the preinstalled login.sh, giving an example of how to display images pulled in from remote web servers, both http and https.
 .sp
-The example displays the NodogSplash avatar image dynamically retrieved from Github.
+The example displays the openNDS avatar image dynamically retrieved from Github.
 .SH BINAUTH OPTION
 .SS Overview
 .sp
@@ -1165,11 +1163,11 @@ After NDS has received a shutdown command
 .SS Example BinAuth Scripts
 .sp
 Two example BinAuth scripts are included in the source files available for download at:
-\fI\%https://github.com/nodogsplash/nodogsplash/releases\fP
+\fI\%https://github.com/opennds/opennds/releases\fP
 .sp
 The files can be extracted from the downloaded release archive file and reside in the folder:
 .sp
-\fI/nodogsplash\-[*version*]/forward_authentication_service/binauth\fP
+\fI/opennds\-[*version*]/forward_authentication_service/binauth\fP
 .SS Example 1 \- Sitewide Username/Password
 .sp
 This example is a script designed to be used with or without FAS and provides site wide Username/Password login for two groups of users, in this case "Staff" and "Guest" with two corresponding sets of credentials. If used without FAS, a special html splash page must be installed, otherwise FAS must forward the required username and password variables.
@@ -1191,34 +1189,34 @@ splash_sitewide.html
 .UNINDENT
 .UNINDENT
 .sp
-The file binauth_sitewide.sh should be copied to a suitable location on the NDS router, eg \fI/etc/nodogsplash/\fP
+The file binauth_sitewide.sh should be copied to a suitable location on the NDS router, eg \fI/etc/opennds/\fP
 .sp
-The file splash_sitewide.html should be copied to \fI/etc/nodogsplash/htdocs/\fP
+The file splash_sitewide.html should be copied to \fI/etc/opennds/htdocs/\fP
 .sp
-Assuming FAS is not being used, NDS is then configured by setting the BinAuth and SplashPage options in the config file (/etc/config/nodogsplash on Openwrt, or /etc/nodogsplash/nodogsplash.conf on other operating systems.
+Assuming FAS is not being used, NDS is then configured by setting the BinAuth and SplashPage options in the config file (/etc/config/opennds on Openwrt, or /etc/opennds/opennds.conf on other operating systems.
 .sp
 On OpenWrt this is most easily accomplished by issuing the following commands:
 .INDENT 0.0
 .INDENT 3.5
-\fIuci set nodogsplash.@nodogsplash[0].splashpage=\(aqsplash_sitewide.html\(aq\fP
+\fIuci set opennds.@opennds[0].splashpage=\(aqsplash_sitewide.html\(aq\fP
 .sp
-\fIuci set nodogsplash.@nodogsplash[0].binauth=\(aq/etc/nodogsplash/binauth_sitewide.sh\(aq\fP
+\fIuci set opennds.@opennds[0].binauth=\(aq/etc/opennds/binauth_sitewide.sh\(aq\fP
 .sp
-\fIuci commit nodogsplash\fP
+\fIuci commit opennds\fP
 .UNINDENT
 .UNINDENT
 .sp
 The script file must be executable and is flagged as such in the source archive. If necessary set using the command:
 .INDENT 0.0
 .INDENT 3.5
-\fIchmod u+x /etc/nodogsplash/binauth_sitewide.sh\fP
+\fIchmod u+x /etc/opennds/binauth_sitewide.sh\fP
 .UNINDENT
 .UNINDENT
 .sp
 This script is then activated with the command:
 .INDENT 0.0
 .INDENT 3.5
-\fIservice nodogsplash restart\fP
+\fIservice opennds restart\fP
 .UNINDENT
 .UNINDENT
 .sp
@@ -1278,7 +1276,7 @@ case "$METHOD" in
                # timeout_deauth: Client was deauthenticated because the session timed out.
                # ndsctl_auth: Client was authenticated by the ndsctl tool.
                # ndsctl_deauth: Client was deauthenticated by the ndsctl tool.
-               # shutdown_deauth: Client was deauthenticated by Nodogsplash terminating.
+               # shutdown_deauth: Client was deauthenticated by opennds terminating.
                ;;
 esac
 .ft P
@@ -1310,7 +1308,7 @@ The \fISESSION_START\fP and \fISESSION_END\fP values are the number of seconds s
 
 <!\-\-
 Content:
-       Nodogsplash (NDS), by default, serves this splash page (splash.html)
+       opennds (NDS), by default, serves this splash page (splash.html)
        when a client device Captive Portal Detection (CPD) process
        attempts to send a port 80 request to the Internet.
 
@@ -1382,7 +1380,7 @@ or appended to the query string of the authtarget link:
 </form>
 
 <hr>
-<copy\-right>Copyright &copy; The Nodogsplash Contributors 2004\-2019.<br>This software is released under the GNU GPL license.</copy\-right>
+<copy\-right>Copyright &copy; The opennds Contributors 2004\-2019.<br>This software is released under the GNU GPL license.</copy\-right>
 
 </div></div>
 </body>
@@ -1409,30 +1407,30 @@ binauth_log.sh
 .UNINDENT
 .UNINDENT
 .sp
-The file binauth_log.sh should be copied to a suitable location on the NDS router, eg \fI/etc/nodogsplash/\fP
+The file binauth_log.sh should be copied to a suitable location on the NDS router, eg \fI/etc/opennds/\fP
 .sp
-Assuming FAS is not being used, NDS is then configured by setting the BinAuth option in the config file (/etc/config/nodogsplash on Openwrt, or /etc/nodogsplash/nodogsplash.conf on other operating systems.
+Assuming FAS is not being used, NDS is then configured by setting the BinAuth option in the config file (/etc/config/opennds on Openwrt, or /etc/opennds/opennds.conf on other operating systems.
 .sp
 On OpenWrt this is most easily accomplished by issuing the following commands:
 .INDENT 0.0
 .INDENT 3.5
-\fIuci set nodogsplash.@nodogsplash[0].binauth=\(aq/etc/nodogsplash/binauth_log.sh\(aq\fP
+\fIuci set opennds.@opennds[0].binauth=\(aq/etc/opennds/binauth_log.sh\(aq\fP
 .sp
-\fIuci commit nodogsplash\fP
+\fIuci commit opennds\fP
 .UNINDENT
 .UNINDENT
 .sp
 The script file must be executable and is flagged as such in the source archive. If necessary set using the command:
 .INDENT 0.0
 .INDENT 3.5
-\fIchmod u+x /etc/nodogsplash/binauth_log.sh\fP
+\fIchmod u+x /etc/opennds/binauth_log.sh\fP
 .UNINDENT
 .UNINDENT
 .sp
 This script is then activated with the command:
 .INDENT 0.0
 .INDENT 3.5
-\fIservice nodogsplash restart\fP
+\fIservice opennds restart\fP
 .UNINDENT
 .UNINDENT
 .sp
@@ -1534,7 +1532,7 @@ A number of library utilities are included. These may be used by NDS itself, FAS
 .sp
 By default, library utilities will be installed in the folder
 .sp
-\fB/usr/lib/nodogsplash/\fP
+\fB/usr/lib/opennds/\fP
 .SS List of Library Utilities
 .SS get_client_token.sh
 .sp
@@ -1612,7 +1610,7 @@ Where:
 .SH TRAFFIC CONTROL
 .SS Overview
 .sp
-Nodogsplash (NDS) supports Traffic Control (Bandwidth Limiting) using the SQM \- Smart Queue Management (sqm\-scripts) package, available for OpenWrt and generic Linux.
+openNDS (NDS) supports Traffic Control (Bandwidth Limiting) using the SQM \- Smart Queue Management (sqm\-scripts) package, available for OpenWrt and generic Linux.
 .sp
 \fI\%https://github.com/tohojo/sqm\-scripts\fP
 .sp
@@ -1789,10 +1787,10 @@ Further details about SQM can be found at the following links:
 \fI\%https://openwrt.org/docs/guide\-user/network/traffic\-shaping/sqm\-details\fP
 .SH USING NDSCTL
 .sp
-A nodogsplash install includes ndsctl, a separate application which provides some control over a running nodogsplash process by communicating with it over a unix socket. Some command line options:
+A openNDS install includes ndsctl, a separate application which provides some control over a running openNDS process by communicating with it over a unix socket. Some command line options:
 .INDENT 0.0
 .IP \(bu 2
-To print to stdout some information about your nodogsplash process:
+To print to stdout some information about your openNDS process:
 .INDENT 2.0
 .INDENT 3.5
 \fB/usr/bin/ndsctl status\fP
@@ -1876,10 +1874,10 @@ debuglevel 3 : debuglevel 2 + LOG_DEBUG
 All other levels are undefined and will result in debug level 3 being set.
 .UNINDENT
 .sp
-For more options, run ndsctl \-h. (Note that if you want the effect of ndsctl commands to to persist across nodogsplash restarts, you have to edit the configuration file.)
-.SH CUSTOMISING NODOGSPLASH
+For more options, run ndsctl \-h. (Note that if you want the effect of ndsctl commands to to persist across openNDS restarts, you have to edit the configuration file.)
+.SH CUSTOMISING OPENNDS
 .sp
-After initial installation, NoDogSplash (NDS) should be working in its most basic mode and client Captive Portal Detection (CPD) should pop up the default splash page.
+After initial installation, openNDS (NDS) should be working in its most basic mode and client Captive Portal Detection (CPD) should pop up the default splash page.
 .sp
 Before attempting to customise NDS you should ensure it is working in this basic mode before you start.
 .sp
@@ -1910,14 +1908,14 @@ Prohibit the execution of javascript.
 In OpenWrt, or operating systems supporting UCI (such as LEDE) the configuration is kept in the file:
 .INDENT 0.0
 .INDENT 3.5
-\fB/etc/config/nodogsplash\fP
+\fB/etc/config/opennds\fP
 .UNINDENT
 .UNINDENT
 .sp
 In other operating systems the configuration is kept in the file:
 .INDENT 0.0
 .INDENT 3.5
-\fB/etc/nodogsplash/nodogsplash.conf\fP
+\fB/etc/opennds/opennds.conf\fP
 .UNINDENT
 .UNINDENT
 .sp
@@ -1931,7 +1929,7 @@ For example, to list the full configuration, at the command line type:
 .sp
 .nf
 .ft C
-uci show nodogsplash
+uci show opennds
 .ft P
 .fi
 .UNINDENT
@@ -1943,7 +1941,7 @@ To display the Gateway Name, type:
 .sp
 .nf
 .ft C
-uci get nodogsplash.@nodogsplash[0].gatewayname
+uci get opennds.@opennds[0].gatewayname
 .ft P
 .fi
 .UNINDENT
@@ -1955,7 +1953,7 @@ To set the Gateway Name to a new value, type:
 .sp
 .nf
 .ft C
-uci set nodogsplash.@nodogsplash[0].gatewayname=\(aqmy new gateway\(aq
+uci set opennds.@opennds[0].gatewayname=\(aqmy new gateway\(aq
 .ft P
 .fi
 .UNINDENT
@@ -1967,7 +1965,7 @@ To add a new firewall rule allowing access to another service running on port 88
 .sp
 .nf
 .ft C
-uci add_list nodogsplash.@nodogsplash[0].users_to_router=\(aqallow
+uci add_list opennds.@opennds[0].users_to_router=\(aqallow
 tcp port 8888\(aq
 .ft P
 .fi
@@ -1980,7 +1978,7 @@ Finally you must tell UCI to commit your changes to the configuration file:
 .sp
 .nf
 .ft C
-uci commit nodogsplash
+uci commit opennds
 .ft P
 .fi
 .UNINDENT
@@ -1991,7 +1989,7 @@ Enabled by setting option login_option_enabled = "0" (default)
 The default default splash page can be found at:
 .INDENT 0.0
 .INDENT 3.5
-\fB/etc/nodogsplash/htdocs/splash.html\fP
+\fB/etc/opennds/htdocs/splash.html\fP
 .UNINDENT
 .UNINDENT
 .sp
@@ -1999,9 +1997,9 @@ When the splash page is served, the following variables in the page are
 replaced by their values:
 .INDENT 0.0
 .IP \(bu 2
-\fI$gatewayname\fP The value of GatewayName as set in nodogsplash.conf.
+\fI$gatewayname\fP The value of GatewayName as set in opennds.conf.
 .IP \(bu 2
-\fI$authtarget\fP A URL which encodes a unique token and the URL of the user\(aqs   original web request. If nodogsplash receives a request at this URL, it completes the authentication process for the client and replies to the request with a "302 Found" to the encoded originally requested URL.
+\fI$authtarget\fP A URL which encodes a unique token and the URL of the user\(aqs   original web request. If opennds receives a request at this URL, it completes the authentication process for the client and replies to the request with a "302 Found" to the encoded originally requested URL.
 .sp
 It should be noted however that, depending on vendor, the client\(aqs built in CPD may not respond to simple html links.
 .UNINDENT
@@ -2014,22 +2012,22 @@ An href link example that my prove to be problematical:
 .UNINDENT
 .UNINDENT
 .sp
-(You should instead use a GET\-method HTML form to send this   information to the nodogsplash server; see below.)
+(You should instead use a GET\-method HTML form to send this   information to the opennds server; see below.)
 .UNINDENT
 .UNINDENT
 .INDENT 0.0
 .IP \(bu 2
-\fI$tok\fP, \fI$redir\fP, \fI$authaction\fP, and \fI$denyaction\fP are available and should be used to write the splash page to use a GET\-method HTML form instead of using $authtarget as the value of an href attribute to communicate with the nodogsplash server.
+\fI$tok\fP, \fI$redir\fP, \fI$authaction\fP, and \fI$denyaction\fP are available and should be used to write the splash page to use a GET\-method HTML form instead of using $authtarget as the value of an href attribute to communicate with the opennds server.
 .UNINDENT
 .INDENT 0.0
 .INDENT 3.5
 \fI$authaction\fP and \fI$denyaction\fP are virtual urls used to inform NDS that a client should be authenticated or deauthenticated and are of the form:
 .sp
-\fIhttp://gatewayaddress:gatewayport/nodogsplash_auth/\fP
+\fIhttp://gatewayaddress:gatewayport/opennds_auth/\fP
 .sp
 and
 .sp
-\fIhttp://gatewayaddress:gatewayport/nodogsplash_deny/\fP
+\fIhttp://gatewayaddress:gatewayport/opennds_deny/\fP
 .sp
 A simple example of a GET\-method form:
 .UNINDENT
@@ -2057,7 +2055,7 @@ needs to be forwarded to some other place by the splash page itself.
 \fI$nclients\fP and \fI$maxclients\fP User stats. Useful when you need to
 display something like "n of m users online" on the splash site.
 .IP \(bu 2
-\fI$uptime\fP The time Nodogsplash has been running.
+\fI$uptime\fP The time opennds has been running.
 .UNINDENT
 .INDENT 0.0
 .INDENT 3.5
@@ -2065,7 +2063,7 @@ A list of all available variables are included in the splash.html file.
 .sp
 If the user accesses the virtual url \fI$authaction\fP when already authenticated, a status page is shown:
 .sp
-\fB/etc/nodogsplash/htdocs/status.html\fP
+\fB/etc/opennds/htdocs/status.html\fP
 .sp
 In the status.html file, the same variables as in the splash.html site can be used.
 .UNINDENT
@@ -2087,7 +2085,7 @@ Prohibit the execution of javascript.
 .UNINDENT
 .UNINDENT
 .sp
-Also, note that any images you reference should reside in the subdirectory /etc/nodogsplash/htdocs/images/.
+Also, note that any images you reference should reside in the subdirectory /etc/opennds/htdocs/images/.
 .SS Dynamic Splash Pages
 .SS Pre\-Installed User Login Dynamic Splash Page
 .sp
@@ -2119,7 +2117,7 @@ for v0.9.
 .UNINDENT
 .INDENT 0.0
 .INDENT 3.5
-A forwarding authentication service. FAS supports development of "Credential Verification" running on any dynamic web serving platform, on the same device as NoDogSplash, on another device on the local network, or on an Internet hosted web server.
+A forwarding authentication service. FAS supports development of "Credential Verification" running on any dynamic web serving platform, on the same device as openNDS, on another device on the local network, or on an Internet hosted web server.
 .UNINDENT
 .UNINDENT
 .INDENT 0.0
@@ -2128,7 +2126,7 @@ A forwarding authentication service. FAS supports development of "Credential Ver
 .UNINDENT
 .INDENT 0.0
 .INDENT 3.5
-An implementation of FAS running on the same device as Nodogsplash and using NoDogSplash\(aqs own web server to generate dynamic web pages. Any scripting language or even a compiled application program can be used. This has the advantage of not requiring the resources of a separate web server.
+An implementation of FAS running on the same device as openNDS and using openNDS\(aqs own web server to generate dynamic web pages. Any scripting language or even a compiled application program can be used. This has the advantage of not requiring the resources of a separate web server.
 .UNINDENT
 .UNINDENT
 .INDENT 0.0
@@ -2232,7 +2230,7 @@ The original pre version 1 feature has been broken since OpenWrt 12.09 (Attitude
 .INDENT 3.5
 \fBPull Requests are welcome!\fP
 .sp
-However the OpenWrt package, SQM Scripts (Smart Queue Management), is fully compatible with Nodogsplash and if configured to operate on the Nodogsplash interface (br\-lan by default) will provide efficient IP connection based traffic control to ensure fair usage of available bandwidth.
+However the OpenWrt package, SQM Scripts (Smart Queue Management), is fully compatible with openNDS and if configured to operate on the openNDS interface (br\-lan by default) will provide efficient IP connection based traffic control to ensure fair usage of available bandwidth.
 .UNINDENT
 .UNINDENT
 .SS Is https capture supported?
@@ -2267,17 +2265,17 @@ Prohibit the execution of javascript.
 .UNINDENT
 .UNINDENT
 .UNINDENT
-.SH HOW TO COMPILE NODOGSPLASH
+.SH HOW TO COMPILE OPENNDS
 .SS Linux/Unix
 .sp
-The Libmicrohttpd library is a dependency of NoDogSplash so you must first iInstall libmicrohttpd including the header files (often called \-dev package). Then proceed to download the NoDogSplash source files:
+The Libmicrohttpd library is a dependency of opennds so you must first iInstall libmicrohttpd including the header files (often called \-dev package). Then proceed to download the opennds source files:
 .INDENT 0.0
 .INDENT 3.5
 .sp
 .nf
 .ft C
-git clone https://github.com/nodogsplash/nodogsplash.git
-cd nodogsplash
+git clone https://github.com/opennds/opennds.git
+cd opennds
 make
 .ft P
 .fi
@@ -2297,11 +2295,11 @@ make CFLAGS="\-I/tmp/libmicrohttpd_install/include" LDFLAGS="\-L/tmp/libmicrohtt
 .UNINDENT
 .UNINDENT
 .sp
-After compiling you can call \fBmake install\fP to install NoDogSplash to /usr/
+After compiling you can call \fBmake install\fP to install opennds to /usr/
 .SS Making a Package for Installation
 .SS OpenWrt Package
 .sp
-To compile NoDogSplash and create its installable package, please use the package definition from the feeds package.
+To compile opennds and create its installable package, please use the package definition from the feeds package.
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -2311,7 +2309,7 @@ git clone git://git.openwrt.org/trunk/openwrt.git
 cd openwrt
 \&./scripts/feeds update
 \&./scripts/feeds install
-\&./scripts/feeds install nodogsplash
+\&./scripts/feeds install opennds
 .ft P
 .fi
 .UNINDENT
@@ -2332,7 +2330,7 @@ make
 .UNINDENT
 .SS Debian Package
 .sp
-First you must compile NoDogSplash as described above for Linux/Unix.
+First you must compile opennds as described above for Linux/Unix.
 Then run the command:
 .INDENT 0.0
 .INDENT 3.5
@@ -2344,10 +2342,10 @@ make deb
 .fi
 .UNINDENT
 .UNINDENT
-.SH DEBUGGING NODOGSPLASH
+.SH DEBUGGING OPENNDS
 .SS Syslog Logging
 .sp
-NoDogSplash supports four levels of debugging to syslog.
+openNDS supports four levels of debugging to syslog.
 .INDENT 0.0
 .INDENT 3.5
 .INDENT 0.0
@@ -2367,7 +2365,7 @@ All other levels are undefined and will result in debug level 3 being set.
 .UNINDENT
 .UNINDENT
 .sp
-To see maximally verbose debugging output from NoDogSplash, set log level to 3. This can be done in the UCI configuration file on OpenWrt adding the line:
+To see maximally verbose debugging output from openNDS, set log level to 3. This can be done in the UCI configuration file on OpenWrt adding the line:
 .INDENT 0.0
 .INDENT 3.5
 \fBoption debuglevel \(aq3\(aq\fP
@@ -2384,17 +2382,17 @@ Logging level can also be set using ndsctl.
 .SS Firewall Cleanup
 .INDENT 0.0
 .INDENT 3.5
-When stopped, NoDogSplash deletes its iptables rules, attempting to leave the router\(aqs firewall in its original state. If not (for example, if NoDogSplash crashes instead of exiting cleanly) subsequently starting and stopping NoDogSplash should remove its rules.
+When stopped, openNDS deletes its iptables rules, attempting to leave the router\(aqs firewall in its original state. If not (for example, if openNDS crashes instead of exiting cleanly) subsequently starting and stopping openNDS should remove its rules.
 .sp
-On OpenWrt, restarting the firewall will overwrite NoDogSplash\(aqs iptables rules, so when the firewall is restarted it will automatically restart NoDogSplash if it is running.
+On OpenWrt, restarting the firewall will overwrite openNDS\(aqs iptables rules, so when the firewall is restarted it will automatically restart openNDS if it is running.
 .UNINDENT
 .UNINDENT
 .SS Packet Marking
 .INDENT 0.0
 .INDENT 3.5
-NoDogSplash operates by marking packets. Many packages, such as mwan3 and SQM scripts, also mark packets.
+openNDS operates by marking packets. Many packages, such as mwan3 and SQM scripts, also mark packets.
 .sp
-By default, NoDogSplash marks its packets in such a way that conflicts are unlikely to occur but the masks used by NoDogSplash can be changed if necessary in the configuration file.
+By default, openNDS marks its packets in such a way that conflicts are unlikely to occur but the masks used by openNDS can be changed if necessary in the configuration file.
 .UNINDENT
 .UNINDENT
 .SS IPtables Conflicts
@@ -2444,8 +2442,8 @@ genindex
 search
 .UNINDENT
 .SH AUTHOR
-The Nodogsplash Contributors
+The openNDS Contributors
 .SH COPYRIGHT
-2016 - 2020, The Nodogsplash Contributors
+2016 - 2020, The NoDogSplash and openNDS Contributors
 .\" Generated by docutils manpage writer.
 .

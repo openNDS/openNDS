@@ -4,7 +4,7 @@ Traffic Control
 Overview
 ********
 
-Nodogsplash (NDS) supports Traffic Control (Bandwidth Limiting) using the SQM - Smart Queue Management (sqm-scripts) package, available for OpenWrt and generic Linux.
+openNDS (NDS) supports Traffic Control (Bandwidth Limiting) using the SQM - Smart Queue Management (sqm-scripts) package, available for OpenWrt and generic Linux.
 
 https://github.com/tohojo/sqm-scripts
 

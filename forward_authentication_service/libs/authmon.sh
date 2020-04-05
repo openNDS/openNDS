@@ -4,7 +4,7 @@ url=$1
 gatewayhash=$2
 phpcli=$3
 loopinterval=5
-postrequest="/usr/lib/nodogsplash/post-request.php"
+postrequest="/usr/lib/opennds/post-request.php"
 
 #action can be "list" (list and delete from FAS auth log) or "view" (view and leave in FAS auth log)
 #
@@ -14,7 +14,7 @@ postrequest="/usr/lib/nodogsplash/post-request.php"
 action="list"
 
 version=$(ndsctl status 2>/dev/null | grep Version | awk '{printf $2}')
-user_agent="NoDogSplash(authmon;NDS:$version;)"
+user_agent="openNDS(authmon;NDS:$version;)"
 
 while true; do
 	authlist=$($phpcli -f "$postrequest" "$url" "$action" "$gatewayhash" "$user_agent")

@@ -1,4 +1,4 @@
-To include NoDogSplash into your OpenWRT image or to create an .ipk
+To include openNDS into your OpenWRT image or to create an .ipk
 package (similar to Debians .deb files), you have to build an OpenWRT image.
 To build the firmware you need a Unix console to enter commands into.
 
@@ -14,11 +14,11 @@ cd openwrt
 
 ./scripts/feeds update -a
 ./scripts/feeds install -a
-./scripts/feeds uninstall nodogsplash
+./scripts/feeds uninstall opennds
 
-git clone git://github.com/nodogsplash/nodogsplash.git
-cp -rf nodogsplash/openwrt/nodogsplash package/
-rm -rf nodogsplash/
+git clone git://github.com/opennds/opennds.git
+cp -rf opennds/openwrt/opennds package/
+rm -rf opennds/
 
 make defconfig
 make menuconfig
@@ -26,7 +26,7 @@ make menuconfig
 
 At this point select the appropriate "Target System" and "Target Profile"
 depending on what target chipset/router you want to build for.
-Now select the NoDogSplash package in "Network ---> Captive Portals".
+Now select the openNDS package in "Network ---> Captive Portals".
 
 Now compile/build everything:
 
@@ -35,7 +35,7 @@ make
 ```
 
 The images and all ipk packages are now inside the bin/ folder.
-You can install the NoDogSplash .ipk using `opkg install <ipkg-file>` on the router or just use the whole image.
+You can install the openNDS .ipk using `opkg install <ipkg-file>` on the router or just use the whole image.
 
 For details please check the OpenWRT documentation.
 
@@ -47,16 +47,16 @@ You might want to use your own source location and not the remote respository.
 To do this you need to checkout the repository yourself and commit your changes locally:
 
 ```
-git clone git://github.com/nodogsplash/nodogsplash.git
-cd nodogsplash
+git clone git://github.com/opennds/opennds.git
+cd opennds
 ... apply your changes
 git commit -am "my change"
 ```
 
-Now create a symbolic link in the NoDogSplash package folder using the abolute path:
+Now create a symbolic link in the openNDS package folder using the abolute path:
 
 ```
-ln -s /my/own/project/folder/nodogsplash/.git openwrt/package/nodogsplash/git-src
+ln -s /my/own/project/folder/opennds/.git openwrt/package/opennds/git-src
 ```
 
 Also make sure to enable

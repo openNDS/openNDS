@@ -22,7 +22,7 @@ The PreAuth script or program will parse the url encoded command line (query str
 Selecting Pre-Installed Username / Email Login Script (v4.3.0 onwards)
 **********************************************************************
 
-The default preauth login script is installed as part of the NoDogSplash package providing username/emailaddress login as an alternative to the basic splash page.
+The default preauth login script is installed as part of the openNDS package providing username/emailaddress login as an alternative to the basic splash page.
 
 It is enabled by setting in config:
 
@@ -38,9 +38,9 @@ From version 4.0.2 onwards, PreAuth is enabled with a single configuration optio
 This option overrides any other FAS configuration and takes the form of the path to the PreAuth script.
 The path to the preinstalled login script is included in option preauth in the default config files, for example in OpenWrt:
 
-`#option preauth '/usr/lib/nodogsplash/login.sh'`
+`#option preauth '/usr/lib/opennds/login.sh'`
 
-The "#" symbol means the line is commented. To activate, remove the "#". save and restart Nodogsplash.
+The "#" symbol means the line is commented. To activate, remove the "#". save and restart opennds.
 
 Using PreAuth version 3.3.1 to version 4.0.1
 ********************************************
@@ -51,7 +51,7 @@ In addition a single PreAuth configuration option is required to inform NDS of t
 
 In summary, the following configuration options should be set:
  1. **fasport**. This enables FAS and *must* be set to the same value as the gateway port.
- 2. **faspath**. This *must* be set to the PreAuth virtual url, "/nodogsplash_preauth/" by default.
+ 2. **faspath**. This *must* be set to the PreAuth virtual url, "/opennds_preauth/" by default.
  3. **preauth**. This the path to the PreAuth script.
 
 The remaining FAS configuration options must be left unset at the default values.
@@ -67,35 +67,35 @@ ie:
 Enabling the Preinstalled Login Script (v3.3.1 to 4.0.1)
 ********************************************************
 
-On Openwrt, edit (to uncomment) following lines in the /etc/config/nodogsplash file:
+On Openwrt, edit (to uncomment) following lines in the /etc/config/opennds file:
 
     `#option fasport '2050'`
 
-    `#option faspath '/nodogsplash_preauth/'`
+    `#option faspath '/opennds_preauth/'`
 
-    `#option preauth '/usr/lib/nodogsplash/login.sh'`
+    `#option preauth '/usr/lib/opennds/login.sh'`
 
 To read:
 
     `option fasport '2050'`
 
-    `option faspath '/nodogsplash_preauth/'`
+    `option faspath '/opennds_preauth/'`
 
-    `option preauth '/usr/lib/nodogsplash/login.sh'`
+    `option preauth '/usr/lib/opennds/login.sh'`
 
 Enabling the Preinstalled Login Script (v4.0.2 onwards)
 ********************************************************
 
-On Openwrt, edit (to uncomment) following line in the /etc/config/nodogsplash file:
+On Openwrt, edit (to uncomment) following line in the /etc/config/opennds file:
 
-    `#option preauth '/usr/lib/nodogsplash/login.sh'`
+    `#option preauth '/usr/lib/opennds/login.sh'`
 
 To read:
 
-    `option preauth '/usr/lib/nodogsplash/login.sh'`
+    `option preauth '/usr/lib/opennds/login.sh'`
 
 
-For other operating systems edit the equivalent lines in the /etc/nodogsplash/nodogsplash.conf file
+For other operating systems edit the equivalent lines in the /etc/opennds/opennds.conf file
 
 After making the change, save the file and restart the router.
 
@@ -118,7 +118,7 @@ PreAuth with Remote Images
 
 An additional example PreAuth script, demo-preauth-remote-image.sh, is available in the source code:
 
- `https://github.com/nodogsplash/nodogsplash/archive/master.zip`
+ `https://github.com/opennds/opennds/archive/master.zip`
 
 and extracting from the folder:
 
@@ -126,7 +126,7 @@ and extracting from the folder:
 
 This is an enhancement of the preinstalled login.sh, giving an example of how to display images pulled in from remote web servers, both http and https.
 
-The example displays the NodogSplash avatar image dynamically retreived from Github.
+The example displays the opennds avatar image dynamically retreived from Github.
 
 
 Writing A Preauth Script
@@ -136,9 +136,9 @@ A Preauth script can be written as a shell script or any other language that the
 
 NDS calls the preauth script with a command line equivalent to an html query string but with ", " (comma space) in place of "&" (ampersand).
 
-Full details are included in the example script demo-preauth.sh available by downloading the Nodogsplash zip file from
+Full details are included in the example script demo-preauth.sh available by downloading the opennds zip file from
 
- `https://github.com/nodogsplash/nodogsplash/`
+ `https://github.com/opennds/opennds/`
 
 and extracting from the folder 
 
@@ -163,7 +163,7 @@ To return to the script and show additional pages, the form action must be set t
 
 .. code-block:: sh
 
- <form action=\"/nodogsplash_preauth/\" method=\"get\">
+ <form action=\"/opennds_preauth/\" method=\"get\">
 
 Note: In a shell script, quotes ( " ) must be escaped with the
 
@@ -187,7 +187,7 @@ When the logic of this script decides we should allow the client to access the I
 
 .. code-block:: sh
 
- "<form action=\"/nodogsplash_auth/\" method=\"get\">"
+ "<form action=\"/opennds_auth/\" method=\"get\">"
 
 We must also send NDS the client token as a hidden variable, but first we must obtain the token from ndsctl using a suitable command such as:
 
@@ -226,7 +226,7 @@ A modified version of the Username/Email-address login script is available that 
 
 This additional example PreAuth script, demo-preauth-remote-image.sh, is available in the source code:
 
- `https://github.com/nodogsplash/nodogsplash/archive/master.zip`
+ `https://github.com/opennds/opennds/archive/master.zip`
 
 and extracting from the folder:
 
@@ -234,5 +234,5 @@ and extracting from the folder:
 
 This is an enhancement of the preinstalled login.sh, giving an example of how to display images pulled in from remote web servers, both http and https.
 
-The example displays the NodogSplash avatar image dynamically retrieved from Github.
+The example displays the openNDS avatar image dynamically retrieved from Github.
 

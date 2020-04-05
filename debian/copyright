@@ -1,6 +1,6 @@
 Format: http://dep.debian.net/deps/dep5
-Upstream-Name: nodogsplash
-Source: http://github.com/nodogsplash
+Upstream-Name: opennds
+Source: http://github.com/opennds
 
 Files: *
 Copyright: (C) 2013-20 BlueWave Projects and Services <dot@blue-wave.net>

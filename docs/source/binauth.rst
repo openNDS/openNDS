@@ -27,11 +27,11 @@ BinAuth is not available when FAS is used at fas_secure_enabled = 3.
 Example BinAuth Scripts
 ***********************
 Two example BinAuth scripts are included in the source files available for download at:
-https://github.com/nodogsplash/nodogsplash/releases
+https://github.com/opennds/opennds/releases
 
 The files can be extracted from the downloaded release archive file and reside in the folder:
 
-`/nodogsplash-[*version*]/forward_authentication_service/binauth`
+`/opennds-[*version*]/forward_authentication_service/binauth`
 
 Example 1 - Sitewide Username/Password
 **************************************
@@ -48,27 +48,27 @@ This script has two components, the actual script and an associated html file.
  * binauth_sitewide.sh
  * splash_sitewide.html
 
-The file binauth_sitewide.sh should be copied to a suitable location on the NDS router, eg `/etc/nodogsplash/`
+The file binauth_sitewide.sh should be copied to a suitable location on the NDS router, eg `/etc/opennds/`
 
-The file splash_sitewide.html should be copied to `/etc/nodogsplash/htdocs/`
+The file splash_sitewide.html should be copied to `/etc/opennds/htdocs/`
 
-Assuming FAS is not being used, NDS is then configured by setting the BinAuth and SplashPage options in the config file (/etc/config/nodogsplash on Openwrt, or /etc/nodogsplash/nodogsplash.conf on other operating systems.
+Assuming FAS is not being used, NDS is then configured by setting the BinAuth and SplashPage options in the config file (/etc/config/opennds on Openwrt, or /etc/opennds/opennds.conf on other operating systems.
 
 On OpenWrt this is most easily accomplished by issuing the following commands:
 
-    `uci set nodogsplash.@nodogsplash[0].splashpage='splash_sitewide.html'`
+    `uci set opennds.@opennds[0].splashpage='splash_sitewide.html'`
 
-    `uci set nodogsplash.@nodogsplash[0].binauth='/etc/nodogsplash/binauth_sitewide.sh'`
+    `uci set opennds.@opennds[0].binauth='/etc/opennds/binauth_sitewide.sh'`
 
-    `uci commit nodogsplash`
+    `uci commit opennds`
 
 The script file must be executable and is flagged as such in the source archive. If necessary set using the command:
 
-    `chmod u+x /etc/nodogsplash/binauth_sitewide.sh`
+    `chmod u+x /etc/opennds/binauth_sitewide.sh`
 
 This script is then activated with the command:
 
-    `service nodogsplash restart`
+    `service opennds restart`
 
 **The Example 1 script contains the following code:**
 
@@ -124,7 +124,7 @@ This script is then activated with the command:
 		# timeout_deauth: Client was deauthenticated because the session timed out.
 		# ndsctl_auth: Client was authenticated by the ndsctl tool.
 		# ndsctl_deauth: Client was deauthenticated by the ndsctl tool.
-		# shutdown_deauth: Client was deauthenticated by Nodogsplash terminating.
+		# shutdown_deauth: Client was deauthenticated by opennds terminating.
 		;;
  esac
 
@@ -151,7 +151,7 @@ The `SESSION_START` and `SESSION_END` values are the number of seconds since 197
 
  <!--
  Content:
-	Nodogsplash (NDS), by default, serves this splash page (splash.html)
+	opennds (NDS), by default, serves this splash page (splash.html)
 	when a client device Captive Portal Detection (CPD) process
 	attempts to send a port 80 request to the Internet.
 
@@ -223,7 +223,7 @@ The `SESSION_START` and `SESSION_END` values are the number of seconds since 197
  </form>
 
  <hr>
- <copy-right>Copyright &copy; The Nodogsplash Contributors 2004-2019.<br>This software is released under the GNU GPL license.</copy-right>
+ <copy-right>Copyright &copy; The opennds Contributors 2004-2019.<br>This software is released under the GNU GPL license.</copy-right>
 
  </div></div>
  </body>
@@ -243,23 +243,23 @@ This script has a single component, the shell script.
 
  * binauth_log.sh
 
-The file binauth_log.sh should be copied to a suitable location on the NDS router, eg `/etc/nodogsplash/`
+The file binauth_log.sh should be copied to a suitable location on the NDS router, eg `/etc/opennds/`
 
-Assuming FAS is not being used, NDS is then configured by setting the BinAuth option in the config file (/etc/config/nodogsplash on Openwrt, or /etc/nodogsplash/nodogsplash.conf on other operating systems.
+Assuming FAS is not being used, NDS is then configured by setting the BinAuth option in the config file (/etc/config/opennds on Openwrt, or /etc/opennds/opennds.conf on other operating systems.
 
 On OpenWrt this is most easily accomplished by issuing the following commands:
 
-    `uci set nodogsplash.@nodogsplash[0].binauth='/etc/nodogsplash/binauth_log.sh'`
+    `uci set opennds.@opennds[0].binauth='/etc/opennds/binauth_log.sh'`
 
-    `uci commit nodogsplash`
+    `uci commit opennds`
 
 The script file must be executable and is flagged as such in the source archive. If necessary set using the command:
 
-    `chmod u+x /etc/nodogsplash/binauth_log.sh`
+    `chmod u+x /etc/opennds/binauth_log.sh`
 
 This script is then activated with the command:
 
-    `service nodogsplash restart`
+    `service opennds restart`
 
 **The Example 2 script contains the following code:**
 

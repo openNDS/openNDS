@@ -1,7 +1,7 @@
 Overview
 ########
 
-**NoDogSplash** (NDS) is a high performance, small footprint Captive Portal, offering by default a simple splash page restricted Internet connection, yet incorporates an API that allows the creation of sophisticated authentication applications.
+**openNDS** (NDS) is a high performance, small footprint Captive Portal, offering by default a simple splash page restricted Internet connection, yet incorporates an API that allows the creation of sophisticated authentication applications.
 
 Captive Portal Detection (CPD)
 ******************************

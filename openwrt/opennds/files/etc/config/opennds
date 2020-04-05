@@ -1,19 +1,19 @@
 
-# The options available here are an adaptation of the settings used in nodogsplash.conf.
-# See https://github.com/nodogsplash/nodogsplash/blob/master/resources/nodogsplash.conf
+# The options available here are an adaptation of the settings used in opennds.conf.
+# See https://github.com/opennds/opennds/blob/master/resources/opennds.conf
 
-config nodogsplash
-	# Set to 0 to disable nodogsplash
+config opennds
+	# Set to 0 to disable opennds
 	option enabled 1
 
-	# Set to 0 to disable hook that makes nodogsplash restart when the firewall restarts.
-	# This hook is needed as a restart of Firewall overwrites nodogsplash iptables entries.
+	# Set to 0 to disable hook that makes opennds restart when the firewall restarts.
+	# This hook is needed as a restart of Firewall overwrites opennds iptables entries.
 	option fwhook_enabled '1'
 
 	# Login Option
 	# Default: 0
 	#
-	# NoDogSplash comes preconfigured for two basic modes of operation
+	# opennds comes preconfigured for two basic modes of operation
 	# A default preauth login script, requiring username and email address to be entered.
 	# and
 	# A default static splash page (splash.html) with template variables and click to continue
@@ -21,7 +21,7 @@ config nodogsplash
 	# 0: Use static splash page or FAS config options
 	# 1: Use default preauth login script
 	#
-	# The default preauth login script is installed as part of the NoDogSplash package providing
+	# The default preauth login script is installed as part of the openNDS package providing
 	# username/emailaddress login as an alternative to the basic splash page.
 	#
 	# It generates a login page asking for username and email address.
@@ -29,7 +29,7 @@ config nodogsplash
 	# Details of how the script works are contained in comments in the script itself.
 	#
 	# Both modes may be customised or a full custom system can be developed using FAS and BinAuth
-	# See documentation at: https://nodogsplashdocs.readthedocs.io/
+	# See documentation at: https://openndsdocs.readthedocs.io/
 	#
 	option login_option_enabled '0'
 
@@ -45,7 +45,7 @@ config nodogsplash
 	# MHD Unescape callback
 	# MHD has a built in unescape function that urldecodes incoming queries from browsers
 	# This option allows an external unescape script to be enabled
-	# The script must be named unescape.sh, be present in /usr/lib/nodogsplash/ and be executable.
+	# The script must be named unescape.sh, be present in /usr/lib/opennds/ and be executable.
 	# A standard unescape.sh script is installed by default
 	# Set to 1 to enable this option, 0 to disable
 	# default is disabled
@@ -53,36 +53,36 @@ config nodogsplash
 
 
 	# WebRoot
-	# Default: /etc/nodogsplash/htdocs
+	# Default: /etc/opennds/htdocs
 	#
 	# The local path where the splash page content resides.
 	# ie. Serve the file splash.html from this directory
-	#option webroot '/etc/nodogsplash/htdocs'
+	#option webroot '/etc/opennds/htdocs'
 
 	# Use plain configuration file
-	#option config '/etc/nodogsplash/nodogsplash.conf'
+	#option config '/etc/opennds/opennds.conf'
 
-	# Use this option to set the device nodogsplash will bind to.
+	# Use this option to set the device opennds will bind to.
 	# The value may be an interface section in /etc/config/network or a device name such as br-lan.
 	option gatewayinterface 'br-lan'
 
 	# GatewayPort
 	# Default: 2050
 	#
-	# Nodogsplash's own http server uses gateway address as its IP address.
+	# openNDS's own http server uses gateway address as its IP address.
 	# The port it listens to at that IP can be set here; default is 2050.
 	#
 	#option gatewayport '2050'
 
 	# GatewayName
-	# Default: NoDogSplash
+	# Default: openNDS
 	#
-	# gatewayname is used as an identifier for the instance of NoDogSplash
+	# gatewayname is used as an identifier for the instance of openNDS
 	#
 	# It is displayed on the default static splash page and the default preauth login script.
 	#
 	# It is particularly useful in the case of a single remote FAS server that serves multiple
-	# NoDogSplash sites, allowing the FAS to customise its response for each site.
+	# openNDS sites, allowing the FAS to customise its response for each site.
 	#
 	# Note: The single quote (or apostrophe) character ('), cannot be used in the gatewayname.
 	# If it is required, use the htmlentity &#39; instead.
@@ -92,7 +92,7 @@ config nodogsplash
 	# Instead use:
 	# option gatewayname 'Bill&#39;s WiFi'
 	#
-	option gatewayname 'OpenWrt Nodogsplash'
+	option gatewayname 'OpenWrt openNDS'
 
 	# MaxClients
 	# Default 20
@@ -115,7 +115,7 @@ config nodogsplash
 	# Session Timeout is the interval after which clients are forced out (a value of 0 means never)
 	option sessiontimeout '1200'
 
-	# The interval in seconds at which nodogsplash checks client timeout status
+	# The interval in seconds at which opennds checks client timeout status
 	option checkinterval '600'
 
 	# Enable BinAuth Support.
@@ -139,7 +139,7 @@ config nodogsplash
 	# "timeout_deauth": Client was deauthenticated because the session timed out.
 	# "ndsctl_auth": Client was authenticated manually by the ndsctl tool.
 	# "ndsctl_deauth": Client was deauthenticated by the ndsctl tool.
-	# "shutdown_deauth": Client was deauthenticated by Nodogsplash terminating.
+	# "shutdown_deauth": Client was deauthenticated by openNDS terminating.
 	#
 	# Values session_start and session_start are in seconds since 1970 or 0 for unknown/unlimited.
 	#
@@ -216,7 +216,7 @@ config nodogsplash
 	# are encrypted using faskey and passed to FAS in the query string.
 	# The query string will also contain a randomly generated initialization vector to be used by the FAS for decryption.
 	# The "php-cli" package and the "php-openssl" module must both be installed for fas_secure level 2.
-	# Nodogsplash does not depend on this package and module, but will exit gracefully
+	# openNDS does not depend on this package and module, but will exit gracefully
 	# if this package and module are not installed when this level is set, logging the error in syslog.
 	# The FAS must use the query string passed initialisation vector and the pre shared fas_key to decrypt the query string.
 	# An example FAS php script is supplied in the source code.
@@ -230,13 +230,13 @@ config nodogsplash
 	# Initially FAS appends its query string to faspath.
 	# The Preauth program will output html code that will be served to the client by NDS
 	# Using html GET the Preauth program may call:
-	# /nodogsplash_preauth/ to ask the client for more information
+	# /opennds_preauth/ to ask the client for more information
 	# or
-	# /nodogsplash_auth/ to authenticate the client
+	# /opennds_auth/ to authenticate the client
 	#
 	# The Preauth program should append at least the client ip to the query string
-	# (using html input type hidden) for all calls to /nodogsplash_preauth/
-	# It must also obtain the client token (using ndsctl), for NDS authentication when calling /nodogsplash_auth/
+	# (using html input type hidden) for all calls to /opennds_preauth/
+	# It must also obtain the client token (using ndsctl), for NDS authentication when calling /opennds_auth/
 	#
 	#option preauth '/path/to/myscript/myscript.sh'
 
@@ -294,7 +294,7 @@ config nodogsplash
 	# MAC addresses that do not need to authenticate
 	#list trustedmac '00:00:C0:01:D0:1D'
 
-	# Nodogsplash uses specific HEXADECIMAL values to mark packets used by iptables as a bitwise mask.
+	# openNDS uses specific HEXADECIMAL values to mark packets used by iptables as a bitwise mask.
 	# This mask can conflict with the requirements of other packages.
 	#
 	# However the defaults are fully compatible with the defaults used in mwan3 and sqm

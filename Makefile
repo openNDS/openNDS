@@ -14,49 +14,49 @@ NDS_OBJS=src/auth.o src/client_list.o src/commandline.o src/conf.o \
 
 .PHONY: all clean install checkastyle fixstyle deb
 
-all: nodogsplash ndsctl
+all: opennds ndsctl
 
 %.o : %.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
-nodogsplash: $(NDS_OBJS) $(LIBHTTPD_OBJS)
-	$(CC) $(LDFLAGS) -o nodogsplash $+ $(LDLIBS)
+opennds: $(NDS_OBJS) $(LIBHTTPD_OBJS)
+	$(CC) $(LDFLAGS) -o opennds $+ $(LDLIBS)
 
 ndsctl: src/ndsctl.o
 	$(CC) $(LDFLAGS) -o ndsctl $+ $(LDLIBS)
 
 clean:
-	rm -f nodogsplash ndsctl src/*.o
+	rm -f opennds ndsctl src/*.o
 	rm -rf dist
 
 install:
 #ifeq(yes,$(STRIP))
-	strip nodogsplash
+	strip opennds
 	strip ndsctl
 #endif
 	mkdir -p $(DESTDIR)/usr/bin/
 	cp ndsctl $(DESTDIR)/usr/bin/
-	cp nodogsplash $(DESTDIR)/usr/bin/
-	mkdir -p $(DESTDIR)/etc/nodogsplash/htdocs/images
-	cp resources/nodogsplash.conf $(DESTDIR)/etc/nodogsplash/
-	cp resources/splash.html $(DESTDIR)/etc/nodogsplash/htdocs/
-	cp resources/splash.css $(DESTDIR)/etc/nodogsplash/htdocs/
-	cp resources/status.html $(DESTDIR)/etc/nodogsplash/htdocs/
-	cp resources/splash.jpg $(DESTDIR)/etc/nodogsplash/htdocs/images/
-	mkdir -p $(DESTDIR)/usr/lib/nodogsplash
-	cp forward_authentication_service/PreAuth/demo-preauth.sh $(DESTDIR)/usr/lib/nodogsplash/login.sh
-	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/nodogsplash/login.sh
-	cp forward_authentication_service/libs/get_client_interface.sh $(DESTDIR)/usr/lib/nodogsplash/
-	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/nodogsplash/get_client_interface.sh
-	cp forward_authentication_service/libs/get_client_token.sh $(DESTDIR)/usr/lib/nodogsplash/
-	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/nodogsplash/get_client_token.sh
-	cp forward_authentication_service/libs/unescape.sh $(DESTDIR)/usr/lib/nodogsplash/
-	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/nodogsplash/unescape.sh
-	cp forward_authentication_service/libs/authmon.sh $(DESTDIR)/usr/lib/nodogsplash/
-	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/nodogsplash/authmon.sh
-	cp forward_authentication_service/libs/post-request.php $(DESTDIR)/usr/lib/nodogsplash/
-	cp forward_authentication_service/fas-aes/fas-aes.php $(DESTDIR)/etc/nodogsplash/
-	cp forward_authentication_service/fas-aes/fas-aes-https.php $(DESTDIR)/etc/nodogsplash/
+	cp opennds $(DESTDIR)/usr/bin/
+	mkdir -p $(DESTDIR)/etc/opennds/htdocs/images
+	cp resources/opennds.conf $(DESTDIR)/etc/opennds/
+	cp resources/splash.html $(DESTDIR)/etc/opennds/htdocs/
+	cp resources/splash.css $(DESTDIR)/etc/opennds/htdocs/
+	cp resources/status.html $(DESTDIR)/etc/opennds/htdocs/
+	cp resources/splash.jpg $(DESTDIR)/etc/opennds/htdocs/images/
+	mkdir -p $(DESTDIR)/usr/lib/opennds
+	cp forward_authentication_service/PreAuth/demo-preauth.sh $(DESTDIR)/usr/lib/opennds/login.sh
+	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/opennds/login.sh
+	cp forward_authentication_service/libs/get_client_interface.sh $(DESTDIR)/usr/lib/opennds/
+	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/opennds/get_client_interface.sh
+	cp forward_authentication_service/libs/get_client_token.sh $(DESTDIR)/usr/lib/opennds/
+	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/opennds/get_client_token.sh
+	cp forward_authentication_service/libs/unescape.sh $(DESTDIR)/usr/lib/opennds/
+	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/opennds/unescape.sh
+	cp forward_authentication_service/libs/authmon.sh $(DESTDIR)/usr/lib/opennds/
+	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/opennds/authmon.sh
+	cp forward_authentication_service/libs/post-request.php $(DESTDIR)/usr/lib/opennds/
+	cp forward_authentication_service/fas-aes/fas-aes.php $(DESTDIR)/etc/opennds/
+	cp forward_authentication_service/fas-aes/fas-aes-https.php $(DESTDIR)/etc/opennds/
 
 
 
@@ -89,8 +89,8 @@ fixstyle: checkastyle
 
 DEBVERSION=$(shell dpkg-parsechangelog | awk -F'[ -]' '/^Version/{print($$2); exit;}' )
 deb: clean
-	mkdir -p dist/nodogsplash-$(DEBVERSION)
-	tar --exclude dist --exclude ".git*" -cf - . | (cd dist/nodogsplash-$(DEBVERSION) && tar xf -)
-	cd dist && tar cjf nodogsplash_$(DEBVERSION).orig.tar.bz2 nodogsplash-$(DEBVERSION) && cd -
-	cd dist/nodogsplash-$(DEBVERSION) && dpkg-buildpackage -us -uc && cd -
-	rm -rf dist/nodogsplash-$(DEBVERSION)
+	mkdir -p dist/opennds-$(DEBVERSION)
+	tar --exclude dist --exclude ".git*" -cf - . | (cd dist/opennds-$(DEBVERSION) && tar xf -)
+	cd dist && tar cjf opennds_$(DEBVERSION).orig.tar.bz2 opennds-$(DEBVERSION) && cd -
+	cd dist/opennds-$(DEBVERSION) && dpkg-buildpackage -us -uc && cd -
+	rm -rf dist/opennds-$(DEBVERSION)

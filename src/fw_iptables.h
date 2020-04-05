@@ -31,7 +31,7 @@
 #include "client_list.h"
 
 /*@{*/
-/**Iptable chain names used by nodogsplash */
+/**Iptable chain names used by opennds */
 #define CHAIN_TO_INTERNET "ndsNET"
 #define CHAIN_TO_ROUTER "ndsRTR"
 #define CHAIN_TRUSTED_TO_ROUTER "ndsTRT"

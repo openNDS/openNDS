@@ -87,7 +87,7 @@ static pthread_t tid_client_check = 0;
 // The internal web server
 struct MHD_Daemon * webserver = NULL;
 
-// Time when nodogsplash started
+// Time when opennds started
 time_t started_time = 0;
 
 /**@internal
@@ -248,7 +248,7 @@ setup_from_config(void)
 	char *fashid = NULL;
 	char *phpcmd = NULL;
 	char *preauth_dir = NULL;
-	char loginscript[] = "/usr/lib/nodogsplash/login.sh";
+	char loginscript[] = "/usr/lib/opennds/login.sh";
 	char gw_name_entityencoded[QUERYMAXLEN] = {0};
 	char gw_name_urlencoded[QUERYMAXLEN] = {0};
 	struct stat sb;
@@ -296,7 +296,7 @@ setup_from_config(void)
 	uh_urlencode(gw_name_urlencoded, sizeof(gw_name_urlencoded), config->gw_name, strlen(config->gw_name));
 	config->url_encoded_gw_name = gw_name_urlencoded;
 
-	// Set the time when nodogsplash started
+	// Set the time when opennds started
 	sysuptime = get_system_uptime ();
 	debug(LOG_INFO, "main: System Uptime is %li seconds", sysuptime);
 
@@ -521,7 +521,7 @@ setup_from_config(void)
 
 			// Start authmon in the background
 			safe_asprintf(&fasssl,
-				"/usr/lib/nodogsplash/authmon.sh \"%s\" \"%s\" \"%s\" &",
+				"/usr/lib/opennds/authmon.sh \"%s\" \"%s\" \"%s\" &",
 				config->fas_url,
 				gatewayhash,
 				config->fas_ssl
@@ -564,7 +564,7 @@ setup_from_config(void)
 		debug(LOG_NOTICE, "Binauth Script is %s\n", config->binauth);
 	}
 
-	// Reset the firewall (cleans it, in case we are restarting after nodogsplash crash)
+	// Reset the firewall (cleans it, in case we are restarting after opennds crash)
 	iptables_fw_destroy();
 
 	// Then initialize it
@@ -608,13 +608,13 @@ main_loop(void)
 
 	result = pthread_join(tid, NULL);
 	if (result) {
-		debug(LOG_INFO, "Failed to wait for nodogsplash thread.");
+		debug(LOG_INFO, "Failed to wait for opennds thread.");
 	}
 	MHD_stop_daemon(webserver);
 	termination_handler(result);
 }
 
-/** Main entry point for nodogsplash.
+/** Main entry point for opennds.
  * Reads the configuration file and then starts the main loop.
  */
 int main(int argc, char **argv)

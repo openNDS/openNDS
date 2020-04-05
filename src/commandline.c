@@ -39,12 +39,12 @@ static void usage(void);
 /** @internal
  * @brief Print usage
  *
- * Prints usage, called when nodogsplash is run with -h or with an unknown option
+ * Prints usage, called when opennds is run with -h or with an unknown option
  */
 static void
 usage(void)
 {
-	printf("Usage: nodogsplash [options]\n"
+	printf("Usage: opennds [options]\n"
 		"\n"
 		"  -c <path>   Use configuration file\n"
 		"  -f          Run in foreground\n"
@@ -103,7 +103,7 @@ void parse_commandline(int argc, char **argv)
 			break;
 
 		case 'v':
-			printf("This is Nodogsplash version " VERSION "\n");
+			printf("This is openNDS version " VERSION "\n");
 			exit(1);
 			break;
 

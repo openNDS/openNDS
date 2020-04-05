@@ -19,9 +19,9 @@
 \********************************************************************/
 
 /** @file ndsctl_thread.h
-    @brief nodogsplash monitoring thread
+    @brief opennds monitoring thread
     @author Copyright (C) 2004 Alexandre Carmel-Veilleux <acv@acv.ca>
-    trivially modified for nodogsplash
+    trivially modified for opennds
 */
 
 #ifndef _NDSCTL_THREAD_H_
@@ -30,7 +30,7 @@
 
 #define DEFAULT_NDSCTL_SOCK "/tmp/ndsctl.sock"
 
-/** @brief Listen for nodogsplash control messages on a unix domain socket */
+/** @brief Listen for opennds control messages on a unix domain socket */
 void *thread_ndsctl(void *arg);
 
 

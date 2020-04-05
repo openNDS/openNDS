@@ -19,9 +19,9 @@
 \********************************************************************/
 
 /** @file ndsctl.c
-    @brief Monitoring and control of nodogsplash, client part
+    @brief Monitoring and control of opennds, client part
     @author Copyright (C) 2004 Alexandre Carmel-Veilleux <acv@acv.ca>
-    trivially modified for nodogsplash
+    trivially modified for opennds
 */
 
 #define _GNU_SOURCE
@@ -63,10 +63,10 @@ usage(void)
 		"  -h                  Print usage\n"
 		"\n"
 		"commands:\n"
-		"  status              View the status of nodogsplash\n"
+		"  status              View the status of opennds\n"
 		"  clients             Display machine-readable client list\n"
 		"  json [mac|ip|token] Display client list in json format\n"
-		"  stop                Stop the running nodogsplash\n"
+		"  stop                Stop the running opennds\n"
 		"  auth mac|ip|token   Authenticate user with specified mac, ip or token\n"
 		"  deauth mac|ip|token Deauthenticate user with specified mac, ip or token\n"
 		"  block mac           Block the given MAC address\n"
@@ -124,7 +124,7 @@ connect_to_server(const char sock_name[])
 	strncpy(sa_un.sun_path, sock_name, (sizeof(sa_un.sun_path) - 1));
 
 	if (connect(sock, (struct sockaddr *)&sa_un, strlen(sa_un.sun_path) + sizeof(sa_un.sun_family))) {
-		fprintf(stderr, "ndsctl: nodogsplash probably not started (Error: %s)\n", strerror(errno));
+		fprintf(stderr, "ndsctl: opennds probably not started (Error: %s)\n", strerror(errno));
 		remove(lockfile);
 		return -1;
 	}
@@ -141,7 +141,7 @@ send_request(int sock, const char request[])
 	while (len != strlen(request)) {
 		written = write(sock, (request + len), strlen(request) - len);
 		if (written == -1) {
-			fprintf(stderr, "Write to nodogsplash failed: %s\n", strerror(errno));
+			fprintf(stderr, "Write to opennds failed: %s\n", strerror(errno));
 			exit(1);
 		}
 		len += written;
@@ -197,7 +197,7 @@ ndsctl_do(const char *socket, const struct argument *arg, const char *param)
 			printf(arg->ifno, param);
 			ret = 1;
 		} else {
-			fprintf(stderr, "ndsctl: Error: nodogsplash sent an abnormal reply.\n");
+			fprintf(stderr, "ndsctl: Error: opennds sent an abnormal reply.\n");
 			ret = 2;
 		}
 	} else {

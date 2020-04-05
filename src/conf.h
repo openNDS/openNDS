@@ -24,12 +24,12 @@
     @author Copyright (C) 2007 Paul Kube <nodogsplash@kokoro.ucsd.edu>
 */
 
-#define COPYRIGHT "NodogSplash, Copyright (C) 2016 - 2020, The Nodogsplash Contributors"
+#define COPYRIGHT "openNDS, Copyright (C) 2020, The openNDS Contributors"
 
 #ifndef _CONF_H_
 #define _CONF_H_
 
-#define VERSION "4.5.1beta"
+#define VERSION "5.0.0beta"
 
 /*
  * Defines how many times should we try detecting the interface with the default route (in seconds).
@@ -44,15 +44,15 @@
 
 // Defaults configuration values
 #ifndef SYSCONFDIR
-#define DEFAULT_CONFIGFILE "/etc/nodogsplash/nodogsplash.conf"
+#define DEFAULT_CONFIGFILE "/etc/opennds/opennds.conf"
 #else
-#define DEFAULT_CONFIGFILE SYSCONFDIR"/nodogsplash/nodogsplash.conf"
+#define DEFAULT_CONFIGFILE SYSCONFDIR"/opennds/opennds.conf"
 #endif
 #define DEFAULT_DAEMON 1
 #define DEFAULT_DEBUGLEVEL 1
 #define DEFAULT_MAXCLIENTS 20
 #define DEFAULT_GATEWAY_IPRANGE "0.0.0.0/0"
-#define DEFAULT_GATEWAYNAME "NoDogSplash"
+#define DEFAULT_GATEWAYNAME "openNDS"
 #define DEFAULT_GATEWAYPORT 2050
 #define DEFAULT_FASPORT 0
 #define DEFAULT_LOGIN_OPTION_ENABLED 0
@@ -65,12 +65,12 @@
 #define DEFAULT_SESSION_TIMEOUT 0
 #define DEFAULT_PREAUTH_IDLE_TIMEOUT 10
 #define DEFAULT_AUTH_IDLE_TIMEOUT 120
-#define DEFAULT_WEBROOT "/etc/nodogsplash/htdocs"
+#define DEFAULT_WEBROOT "/etc/opennds/htdocs"
 #define DEFAULT_SPLASHPAGE "splash.html"
 #define DEFAULT_STATUSPAGE "status.html"
-#define DEFAULT_AUTHDIR "nodogsplash_auth"
-#define DEFAULT_DENYDIR "nodogsplash_deny"
-#define DEFAULT_PREAUTHDIR "nodogsplash_preauth"
+#define DEFAULT_AUTHDIR "opennds_auth"
+#define DEFAULT_DENYDIR "opennds_deny"
+#define DEFAULT_PREAUTHDIR "opennds_preauth"
 #define DEFAULT_MACMECHANISM MAC_BLOCK
 #define DEFAULT_SET_MSS 1
 #define DEFAULT_MSS_VALUE 0

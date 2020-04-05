@@ -75,12 +75,12 @@ int hash_str(char *buf, int hash_len, const char *src);
 int get_client_interface(char* clientif, int clientif_len, const char *climac);
 
 /*
- * @brief Mallocs and returns nodogsplash uptime string
+ * @brief Mallocs and returns opennds uptime string
  */
 char *get_uptime_string(char buf[64]);
 
 /*
- * @brief Writes a human-readable paragraph of the status of the nodogsplash process
+ * @brief Writes a human-readable paragraph of the status of the opennds process
  */
 void ndsctl_status(FILE *fp);
 

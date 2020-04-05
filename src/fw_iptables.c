@@ -695,7 +695,7 @@ iptables_fw_init(void)
 }
 
 /** Remove the firewall rules
- * This is used when we do a clean shutdown of nodogsplash,
+ * This is used when we do a clean shutdown of opennds,
  * and when it starts, to make sure there are no rules left over from a crash
  */
 int

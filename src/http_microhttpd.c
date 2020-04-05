@@ -423,8 +423,8 @@ static int try_to_authenticate(struct MHD_Connection *connection, t_client *clie
 	char *rhidraw = NULL;
 
 	/* a successful auth looks like
-	 * http://192.168.42.1:2050/nodogsplash_auth/?redir=http%3A%2F%2Fberlin.freifunk.net%2F&tok=94c4cdd2
-	 * when authaction -> http://192.168.42.1:2050/nodogsplash_auth/
+	 * http://192.168.42.1:2050/opennds_auth/?redir=http%3A%2F%2Fberlin.freifunk.net%2F&tok=94c4cdd2
+	 * when authaction -> http://192.168.42.1:2050/opennds_auth/
 	 */
 	config = config_get_config();
 
@@ -1478,7 +1478,7 @@ size_t unescape(void * cls, struct MHD_Connection *c, char *src)
 	char msg[QUERYMAXLEN] = {0};
 
 	debug(LOG_INFO, "Escaped string=%s\n", src);
-	snprintf(unescapecmd, QUERYMAXLEN, "/usr/lib/nodogsplash/unescape.sh -url \"%s\"", src);
+	snprintf(unescapecmd, QUERYMAXLEN, "/usr/lib/opennds/unescape.sh -url \"%s\"", src);
 	debug(LOG_DEBUG, "unescapecmd=%s\n", unescapecmd);
 
 	if (execute_ret_url_encoded(msg, sizeof(msg) - 1, unescapecmd) == 0) {

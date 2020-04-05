@@ -19,9 +19,9 @@
 \********************************************************************/
 
 /* @file ndsctl_thread.c
-    @brief Monitoring and control of nodogsplash, server part
+    @brief Monitoring and control of opennds, server part
     @author Copyright (C) 2004 Alexandre Carmel-Veilleux <acv@acv.ca>
-    trivially modified for nodogsplash
+    trivially modified for opennds
 */
 
 #define _GNU_SOURCE

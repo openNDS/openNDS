@@ -4,7 +4,7 @@ openNDS is a Captive Portal that offers a simple way to provide restricted acces
 
 It also incorporates an API that allows the creation of sophisticated authentication applications.
 
-It was derived originally from the codebase of the NoDogSplash project.
+It is derived from the codebase of the NoDogSplash project.
 
 openNDS is released under the GNU General Public License.
 
@@ -39,7 +39,7 @@ Customising the page seen by users is a simple matter of editing the respective 
 
 ## 2. Documentation
 
-For full documentation please look at https://openndsdocs.rtfd.io/
+For full documentation please look at https://opennds.rtfd.io/
 
 You can select either *Stable* or *Latest* documentation.
 

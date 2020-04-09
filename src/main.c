@@ -151,7 +151,7 @@ termination_handler(int s)
 
 	// Check if authmon is already running and if it is, kill it
 	debug(LOG_INFO, "Explicitly killing the authmon daemon");
-	safe_asprintf(&fasssl, "kill $(pgrep -f authmon) > /dev/null 2>&1");
+	safe_asprintf(&fasssl, "kill $(pgrep -f \"usr/lib/opennds/authmon.sh\") > /dev/null 2>&1");
 	system(fasssl);
 	free(fasssl);
 
@@ -242,6 +242,7 @@ setup_from_config(void)
 	char port[8] = {0};
 	char msg[255] = {0};
 	char gwhash[255] = {0};
+	char authmonpid[255] = {0};
 	char *fasurl = NULL;
 	char *fasssl = NULL;
 	char *gatewayhash = NULL;
@@ -498,7 +499,7 @@ setup_from_config(void)
 		// Start the authmon daemon if configured for Level 3
 		if (config->fas_key && config->fas_secure_enabled == 3) {
 			// Check if authmon is already running and if it is, kill it
-			safe_asprintf(&fasssl, "kill $(pgrep -f authmon) > /dev/null 2>&1");
+			safe_asprintf(&fasssl, "kill $(pgrep -f \"usr/lib/opennds/authmon.sh\") > /dev/null 2>&1");
 			system(fasssl);
 			free(fasssl);
 
@@ -527,12 +528,21 @@ setup_from_config(void)
 				config->fas_ssl
 			);
 
-			if (system(fasssl) == -1) {
-				debug(LOG_ERR, "authmon daemon failed to load\n");
+			debug(LOG_NOTICE, "authmon startup command is: %s\n", fasssl);
+
+			system(fasssl);
+
+			// Check authmon is running
+			safe_asprintf(&fasssl,
+				"pgrep -f \"usr/lib/opennds/authmon.sh\""
+			);
+
+			if (execute_ret_url_encoded(authmonpid, sizeof(authmonpid) - 1, fasssl) == 0) {
+				debug(LOG_INFO, "authmon pid is: %s\n", authmonpid);
+			} else {
+				debug(LOG_ERR, "Error starting authmon daemon");
 				debug(LOG_ERR, "Exiting...");
 				exit(1);
-			} else {
-				debug(LOG_NOTICE, "authmon daemon is loaded\n");
 			}
 
 			free(fasssl);

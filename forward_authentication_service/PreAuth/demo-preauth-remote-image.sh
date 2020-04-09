@@ -280,7 +280,7 @@ header="<!DOCTYPE html>
 # In this example the image is only refreshed after a reboot
 # But this is easy to change in get_image_file function
 
-imageurl="https://avatars0.githubusercontent.com/u/4403602"
+imageurl="https://avatars1.githubusercontent.com/u/62547912"
 imagetype="png"
 
 get_image_file

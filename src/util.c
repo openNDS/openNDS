@@ -40,6 +40,7 @@
 #include <arpa/inet.h>
 #include <sys/time.h>
 #include <ifaddrs.h>
+#include <unistd.h>
 
 #if defined(__NetBSD__)
 #include <sys/socket.h>
@@ -215,38 +216,33 @@ int execute_ret_url_encoded(char* msg, int msg_len, const char *cmd)
 char *
 get_iface_ip(const char ifname[], int ip6)
 {
-	char addrbuf[INET6_ADDRSTRLEN];
-	const struct ifaddrs *cur;
-	struct ifaddrs *addrs;
+	char addrbuf[INET6_ADDRSTRLEN] = {0};
+	char cmd[128] = {0};
+	char iptype[8] = {0};
+	int i;
 
-	if (getifaddrs(&addrs) < 0) {
-		debug(LOG_ERR, "getifaddrs(): %s", strerror(errno));
-		return NULL;
-	}
+	if (ip6) {
+		snprintf(iptype, sizeof(iptype), "inet6");
+	} else {
+		snprintf(iptype, sizeof(iptype), "inet");
+ 	}
 
-	// Set default address
-	sprintf(addrbuf, ip6 ? "::" : "0.0.0.0");
+	snprintf(cmd, sizeof(cmd), "ip address | grep -A4 %s: | grep '%s ' | awk '{print $2}' | awk -F'/' '{printf $1}'",
+		ifname,
+		iptype
+	);
 
-	// Iterate all interfaces
-	cur = addrs;
-	while (cur != NULL) {
-		if ((cur->ifa_addr != NULL) && (strcmp( cur->ifa_name, ifname) == 0)) {
+	debug(LOG_NOTICE, "Attempting to Bind to interface: %s", ifname);
 
-			if (ip6 && cur->ifa_addr->sa_family == AF_INET6) {
-				inet_ntop(AF_INET6, &((struct sockaddr_in6 *)cur->ifa_addr)->sin6_addr, addrbuf, sizeof(addrbuf));
-				break;
-			}
-
-			if (!ip6 && cur->ifa_addr->sa_family == AF_INET) {
-				inet_ntop(AF_INET, &((struct sockaddr_in *)cur->ifa_addr)->sin_addr, addrbuf, sizeof(addrbuf));
-				break;
-			}
+	for (i=0; i<10; i=i+1) {
+		execute_ret(addrbuf, sizeof(addrbuf), cmd);
+		if (is_addr(addrbuf) == 1) {
+			break;
+		} else {
+			debug(LOG_NOTICE, "Interface: %s is not yet ready - waiting...", ifname);
+			sleep(1);
 		}
-
-		cur = cur->ifa_next;
 	}
-
-	freeifaddrs(addrs);
 
 	return safe_strdup(addrbuf);
 }
@@ -254,69 +250,15 @@ get_iface_ip(const char ifname[], int ip6)
 char *
 get_iface_mac(const char ifname[])
 {
-#if defined(__linux__)
-	int r, s;
-	s_config *config;
-	struct ifreq ifr;
-	char *hwaddr, mac[18];
+	char addrbuf[18] = {0};
+	char cmd[128] = {0};
 
-	config = config_get_config();
-	strcpy(ifr.ifr_name, ifname);
-
-	s = socket(config->ip6 ? AF_INET6 : AF_INET, SOCK_DGRAM, 0);
-	if (-1 == s) {
-		debug(LOG_ERR, "get_iface_mac socket: %s", strerror(errno));
-		return NULL;
-	}
-
-	r = ioctl(s, SIOCGIFHWADDR, &ifr);
-	if (r == -1) {
-		debug(LOG_ERR, "get_iface_mac ioctl(SIOCGIFHWADDR): %s", strerror(errno));
-		close(s);
-		return NULL;
-	}
-
-	hwaddr = ifr.ifr_hwaddr.sa_data;
-	close(s);
-	snprintf(mac, sizeof(mac), "%02x:%02x:%02x:%02x:%02x:%02x",
-		hwaddr[0] & 0xFF, hwaddr[1] & 0xFF, hwaddr[2] & 0xFF,
-		hwaddr[3] & 0xFF, hwaddr[4] & 0xFF, hwaddr[5] & 0xFF
+	snprintf(cmd, sizeof(cmd), "ip address | grep -A1 '%s:' | grep 'link/ether ' | awk '{print $2}' | awk -F'/' '{printf $1}'",
+		ifname
 	);
 
-	return safe_strdup(mac);
-#elif defined(__NetBSD__)
-	struct ifaddrs *ifa, *ifap;
-	const char *hwaddr;
-	char mac[18], *str = NULL;
-	struct sockaddr_dl *sdl;
-
-	if (getifaddrs(&ifap) == -1) {
-		debug(LOG_ERR, "getifaddrs(): %s", strerror(errno));
-		return NULL;
-	}
-	for (ifa = ifap; ifa != NULL; ifa = ifa->ifa_next) {
-		if (strcmp(ifa->ifa_name, ifname) == 0 &&
-				ifa->ifa_addr->sa_family == AF_LINK)
-			break;
-	}
-	if (ifa == NULL) {
-		debug(LOG_ERR, "%s: no link-layer address assigned");
-		goto out;
-	}
-	sdl = (struct sockaddr_dl *)ifa->ifa_addr;
-	hwaddr = LLADDR(sdl);
-	snprintf(mac, sizeof(mac), "%02x:%02x:%02x:%02x:%02x:%02x",
-			 hwaddr[0] & 0xFF, hwaddr[1] & 0xFF,
-			 hwaddr[2] & 0xFF, hwaddr[3] & 0xFF,
-			 hwaddr[4] & 0xFF, hwaddr[5] & 0xFF);
-
-	str = safe_strdup(mac);
-out:
-	freeifaddrs(ifap);
-	return str;
-#else
-	return NULL;
-#endif
+	execute_ret(addrbuf, sizeof(addrbuf), cmd);
+	return safe_strdup(addrbuf);
 }
 
 /** Get name of external interface (the one with default route to the net).

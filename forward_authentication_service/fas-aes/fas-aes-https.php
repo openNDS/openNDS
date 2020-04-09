@@ -367,7 +367,7 @@ function display_header($gatewayname) {
 
 function display_footer() {
 	// define the image to display
-	$imageurl="https://avatars0.githubusercontent.com/u/4403602";
+	$imageurl="https://avatars1.githubusercontent.com/u/62547912";
 	$imagetype="png";
 	$scriptname=basename($_SERVER['SCRIPT_NAME']);
 	$imagepath=htmlentities("$scriptname?get_image=$imageurl&imagetype=$imagetype");

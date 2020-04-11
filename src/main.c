@@ -265,7 +265,7 @@ setup_from_config(void)
 	int outdated = 0;
 	const char *version = MHD_get_version();
 
-	debug(LOG_NOTICE, "MHD version is %s", version);
+	debug(LOG_INFO, "MHD version is %s", version);
 
 	if (sscanf(version, "%d.%d.%d", &major, &minor, &patch) == 3) {
 
@@ -313,9 +313,11 @@ setup_from_config(void)
 	if (!config->gw_ip) {
 		debug(LOG_DEBUG, "Finding IP address of %s", config->gw_interface);
 		config->gw_ip = get_iface_ip(config->gw_interface, config->ip6);
-		if (!config->gw_ip) {
+		if (is_addr(config->gw_ip) != 1) {
 			debug(LOG_ERR, "Could not get IP address information of %s, exiting...", config->gw_interface);
 			exit(1);
+		} else {
+			debug(LOG_NOTICE, "Interface %s is up", config->gw_interface);
 		}
 	}
 
@@ -323,11 +325,14 @@ setup_from_config(void)
 	const char *ipfmt = config->ip6 ? "[%s]:%d" : "%s:%d";
 	safe_asprintf(&config->gw_address, ipfmt, config->gw_ip, config->gw_port);
 
-	if ((config->gw_mac = get_iface_mac(config->gw_interface)) == NULL) {
+	config->gw_mac = get_iface_mac(config->gw_interface);
+
+	if (config->gw_mac == NULL) {
 		debug(LOG_ERR, "Could not get MAC address information of %s, exiting...", config->gw_interface);
 		exit(1);
 	}
-	debug(LOG_NOTICE, "Detected gateway %s at %s (%s)", config->gw_interface, config->gw_ip, config->gw_mac);
+
+	debug(LOG_NOTICE, "Interface %s is at %s (%s)", config->gw_interface, config->gw_ip, config->gw_mac);
 
 	// Make sure fas_remoteip is set. Note: This does not enable FAS.
 	if (!config->fas_remoteip) {
@@ -336,7 +341,7 @@ setup_from_config(void)
 
 	// Initializes the web server
 	if (config->unescape_callback_enabled == 0) {
-		debug(LOG_NOTICE, "MHD Unescape Callback is Disabled");
+		debug(LOG_INFO, "MHD Unescape Callback is Disabled");
 
 		if ((webserver = MHD_start_daemon(MHD_USE_EPOLL_INTERNALLY | MHD_USE_TCP_FASTOPEN,
 								config->gw_port,
@@ -382,13 +387,13 @@ setup_from_config(void)
 		}
 
 	} else {
-		debug(LOG_NOTICE, "Using config options for FAS or Templated Splash.\n");
+		debug(LOG_INFO, "Using config options for FAS or Templated Splash.\n");
 	}
 
 	// If PreAuth is enabled, override any FAS configuration
 	if (config->preauth) {
 		debug(LOG_NOTICE, "Preauth is Enabled - Overiding FAS configuration.\n");
-		debug(LOG_NOTICE, "Preauth Script is %s\n", config->preauth);
+		debug(LOG_INFO, "Preauth Script is %s\n", config->preauth);
 
 		//override all other FAS settings
 		config->fas_remoteip = safe_strdup(config->gw_ip);
@@ -467,7 +472,7 @@ setup_from_config(void)
 			);
 
 			if (execute_ret(msg, sizeof(msg) - 1, phpcmd) == 0) {
-				debug(LOG_NOTICE, "OpenSSL module is loaded\n");
+				debug(LOG_INFO, "OpenSSL module is loaded\n");
 			} else {
 				debug(LOG_ERR, "OpenSSL PHP module is not loaded");
 				debug(LOG_ERR, "Exiting...");
@@ -512,7 +517,7 @@ setup_from_config(void)
 
 			if (execute_ret_url_encoded(gwhash, sizeof(gwhash) - 1, fasssl) == 0) {
 				safe_asprintf(&gatewayhash, "%s", gwhash);
-				debug(LOG_INFO, "gatewayname digest is: %s\n", gwhash);
+				debug(LOG_DEBUG, "gatewayname digest is: %s\n", gwhash);
 			} else {
 				debug(LOG_ERR, "Error hashing gatewayname");
 				debug(LOG_ERR, "Exiting...");
@@ -528,7 +533,7 @@ setup_from_config(void)
 				config->fas_ssl
 			);
 
-			debug(LOG_NOTICE, "authmon startup command is: %s\n", fasssl);
+			debug(LOG_DEBUG, "authmon startup command is: %s\n", fasssl);
 
 			system(fasssl);
 
@@ -551,12 +556,12 @@ setup_from_config(void)
 
 		// Report the FAS FQDN
 		if (config->fas_remotefqdn) {
-			debug(LOG_NOTICE, "FAS FQDN is: %s\n", config->fas_remotefqdn);
+			debug(LOG_INFO, "FAS FQDN is: %s\n", config->fas_remotefqdn);
 		}
 
 		// Report security warning
 		if (config->fas_secure_enabled == 0) {
-			debug(LOG_NOTICE, "Warning - Forwarding Authentication - Security is DISABLED.\n");
+			debug(LOG_WARNING, "Warning - Forwarding Authentication - Security is DISABLED.\n");
 		}
 
 		// Report the Pre-Shared key is not available
@@ -571,7 +576,7 @@ setup_from_config(void)
 	// Report if BinAuth is enabled
 	if (config->binauth) {
 		debug(LOG_NOTICE, "Binauth is Enabled.\n");
-		debug(LOG_NOTICE, "Binauth Script is %s\n", config->binauth);
+		debug(LOG_INFO, "Binauth Script is %s\n", config->binauth);
 	}
 
 	// Reset the firewall (cleans it, in case we are restarting after opennds crash)
@@ -597,9 +602,6 @@ main_loop(void)
 	s_config *config;
 
 	config = config_get_config();
-
-	// Set up everything we need based on the configuration
-	setup_from_config();
 
 	// Start client statistics and timeout clean-up thread
 	result = pthread_create(&tid_client_check, NULL, thread_client_timeout_check, NULL);
@@ -635,9 +637,13 @@ int main(int argc, char **argv)
 	parse_commandline(argc, argv);
 
 	// Initialize the config
+	debug(LOG_NOTICE, "openNDS Version %s \n", VERSION);
 	debug(LOG_INFO, "Reading and validating configuration file %s", config->configfile);
 	config_read(config->configfile);
 	config_validate();
+
+	// Set up everything we need based on the configuration
+	setup_from_config();
 
 	// Initializes the linked list of connected clients
 	client_list_init();

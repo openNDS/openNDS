@@ -88,24 +88,6 @@ setup_firewall() {
   done
 }
 
-wait_for_interface() {
-  local ifname="$1"
-  local timeout=10
-
-  for i in $(seq $timeout); do
-    if [ $(ip -4 addr show dev $ifname 2> /dev/null | grep -c inet) -ne 0 ]; then
-      break
-    fi
-    sleep 1
-    if [ $i = $timeout ]; then
-      echo "Interface $ifname not detected." >&2
-      return 1
-    fi
-  done
-
-  return 0
-}
-
 generate_uci_config() {
   local cfg="$1"
   local val
@@ -136,8 +118,6 @@ generate_uci_config() {
     echo "Option network or gatewayinterface missing." >&2
     return 1
   fi
-
-  wait_for_interface "$ifname" || return 1
 
   addline "GatewayInterface $ifname"
 

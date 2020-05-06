@@ -342,6 +342,7 @@ libmicrohttpd_cb(void *cls,
 	t_client *client;
 	char ip[INET6_ADDRSTRLEN+1];
 	char mac[18];
+	char *dds = "../";
 	int rc = 0;
 
 	debug(LOG_DEBUG, "access: %s %s", method, url);
@@ -349,6 +350,12 @@ libmicrohttpd_cb(void *cls,
 	// only allow get
 	if (0 != strcmp(method, "GET")) {
 		debug(LOG_DEBUG, "Unsupported http method %s", method);
+		return send_error(connection, 403);
+	}
+
+	// block path traversal
+	if (strstr(url, dds) != NULL) {
+		debug(LOG_WARNING, "Probable Path Traversal Attack Detected - %s", url);
 		return send_error(connection, 403);
 	}
 

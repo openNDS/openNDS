@@ -1,3 +1,9 @@
+openNDS (5.0.1)
+
+  * Fix - Path Traversal Attack vulnerability allowed by libmicrohttpd's built in unescape functionality [bluewavenet] [lynxis]
+
+ -- Rob White <dot@blue-wave.net> Wed, 06 May 2020 19:56:27 +0000
+
 openNDS (5.0.0)
 
   * Import - from NoDogSplash 4.5.0 allowing development without compromising NoDogSplash optimisation for minimum resource utilisation [bluewavenet]

@@ -467,8 +467,8 @@ setup_from_config(void)
 			free(fasssl);
 			safe_asprintf(&phpcmd,
 				"echo '<?php "
-				"if (!extension_loaded (openssl)) {exit(1);"
-				"} ?>' | %s", config->fas_ssl
+				"if (!extension_loaded (\"openssl\")) {exit(1);}"
+				" ?>' | %s", config->fas_ssl
 			);
 
 			if (execute_ret(msg, sizeof(msg) - 1, phpcmd) == 0) {

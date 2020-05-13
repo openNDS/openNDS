@@ -7,7 +7,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=opennds
 PKG_FIXUP:=autoreconf
-PKG_VERSION:=5.0.1
+PKG_VERSION:=5.0.2beta
 PKG_RELEASE:=1
 
 PKG_SOURCE_URL:=https://codeload.github.com/opennds/opennds/tar.gz/v$(PKG_VERSION)?
@@ -29,7 +29,7 @@ define Package/opennds
 	DEPENDS:=+libpthread +iptables-mod-ipopt +libmicrohttpd-no-ssl
 	TITLE:=Open public network gateway daemon
 	URL:=https://github.com/opennds/opennds
-	CONFLICTS:=nodogsplash2, nodogsplash
+	CONFLICTS:=nodogsplash nodogsplash2
 endef
 
 define Package/opennds/description

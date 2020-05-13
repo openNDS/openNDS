@@ -55,6 +55,9 @@ static void binauth_action(t_client *client, const char *reason)
 {
 	char lockfile[] = "/tmp/ndsctl.lock";
 	FILE *fd;
+	time_t now = time(NULL);
+	unsigned long int sessionend;
+	char *deauth = "deauth";
 	s_config *config;
 
 	config = config_get_config();
@@ -64,14 +67,23 @@ static void binauth_action(t_client *client, const char *reason)
 		//Create lock
 		fd = fopen(lockfile, "w");
 
-		execute("%s %s %s %llu %llu %llu %llu",
+		// Check for deauth reason
+		if (strstr(reason, deauth) != NULL) {
+			sessionend = now;
+		} else {
+			sessionend = client->session_end;
+		}
+
+		debug(LOG_NOTICE, "BinAuth %s - client session end time: [ %lu ]", reason, sessionend);
+
+		execute("%s %s %s %llu %llu %lu %lu",
 			config->binauth,
 			reason ? reason : "unknown",
 			client->mac,
 			client->counters.incoming,
 			client->counters.outgoing,
 			client->session_start,
-			client->session_end
+			sessionend
 		);
 
 		// unlock ndsctl

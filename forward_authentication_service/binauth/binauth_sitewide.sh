@@ -3,8 +3,12 @@
 #Copyright (C) BlueWave Projects and Services 2015-2020
 #This software is released under the GNU GPL license.
 
-# This is an example script for BinAuth
+# This is an example script for BinAuth.
+
+# The templated splash page, splash_sitewide.html, is specifically designed to work with this BinAuth script.
+
 # It verifies a client username and password and sets the session length.
+
 #
 # If BinAuth is enabled, NDS will call this script as soon as it has received an authentication request
 # from the web page served to the client's CPD (Captive Portal Detection) Browser by one of the following:

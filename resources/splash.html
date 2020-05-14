@@ -10,7 +10,7 @@
 <link rel="shortcut icon" href="/images/splash.jpg" type="image/x-icon">
 <link rel="stylesheet" type="text/css" href="/splash.css">
 
-<title>$gatewayname Captive Portal.</title>
+<title>$gatewayname</title>
 
 <!--
 Content:
@@ -31,7 +31,7 @@ Content:
 
 Authentication:
 	A client is authenticated on submitting an HTTP form, method=get,
-	passing $authaction, $tok and $redir.
+	passing $authaction, $tok, $redir and optionally $username and $password
 
 	It is also possible to authenticate using an href link to
 	$authtarget but be aware that many device Captive Portal Detection
@@ -39,36 +39,34 @@ Authentication:
 	all client devices.
 
 Available variables:
-	error_msg: $error_msg
-	gatewayname: $gatewayname
-	tok: $tok
-	redir: $redir
-	authaction: $authaction
-	denyaction: $denyaction
-	authtarget: $authtarget
-	clientip: $clientip
-	clientmac: $clientmac
-	clientupload: $clientupload
-	clientdownload: $clientdownload
-	gatewaymac: $gatewaymac
-	nclients: $nclients
-	maxclients: $maxclients
-	uptime: $uptime
-
-Additional Variables that can be passed back via the HTTP get,
-or appended to the query string of the authtarget link:
-	username
-	password
+	$authaction
+	$denyaction
+	$authtarget
+	$clientip
+	$clientmac
+	$clientupload
+	$clientdownload
+	$gatewaymac
+	$gatewayname
+	$maxclients
+	$nclients
+	$redir
+	$tok
+	$token
+	$uptime
+	$version
+	$username
+	$password
 -->
 
 </head>
 
 <body>
 <div class="offset">
-<med-blue>$gatewayname Captive Portal.</med-blue>
+<med-blue>$gatewayname</med-blue>
 <div class="insert">
-<img style="height:60px; width:60px; float:left;" src="/images/splash.jpg" alt="Splash Page: For access to the Internet.">
-<big-red>Welcome!</big-red>
+<img style="height:60px; width:80px; float:left;" src="/images/splash.jpg" alt="Splash Page: For access to the Internet.">
+<big-red><br>Welcome!</big-red>
 <hr>
 <br>
 <italic-black>For access to the Internet, please tap or click Continue.</italic-black>
@@ -82,7 +80,10 @@ or appended to the query string of the authtarget link:
 </form>
 	
 <hr>
-<copy-right>Copyright &copy; The openNDS Contributors 2004-2020.<br>This software is released under the GNU GPL license.</copy-right>
+<copy-right>Copyright &copy; The openNDS Contributors 2004-2020.<br>
+	This software is released under the GNU GPL license.<br>
+	openNDS version $version
+</copy-right>
 
 </div></div>
 </body>

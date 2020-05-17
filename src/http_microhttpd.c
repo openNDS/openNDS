@@ -495,9 +495,15 @@ static int authenticate_client(struct MHD_Connection *connection,
 	char redirect_url_enc[QUERYMAXLEN] = {0};
 	char *querystr = query_str;
 
-	debug(LOG_INFO, "redirect_url is [ %s ]", redirect_url);
+	client->session_start = now;
 
-	debug(LOG_INFO, "authenticate: Session Start - %lu Session End - %lu", client->session_start, client->session_end);
+	if (seconds) {
+		client->session_end = now + seconds;
+	} else {
+		client->session_end = 0;
+	}
+
+	debug(LOG_INFO, "redirect_url is [ %s ]", redirect_url);
 
 	if (config->binauth) {
 		rc = do_binauth(connection, config->binauth, client, &seconds, &upload, &download, redirect_url);
@@ -521,17 +527,11 @@ static int authenticate_client(struct MHD_Connection *connection,
 		rc = auth_client_auth(client->id, NULL);
 	}
 
-	// set client values
+	// set remaining client values that might have been set by binauth
 	client->download_limit = download;
 	client->upload_limit = upload;
-	client->session_start = now;
 
-	if (seconds) {
-		client->session_end = now + seconds;
-	} else {
-		client->session_end = 0;
-	}
-
+	// error checking
 	if (rc != 0) {
 		return send_error(connection, 503);
 	}
@@ -541,6 +541,8 @@ static int authenticate_client(struct MHD_Connection *connection,
 	} else {
 		return send_error(connection, 200);
 	}
+
+	debug(LOG_INFO, "authenticate: Session Start - %lu Session End - %lu", client->session_start, client->session_end);
 }
 
 /**

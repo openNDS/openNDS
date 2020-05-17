@@ -53,25 +53,45 @@ unsigned int authenticated_since_start = 0;
 
 static void binauth_action(t_client *client, const char *reason)
 {
+	s_config *config = config_get_config();
 	char lockfile[] = "/tmp/ndsctl.lock";
 	FILE *fd;
 	time_t now = time(NULL);
+	int seconds = 60 * config->session_timeout;
+	unsigned long int sessionstart;
 	unsigned long int sessionend;
 	char *deauth = "deauth";
-	s_config *config;
-
-	config = config_get_config();
+	char *client_auth = "client_auth";
+	char *ndsctl_auth = "ndsctl_auth";
 
 	if (config->binauth) {
 		// ndsctl will deadlock if run within the BinAuth script so we must lock it
 		//Create lock
 		fd = fopen(lockfile, "w");
 
-		// Check for deauth reason
+		// get default session start and end
+		sessionstart = client->session_start;
+		sessionend = client->session_end;
+
+		// Check for a deauth reason
 		if (strstr(reason, deauth) != NULL) {
 			sessionend = now;
-		} else {
-			sessionend = client->session_end;
+		}
+
+		// Check for client_auth reason
+		if (strstr(reason, client_auth) != NULL) {
+			sessionstart = now;
+		}
+
+		// Check for ndsctl_auth reason
+		if (strstr(reason, ndsctl_auth) != NULL) {
+			sessionstart = now;
+
+			if (seconds) {
+				sessionend = now + seconds;
+			} else {
+				sessionend = 0;
+			}
 		}
 
 		debug(LOG_NOTICE, "BinAuth %s - client session end time: [ %lu ]", reason, sessionend);
@@ -82,7 +102,7 @@ static void binauth_action(t_client *client, const char *reason)
 			client->mac,
 			client->counters.incoming,
 			client->counters.outgoing,
-			client->session_start,
+			sessionstart,
 			sessionend
 		);
 

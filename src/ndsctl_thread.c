@@ -320,19 +320,19 @@ ndsctl_auth(FILE *fp, char *arg)
 	}
 	UNLOCK_CLIENT_LIST();
 
-	// set client values
-	client->download_limit = download;
-	client->upload_limit = upload;
-	client->session_start = now;
-
-	if (seconds) {
-		client->session_end = now + seconds;
-	} else {
-		client->session_end = 0;
-	}
-
-
 	if (rc == 0) {
+
+		// set client values
+		client->download_limit = download;
+		client->upload_limit = upload;
+		client->session_start = now;
+
+		if (seconds) {
+			client->session_end = now + seconds;
+		} else {
+			client->session_end = 0;
+		}
+
 		fprintf(fp, "Yes");
 	} else {
 		fprintf(fp, "No");

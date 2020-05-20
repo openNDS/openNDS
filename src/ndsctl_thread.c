@@ -302,14 +302,38 @@ ndsctl_auth(FILE *fp, char *arg)
 	int seconds = 60 * config->session_timeout;
 	int upload = 0;
 	int download = 0;
+	char *arg2;
+	char *arg3;
+	char *arg4;
+	char *arg5;
+	char *strcopy;
+	char *ptr;
 	time_t now = time(NULL);
 
 	//TODO - support for setting alternate values for seconds, upload and download can be implemented here by calling a BinAuth script
 
 	debug(LOG_DEBUG, "Entering ndsctl_auth [%s]", arg);
 
+	strcopy = strdup(arg);
+	arg2 = strsep(&strcopy, " ");
+	debug(LOG_DEBUG, "arg2 [%s]", arg2);
+
+	arg3 = strsep(&strcopy, " ");
+	debug(LOG_DEBUG, "arg3 [%s]", arg3);
+	if (arg3 != NULL) {
+		seconds = 60 * strtol(arg3, &ptr, 10);
+	}
+
+	arg4 = strsep(&strcopy, " ");
+	debug(LOG_DEBUG, "arg4 [%s]", arg4);
+
+	arg5 = strsep(&strcopy, " ");
+	debug(LOG_DEBUG, "arg5 [%s]", arg5);
+
+	free(strcopy);
+
 	LOCK_CLIENT_LIST();
-	client = client_list_find_by_any(arg, arg, arg);
+	client = client_list_find_by_any(arg2, arg2, arg2);
 	id = client ? client->id : 0;
 
 	if (id) {

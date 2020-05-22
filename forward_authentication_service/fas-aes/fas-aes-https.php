@@ -57,10 +57,16 @@
 // Allow immediate flush to browser
 if (ob_get_level()){ob_end_clean();}
 
-##########################
-// Set the pre-shared key
+#############################################################################################################
+#############################################################################################################
+# Set the pre-shared key, session length(minutes), upload/download quotas(KB) and upload/download rates(KB/s)
+# Upload and download limits are not implemented in openNDS yet and are reserved
 $key="1234567890";
-##########################
+
+$sessionlength=2;
+$uploadquota=$downloadquota=$uploadrate=$downloadrate=0;
+#############################################################################################################
+#############################################################################################################
 
 //Send auth list to NDS on request.
 # option "list" sends the list and deletes each client entry that it finds
@@ -77,20 +83,30 @@ if (isset($_POST["auth_get"])) {
 		exit(0);
 	}
 
+	$authlist="";
+
 	if ($_POST["auth_get"] == "list") {
 		$auth_list=scandir("$gatewayhash");
 		array_shift($auth_list);
 		array_shift($auth_list);
-		echo implode(" ", $auth_list);
+		#echo implode(" ", $auth_list);
 		foreach ($auth_list as $client) {
+			$clientauth=file("$gatewayhash/$client");
+			$authlist=$authlist." ".rawurlencode(trim($clientauth[0]));
 			unlink("$gatewayhash/$client");
 		}
+		echo $authlist;
 
 	} else if ($_POST["auth_get"] == "view") {
 		$auth_list=scandir("$gatewayhash");
 		array_shift($auth_list);
 		array_shift($auth_list);
-		echo implode(" ", $auth_list);
+		#echo implode(" ", $auth_list);
+		foreach ($auth_list as $client) {
+			$clientauth=file("$gatewayhash/$client");
+			$authlist=$authlist." ".rawurlencode(trim($clientauth[0]));
+		}
+		echo trim($authlist);
 	}
 	exit(0);
 }
@@ -186,12 +202,19 @@ header("Pragma: no-cache");
 //Generate responsive page html
 display_header($gatewayname);
 
-//create auth list directory for this gateway
+#################################################################################
+# Create auth list directory for this gateway
+# This list will be sent to NDS when it requests it.
+#
+# Then display a "logged in" landing page once NDS has authenticated the client.
+# or a timed out error if we do not get authenticated by NDS
+#################################################################################
+
 $gwname=hash('sha256', trim($gatewayname));
 @mkdir("$gwname", 0777);
 
 if (isset($_GET["auth"])) {
-	$log="$clientip\n";
+	$log="$clientip $sessionlength $uploadquota $downloadquota $uploadrate $downloadrate\n";
 	$logfile="$gwname/$clientip";
 
 	if (!file_exists($logfile)) {
@@ -224,6 +247,11 @@ if (isset($_GET["auth"])) {
 				<hr>
 				<p><italic-black>You can use your Browser, Email and other network Apps as you normally would.
 				</italic-black></p>";
+
+			echo "<form>
+				<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='".urldecode($originurl)."'\" >
+				</form><br>";
+
 			read_terms($me,$gatewayname);
 			display_footer();
 			exit(0);

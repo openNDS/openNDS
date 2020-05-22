@@ -29,7 +29,7 @@ function SendPostData($_p, $remote_url, $user_agent) {
 	$fp = @fopen($remote_url, 'r', false, $context);
 
 	if ($fp == TRUE) {
-		$response = stream_get_contents($fp);
+		$response = trim(stream_get_contents($fp));
 	}
 
 	return $response;

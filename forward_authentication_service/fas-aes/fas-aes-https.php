@@ -368,6 +368,7 @@ display_footer();
 function display_header($gatewayname) {
 	$css=insert_css();
 	// define the image for the shortcut icon
+	// https://avatars0.githubusercontent.com/u/4403602 is the Nodogsplash Bulldog
 	$imageurl="https://avatars0.githubusercontent.com/u/4403602";
 	$imagetype="png";
 	$scriptname=basename($_SERVER['SCRIPT_NAME']);
@@ -395,6 +396,7 @@ function display_header($gatewayname) {
 
 function display_footer() {
 	// define the image to display
+	// https://avatars1.githubusercontent.com/u/62547912 is the openNDS Portal Lens Flare
 	$imageurl="https://avatars1.githubusercontent.com/u/62547912";
 	$imagetype="png";
 	$scriptname=basename($_SERVER['SCRIPT_NAME']);

@@ -528,8 +528,8 @@ static int authenticate_client(struct MHD_Connection *connection,
 	}
 
 	// set remaining client values that might have been set by binauth
-	client->download_limit = download;
-	client->upload_limit = upload;
+	client->download_rate = download;
+	client->upload_rate = upload;
 
 	// error checking
 	if (rc != 0) {

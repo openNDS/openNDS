@@ -97,8 +97,8 @@ typedef enum {
 	oSetMSS,
 	oMSSValue,
 	oTrafficControl,
-	oDownloadLimit,
-	oUploadLimit,
+	oDownloadRate,
+	oUploadRate,
 	oUploadIFB,
 	oNdsctlSocket,
 	oSyslogFacility,
@@ -155,8 +155,8 @@ static const struct {
 	{ "setmss", oSetMSS },
 	{ "mssvalue", oMSSValue },
 	{ "trafficcontrol",	oTrafficControl },
-	{ "downloadlimit", oDownloadLimit },
-	{ "uploadlimit", oUploadLimit },
+	{ "downloadrate", oDownloadRate },
+	{ "uploadrate", oUploadRate },
 	{ "ifb", oUploadIFB },
 	{ "syslogfacility", oSyslogFacility },
 	{ "ndsctlsocket", oNdsctlSocket },
@@ -242,8 +242,8 @@ config_init(void)
 	config.set_mss = DEFAULT_SET_MSS;
 	config.mss_value = DEFAULT_MSS_VALUE;
 	config.traffic_control = DEFAULT_TRAFFIC_CONTROL;
-	config.upload_limit =  DEFAULT_UPLOAD_LIMIT;
-	config.download_limit = DEFAULT_DOWNLOAD_LIMIT;
+	config.upload_rate =  DEFAULT_UPLOAD_RATE;
+	config.download_rate = DEFAULT_DOWNLOAD_RATE;
 	config.upload_ifb =  DEFAULT_UPLOAD_IFB;
 	config.syslog_facility = DEFAULT_SYSLOG_FACILITY;
 	config.log_syslog = DEFAULT_LOG_SYSLOG;
@@ -931,15 +931,15 @@ config_read(const char *filename)
 				exit(1);
 			}
 			break;
-		case oDownloadLimit:
-			if (sscanf(p1, "%d", &config.download_limit) < 1 || config.download_limit < 0) {
+		case oDownloadRate:
+			if (sscanf(p1, "%d", &config.download_rate) < 1 || config.download_rate < 0) {
 				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
 				debug(LOG_ERR, "Exiting...");
 				exit(1);
 			}
 			break;
-		case oUploadLimit:
-			if (sscanf(p1, "%d", &config.upload_limit) < 1 || config.upload_limit < 0) {
+		case oUploadRate:
+			if (sscanf(p1, "%d", &config.upload_rate) < 1 || config.upload_rate < 0) {
 				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
 				debug(LOG_ERR, "Exiting...");
 				exit(1);

@@ -467,13 +467,13 @@ ndsctl_status(FILE *fp)
 	fprintf(fp, "Traffic control: %s\n", config->traffic_control ? "yes" : "no");
 
 	if (config->traffic_control) {
-		if (config->download_limit > 0) {
-			fprintf(fp, "Download rate limit: %d kbit/s\n", config->download_limit);
+		if (config->download_rate > 0) {
+			fprintf(fp, "Download rate limit: %d kbit/s\n", config->download_rate);
 		} else {
 			fprintf(fp, "Download rate limit: none\n");
 		}
-		if (config->upload_limit > 0) {
-			fprintf(fp, "Upload rate limit: %d kbit/s\n", config->upload_limit);
+		if (config->upload_rate > 0) {
+			fprintf(fp, "Upload rate limit: %d kbit/s\n", config->upload_rate);
 		} else {
 			fprintf(fp, "Upload rate limit: none\n");
 		}

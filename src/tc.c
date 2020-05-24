@@ -50,12 +50,12 @@
 
 
 int
-tc_attach_client(const char down_dev[], int download_limit, const char up_dev[], int upload_limit, int idx, const char ip[])
+tc_attach_client(const char down_dev[], int download_rate, const char up_dev[], int upload_rate, int idx, const char ip[])
 {
 	int rc = 0;
 	s_config *config = config_get_config();
-	int dlimit = MIN(download_limit, config->download_limit);
-	int ulimit = MIN(upload_limit, config->upload_limit);
+	int dlimit = MIN(download_rate, config->download_rate);
+	int ulimit = MIN(upload_rate, config->upload_rate);
 	int id = 3 * idx + 10;
 
 	if (dlimit > 0) {
@@ -107,12 +107,12 @@ tc_attach_client(const char down_dev[], int download_limit, const char up_dev[],
 }
 
 int
-tc_detach_client(const char down_dev[], int download_limit, const char up_dev[], int upload_limit, int idx)
+tc_detach_client(const char down_dev[], int download_rate, const char up_dev[], int upload_rate, int idx)
 {
 	int rc = 0, n;
 	int id = 3 * idx + 10;
 
-	if (download_limit > 0) {
+	if (download_rate > 0) {
 		for (n = 2; n >= 0; n--)
 			rc |= execute("filter del dev %s parent 1: prio %d", down_dev, id + n);
 		for (n = 2; n >= 1; n--)
@@ -121,7 +121,7 @@ tc_detach_client(const char down_dev[], int download_limit, const char up_dev[],
 			rc |= execute("class del dev %s parent 1: classid 1:%d", down_dev, id + n);
 	}
 
-	if (upload_limit > 0) {
+	if (upload_rate > 0) {
 		for (n = 2; n >= 0; n--)
 			rc |= execute("filter del dev %s parent 1: prio %d", up_dev, id + n);
 		for (n = 2;n >= 1; n--)
@@ -135,12 +135,12 @@ tc_detach_client(const char down_dev[], int download_limit, const char up_dev[],
 
 /*
  * dev is name of device to attach qdisc to (typically an IFB)
- * upload_limit is in kbits/s
+ * upload_rate is in kbits/s
  * Some ideas here from Rudy's qos-scripts
  * http://forum.openwrt.org/viewtopic.php?id=4112&p=1
  */
 static int
-tc_attach_upload_qdisc(const char dev[], const char ifb_dev[], int upload_limit)
+tc_attach_upload_qdisc(const char dev[], const char ifb_dev[], int upload_rate)
 {
 	int rc = 0;
 
@@ -151,10 +151,10 @@ tc_attach_upload_qdisc(const char dev[], const char ifb_dev[], int upload_limit)
 	/* main upload qdisc */
 	rc |= execute("tc qdisc add dev %s root handle 1: hfsc default 2", ifb_dev);
 	rc |= execute("tc class add dev %s parent 1: classid 1:1 hfsc sc rate %dkbit ul rate %dkbit",
-						ifb_dev, upload_limit, upload_limit);
+						ifb_dev, upload_rate, upload_rate);
 	/* default class used for preauth clients */
 	rc |= execute("tc class add dev %s parent 1:1 classid 1:2 hfsc sc rate %dkbit ul rate %dkbit",
-						ifb_dev, upload_limit / 10, upload_limit / 10);
+						ifb_dev, upload_rate / 10, upload_rate / 10);
 	/* redirect ingress from main interface to ifb interface */
 	rc |= execute("tc qdisc add dev %s ingress", dev);
 	rc |= execute("tc filter add dev %s parent ffff: protocol ip prio 1 u32 match u32 0 0 flowid 1:1 action connmark action mirred egress redirect dev %s",
@@ -165,12 +165,12 @@ tc_attach_upload_qdisc(const char dev[], const char ifb_dev[], int upload_limit)
 
 /*
  * dev is name of device to attach qdisc to
- * download_limit is in kbits/s
+ * download_rate is in kbits/s
  * Some ideas here from Rudy's qos-scripts
  * http://forum.openwrt.org/viewtopic.php?id=4112&p=1
  */
 static int
-tc_attach_download_qdisc(const char dev[], const char ifb_dev[], int download_limit)
+tc_attach_download_qdisc(const char dev[], const char ifb_dev[], int download_rate)
 {
 	int rc = 0;
 
@@ -180,10 +180,10 @@ tc_attach_download_qdisc(const char dev[], const char ifb_dev[], int download_li
 	/* main download qdisc */
 	rc |= execute("tc qdisc add dev %s root handle 1: hfsc default 2", dev);
 	rc |= execute("tc class add dev %s parent 1: classid 1:1 hfsc sc rate %dkbit ul rate %dkbit",
-						dev, download_limit, download_limit);
+						dev, download_rate, download_rate);
 	/* default class used for preauth clients */
 	rc |= execute("tc class add dev %s parent 1:1 classid 1:2 hfsc sc rate %dkbit ul rate %dkbit",
-						dev, download_limit / 10, download_limit / 10);
+						dev, download_rate / 10, download_rate / 10);
 
 	return rc;
 }
@@ -196,7 +196,7 @@ tc_attach_download_qdisc(const char dev[], const char ifb_dev[], int download_li
 int
 tc_init_tc()
 {
-	int upload_limit, download_limit;
+	int upload_rate, download_rate;
 	int upload_ifb /*, download_ifb*/;
 	char upload_ifbname[16];
 	s_config *config;
@@ -204,23 +204,23 @@ tc_init_tc()
 	int ret = 0;
 
 	config = config_get_config();
-	download_limit = config->download_limit;
-	upload_limit = config->upload_limit;
+	download_rate = config->download_rate;
+	upload_rate = config->upload_rate;
 	upload_ifb = config->upload_ifb;
 
 	sprintf(upload_ifbname, "ifb%d", upload_ifb);
 
-	if (download_limit > 0) {
-		rc |= tc_attach_download_qdisc(config->gw_interface, NULL, download_limit);
+	if (download_rate > 0) {
+		rc |= tc_attach_download_qdisc(config->gw_interface, NULL, download_rate);
 	}
 
-	if (upload_limit > 0) {
+	if (upload_rate > 0) {
 		ret = execute("ip link set %s up", upload_ifbname);
 		if (ret != 0) {
 			debug(LOG_ERR, "Could not set %s up. Upload limiting will not work", upload_ifbname);
 			rc = -1;
 		} else {
-			rc |= tc_attach_upload_qdisc(config->gw_interface, upload_ifbname, upload_limit);
+			rc |= tc_attach_upload_qdisc(config->gw_interface, upload_ifbname, upload_rate);
 		}
 	}
 

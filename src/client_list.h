@@ -30,24 +30,26 @@
 /** Counters struct for a client's bandwidth usage (in bytes)
  */
 typedef struct _t_counters {
-	unsigned long long incoming;	/**< @brief Incoming data total */
-	unsigned long long outgoing;	/**< @brief Outgoing data total */
-	time_t last_updated;	/**< @brief Last update of the counters */
+	unsigned long long incoming;		/**< @brief Incoming data total */
+	unsigned long long outgoing;		/**< @brief Outgoing data total */
+	time_t last_updated;			/**< @brief Last update of the counters */
 } t_counters;
 
 /** Client node for the connected client linked list.
  */
 typedef struct _t_client {
-	struct _t_client *next;	/**< @brief Pointer to the next client */
+	struct _t_client *next;			/**< @brief Pointer to the next client */
 	char *ip;				/**< @brief Client IP address */
 	char *mac;				/**< @brief Client MAC address */
-	char *token;		/**< @brief Client token */
-	unsigned int fw_connection_state;	/**< @brief Connection state in the firewall */
-	time_t session_start;	/**< @brief Time the client was authenticated */
-	time_t session_end;		/**< @brief Time until client will be deauthenticated */
-	t_counters counters;	/**< @brief Counters for input/output of the client. */
-	int download_limit;		/**< @brief Download limit, kb/s */
-	int upload_limit;		/**< @brief Upload limit, kb/s */
+	char *token;				/**< @brief Client token */
+	unsigned int fw_connection_state;	/**< @brief Client Connection state in the firewall */
+	time_t session_start;			/**< @brief Actual Time the client was authenticated */
+	time_t session_end;			/**< @brief Scheduled Time the client will be deauthenticated */
+	t_counters counters;			/**< @brief Counters for input/output of the client. */
+	int upload_rate;			/**< @brief Client Upload rate limit, kb/s */
+	int download_rate;			/**< @brief Client Download rate limit, kb/s */
+	int upload_quota;			/**< @brief Client Upload quota, kB */
+	int download_quota;			/**< @brief Client Download quota, kB */
 	unsigned id;
 } t_client;
 

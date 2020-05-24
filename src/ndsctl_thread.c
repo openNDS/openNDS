@@ -300,12 +300,16 @@ ndsctl_auth(FILE *fp, char *arg)
 	unsigned id;
 	int rc;
 	int seconds = 60 * config->session_timeout;
-	int upload = 0;
-	int download = 0;
+	int uploadrate = 0;
+	int downloadrate = 0;
+	int uploadquota = 0;
+	int downloadquota = 0;
 	char *arg2;
 	char *arg3;
 	char *arg4;
 	char *arg5;
+	char *arg6;
+	char *arg7;
 	char *strcopy;
 	char *ptr;
 	time_t now = time(NULL);
@@ -315,20 +319,33 @@ ndsctl_auth(FILE *fp, char *arg)
 	debug(LOG_DEBUG, "Entering ndsctl_auth [%s]", arg);
 
 	strcopy = strdup(arg);
+
+	// arg2 = ip|mac|tok
 	arg2 = strsep(&strcopy, " ");
 	debug(LOG_DEBUG, "arg2 [%s]", arg2);
 
+	// arg3 = shedculed duration (minutes) until deauth
 	arg3 = strsep(&strcopy, " ");
 	debug(LOG_DEBUG, "arg3 [%s]", arg3);
 	if (arg3 != NULL) {
 		seconds = 60 * strtol(arg3, &ptr, 10);
 	}
 
+	// arg4 = upload rate (kb/s)
 	arg4 = strsep(&strcopy, " ");
 	debug(LOG_DEBUG, "arg4 [%s]", arg4);
 
+	// arg5 = download rate (kb/s)
 	arg5 = strsep(&strcopy, " ");
 	debug(LOG_DEBUG, "arg5 [%s]", arg5);
+
+	// arg6 = upload quota (kB)
+	arg6 = strsep(&strcopy, " ");
+	debug(LOG_DEBUG, "arg6 [%s]", arg6);
+
+	// arg7 = download quota (kB)
+	arg7 = strsep(&strcopy, " ");
+	debug(LOG_DEBUG, "arg7 [%s]", arg7);
 
 	free(strcopy);
 
@@ -338,10 +355,11 @@ ndsctl_auth(FILE *fp, char *arg)
 
 	if (id) {
 		// set client values
-		client->download_limit = download;
-		client->upload_limit = upload;
 		client->session_start = now;
-
+		client->upload_rate = uploadrate;
+		client->download_rate = downloadrate;
+		client->upload_quota = uploadquota;
+		client->download_quota = downloadquota;
 		if (seconds) {
 			client->session_end = now + seconds;
 		} else {

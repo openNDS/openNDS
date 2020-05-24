@@ -830,7 +830,7 @@ iptables_fw_destroy_mention(
 int
 iptables_fw_authenticate(t_client *client)
 {
-	int rc = 0, download_limit, upload_limit, traffic_control;
+	int rc = 0, download_rate, upload_rate, traffic_control;
 	s_config *config;
 	char upload_ifbname[16];
 
@@ -839,13 +839,13 @@ iptables_fw_authenticate(t_client *client)
 
 	LOCK_CONFIG();
 	traffic_control = config->traffic_control;
-	download_limit = config->download_limit;
-	upload_limit = config->upload_limit;
+	download_rate = config->download_rate;
+	upload_rate = config->upload_rate;
 	UNLOCK_CONFIG();
 
-	if ((client->download_limit > 0) && (client->upload_limit > 0)) {
-		download_limit = client->download_limit;
-		upload_limit = client->upload_limit;
+	if ((client->download_rate > 0) && (client->upload_rate > 0)) {
+		download_rate = client->download_rate;
+		upload_rate = client->upload_rate;
 	}
 
 	debug(LOG_NOTICE, "Authenticating %s %s", client->ip, client->mac);
@@ -856,7 +856,7 @@ iptables_fw_authenticate(t_client *client)
 	rc |= iptables_do_command("-t mangle -A " CHAIN_INCOMING " -d %s -j ACCEPT", client->ip);
 
 	if (traffic_control) {
-		rc |= tc_attach_client(config->gw_interface, download_limit, upload_ifbname, upload_limit, client->id, client->ip);
+		rc |= tc_attach_client(config->gw_interface, download_rate, upload_ifbname, upload_rate, client->id, client->ip);
 	}
 
 	return rc;
@@ -865,7 +865,7 @@ iptables_fw_authenticate(t_client *client)
 int
 iptables_fw_deauthenticate(t_client *client)
 {
-	int download_limit, upload_limit, traffic_control;
+	int download_rate, upload_rate, traffic_control;
 	s_config *config;
 	char upload_ifbname[16];
 	int rc = 0;
@@ -875,13 +875,13 @@ iptables_fw_deauthenticate(t_client *client)
 
 	LOCK_CONFIG();
 	traffic_control = config->traffic_control;
-	download_limit = config->download_limit;
-	upload_limit = config->upload_limit;
+	download_rate = config->download_rate;
+	upload_rate = config->upload_rate;
 	UNLOCK_CONFIG();
 
-	if ((client->download_limit > 0) && (client->upload_limit > 0)) {
-		download_limit = client->download_limit;
-		upload_limit = client->upload_limit;
+	if ((client->download_rate > 0) && (client->upload_rate > 0)) {
+		download_rate = client->download_rate;
+		upload_rate = client->upload_rate;
 	}
 
 	// Remove the authentication rules.
@@ -891,7 +891,7 @@ iptables_fw_deauthenticate(t_client *client)
 	rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -j ACCEPT", client->ip);
 
 	if (traffic_control) {
-		rc |= tc_detach_client(config->gw_interface, download_limit, upload_ifbname, upload_limit, client->id);
+		rc |= tc_detach_client(config->gw_interface, download_rate, upload_ifbname, upload_rate, client->id);
 	}
 
 	return rc;

@@ -69,9 +69,10 @@ static void binauth_action(t_client *client, const char *reason)
 		//Create lock
 		fd = fopen(lockfile, "w");
 
-		// get default session start and end
+		// get client's current session start and end
 		sessionstart = client->session_start;
 		sessionend = client->session_end;
+		debug(LOG_DEBUG, "binauth_action client: seconds=%lu, sessionstart=%lu, sessionend=%lu", seconds, sessionstart, sessionend);
 
 		// Check for a deauth reason
 		if (strstr(reason, deauth) != NULL) {

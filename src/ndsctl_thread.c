@@ -357,6 +357,8 @@ ndsctl_auth(FILE *fp, char *arg)
 			client->session_end = 0;
 		}
 
+		debug(LOG_DEBUG, "ndsctl_thread: client session end time [ %lu ]", client->session_end);
+
 		fprintf(fp, "Yes");
 	} else {
 		fprintf(fp, "No");

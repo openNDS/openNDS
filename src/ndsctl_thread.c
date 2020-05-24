@@ -337,15 +337,6 @@ ndsctl_auth(FILE *fp, char *arg)
 	id = client ? client->id : 0;
 
 	if (id) {
-		rc = auth_client_auth_nolock(id, "ndsctl_auth");
-	} else {
-		debug(LOG_DEBUG, "Client not found.");
-		rc = -1;
-	}
-	UNLOCK_CLIENT_LIST();
-
-	if (rc == 0) {
-
 		// set client values
 		client->download_limit = download;
 		client->upload_limit = upload;
@@ -359,6 +350,14 @@ ndsctl_auth(FILE *fp, char *arg)
 
 		debug(LOG_DEBUG, "ndsctl_thread: client session end time [ %lu ]", client->session_end);
 
+		rc = auth_client_auth_nolock(id, "ndsctl_auth");
+	} else {
+		debug(LOG_DEBUG, "Client not found.");
+		rc = -1;
+	}
+	UNLOCK_CLIENT_LIST();
+
+	if (rc == 0) {
 		fprintf(fp, "Yes");
 	} else {
 		fprintf(fp, "No");

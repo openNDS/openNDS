@@ -87,12 +87,6 @@ static void binauth_action(t_client *client, const char *reason)
 		// Check for ndsctl_auth reason
 		if (strstr(reason, ndsctl_auth) != NULL) {
 			sessionstart = now;
-
-			if (seconds) {
-				sessionend = now + seconds;
-			} else {
-				sessionend = 0;
-			}
 		}
 
 		debug(LOG_NOTICE, "BinAuth %s - client session end time: [ %lu ]", reason, sessionend);

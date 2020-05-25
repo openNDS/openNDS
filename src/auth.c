@@ -91,14 +91,15 @@ static void binauth_action(t_client *client, const char *reason)
 
 		debug(LOG_NOTICE, "BinAuth %s - client session end time: [ %lu ]", reason, sessionend);
 
-		execute("%s %s %s %llu %llu %lu %lu",
+		execute("%s %s %s %llu %llu %lu %lu %s",
 			config->binauth,
 			reason ? reason : "unknown",
 			client->mac,
 			client->counters.incoming,
 			client->counters.outgoing,
 			sessionstart,
-			sessionend
+			sessionend,
+			client->token
 		);
 
 		// unlock ndsctl

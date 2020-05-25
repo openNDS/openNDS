@@ -77,6 +77,8 @@
 #define DEFAULT_TRAFFIC_CONTROL 0
 #define DEFAULT_UPLOAD_RATE 0
 #define DEFAULT_DOWNLOAD_RATE 0
+#define DEFAULT_UPLOAD_QUOTA 0
+#define DEFAULT_DOWNLOAD_QUOTA 0
 #define DEFAULT_UPLOAD_IFB 0
 #define DEFAULT_LOG_SYSLOG 0
 #define DEFAULT_SYSLOG_FACILITY LOG_DAEMON
@@ -175,6 +177,8 @@ typedef struct {
 	int traffic_control;			//@brief boolean, whether to do tc
 	int download_rate;			//@brief Download rate, kb/s
 	int upload_rate;			//@brief Upload rate, kb/s
+	int download_quota;			//@brief Download quota, kB
+	int upload_quota;			//@brief Upload quota, kB
 	int upload_ifb;				//@brief Number of IFB handling upload
 	int log_syslog;				//@brief boolean, whether to log to syslog
 	int syslog_facility;			//@brief facility to use when using syslog for logging

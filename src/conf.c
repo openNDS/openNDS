@@ -99,6 +99,8 @@ typedef enum {
 	oTrafficControl,
 	oDownloadRate,
 	oUploadRate,
+	oDownloadQuota,
+	oUploadQuota,
 	oUploadIFB,
 	oNdsctlSocket,
 	oSyslogFacility,
@@ -157,6 +159,8 @@ static const struct {
 	{ "trafficcontrol",	oTrafficControl },
 	{ "downloadrate", oDownloadRate },
 	{ "uploadrate", oUploadRate },
+	{ "downloadquota", oDownloadQuota },
+	{ "uploadquota", oUploadQuota },
 	{ "ifb", oUploadIFB },
 	{ "syslogfacility", oSyslogFacility },
 	{ "ndsctlsocket", oNdsctlSocket },
@@ -244,6 +248,8 @@ config_init(void)
 	config.traffic_control = DEFAULT_TRAFFIC_CONTROL;
 	config.upload_rate =  DEFAULT_UPLOAD_RATE;
 	config.download_rate = DEFAULT_DOWNLOAD_RATE;
+	config.upload_quota =  DEFAULT_UPLOAD_QUOTA;
+	config.download_quota = DEFAULT_DOWNLOAD_QUOTA;
 	config.upload_ifb =  DEFAULT_UPLOAD_IFB;
 	config.syslog_facility = DEFAULT_SYSLOG_FACILITY;
 	config.log_syslog = DEFAULT_LOG_SYSLOG;
@@ -940,6 +946,20 @@ config_read(const char *filename)
 			break;
 		case oUploadRate:
 			if (sscanf(p1, "%d", &config.upload_rate) < 1 || config.upload_rate < 0) {
+				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+				debug(LOG_ERR, "Exiting...");
+				exit(1);
+			}
+			break;
+		case oDownloadQuota:
+			if (sscanf(p1, "%d", &config.download_quota) < 1 || config.download_quota < 0) {
+				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+				debug(LOG_ERR, "Exiting...");
+				exit(1);
+			}
+			break;
+		case oUploadQuota:
+			if (sscanf(p1, "%d", &config.upload_quota) < 1 || config.upload_quota < 0) {
 				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
 				debug(LOG_ERR, "Exiting...");
 				exit(1);

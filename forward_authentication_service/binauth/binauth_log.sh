@@ -119,7 +119,7 @@ if [ $action = "auth_client" ]; then
 	useragent_enc=$6
 	useragent=$(printf "${useragent_enc//%/\\x}")
 
-	log_entry="method=$1, clientmac=$2, clientip=$7, username=$3, password=$4, redir=$redir, useragent=$useragent, token=$9"
+	log_entry="method=$1, clientmac=$2, clientip=$7, username=$3, password=$4, redir=$redir, useragent=$useragent, token=$8"
 else
 	log_entry="method=$1, clientmac=$2, bytes_incoming=$3, bytes_outgoing=$4, session_start=$5, session_end=$6, token=$7"
 fi

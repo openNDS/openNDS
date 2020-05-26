@@ -80,12 +80,14 @@ static int do_binauth(struct MHD_Connection *connection, const char *binauth, t_
 {
 	char username_enc[64] = {0};
 	char password_enc[64] = {0};
+	char custom_enc[256] = {0};
 	char lockfile[] = "/tmp/ndsctl.lock";
 	FILE *fd;
 	char redirect_url_enc_buf[QUERYMAXLEN] = {0};
 	const char *username;
 	const char *password;
-	char msg[255] = {0};
+	const char *custom;
+	char msg[256] = {0};
 	char *argv = NULL;
 	const char *user_agent = NULL;
 	char enc_user_agent[256] = {0};
@@ -100,6 +102,7 @@ static int do_binauth(struct MHD_Connection *connection, const char *binauth, t_
 
 	username = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "username");
 	password = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "password");
+	custom = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "custom");
 
 	if (!username || strlen(username) == 0) {
 		username="na";
@@ -109,14 +112,20 @@ static int do_binauth(struct MHD_Connection *connection, const char *binauth, t_
 		password="na";
 	}
 
+	if (!custom || strlen(custom) == 0) {
+		custom="na";
+	}
+	debug(LOG_INFO, "BinAuth: custom data [ %s ]", custom);
+
 	uh_urlencode(username_enc, sizeof(username_enc), username, strlen(username));
 	uh_urlencode(password_enc, sizeof(password_enc), password, strlen(password));
+	uh_urlencode(custom_enc, sizeof(custom_enc), custom, strlen(custom));
 	uh_urlencode(redirect_url_enc_buf, sizeof(redirect_url_enc_buf), redirect_url, strlen(redirect_url));
 	uh_urlencode(enc_user_agent, sizeof(enc_user_agent), user_agent, strlen(user_agent));
 
 	// Note: username, password and user_agent may contain spaces so argument should be quoted
-	safe_asprintf(&argv,"%s auth_client %s '%s' '%s' '%s' '%s' '%s' '%s'",
-		binauth, client->mac, username_enc, password_enc, redirect_url_enc_buf, enc_user_agent, client->ip, client->token);
+	safe_asprintf(&argv,"%s auth_client %s '%s' '%s' '%s' '%s' '%s' '%s' '%s'",
+		binauth, client->mac, username_enc, password_enc, redirect_url_enc_buf, enc_user_agent, client->ip, client->token, custom_enc);
 
 	debug(LOG_INFO, "BinAuth argv: %s", argv);
 

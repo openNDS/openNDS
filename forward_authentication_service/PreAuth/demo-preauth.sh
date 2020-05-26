@@ -291,6 +291,7 @@ fi
 # Note also $clientip, $gatewayname and $requested (redir) must always be preserved
 #
 if [ -z "$username" ] || [ -z "$emailaddr" ]; then
+
 	echo "<big-red>Welcome!</big-red><br>
 		<med-blue>You are connected to $client_zone</med-blue><br>
 		<italic-black>To access the Internet you must enter your Name and Email Address</italic-black><hr>"
@@ -335,11 +336,17 @@ else
 	# Add your message here:
 	# You could retrieve text or images from a remote server using wget or curl
 	# as this router has Internet access whilst the client device does not (yet).
+
+	# You can also send a custom data string to BinAuth. Set the variable $custom to the desired value
+	# Max length 256 characters
+	custom="Custom data sent to BinAuth"
+
 	echo "<br><italic-black> Your News or Advertising could be here, contact the owners of this Hotspot to find out how!</italic-black>"
 
 	echo "<form action=\"/opennds_auth/\" method=\"get\">"
 	echo "<input type=\"hidden\" name=\"tok\" value=\"$tok\">"
 	echo "<input type=\"hidden\" name=\"redir\" value=\"$requested\"><br>"
+	echo "<input type=\"hidden\" name=\"custom\" value=\"$custom\">"
 	echo "<input type=\"submit\" value=\"Continue\" >"
 	echo "</form><hr>"
 

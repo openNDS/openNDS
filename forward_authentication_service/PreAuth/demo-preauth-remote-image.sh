@@ -382,21 +382,25 @@ else
 	# Add your message here:
 	# You could retrieve text or images from a remote server using wget or curl
 	# as this router has Internet access whilst the client device does not (yet).
+
+	# You can also send a custom data string to BinAuth. Set the variable $custom to the desired value
+	# Max length 256 characters
+	custom="Custom data sent to BinAuth"
+
 	echo "<br><italic-black> Your News or Advertising could be here, contact the owners of this Hotspot to find out how!</italic-black>"
 
 	echo "<form action=\"/opennds_auth/\" method=\"get\">"
 	echo "<input type=\"hidden\" name=\"tok\" value=\"$tok\">"
 	echo "<input type=\"hidden\" name=\"redir\" value=\"$requested\"><br>"
+	echo "<input type=\"hidden\" name=\"custom\" value=\"$custom\">"
 	echo "<input type=\"submit\" value=\"Continue\" >"
 	echo "</form><hr>"
-
 	# In this example we have decided to log all clients who are granted access
 	write_log
 fi
 
 # Output the page footer
 echo -e "$footer"
-
 # The output of this script could of course be much more complex and
 # could easily be used to conduct a dialogue with the client user.
 #

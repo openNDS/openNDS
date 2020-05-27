@@ -185,17 +185,23 @@ if ($fullname == "" or $email == "") {
 	# You could include information or advertising on this page
 	# Be aware that many devices will close the login browser as soon as
 	# the client taps continue, so now is the time to deliver your message.
+
+	# You can also send a custom data string to BinAuth. Set the variable $custom to the desired value
+	# Max length 256 characters
+	$custom="Custom data sent to BinAuth";
+
 	$authaction="http://".$gatewayaddress."/".$authdir."/";
 	$tok=hash('sha256', $hid.$key);
 
-	echo "<big-red>Thankyou!</big-red>\n".
-		"<br><b>Welcome $fullname</b>\n".
-		"<br><italic-black> Your News or Advertising could be here, contact the owners of this Hotspot to find out how!</italic-black>\n".
-		"<form action=\"".$authaction."\" method=\"get\">\n".
-		"<input type=\"hidden\" name=\"tok\" value=\"".$tok."\">\n".
-		"<input type=\"hidden\" name=\"redir\" value=\"".$redir."\"><br>\n".
-		"<input type=\"submit\" value=\"Continue\" >\n".
-		"</form><hr>\n";
+	echo "<big-red>Thankyou!</big-red>\n
+		<br><b>Welcome $fullname</b>\n
+		<br><italic-black> Your News or Advertising could be here, contact the owners of this Hotspot to find out how!</italic-black>
+		<form action=\"".$authaction."\" method=\"get\">
+		<input type=\"hidden\" name=\"tok\" value=\"".$tok."\">
+		<input type=\"hidden\" name=\"custom\" value=\"$custom\">
+		<input type=\"hidden\" name=\"redir\" value=\"".$redir."\"><br>
+		<input type=\"submit\" value=\"Continue\" >
+		</form><hr>\n";
 	read_terms($me, $clientip, $gatewayname, $gatewayaddress, $hid, $redir);
 
 	# In this example we have decided to log all clients who are granted access

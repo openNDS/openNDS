@@ -32,7 +32,7 @@
 #include <time.h>
 #include <unistd.h>
 
-struct uh_addr {
+/*struct uh_addr {
 	uint8_t family;
 	uint16_t port;
 	union {
@@ -40,6 +40,7 @@ struct uh_addr {
 		struct in6_addr in6;
 	};
 };
+*/
 
 #define min(x, y) (((x) < (y)) ? (x) : (y))
 #define max(x, y) (((x) > (y)) ? (x) : (y))

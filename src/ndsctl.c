@@ -295,7 +295,7 @@ main(int argc, char **argv)
 
 	if (argc > i) {
 		for (counter=2; counter < argc-1; counter++) {
-			snprintf(argi, sizeof(argi), " %s", argv[i+counter]);
+			snprintf(argi, sizeof(argi), ",%s", argv[i+counter]);
 			strncat(args, argi, sizeof(argi));
 		}
 	}

@@ -80,7 +80,7 @@ static int do_binauth(struct MHD_Connection *connection, const char *binauth, t_
 {
 	char username_enc[64] = {0};
 	char password_enc[64] = {0};
-	char custom_enc[256] = {0};
+	char custom_enc[384] = {0};
 	char lockfile[] = "/tmp/ndsctl.lock";
 	FILE *fd;
 	char redirect_url_enc_buf[QUERYMAXLEN] = {0};
@@ -531,9 +531,9 @@ static int authenticate_client(struct MHD_Connection *connection,
 			ret = encode_and_redirect_to_splashpage(connection, client, redirect_url_enc, querystr);
 			return ret;
 		}
-		rc = auth_client_auth(client->id, "client_auth");
+		rc = auth_client_auth(client->id, "client_auth", NULL);
 	} else {
-		rc = auth_client_auth(client->id, NULL);
+		rc = auth_client_auth(client->id, NULL, NULL);
 	}
 
 	// set remaining client values that might have been set by binauth

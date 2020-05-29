@@ -53,6 +53,7 @@
 #include "main.h"
 
 #include "ndsctl_thread.h"
+#include "http_microhttpd_utils.h"
 
 #define MAX_EVENT_SIZE 30
 
@@ -304,13 +305,15 @@ ndsctl_auth(FILE *fp, char *arg)
 	int downloadrate = 0;
 	int uploadquota = 0;
 	int downloadquota = 0;
+	char customdata[256] = {0};
+	char *argcopy;
 	char *arg2;
 	char *arg3;
 	char *arg4;
 	char *arg5;
 	char *arg6;
 	char *arg7;
-	char *strcopy;
+	char *arg8;
 	char *ptr;
 	time_t now = time(NULL);
 
@@ -318,36 +321,60 @@ ndsctl_auth(FILE *fp, char *arg)
 
 	debug(LOG_DEBUG, "Entering ndsctl_auth [%s]", arg);
 
-	strcopy = strdup(arg);
+	argcopy=strdup(arg);
 
 	// arg2 = ip|mac|tok
-	arg2 = strsep(&strcopy, " ");
+	arg2 = strsep(&argcopy, ",");
 	debug(LOG_DEBUG, "arg2 [%s]", arg2);
 
-	// arg3 = shedculed duration (minutes) until deauth
-	arg3 = strsep(&strcopy, " ");
+	// arg3 = sheduled duration (minutes) until deauth
+	arg3 = strsep(&argcopy, ",");
 	debug(LOG_DEBUG, "arg3 [%s]", arg3);
+
 	if (arg3 != NULL) {
 		seconds = 60 * strtol(arg3, &ptr, 10);
 	}
 
 	// arg4 = upload rate (kb/s)
-	arg4 = strsep(&strcopy, " ");
+	arg4 = strsep(&argcopy, ",");
 	debug(LOG_DEBUG, "arg4 [%s]", arg4);
 
+	if (arg4 != NULL) {
+		uploadrate = strtol(arg4, &ptr, 10);
+	}
+
 	// arg5 = download rate (kb/s)
-	arg5 = strsep(&strcopy, " ");
+	arg5 = strsep(&argcopy, ",");
 	debug(LOG_DEBUG, "arg5 [%s]", arg5);
 
+	if (arg5 != NULL) {
+		downloadrate = strtol(arg5, &ptr, 10);
+	}
+
 	// arg6 = upload quota (kB)
-	arg6 = strsep(&strcopy, " ");
+	arg6 = strsep(&argcopy, ",");
 	debug(LOG_DEBUG, "arg6 [%s]", arg6);
 
+	if (arg6 != NULL) {
+		uploadquota = strtol(arg6, &ptr, 10);
+	}
+
 	// arg7 = download quota (kB)
-	arg7 = strsep(&strcopy, " ");
+	arg7 = strsep(&argcopy, ",");
 	debug(LOG_DEBUG, "arg7 [%s]", arg7);
 
-	free(strcopy);
+	if (arg7 != NULL) {
+		downloadquota = strtol(arg7, &ptr, 10);
+	}
+
+	// arg8 = custom data string - max 256 characters
+	arg8 = strsep(&argcopy, ",");
+	debug(LOG_DEBUG, "arg8 [%s]", arg8);
+
+	if (arg8 != NULL) {
+	snprintf(customdata, sizeof(customdata), "%s", arg8);
+	debug(LOG_DEBUG, "customdata [%s]", customdata);
+	}
 
 	LOCK_CLIENT_LIST();
 	client = client_list_find_by_any(arg2, arg2, arg2);
@@ -368,7 +395,7 @@ ndsctl_auth(FILE *fp, char *arg)
 
 		debug(LOG_DEBUG, "ndsctl_thread: client session end time [ %lu ]", client->session_end);
 
-		rc = auth_client_auth_nolock(id, "ndsctl_auth");
+		rc = auth_client_auth_nolock(id, "ndsctl_auth", customdata);
 	} else {
 		debug(LOG_DEBUG, "Client not found.");
 		rc = -1;

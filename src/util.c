@@ -768,7 +768,9 @@ ndsctl_json_all(FILE *fp)
 void
 ndsctl_json(FILE *fp, const char *arg)
 {
-	if (arg && strlen(arg)) {
+	//if (arg && strlen(arg)) {
+	debug(LOG_DEBUG, "arg [%s %d]", arg, strlen(arg));
+	if (strlen(arg) > 6) {
 		ndsctl_json_one(fp, arg);
 	} else {
 		ndsctl_json_all(fp);

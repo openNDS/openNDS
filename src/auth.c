@@ -42,6 +42,7 @@
 #include "fw_iptables.h"
 #include "client_list.h"
 #include "util.h"
+#include "http_microhttpd_utils.h"
 
 
 extern pthread_mutex_t client_list_mutex;
@@ -51,7 +52,7 @@ extern pthread_mutex_t config_mutex;
 unsigned int authenticated_since_start = 0;
 
 
-static void binauth_action(t_client *client, const char *reason)
+static void binauth_action(t_client *client, const char *reason, char *customdata)
 {
 	s_config *config = config_get_config();
 	char lockfile[] = "/tmp/ndsctl.lock";
@@ -63,8 +64,15 @@ static void binauth_action(t_client *client, const char *reason)
 	char *deauth = "deauth";
 	char *client_auth = "client_auth";
 	char *ndsctl_auth = "ndsctl_auth";
+	char customdata_enc[384] = {0};
+
+	if (!customdata) {
+		customdata="na";
+	}
 
 	if (config->binauth) {
+		uh_urlencode(customdata_enc, sizeof(customdata_enc), customdata, strlen(customdata));
+		debug(LOG_DEBUG, "binauth_action: customdata_enc [%s]", customdata_enc);
 		// ndsctl will deadlock if run within the BinAuth script so we must lock it
 		//Create lock
 		fd = fopen(lockfile, "w");
@@ -91,7 +99,7 @@ static void binauth_action(t_client *client, const char *reason)
 
 		debug(LOG_NOTICE, "BinAuth %s - client session end time: [ %lu ]", reason, sessionend);
 
-		execute("%s %s %s %llu %llu %lu %lu %s",
+		execute("%s %s %s %llu %llu %lu %lu %s %s",
 			config->binauth,
 			reason ? reason : "unknown",
 			client->mac,
@@ -99,7 +107,8 @@ static void binauth_action(t_client *client, const char *reason)
 			client->counters.outgoing,
 			sessionstart,
 			sessionend,
-			client->token
+			client->token,
+			customdata_enc
 		);
 
 		// unlock ndsctl
@@ -108,16 +117,18 @@ static void binauth_action(t_client *client, const char *reason)
 	}
 }
 
-static int auth_change_state(t_client *client, const unsigned int new_state, const char *reason)
+static int auth_change_state(t_client *client, const unsigned int new_state, const char *reason, char *customdata)
 {
 	const unsigned int state = client->fw_connection_state;
+
+	debug(LOG_DEBUG, "auth_change_state: customdata [%s]", customdata);
 
 	if (state == new_state) {
 		return -1;
 	} else if (state == FW_MARK_PREAUTHENTICATED) {
 		if (new_state == FW_MARK_AUTHENTICATED) {
 			iptables_fw_authenticate(client);
-			binauth_action(client, reason);
+			binauth_action(client, reason, customdata);
 		} else if (new_state == FW_MARK_BLOCKED) {
 			return -1;
 		} else if (new_state == FW_MARK_TRUSTED) {
@@ -128,7 +139,7 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 	} else if (state == FW_MARK_AUTHENTICATED) {
 		if (new_state == FW_MARK_PREAUTHENTICATED) {
 			iptables_fw_deauthenticate(client);
-			binauth_action(client, reason);
+			binauth_action(client, reason, customdata);
 			client_reset(client);
 		} else if (new_state == FW_MARK_BLOCKED) {
 			return -1;
@@ -204,7 +215,7 @@ fw_refresh_client_list(void)
 				cp1->ip, cp1->mac, now - cp1->session_end,
 				cp1->counters.incoming / 1000, cp1->counters.outgoing / 1000);
 
-			auth_change_state(cp1, FW_MARK_PREAUTHENTICATED, "timeout_deauth");
+			auth_change_state(cp1, FW_MARK_PREAUTHENTICATED, "timeout_deauth", NULL);
 		} else if (preauth_idle_timeout_secs > 0
 				&& conn_state == FW_MARK_PREAUTHENTICATED
 				&& (last_updated + preauth_idle_timeout_secs) <= now) {
@@ -222,7 +233,7 @@ fw_refresh_client_list(void)
 				cp1->ip, cp1->mac, now - last_updated,
 				cp1->counters.incoming / 1000, cp1->counters.outgoing / 1000);
 
-			auth_change_state(cp1, FW_MARK_PREAUTHENTICATED, "idle_deauth");
+			auth_change_state(cp1, FW_MARK_PREAUTHENTICATED, "idle_deauth", NULL);
 		}
 	}
 	UNLOCK_CLIENT_LIST();
@@ -280,7 +291,7 @@ auth_client_deauth(const unsigned id, const char *reason)
 		goto end;
 	}
 
-	rc = auth_change_state(client, FW_MARK_PREAUTHENTICATED, reason);
+	rc = auth_change_state(client, FW_MARK_PREAUTHENTICATED, reason, NULL);
 
 end:
 	UNLOCK_CLIENT_LIST();
@@ -295,10 +306,12 @@ end:
  * @return 0 on success
  */
 int
-auth_client_auth_nolock(const unsigned id, const char *reason)
+auth_client_auth_nolock(const unsigned id, const char *reason, char *customdata)
 {
 	t_client *client;
 	int rc;
+
+	debug(LOG_DEBUG, "authorise client: custom data [%s] ", customdata);
 
 	client = client_list_find_by_id(id);
 
@@ -308,7 +321,7 @@ auth_client_auth_nolock(const unsigned id, const char *reason)
 		return -1;
 	}
 
-	rc = auth_change_state(client, FW_MARK_AUTHENTICATED, reason);
+	rc = auth_change_state(client, FW_MARK_AUTHENTICATED, reason, customdata);
 	if (rc == 0) {
 		authenticated_since_start++;
 	}
@@ -317,12 +330,12 @@ auth_client_auth_nolock(const unsigned id, const char *reason)
 }
 
 int
-auth_client_auth(const unsigned id, const char *reason)
+auth_client_auth(const unsigned id, const char *reason, char *customdata)
 {
 	int rc;
 
 	LOCK_CLIENT_LIST();
-	rc = auth_client_auth_nolock(id, reason);
+	rc = auth_client_auth_nolock(id, reason, customdata);
 	UNLOCK_CLIENT_LIST();
 
 	return rc;
@@ -362,7 +375,7 @@ auth_client_untrust(const char *mac)
 		LOCK_CLIENT_LIST();
 		t_client * client = client_list_find_by_mac(mac);
 		if (client) {
-			rc = auth_change_state(client, FW_MARK_PREAUTHENTICATED, "manual_untrust");
+			rc = auth_change_state(client, FW_MARK_PREAUTHENTICATED, "manual_untrust", NULL);
 			if (rc == 0) {
 				client->session_start = 0;
 				client->session_end = 0;
@@ -454,7 +467,7 @@ auth_client_deauth_all()
 			continue;
 		}
 
-		auth_change_state(cp1, FW_MARK_PREAUTHENTICATED, "shutdown_deauth");
+		auth_change_state(cp1, FW_MARK_PREAUTHENTICATED, "shutdown_deauth", NULL);
 	}
 
 	UNLOCK_CLIENT_LIST();

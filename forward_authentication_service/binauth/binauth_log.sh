@@ -122,6 +122,12 @@ if [ $action = "auth_client" ]; then
 	customdata=$(printf "${customdata_enc//%/\\x}")
 
 	log_entry="method=$1, clientmac=$2, clientip=$7, username=$3, password=$4, redir=$redir, useragent=$useragent, token=$8, custom=$customdata"
+
+elif [ $action = "ndsctl_auth" ]; then
+	customdata_enc=$8
+	customdata=$(printf "${customdata_enc//%/\\x}")
+	log_entry="method=$1, clientmac=$2, bytes_incoming=$3, bytes_outgoing=$4, session_start=$5, session_end=$6, token=$7, custom=$customdata"
+
 else
 	log_entry="method=$1, clientmac=$2, bytes_incoming=$3, bytes_outgoing=$4, session_start=$5, session_end=$6, token=$7"
 fi

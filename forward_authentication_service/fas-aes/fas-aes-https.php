@@ -59,12 +59,17 @@ if (ob_get_level()){ob_end_clean();}
 
 #############################################################################################################
 #############################################################################################################
-# Set the pre-shared key, session length(minutes), upload/download quotas(KB) and upload/download rates(KB/s)
+# Set the pre-shared key, session length(minutes), upload/download quotas(kBytes), upload/download rates(kbits/s)
+# and custom string to be sent to the BinAuth script.
 # Upload and download limits are not implemented in openNDS yet and are reserved
 $key="1234567890";
 
-$sessionlength=2;
-$uploadquota=$downloadquota=$uploadrate=$downloadrate=0;
+$sessionlength=120; // minutes
+$uploadquota=500000; // kBytes
+$downloadquota=1000000; // kBytes
+$uploadrate=500; // kbits/sec
+$downloadrate=1000; // kbits/sec
+$custom="Custom data sent to BinAuth";
 #############################################################################################################
 #############################################################################################################
 
@@ -214,7 +219,7 @@ $gwname=hash('sha256', trim($gatewayname));
 @mkdir("$gwname", 0777);
 
 if (isset($_GET["auth"])) {
-	$log="$clientip $sessionlength $uploadquota $downloadquota $uploadrate $downloadrate\n";
+	$log="$clientip $sessionlength $uploadquota $downloadquota $uploadrate $downloadrate ".rawurlencode($custom)."\n";
 	$logfile="$gwname/$clientip";
 
 	if (!file_exists($logfile)) {

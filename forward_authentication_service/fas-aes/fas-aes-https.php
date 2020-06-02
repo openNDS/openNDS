@@ -309,7 +309,6 @@ if ($fullname == "" or $email == "") {
 	if ($invalid == true) {
 		echo "<br><b style=\"color:red;\">ERROR! Incomplete data passed from NDS</b>\n";
 	} else {
-		read_terms($me, $gatewayname);
 		echo "<form action=\"$me\" method=\"get\" >
 			<input type=\"hidden\" name=\"fas\" value=\"$string\">
 			<input type=\"hidden\" name=\"iv\" value=\"$iv\">
@@ -319,7 +318,8 @@ if ($fullname == "" or $email == "") {
 			Email Address:<br>
 			<input type=\"email\" name=\"email\" value=\"$email\">
 			<br><br>
-			<input type=\"submit\" value=\"Accept Terms of Service\">\n</form>\n";
+			<input type=\"submit\" value=\"Accept Terms of Service\">\n</form><br>\n";
+		read_terms($me, $gatewayname);
 	}
 } else {
 	# Output the "Thankyou page" with a continue button

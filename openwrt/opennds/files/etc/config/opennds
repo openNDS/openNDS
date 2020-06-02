@@ -163,7 +163,7 @@ config opennds
 	# The Binauth script will issue an exit code:
 	# 0 Authentication allowed
 	# 1 Authentication denied
-	# 
+	#
 	# Possible methods
 	#
 	# Authentication:
@@ -182,7 +182,8 @@ config opennds
 	# "downquota_deauth": Client was deauthenticated because its download quota exceeded the allowed value
 	# "shutdown_deauth": Client was deauthenticated by openNDS terminating.
 	#
-	# A fully functional BinAuth script is pre-installed and provides local logging of client activity if enabled:
+	# A fully functional BinAuth script is pre-installed and provides local logging
+	# of client activity if enabled by uncommenting the following line:
 	#option binauth '/usr/lib/opennds/binauth_log.sh'
 	###########################################################################################
 
@@ -235,38 +236,59 @@ config opennds
 	# Default: not set
 	# A key phrase for NDS to encrypt the query string sent to FAS
 	# Can be any combination of A-Z, a-z and 0-9, up to 32 characters with no white space
+	#
+	# Option faskey must be pre-shared with FAS.
+	#
 	#option faskey '1234567890'
 	###########################################################################################
 
 	# Option: fas_secure_enabled
 	# Default: 1
-	#
+
 	# ****If set to "0"****
-	# the client token is sent to the FAS in clear text in the query string of the
-	# redirect along with authaction and redir.
-	#
-	# ****If set to "1" and option faskey is NOT set****
-	# authaction and the client token are not revealed and it is the responsibility
-	# of the FAS to request the token from NDSCTL.
-	#
-	# ****If set to "1" and option faskey IS set****
-	# The client token will be hashed and sent to the FAS identified as “hid” in the query string.
+	# The FAS is enforced by NDS to use http protocol.
+	# The client token is sent to the FAS in clear text in the query string of the redirect along with authaction and redir.
+
+	# ****If set to "1"****
+	# The FAS is enforced by NDS to use http protocol.
+	# When the sha256sum command is available AND faskey is set, the client token will be hashed and sent to the FAS,
+	# identified as "hid" in the query string.
 	# The gatewayaddress is also sent on the query string, allowing the FAS to construct the authaction parameter.
-	# FAS must return the sha256sum of the concatenation of the original hid and faskey, to be used by NDS for client authentication.
+	# FAS must return the sha256sum of the concatenation of the original hid and faskey to be used by NDS for client authentication.
 	# This is returned in the normal way in the query string identified as “tok”.
 	# NDS will automatically detect whether hid mode is active or the raw token is being returned.
-	# Should sha256sum not be available to NDS when faskey is set, NDS will exit gracefully, logging the error in syslog.
 	#
-	# *****If set to 2****
-	# clientip, clientmac, gatewayname, client token, gatewayaddress, authdir, originurl and clientif
+	# Should sha256sum not be available or faskey is not set, then it is the responsibility of the FAS to request the token from NDSCTL.
+
+	# ****If set to "2"****
+	# The FAS is enforced by NDS to use http protocol.
+	#
+	# The parameters clientip, clientmac, gatewayname, client token, gatewayaddress, authdir, originurl and clientif
 	# are encrypted using faskey and passed to FAS in the query string.
-	# The query string will also contain a randomly generated initialization vector to be used by the FAS for decryption.
-	# The "php-cli" package and the "php-openssl" module must both be installed for fas_secure level 2.
-	# openNDS does not depend on this package and module, but will exit gracefully
-	# if this package and module are not installed when this level is set, logging the error in syslog.
-	# The FAS must use the query string passed initialisation vector and the pre shared fas_key to decrypt the query string.
-	# An example FAS php script is supplied in the source code.
 	#
+	# The query string will also contain a randomly generated initialization vector to be used by the FAS for decryption.
+	#
+	# The cipher used is "AES-256-CBC".
+	#
+	# The "php-cli" package and the "php-openssl" module must both be installed for fas_secure level 2 and 3.
+	#
+	# openNDS does not depend on this package and module, but will exit gracefully
+	# if this package and module are not installed when this level is set.
+	#
+	# The FAS must use the query string passed initialisation vector and the pre shared fas_key to decrypt the query string.
+	# An example FAS level 2 php script (fas-aes.php) is included in the /etc/opennds directory and also supplied in the source code.
+
+	# ****If set to "3"****
+	# The FAS is enforced by NDS to use https protocol.
+	#
+	# Level 3 is the same as level 2 except the use of https protocol is enforced for FAS.
+	#
+	# In addition, the "authmon" daemon is loaded.
+	# This allows the external FAS, after client verification, to effectively traverse inbound firewalls and address translation
+	# to achieve NDS authentication without generating browser security warnings or errors.
+	# An example FAS level 3 php script (fas-aes-https.php) is included in the /etc/opennds directory and also supplied in the source code.
+	#
+	# Note: Option faskey must be set if fas secure is set to levels 2 and 3 but is optional for level 1.
 	#option fas_secure_enabled '0'
 	###########################################################################################
 
@@ -287,7 +309,6 @@ config opennds
 	#
 	#option preauth '/path/to/myscript/myscript.sh'
 	###########################################################################################
-
 
 	# Your router may have several interfaces, and you
 	# probably want to keep them private from the gatewayinterface.

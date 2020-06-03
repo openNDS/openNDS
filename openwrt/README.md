@@ -9,7 +9,7 @@ sudo apt-get install git subversion g++ libncurses5-dev gawk zlib1g-dev build-es
 
 Build Commands:
 ```
-git clone git clone https://git.openwrt.org/openwrt/openwrt.git
+git clone https://git.openwrt.org/openwrt/openwrt.git
 cd openwrt
 
 ./scripts/feeds update -a

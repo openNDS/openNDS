@@ -303,8 +303,8 @@ ndsctl_auth(FILE *fp, char *arg)
 	int seconds = 60 * config->session_timeout;
 	int uploadrate = 0;
 	int downloadrate = 0;
-	int uploadquota = 0;
-	int downloadquota = 0;
+	unsigned long long int uploadquota = 0;
+	unsigned long long int downloadquota = 0;
 	char customdata[256] = {0};
 	char *argcopy;
 	char *arg2;
@@ -327,7 +327,7 @@ ndsctl_auth(FILE *fp, char *arg)
 	arg2 = strsep(&argcopy, ",");
 	debug(LOG_DEBUG, "arg2 [%s]", arg2);
 
-	// arg3 = sheduled duration (minutes) until deauth
+	// arg3 = scheduled duration (minutes) until deauth
 	arg3 = strsep(&argcopy, ",");
 	debug(LOG_DEBUG, "arg3 [%s]", arg3);
 
@@ -356,7 +356,7 @@ ndsctl_auth(FILE *fp, char *arg)
 	debug(LOG_DEBUG, "arg6 [%s]", arg6);
 
 	if (arg6 != NULL) {
-		uploadquota = strtol(arg6, &ptr, 10);
+		uploadquota = strtoll(arg6, &ptr, 10);
 	}
 
 	// arg7 = download quota (kB)
@@ -364,7 +364,7 @@ ndsctl_auth(FILE *fp, char *arg)
 	debug(LOG_DEBUG, "arg7 [%s]", arg7);
 
 	if (arg7 != NULL) {
-		downloadquota = strtol(arg7, &ptr, 10);
+		downloadquota = strtoll(arg7, &ptr, 10);
 	}
 
 	// arg8 = custom data string - max 256 characters

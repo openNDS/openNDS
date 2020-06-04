@@ -48,8 +48,8 @@ typedef struct _t_client {
 	t_counters counters;			/**< @brief Counters for input/output of the client. */
 	int upload_rate;			/**< @brief Client Upload rate limit, kb/s */
 	int download_rate;			/**< @brief Client Download rate limit, kb/s */
-	int upload_quota;			/**< @brief Client Upload quota, kB */
-	int download_quota;			/**< @brief Client Download quota, kB */
+	unsigned long long int upload_quota;	/**< @brief Client Upload quota, kB */
+	unsigned long long int download_quota;	/**< @brief Client Download quota, kB */
 	unsigned id;
 } t_client;
 

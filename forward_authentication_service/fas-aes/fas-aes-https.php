@@ -59,16 +59,29 @@ if (ob_get_level()){ob_end_clean();}
 
 #############################################################################################################
 #############################################################################################################
-# Set the pre-shared key, session length(minutes), upload/download quotas(kBytes), upload/download rates(kbits/s)
-# and custom string to be sent to the BinAuth script.
-# Upload and download limits are not implemented in openNDS yet and are reserved
+# Set the pre-shared key.
 $key="1234567890";
 
-$sessionlength=120; // minutes
-$uploadquota=500000; // kBytes
-$downloadquota=1000000; // kBytes
-$uploadrate=500; // kbits/sec
-$downloadrate=1000; // kbits/sec
+# Set the session length(minutes), upload/download quotas(kBytes), upload/download rates(kbits/s)
+# and custom string to be sent to the BinAuth script.
+# Upload and download quotas are in kilobytes.
+# If a client exceeds its upload or download quota it will be deauthenticated on the next cycle of the client checkinterval.
+# (see openNDS config for checkinterval)
+
+# Client Upload and Download Rates are the average rates a client achieves since authentication 
+# If a client exceeds its set upload or download rate it will be deauthenticated on the next cycle of the client checkinterval.
+
+# The following variables are set on a client by client basis. If a more sophisticated client credential verification was implemented,
+# these variables could be set dynamically.
+#
+# In addition, choice of the values of these variables can be determined, based on the interface used by the client
+# (as identified by the clienif parsed variable). For example, a system with two wireless interfaces such as "members" and "guests". 
+
+$sessionlength=1440; // minutes (1440 minutes = 24 hours)
+$uploadrate=500; // kbits/sec (500 kilobits/sec = 0.5 Megabits/sec)
+$downloadrate=1000; // kbits/sec (1000 kilobits/sec = 1.0 Megabits/sec)
+$uploadquota=500000; // kBytes (500000 kiloBytes = 500 MegaBytes)
+$downloadquota=1000000; // kBytes (1000000 kiloBytes = 1 GigaByte)
 $custom="Custom data sent to BinAuth";
 #############################################################################################################
 #############################################################################################################
@@ -219,7 +232,7 @@ $gwname=hash('sha256', trim($gatewayname));
 @mkdir("$gwname", 0777);
 
 if (isset($_GET["auth"])) {
-	$log="$clientip $sessionlength $uploadquota $downloadquota $uploadrate $downloadrate ".rawurlencode($custom)."\n";
+	$log="$clientip $sessionlength $uploadrate $downloadrate $uploadquota $downloadquota ".rawurlencode($custom)."\n";
 	$logfile="$gwname/$clientip";
 
 	if (!file_exists($logfile)) {

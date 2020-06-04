@@ -209,31 +209,55 @@ fw_refresh_client_list(void)
 		unsigned int conn_state = cp1->fw_connection_state;
 		time_t last_updated = cp1->counters.last_updated;
 
+		debug(LOG_INFO, "Client @ %s %s, quotas: ", cp1->ip, cp1->mac);
+		debug(LOG_INFO, "	Download quota: %llu, used: %llu ", cp1->download_quota, cp1->counters.incoming / 1000);
+		debug(LOG_INFO, "	Upload quota: %llu, used: %llu \n", cp1->upload_quota, cp1->counters.outgoing / 1000);
+
 		if (cp1->session_end > 0 && cp1->session_end <= now) {
-			// Session ended (only > 0 for FW_MARK_AUTHENTICATED by binauth)
-			debug(LOG_NOTICE, "Force out user: %s %s, connected: %ds, in: %llukB, out: %llukB",
+			// Session Timeout
+			debug(LOG_NOTICE, "Session end time reached, deauthenticating: %s %s, connected: %lu, in: %llukB, out: %llukB",
 				cp1->ip, cp1->mac, now - cp1->session_end,
 				cp1->counters.incoming / 1000, cp1->counters.outgoing / 1000);
 
 			auth_change_state(cp1, FW_MARK_PREAUTHENTICATED, "timeout_deauth", NULL);
+
+
+		} else if (cp1->download_quota > 0 && cp1->download_quota <= (cp1->counters.outgoing / 1000)) {
+			// Download quota
+			debug(LOG_NOTICE, "Download quota reached, deauthenticating: %s %s, connected: %lus, in: %llukB, out: %llukB",
+				cp1->ip, cp1->mac, now - cp1->session_end,
+				cp1->counters.incoming / 1000, cp1->counters.outgoing / 1000);
+
+			auth_change_state(cp1, FW_MARK_PREAUTHENTICATED, "downquota_deauth", NULL);
+
+		} else if (cp1->upload_quota > 0 && cp1->upload_quota <= (cp1->counters.incoming / 1000)) {
+			// Upload quota
+			debug(LOG_NOTICE, "Upload quota reached, deauthenticating: %s %s, connected: %lus, in: %llukB, out: %llukB",
+				cp1->ip, cp1->mac, now - cp1->session_end,
+				cp1->counters.incoming / 1000, cp1->counters.outgoing / 1000);
+
+			auth_change_state(cp1, FW_MARK_PREAUTHENTICATED, "upquota_deauth", NULL);
+
 		} else if (preauth_idle_timeout_secs > 0
 				&& conn_state == FW_MARK_PREAUTHENTICATED
 				&& (last_updated + preauth_idle_timeout_secs) <= now) {
-			// Timeout inactive preauthenticated user
-			debug(LOG_NOTICE, "Timeout preauthenticated idle user: %s %s, inactive: %ds, in: %llukB, out: %llukB",
+			// Timeout and delete an inactive preauthenticated user
+			debug(LOG_NOTICE, "Timeout preauthenticated idle user: %s %s, inactive: %lus, in: %llukB, out: %llukB",
 				cp1->ip, cp1->mac, now - last_updated,
 				cp1->counters.incoming / 1000, cp1->counters.outgoing / 1000);
 
 			client_list_delete(cp1);
+
 		} else if (auth_idle_timeout_secs > 0
 				&& conn_state == FW_MARK_AUTHENTICATED
 				&& (last_updated + auth_idle_timeout_secs) <= now) {
-			// Timeout inactive user
+			// Timeout an idle authenticated user
 			debug(LOG_NOTICE, "Timeout authenticated idle user: %s %s, inactive: %ds, in: %llukB, out: %llukB",
 				cp1->ip, cp1->mac, now - last_updated,
 				cp1->counters.incoming / 1000, cp1->counters.outgoing / 1000);
 
 			auth_change_state(cp1, FW_MARK_PREAUTHENTICATED, "idle_deauth", NULL);
+
 		}
 	}
 	UNLOCK_CLIENT_LIST();

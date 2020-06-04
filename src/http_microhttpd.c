@@ -98,7 +98,7 @@ static int do_binauth(struct MHD_Connection *connection, const char *binauth, t_
 
 	MHD_get_connection_values(connection, MHD_HEADER_KIND, get_user_agent_callback, &user_agent);
 
-	debug(LOG_INFO, "BinAuth: User Agent is [ %s ]", user_agent);
+	debug(LOG_DEBUG, "BinAuth: User Agent is [ %s ]", user_agent);
 
 	username = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "username");
 	password = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "password");
@@ -115,7 +115,7 @@ static int do_binauth(struct MHD_Connection *connection, const char *binauth, t_
 	if (!custom || strlen(custom) == 0) {
 		custom="na";
 	}
-	debug(LOG_INFO, "BinAuth: custom data [ %s ]", custom);
+	debug(LOG_DEBUG, "BinAuth: custom data [ %s ]", custom);
 
 	uh_urlencode(username_enc, sizeof(username_enc), username, strlen(username));
 	uh_urlencode(password_enc, sizeof(password_enc), password, strlen(password));
@@ -127,7 +127,7 @@ static int do_binauth(struct MHD_Connection *connection, const char *binauth, t_
 	safe_asprintf(&argv,"%s auth_client %s '%s' '%s' '%s' '%s' '%s' '%s' '%s'",
 		binauth, client->mac, username_enc, password_enc, redirect_url_enc_buf, enc_user_agent, client->ip, client->token, custom_enc);
 
-	debug(LOG_INFO, "BinAuth argv: %s", argv);
+	debug(LOG_DEBUG, "BinAuth argv: %s", argv);
 
 	/* ndsctl will deadlock if run within the BinAuth script so we must lock it
 	 *Create lock */
@@ -512,7 +512,7 @@ static int authenticate_client(struct MHD_Connection *connection,
 		client->session_end = 0;
 	}
 
-	debug(LOG_INFO, "redirect_url is [ %s ]", redirect_url);
+	debug(LOG_DEBUG, "redirect_url is [ %s ]", redirect_url);
 
 	if (config->binauth) {
 		rc = do_binauth(connection, config->binauth, client, &seconds, &upload, &download, redirect_url);
@@ -656,13 +656,13 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 
 	MHD_get_connection_values(connection, MHD_HEADER_KIND, get_user_agent_callback, &user_agent);
 
-	debug(LOG_INFO, "PreAuth: User Agent is [ %s ]", user_agent);
+	debug(LOG_DEBUG, "PreAuth: User Agent is [ %s ]", user_agent);
 
 	uh_urlencode(enc_user_agent, sizeof(enc_user_agent), user_agent, strlen(user_agent));
 
 	if (query) {
 		uh_urlencode(enc_query, sizeof(enc_query), query, strlen(query));
-		debug(LOG_INFO, "PreAuth: query: %s", query);
+		debug(LOG_DEBUG, "PreAuth: query: %s", query);
 	}
 
 	rc = execute_ret(msg, HTMLMAXSIZE - 1, "%s '%s' '%s'", config->preauth, enc_query, enc_user_agent);
@@ -863,7 +863,7 @@ static int encode_and_redirect_to_splashpage(struct MHD_Connection *connection, 
 			config->gw_address, config->splashpage, originurl);
 	}
 
-	debug(LOG_INFO, "splashpageurl: %s", splashpageurl);
+	debug(LOG_DEBUG, "splashpageurl: %s", splashpageurl);
 
 	ret = send_redirect_temp(connection, client, splashpageurl);
 	free(splashpageurl);
@@ -926,7 +926,7 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 
 			if (config->fas_hid) {
 				hash_str(hash, sizeof(hash), client->token);
-				debug(LOG_INFO, "hid=%s", hash);
+				debug(LOG_DEBUG, "hid=%s", hash);
 				snprintf(querystr, QUERYMAXLEN, "?clientip=%s&gatewayname=%s&hid=%s&gatewayaddress=%s",
 					client->ip, config->url_encoded_gw_name, hash, config->gw_address);
 			} else {
@@ -1005,7 +1005,7 @@ int send_redirect_temp(struct MHD_Connection *connection, t_client *client, cons
 		debug(LOG_ERR, "send_redirect_temp: Error adding Connection header to redirection page");
 	}
 
-	debug(LOG_INFO, "send_redirect_temp: Queueing response for %s, %s", client->ip, client->mac);
+	debug(LOG_DEBUG, "send_redirect_temp: Queueing response for %s, %s", client->ip, client->mac);
 
 	ret = MHD_queue_response(connection, MHD_HTTP_TEMPORARY_REDIRECT, response);
 
@@ -1432,7 +1432,7 @@ const char *lookup_mimetype(const char *filename)
 		}
 	}
 
-	debug(LOG_INFO, "Could not find corresponding mimetype for %s extension", extension);
+	debug(LOG_ERR, "Could not find corresponding mimetype for %s extension", extension);
 
 	return DEFAULT_MIME_TYPE;
 }
@@ -1497,12 +1497,12 @@ size_t unescape(void * cls, struct MHD_Connection *c, char *src)
 	char unescapecmd[QUERYMAXLEN] = {0};
 	char msg[QUERYMAXLEN] = {0};
 
-	debug(LOG_INFO, "Escaped string=%s\n", src);
+	debug(LOG_DEBUG, "Escaped string=%s\n", src);
 	snprintf(unescapecmd, QUERYMAXLEN, "/usr/lib/opennds/unescape.sh -url \"%s\"", src);
 	debug(LOG_DEBUG, "unescapecmd=%s\n", unescapecmd);
 
 	if (execute_ret_url_encoded(msg, sizeof(msg) - 1, unescapecmd) == 0) {
-		debug(LOG_INFO, "Unescaped string=%s\n", msg);
+		debug(LOG_DEBUG, "Unescaped string=%s\n", msg);
 		strcpy(src, msg);
 	}
 

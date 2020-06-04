@@ -222,15 +222,15 @@ fw_refresh_client_list(void)
 			auth_change_state(cp1, FW_MARK_PREAUTHENTICATED, "timeout_deauth", NULL);
 
 
-		} else if (cp1->download_quota > 0 && cp1->download_quota <= (cp1->counters.outgoing / 1000)) {
+		} else if (cp1->download_quota > 0 && cp1->download_quota <= (cp1->counters.incoming / 1000)) {
 			// Download quota
 			debug(LOG_NOTICE, "Download quota reached, deauthenticating: %s %s, connected: %lus, in: %llukB, out: %llukB",
 				cp1->ip, cp1->mac, now - cp1->session_end,
-				cp1->counters.incoming / 1000, cp1->counters.outgoing / 1000);
+				cp1->counters.incoming / 1000, cp1->counters.incoming / 1000);
 
 			auth_change_state(cp1, FW_MARK_PREAUTHENTICATED, "downquota_deauth", NULL);
 
-		} else if (cp1->upload_quota > 0 && cp1->upload_quota <= (cp1->counters.incoming / 1000)) {
+		} else if (cp1->upload_quota > 0 && cp1->upload_quota <= (cp1->counters.outgoing / 1000)) {
 			// Upload quota
 			debug(LOG_NOTICE, "Upload quota reached, deauthenticating: %s %s, connected: %lus, in: %llukB, out: %llukB",
 				cp1->ip, cp1->mac, now - cp1->session_end,

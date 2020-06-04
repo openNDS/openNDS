@@ -115,16 +115,16 @@ _iptables_init_marks()
 	// FW_MARK_MASK is bitwise OR of other marks
 	FW_MARK_MASK = FW_MARK_BLOCKED | FW_MARK_TRUSTED | FW_MARK_AUTHENTICATED;
 
-	debug(LOG_INFO,"Iptables mark %s: 0x%x",
+	debug(LOG_DEBUG,"Iptables mark %s: 0x%x",
 		fw_connection_state_as_string(FW_MARK_PREAUTHENTICATED),
 		FW_MARK_PREAUTHENTICATED);
-	debug(LOG_INFO,"Iptables mark %s: 0x%x",
+	debug(LOG_DEBUG,"Iptables mark %s: 0x%x",
 		fw_connection_state_as_string(FW_MARK_AUTHENTICATED),
 		FW_MARK_AUTHENTICATED);
-	debug(LOG_INFO,"Iptables mark %s: 0x%x",
+	debug(LOG_DEBUG,"Iptables mark %s: 0x%x",
 		fw_connection_state_as_string(FW_MARK_TRUSTED),
 		FW_MARK_TRUSTED);
-	debug(LOG_INFO,"Iptables mark %s: 0x%x",
+	debug(LOG_DEBUG,"Iptables mark %s: 0x%x",
 		fw_connection_state_as_string(FW_MARK_BLOCKED),
 		FW_MARK_BLOCKED);
 

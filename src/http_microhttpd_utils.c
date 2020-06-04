@@ -95,7 +95,7 @@ int htmlentityencode(char *buf, int blen, const char *src, int slen)
 		}
 	}
 
-	debug(LOG_INFO, "HTML Entity encoded string: %s, length: %d", buf, len);
+	debug(LOG_DEBUG, "HTML Entity encoded string: %s, length: %d", buf, len);
 	return (i == slen) ? len : -1;
 }
 
@@ -160,7 +160,7 @@ int uh_urlencode(char *buf, int blen, const char *src, int slen)
 		}
 	}
 
-	debug(LOG_INFO, "URL encoded string: %s, length: %d", buf, len);
+	debug(LOG_DEBUG, "URL encoded string: %s, length: %d", buf, len);
 	return (i == slen) ? len : -1;
 }
 

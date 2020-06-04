@@ -358,7 +358,7 @@ char * get_uptime_string(char buf[64]) {
 	sysuptime = get_system_uptime ();
 	now = time(NULL);
 
-	debug(LOG_INFO, "Uncorrected NDS Uptime: %li seconds ", (now - started_time));
+	debug(LOG_DEBUG, "Uncorrected NDS Uptime: %li seconds ", (now - started_time));
 
 	if ((now - started_time) > sysuptime) {
 		uptimesecs = sysuptime;
@@ -379,7 +379,7 @@ time_t get_system_uptime() {
 	if (pfp != NULL) {
 		(void) fgets (buf, sizeof(buf), pfp);
 		sysuptime = atol(strtok(buf, "."));
-		debug(LOG_INFO, "Operating System Uptime: %li seconds ", sysuptime);
+		debug(LOG_DEBUG, "Operating System Uptime: %li seconds ", sysuptime);
 		fclose (pfp);
 		return sysuptime;
 	}
@@ -418,7 +418,7 @@ ndsctl_status(FILE *fp)
 	sysuptime = get_system_uptime ();
 	now = time(NULL);
 
-	debug(LOG_INFO, "Uncorrected Uptime: %li seconds ", (now - started_time));
+	debug(LOG_DEBUG, "Uncorrected Uptime: %li seconds ", (now - started_time));
 
 	if ((now - started_time) > sysuptime) {
 		uptimesecs = sysuptime;

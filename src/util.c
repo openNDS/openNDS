@@ -468,12 +468,12 @@ ndsctl_status(FILE *fp)
 
 	if (config->traffic_control) {
 		if (config->download_rate > 0) {
-			fprintf(fp, "Download rate limit: %d kbit/s\n", config->download_rate);
+			fprintf(fp, "Download rate limit: %llu kbit/s\n", config->download_rate);
 		} else {
 			fprintf(fp, "Download rate limit: none\n");
 		}
 		if (config->upload_rate > 0) {
-			fprintf(fp, "Upload rate limit: %d kbit/s\n", config->upload_rate);
+			fprintf(fp, "Upload rate limit: %llu kbit/s\n", config->upload_rate);
 		} else {
 			fprintf(fp, "Upload rate limit: none\n");
 		}

@@ -75,6 +75,7 @@
 #define DEFAULT_SET_MSS 1
 #define DEFAULT_MSS_VALUE 0
 #define DEFAULT_TRAFFIC_CONTROL 0
+#define DEFAULT_RATE_CHECK_WINDOW 2
 #define DEFAULT_UPLOAD_RATE 0
 #define DEFAULT_DOWNLOAD_RATE 0
 #define DEFAULT_UPLOAD_QUOTA 0
@@ -175,10 +176,11 @@ typedef struct {
 	int set_mss;				//@brief boolean, whether to set mss
 	int mss_value;				//@brief int, mss value; <= 0 clamp to pmtu
 	int traffic_control;			//@brief boolean, whether to do tc
-	int download_rate;			//@brief Download rate, kb/s
-	int upload_rate;			//@brief Upload rate, kb/s
-	int download_quota;			//@brief Download quota, kB
-	int upload_quota;			//@brief Upload quota, kB
+	int rate_check_window;			//@brief window size in multiples of checkinterval for rate check moving average
+	unsigned long long int download_rate;	//@brief Download rate, kb/s
+	unsigned long long int upload_rate;	//@brief Upload rate, kb/s
+	unsigned long long int download_quota;	//@brief Download quota, kB
+	unsigned long long int upload_quota;	//@brief Upload quota, kB
 	int upload_ifb;				//@brief Number of IFB handling upload
 	int log_syslog;				//@brief boolean, whether to log to syslog
 	int syslog_facility;			//@brief facility to use when using syslog for logging

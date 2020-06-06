@@ -32,6 +32,8 @@
 typedef struct _t_counters {
 	unsigned long long incoming;		/**< @brief Incoming data total */
 	unsigned long long outgoing;		/**< @brief Outgoing data total */
+	unsigned long long in_window_start;	/**< @brief Incoming data total at rate check window start */
+	unsigned long long out_window_start;	/**< @brief Outgoing data total at rate check window start */
 	time_t last_updated;			/**< @brief Last update of the counters */
 } t_counters;
 
@@ -44,10 +46,12 @@ typedef struct _t_client {
 	char *token;				/**< @brief Client token */
 	unsigned int fw_connection_state;	/**< @brief Client Connection state in the firewall */
 	time_t session_start;			/**< @brief Actual Time the client was authenticated */
+	time_t window_start;			/**< @brief Actual Time the client rate check window begins */
 	time_t session_end;			/**< @brief Scheduled Time the client will be deauthenticated */
 	t_counters counters;			/**< @brief Counters for input/output of the client. */
-	int upload_rate;			/**< @brief Client Upload rate limit, kb/s */
-	int download_rate;			/**< @brief Client Download rate limit, kb/s */
+	int window_counter;			/**< @brief Rate Check Window counter */
+	unsigned long long int upload_rate;	/**< @brief Client Upload rate limit, kb/s */
+	unsigned long long int download_rate;	/**< @brief Client Download rate limit, kb/s */
 	unsigned long long int upload_quota;	/**< @brief Client Upload quota, kB */
 	unsigned long long int download_quota;	/**< @brief Client Download quota, kB */
 	unsigned id;

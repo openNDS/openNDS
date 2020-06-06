@@ -120,6 +120,8 @@ static void binauth_action(t_client *client, const char *reason, char *customdat
 static int auth_change_state(t_client *client, const unsigned int new_state, const char *reason, char *customdata)
 {
 	const unsigned int state = client->fw_connection_state;
+	const time_t now = time(NULL);
+	s_config *config = config_get_config();
 
 	debug(LOG_DEBUG, "auth_change_state: customdata [%s]", customdata);
 
@@ -128,6 +130,10 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 	} else if (state == FW_MARK_PREAUTHENTICATED) {
 		if (new_state == FW_MARK_AUTHENTICATED) {
 			iptables_fw_authenticate(client);
+			client->window_start = now;
+			client->window_counter = config->rate_check_window;
+			client->counters.in_window_start = client->counters.incoming;
+			client->counters.out_window_start = client->counters.outgoing;
 			binauth_action(client, reason, customdata);
 		} else if (new_state == FW_MARK_BLOCKED) {
 			return -1;
@@ -189,6 +195,12 @@ fw_refresh_client_list(void)
 	const int preauth_idle_timeout_secs = 60 * config->preauth_idle_timeout;
 	const int auth_idle_timeout_secs = 60 * config->auth_idle_timeout;
 	const time_t now = time(NULL);
+	unsigned long long int durationsecs;
+	unsigned long long int download_bytes, upload_bytes;
+	unsigned long long int uprate;
+	unsigned long long int downrate;
+
+	debug(LOG_DEBUG, "Rate Check Window is set to %u period(s) of checkinterval", config->rate_check_window);
 
 	// Update all the counters
 	if (-1 == iptables_fw_counters_update()) {
@@ -207,11 +219,23 @@ fw_refresh_client_list(void)
 		}
 
 		unsigned int conn_state = cp1->fw_connection_state;
+
+		debug(LOG_DEBUG, "conn_state [%x]", conn_state);
+
+		if (conn_state == FW_MARK_PREAUTHENTICATED) {
+			continue;
+		}
+
 		time_t last_updated = cp1->counters.last_updated;
 
+
+		debug(LOG_DEBUG, "durationsecs [%llu] download_bytes [%llu] upload_bytes [%llu] ", durationsecs, download_bytes, upload_bytes);
+
 		debug(LOG_INFO, "Client @ %s %s, quotas: ", cp1->ip, cp1->mac);
-		debug(LOG_INFO, "	Download quota: %llu, used: %llu ", cp1->download_quota, cp1->counters.incoming / 1000);
-		debug(LOG_INFO, "	Upload quota: %llu, used: %llu \n", cp1->upload_quota, cp1->counters.outgoing / 1000);
+
+		debug(LOG_INFO, "	Download DATA quota (kBytes): %llu, used: %llu ", cp1->download_quota, cp1->counters.incoming / 1000);
+
+		debug(LOG_INFO, "	Upload DATA quota (kBytes): %llu, used: %llu \n", cp1->upload_quota, cp1->counters.outgoing / 1000);
 
 		if (cp1->session_end > 0 && cp1->session_end <= now) {
 			// Session Timeout
@@ -226,7 +250,7 @@ fw_refresh_client_list(void)
 			// Download quota
 			debug(LOG_NOTICE, "Download quota reached, deauthenticating: %s %s, connected: %lus, in: %llukB, out: %llukB",
 				cp1->ip, cp1->mac, now - cp1->session_end,
-				cp1->counters.incoming / 1000, cp1->counters.incoming / 1000);
+				cp1->counters.incoming / 1000, cp1->counters.outgoing / 1000);
 
 			auth_change_state(cp1, FW_MARK_PREAUTHENTICATED, "downquota_deauth", NULL);
 
@@ -259,6 +283,36 @@ fw_refresh_client_list(void)
 			auth_change_state(cp1, FW_MARK_PREAUTHENTICATED, "idle_deauth", NULL);
 
 		}
+
+		debug(LOG_DEBUG, "Window start [%lu] - window counter [%u]", cp1->window_start, cp1->window_counter);
+		debug(LOG_DEBUG, "in_window_start [%llu] - out_window_start [%llu]", cp1->counters.in_window_start, cp1->counters.out_window_start);
+
+		durationsecs = (now - cp1->window_start);
+
+		if (durationsecs <= (config->checkinterval * config->rate_check_window)) {
+			--cp1->window_counter;
+			continue;
+		}
+
+		download_bytes = (cp1->counters.incoming - cp1->counters.in_window_start);
+		upload_bytes = (cp1->counters.outgoing - cp1->counters.out_window_start);
+		downrate = (download_bytes / 125 / durationsecs); // kbits/sec
+		uprate = (upload_bytes / 125 / durationsecs); // kbits/sec
+
+		debug(LOG_INFO, "	Download RATE quota (kbits/s): %llu, Current average download rate (kbits/s): %llu",
+			cp1->download_rate, downrate);
+
+		debug(LOG_INFO, "	Upload RATE quota (kbits/s): %llu, Current average upload rate (kbits/s): %llu",
+			cp1->upload_rate, uprate);
+
+
+		if (cp1->window_counter == 0) { // Start new window
+			cp1->window_start = now;
+			cp1->window_counter = config->rate_check_window;
+			cp1->counters.in_window_start = cp1->counters.incoming;
+			cp1->counters.out_window_start = cp1->counters.outgoing;
+		}
+
 	}
 	UNLOCK_CLIENT_LIST();
 }

@@ -3,7 +3,7 @@
 url=$1
 gatewayhash=$2
 phpcli=$3
-loopinterval=5
+loopinterval=15
 postrequest="/usr/lib/opennds/post-request.php"
 
 #action can be "list" (list and delete from FAS auth log) or "view" (view and leave in FAS auth log)

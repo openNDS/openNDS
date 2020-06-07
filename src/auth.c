@@ -218,18 +218,30 @@ fw_refresh_client_list(void)
 			continue;
 		}
 
+		time_t last_updated = cp1->counters.last_updated;
+
 		unsigned int conn_state = cp1->fw_connection_state;
 
 		debug(LOG_DEBUG, "conn_state [%x]", conn_state);
 
 		if (conn_state == FW_MARK_PREAUTHENTICATED) {
+
+			// Timeout and delete an inactive preauthenticated user
+			if (preauth_idle_timeout_secs > 0
+				&& conn_state == FW_MARK_PREAUTHENTICATED
+				&& (last_updated + preauth_idle_timeout_secs) <= now)
+				{
+
+				debug(LOG_NOTICE, "Timeout preauthenticated idle user: %s %s, inactive: %lus",
+					cp1->ip,
+					cp1->mac, now - last_updated
+				);
+
+				client_list_delete(cp1);
+
+			}
 			continue;
 		}
-
-		time_t last_updated = cp1->counters.last_updated;
-
-
-		debug(LOG_DEBUG, "durationsecs [%llu] download_bytes [%llu] upload_bytes [%llu] ", durationsecs, download_bytes, upload_bytes);
 
 		debug(LOG_INFO, "Client @ %s %s, quotas: ", cp1->ip, cp1->mac);
 
@@ -298,6 +310,8 @@ fw_refresh_client_list(void)
 		upload_bytes = (cp1->counters.outgoing - cp1->counters.out_window_start);
 		downrate = (download_bytes / 125 / durationsecs); // kbits/sec
 		uprate = (upload_bytes / 125 / durationsecs); // kbits/sec
+
+		debug(LOG_DEBUG, "durationsecs [%llu] download_bytes [%llu] upload_bytes [%llu] ", durationsecs, download_bytes, upload_bytes);
 
 		debug(LOG_INFO, "	Download RATE quota (kbits/s): %llu, Current average download rate (kbits/s): %llu",
 			cp1->download_rate, downrate);

@@ -1021,7 +1021,12 @@ iptables_fw_counters_update(void)
 				if (p1->counters.outgoing < counter) {
 					p1->counters.outgoing = counter;
 					p1->counters.last_updated = time(NULL);
-					debug(LOG_DEBUG, "%s - Updated counter.outgoing to %llu bytes.  Updated last_updated to %d", ip, counter, p1->counters.last_updated);
+
+					debug(LOG_DEBUG, "%s - Updated counter.outgoing to %llu bytes.  Updated last_updated to %d",
+						ip,
+						counter,
+						p1->counters.last_updated
+					);
 				}
 			} else {
 				debug(LOG_WARNING, "Could not find %s in client list", ip);

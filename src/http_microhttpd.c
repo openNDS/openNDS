@@ -76,30 +76,36 @@ static const char *lookup_mimetype(const char *filename);
 
 // Call the BinAuth script
 static int do_binauth(struct MHD_Connection *connection, const char *binauth, t_client *client,
-	int *seconds_ret, int *upload_ret, int *download_ret, const char *redirect_url)
+	int *seconds_ret, unsigned long long int *upload_rate_ret, unsigned long long int *download_rate_ret,
+	unsigned long long int *upload_quota_ret, unsigned long long int *download_quota_ret, const char *redirect_url)
 {
 	char username_enc[64] = {0};
 	char password_enc[64] = {0};
+	char custom_enc[384] = {0};
 	char lockfile[] = "/tmp/ndsctl.lock";
 	FILE *fd;
 	char redirect_url_enc_buf[QUERYMAXLEN] = {0};
 	const char *username;
 	const char *password;
-	char msg[255] = {0};
+	const char *custom;
+	char msg[256] = {0};
 	char *argv = NULL;
 	const char *user_agent = NULL;
 	char enc_user_agent[256] = {0};
 	int seconds;
-	int upload;
-	int download;
+	unsigned long long int upload_rate;
+	unsigned long long int download_rate;
+	unsigned long long int upload_quota;
+	unsigned long long int download_quota;
 	int rc;
 
 	MHD_get_connection_values(connection, MHD_HEADER_KIND, get_user_agent_callback, &user_agent);
 
-	debug(LOG_INFO, "BinAuth: User Agent is [ %s ]", user_agent);
+	debug(LOG_DEBUG, "BinAuth: User Agent is [ %s ]", user_agent);
 
 	username = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "username");
 	password = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "password");
+	custom = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "custom");
 
 	if (!username || strlen(username) == 0) {
 		username="na";
@@ -109,16 +115,22 @@ static int do_binauth(struct MHD_Connection *connection, const char *binauth, t_
 		password="na";
 	}
 
+	if (!custom || strlen(custom) == 0) {
+		custom="na";
+	}
+	debug(LOG_DEBUG, "BinAuth: custom data [ %s ]", custom);
+
 	uh_urlencode(username_enc, sizeof(username_enc), username, strlen(username));
 	uh_urlencode(password_enc, sizeof(password_enc), password, strlen(password));
+	uh_urlencode(custom_enc, sizeof(custom_enc), custom, strlen(custom));
 	uh_urlencode(redirect_url_enc_buf, sizeof(redirect_url_enc_buf), redirect_url, strlen(redirect_url));
 	uh_urlencode(enc_user_agent, sizeof(enc_user_agent), user_agent, strlen(user_agent));
 
 	// Note: username, password and user_agent may contain spaces so argument should be quoted
-	safe_asprintf(&argv,"%s auth_client %s '%s' '%s' '%s' '%s' '%s'",
-		binauth, client->mac, username_enc, password_enc, redirect_url_enc_buf, enc_user_agent, client->ip);
+	safe_asprintf(&argv,"%s auth_client %s '%s' '%s' '%s' '%s' '%s' '%s' '%s'",
+		binauth, client->mac, username_enc, password_enc, redirect_url_enc_buf, enc_user_agent, client->ip, client->token, custom_enc);
 
-	debug(LOG_INFO, "BinAuth argv: %s", argv);
+	debug(LOG_DEBUG, "BinAuth argv: %s", argv);
 
 	/* ndsctl will deadlock if run within the BinAuth script so we must lock it
 	 *Create lock */
@@ -136,14 +148,18 @@ static int do_binauth(struct MHD_Connection *connection, const char *binauth, t_
 		return -1;
 	}
 
-	rc = sscanf(msg, "%d %d %d", &seconds, &upload, &download);
+	rc = sscanf(msg, "%d %llu %llu %llu %llu", &seconds, &upload_rate, &download_rate, &upload_quota, &download_quota);
 
 	// store assigned parameters
 	switch (rc) {
+		case 5:
+			*download_quota_ret = MAX(download_quota, 0);
+		case 4:
+			*upload_quota_ret = MAX(upload_quota, 0);
 		case 3:
-			*download_ret = MAX(download, 0);
+			*download_rate_ret = MAX(download_rate, 0);
 		case 2:
-			*upload_ret = MAX(upload, 0);
+			*upload_rate_ret = MAX(upload_rate, 0);
 		case 1:
 			*seconds_ret = MAX(seconds, 0);
 		case 0:
@@ -487,19 +503,16 @@ static int authenticate_client(struct MHD_Connection *connection,
 	s_config *config = config_get_config();
 	time_t now = time(NULL);
 	int seconds = 60 * config->session_timeout;
-	int upload = 0;
-	int download = 0;
+	unsigned long long int uploadrate = 0;
+	unsigned long long int downloadrate = 0;
+	unsigned long long int uploadquota = 0;
+	unsigned long long int downloadquota = 0;
 	int rc;
 	int ret;
 	char query_str[QUERYMAXLEN] = {0};
 	char redirect_url_enc[QUERYMAXLEN] = {0};
 	char *querystr = query_str;
 
-	debug(LOG_INFO, "redirect_url is [ %s ]", redirect_url);
-
-	// set client values
-	client->download_limit = download;
-	client->upload_limit = upload;
 	client->session_start = now;
 
 	if (seconds) {
@@ -508,10 +521,21 @@ static int authenticate_client(struct MHD_Connection *connection,
 		client->session_end = 0;
 	}
 
-	debug(LOG_INFO, "authenticate: Session Start - %lu Session End - %lu", client->session_start, client->session_end);
+	debug(LOG_DEBUG, "redirect_url is [ %s ]", redirect_url);
 
 	if (config->binauth) {
-		rc = do_binauth(connection, config->binauth, client, &seconds, &upload, &download, redirect_url);
+		rc = do_binauth(
+			connection,
+			config->binauth,
+			client,
+			&seconds,
+			&uploadrate,
+			&downloadrate,
+			&uploadquota,
+			&downloadquota,
+			redirect_url
+		);
+
 		if (rc != 0) {
 			/*BinAuth denies access so redirect client back to login/splash page where they can try again.
 				If FAS is enabled, this will cause nesting of the contents of redirect_url,
@@ -527,14 +551,28 @@ static int authenticate_client(struct MHD_Connection *connection,
 			ret = encode_and_redirect_to_splashpage(connection, client, redirect_url_enc, querystr);
 			return ret;
 		}
-		rc = auth_client_auth(client->id, "client_auth");
-		// set client values that may have been changed by binauth
-		client->download_limit = download;
-		client->upload_limit = upload;
+		rc = auth_client_auth(client->id, "client_auth", NULL);
 	} else {
-		rc = auth_client_auth(client->id, NULL);
+		rc = auth_client_auth(client->id, NULL, NULL);
 	}
 
+	// override remaining client values that might have been set by binauth
+	if (downloadrate > 0) {
+		client->download_rate = downloadrate;
+	}
+	if (uploadrate > 0) {
+		client->upload_rate = uploadrate;
+	}
+
+	if (downloadquota > 0) {
+		client->download_quota = downloadquota;
+	}
+	if (uploadquota > 0) {
+		client->upload_quota = uploadquota;
+	}
+
+
+	// error checking
 	if (rc != 0) {
 		return send_error(connection, 503);
 	}
@@ -544,6 +582,8 @@ static int authenticate_client(struct MHD_Connection *connection,
 	} else {
 		return send_error(connection, 200);
 	}
+
+	debug(LOG_INFO, "authenticate: Session Start - %lu Session End - %lu", client->session_start, client->session_end);
 }
 
 /**
@@ -648,13 +688,13 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 
 	MHD_get_connection_values(connection, MHD_HEADER_KIND, get_user_agent_callback, &user_agent);
 
-	debug(LOG_INFO, "PreAuth: User Agent is [ %s ]", user_agent);
+	debug(LOG_DEBUG, "PreAuth: User Agent is [ %s ]", user_agent);
 
 	uh_urlencode(enc_user_agent, sizeof(enc_user_agent), user_agent, strlen(user_agent));
 
 	if (query) {
 		uh_urlencode(enc_query, sizeof(enc_query), query, strlen(query));
-		debug(LOG_INFO, "PreAuth: query: %s", query);
+		debug(LOG_DEBUG, "PreAuth: query: %s", query);
 	}
 
 	rc = execute_ret(msg, HTMLMAXSIZE - 1, "%s '%s' '%s'", config->preauth, enc_query, enc_user_agent);
@@ -855,7 +895,7 @@ static int encode_and_redirect_to_splashpage(struct MHD_Connection *connection, 
 			config->gw_address, config->splashpage, originurl);
 	}
 
-	debug(LOG_INFO, "splashpageurl: %s", splashpageurl);
+	debug(LOG_DEBUG, "splashpageurl: %s", splashpageurl);
 
 	ret = send_redirect_temp(connection, client, splashpageurl);
 	free(splashpageurl);
@@ -918,7 +958,7 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 
 			if (config->fas_hid) {
 				hash_str(hash, sizeof(hash), client->token);
-				debug(LOG_INFO, "hid=%s", hash);
+				debug(LOG_DEBUG, "hid=%s", hash);
 				snprintf(querystr, QUERYMAXLEN, "?clientip=%s&gatewayname=%s&hid=%s&gatewayaddress=%s",
 					client->ip, config->url_encoded_gw_name, hash, config->gw_address);
 			} else {
@@ -997,7 +1037,7 @@ int send_redirect_temp(struct MHD_Connection *connection, t_client *client, cons
 		debug(LOG_ERR, "send_redirect_temp: Error adding Connection header to redirection page");
 	}
 
-	debug(LOG_INFO, "send_redirect_temp: Queueing response for %s, %s", client->ip, client->mac);
+	debug(LOG_DEBUG, "send_redirect_temp: Queueing response for %s, %s", client->ip, client->mac);
 
 	ret = MHD_queue_response(connection, MHD_HTTP_TEMPORARY_REDIRECT, response);
 
@@ -1424,7 +1464,7 @@ const char *lookup_mimetype(const char *filename)
 		}
 	}
 
-	debug(LOG_INFO, "Could not find corresponding mimetype for %s extension", extension);
+	debug(LOG_ERR, "Could not find corresponding mimetype for %s extension", extension);
 
 	return DEFAULT_MIME_TYPE;
 }
@@ -1489,12 +1529,12 @@ size_t unescape(void * cls, struct MHD_Connection *c, char *src)
 	char unescapecmd[QUERYMAXLEN] = {0};
 	char msg[QUERYMAXLEN] = {0};
 
-	debug(LOG_INFO, "Escaped string=%s\n", src);
+	debug(LOG_DEBUG, "Escaped string=%s\n", src);
 	snprintf(unescapecmd, QUERYMAXLEN, "/usr/lib/opennds/unescape.sh -url \"%s\"", src);
 	debug(LOG_DEBUG, "unescapecmd=%s\n", unescapecmd);
 
 	if (execute_ret_url_encoded(msg, sizeof(msg) - 1, unescapecmd) == 0) {
-		debug(LOG_INFO, "Unescaped string=%s\n", msg);
+		debug(LOG_DEBUG, "Unescaped string=%s\n", msg);
 		strcpy(src, msg);
 	}
 

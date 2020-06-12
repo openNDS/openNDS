@@ -53,6 +53,7 @@
 #include "main.h"
 
 #include "ndsctl_thread.h"
+#include "http_microhttpd_utils.h"
 
 #define MAX_EVENT_SIZE 30
 
@@ -300,37 +301,104 @@ ndsctl_auth(FILE *fp, char *arg)
 	unsigned id;
 	int rc;
 	int seconds = 60 * config->session_timeout;
-	int upload = 0;
-	int download = 0;
+	int uploadrate = config->upload_rate;
+	int downloadrate = config->download_rate;
+	unsigned long long int uploadquota = config->upload_quota;
+	unsigned long long int downloadquota = config->download_quota;
+	char customdata[256] = {0};
+	char *argcopy;
+	char *arg2;
+	char *arg3;
+	char *arg4;
+	char *arg5;
+	char *arg6;
+	char *arg7;
+	char *arg8;
+	char *ptr;
 	time_t now = time(NULL);
-
-	//TODO - support for setting alternate values for seconds, upload and download can be implemented here by calling a BinAuth script
 
 	debug(LOG_DEBUG, "Entering ndsctl_auth [%s]", arg);
 
+	argcopy=strdup(arg);
+
+	// arg2 = ip|mac|tok
+	arg2 = strsep(&argcopy, ",");
+	debug(LOG_DEBUG, "arg2 [%s]", arg2);
+
+	// arg3 = scheduled duration (minutes) until deauth
+	arg3 = strsep(&argcopy, ",");
+	debug(LOG_DEBUG, "arg3 [%s]", arg3);
+
+	if (arg3 != NULL) {
+		seconds = 60 * strtol(arg3, &ptr, 10);
+	}
+
+	// arg4 = upload rate (kb/s)
+	arg4 = strsep(&argcopy, ",");
+	debug(LOG_DEBUG, "arg4 [%s]", arg4);
+
+	if (arg4 != NULL) {
+		uploadrate = strtol(arg4, &ptr, 10);
+	}
+
+	// arg5 = download rate (kb/s)
+	arg5 = strsep(&argcopy, ",");
+	debug(LOG_DEBUG, "arg5 [%s]", arg5);
+
+	if (arg5 != NULL) {
+		downloadrate = strtol(arg5, &ptr, 10);
+	}
+
+	// arg6 = upload quota (kB)
+	arg6 = strsep(&argcopy, ",");
+	debug(LOG_DEBUG, "arg6 [%s]", arg6);
+
+	if (arg6 != NULL) {
+		uploadquota = strtoll(arg6, &ptr, 10);
+	}
+
+	// arg7 = download quota (kB)
+	arg7 = strsep(&argcopy, ",");
+	debug(LOG_DEBUG, "arg7 [%s]", arg7);
+
+	if (arg7 != NULL) {
+		downloadquota = strtoll(arg7, &ptr, 10);
+	}
+
+	// arg8 = custom data string - max 256 characters
+	arg8 = strsep(&argcopy, ",");
+	debug(LOG_DEBUG, "arg8 [%s]", arg8);
+
+	if (arg8 != NULL) {
+	snprintf(customdata, sizeof(customdata), "%s", arg8);
+	debug(LOG_DEBUG, "customdata [%s]", customdata);
+	}
+
 	LOCK_CLIENT_LIST();
-	client = client_list_find_by_any(arg, arg, arg);
+	client = client_list_find_by_any(arg2, arg2, arg2);
 	id = client ? client->id : 0;
 
 	if (id) {
-		rc = auth_client_auth_nolock(id, "ndsctl_auth");
+		// set client values
+		client->session_start = now;
+		client->upload_rate = uploadrate;
+		client->download_rate = downloadrate;
+		client->upload_quota = uploadquota;
+		client->download_quota = downloadquota;
+		if (seconds) {
+			client->session_end = now + seconds;
+		} else {
+			client->session_end = 0;
+		}
+
+		debug(LOG_DEBUG, "ndsctl_thread: client session end time [ %lu ]", client->session_end);
+
+		rc = auth_client_auth_nolock(id, "ndsctl_auth", customdata);
 	} else {
 		debug(LOG_DEBUG, "Client not found.");
 		rc = -1;
 	}
 	UNLOCK_CLIENT_LIST();
-
-	// set client values
-	client->download_limit = download;
-	client->upload_limit = upload;
-	client->session_start = now;
-
-	if (seconds) {
-		client->session_end = now + seconds;
-	} else {
-		client->session_end = 0;
-	}
-
 
 	if (rc == 0) {
 		fprintf(fp, "Yes");

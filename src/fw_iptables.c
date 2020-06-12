@@ -115,16 +115,16 @@ _iptables_init_marks()
 	// FW_MARK_MASK is bitwise OR of other marks
 	FW_MARK_MASK = FW_MARK_BLOCKED | FW_MARK_TRUSTED | FW_MARK_AUTHENTICATED;
 
-	debug(LOG_INFO,"Iptables mark %s: 0x%x",
+	debug(LOG_DEBUG,"Iptables mark %s: 0x%x",
 		fw_connection_state_as_string(FW_MARK_PREAUTHENTICATED),
 		FW_MARK_PREAUTHENTICATED);
-	debug(LOG_INFO,"Iptables mark %s: 0x%x",
+	debug(LOG_DEBUG,"Iptables mark %s: 0x%x",
 		fw_connection_state_as_string(FW_MARK_AUTHENTICATED),
 		FW_MARK_AUTHENTICATED);
-	debug(LOG_INFO,"Iptables mark %s: 0x%x",
+	debug(LOG_DEBUG,"Iptables mark %s: 0x%x",
 		fw_connection_state_as_string(FW_MARK_TRUSTED),
 		FW_MARK_TRUSTED);
-	debug(LOG_INFO,"Iptables mark %s: 0x%x",
+	debug(LOG_DEBUG,"Iptables mark %s: 0x%x",
 		fw_connection_state_as_string(FW_MARK_BLOCKED),
 		FW_MARK_BLOCKED);
 
@@ -830,7 +830,7 @@ iptables_fw_destroy_mention(
 int
 iptables_fw_authenticate(t_client *client)
 {
-	int rc = 0, download_limit, upload_limit, traffic_control;
+	int rc = 0, download_rate, upload_rate, traffic_control;
 	s_config *config;
 	char upload_ifbname[16];
 
@@ -839,24 +839,35 @@ iptables_fw_authenticate(t_client *client)
 
 	LOCK_CONFIG();
 	traffic_control = config->traffic_control;
-	download_limit = config->download_limit;
-	upload_limit = config->upload_limit;
+	download_rate = config->download_rate;
+	upload_rate = config->upload_rate;
 	UNLOCK_CONFIG();
 
-	if ((client->download_limit > 0) && (client->upload_limit > 0)) {
-		download_limit = client->download_limit;
-		upload_limit = client->upload_limit;
+	if ((client->download_rate > 0) && (client->upload_rate > 0)) {
+		download_rate = client->download_rate;
+		upload_rate = client->upload_rate;
 	}
 
+	//remove client rate block rule if left from a previous instance
+	iptables_do_command("-D FORWARD -s %s -j DROP", client->ip);
+
 	debug(LOG_NOTICE, "Authenticating %s %s", client->ip, client->mac);
+
 	// This rule is for marking upload (outgoing) packets, and for upload byte counting
-	rc |= iptables_do_command("-t mangle -A " CHAIN_OUTGOING " -s %s -m mac --mac-source %s -j MARK %s 0x%x", client->ip, client->mac, markop, FW_MARK_AUTHENTICATED);
+	rc |= iptables_do_command("-t mangle -A " CHAIN_OUTGOING " -s %s -m mac --mac-source %s -j MARK %s 0x%x",
+		client->ip,
+		client->mac,
+		markop,
+		FW_MARK_AUTHENTICATED
+	);
+
 	rc |= iptables_do_command("-t mangle -A " CHAIN_INCOMING " -d %s -j MARK %s 0x%x", client->ip, markop, FW_MARK_AUTHENTICATED);
+
 	// This rule is just for download (incoming) byte counting, see iptables_fw_counters_update()
 	rc |= iptables_do_command("-t mangle -A " CHAIN_INCOMING " -d %s -j ACCEPT", client->ip);
 
 	if (traffic_control) {
-		rc |= tc_attach_client(config->gw_interface, download_limit, upload_ifbname, upload_limit, client->id, client->ip);
+		rc |= tc_attach_client(config->gw_interface, download_rate, upload_ifbname, upload_rate, client->id, client->ip);
 	}
 
 	return rc;
@@ -865,7 +876,7 @@ iptables_fw_authenticate(t_client *client)
 int
 iptables_fw_deauthenticate(t_client *client)
 {
-	int download_limit, upload_limit, traffic_control;
+	int download_rate, upload_rate, traffic_control;
 	s_config *config;
 	char upload_ifbname[16];
 	int rc = 0;
@@ -875,23 +886,32 @@ iptables_fw_deauthenticate(t_client *client)
 
 	LOCK_CONFIG();
 	traffic_control = config->traffic_control;
-	download_limit = config->download_limit;
-	upload_limit = config->upload_limit;
+	download_rate = config->download_rate;
+	upload_rate = config->upload_rate;
 	UNLOCK_CONFIG();
 
-	if ((client->download_limit > 0) && (client->upload_limit > 0)) {
-		download_limit = client->download_limit;
-		upload_limit = client->upload_limit;
+	if ((client->download_rate > 0) && (client->upload_rate > 0)) {
+		download_rate = client->download_rate;
+		upload_rate = client->upload_rate;
 	}
 
 	// Remove the authentication rules.
 	debug(LOG_NOTICE, "Deauthenticating %s %s", client->ip, client->mac);
-	rc |= iptables_do_command("-t mangle -D " CHAIN_OUTGOING " -s %s -m mac --mac-source %s -j MARK %s 0x%x", client->ip, client->mac, markop, FW_MARK_AUTHENTICATED);
+
+	//remove client rate block rule if set
+	iptables_do_command("-D FORWARD -s %s -j DROP", client->ip);
+
+	rc |= iptables_do_command("-t mangle -D " CHAIN_OUTGOING " -s %s -m mac --mac-source %s -j MARK %s 0x%x",
+		client->ip,
+		client->mac,
+		markop,
+		FW_MARK_AUTHENTICATED
+	);
 	rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -j MARK %s 0x%x", client->ip, markop, FW_MARK_AUTHENTICATED);
 	rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -j ACCEPT", client->ip);
 
 	if (traffic_control) {
-		rc |= tc_detach_client(config->gw_interface, download_limit, upload_ifbname, upload_limit, client->id);
+		rc |= tc_detach_client(config->gw_interface, download_rate, upload_ifbname, upload_rate, client->id);
 	}
 
 	return rc;
@@ -1021,7 +1041,12 @@ iptables_fw_counters_update(void)
 				if (p1->counters.outgoing < counter) {
 					p1->counters.outgoing = counter;
 					p1->counters.last_updated = time(NULL);
-					debug(LOG_DEBUG, "%s - Updated counter.outgoing to %llu bytes.  Updated last_updated to %d", ip, counter, p1->counters.last_updated);
+
+					debug(LOG_DEBUG, "%s - Updated counter.outgoing to %llu bytes.  Updated last_updated to %d",
+						ip,
+						counter,
+						p1->counters.last_updated
+					);
 				}
 			} else {
 				debug(LOG_WARNING, "Could not find %s in client list", ip);

@@ -57,10 +57,34 @@
 // Allow immediate flush to browser
 if (ob_get_level()){ob_end_clean();}
 
-##########################
-// Set the pre-shared key
+#############################################################################################################
+#############################################################################################################
+# Set the pre-shared key.
 $key="1234567890";
-##########################
+
+# Set the session length(minutes), upload/download quotas(kBytes), upload/download rates(kbits/s)
+# and custom string to be sent to the BinAuth script.
+# Upload and download quotas are in kilobytes.
+# If a client exceeds its upload or download quota it will be deauthenticated on the next cycle of the client checkinterval.
+# (see openNDS config for checkinterval)
+
+# Client Upload and Download Rates are the average rates a client achieves since authentication 
+# If a client exceeds its set upload or download rate it will be deauthenticated on the next cycle of the client checkinterval.
+
+# The following variables are set on a client by client basis. If a more sophisticated client credential verification was implemented,
+# these variables could be set dynamically.
+#
+# In addition, choice of the values of these variables can be determined, based on the interface used by the client
+# (as identified by the clienif parsed variable). For example, a system with two wireless interfaces such as "members" and "guests". 
+
+$sessionlength=1440; // minutes (1440 minutes = 24 hours)
+$uploadrate=500; // kbits/sec (500 kilobits/sec = 0.5 Megabits/sec)
+$downloadrate=1000; // kbits/sec (1000 kilobits/sec = 1.0 Megabits/sec)
+$uploadquota=500000; // kBytes (500000 kiloBytes = 500 MegaBytes)
+$downloadquota=1000000; // kBytes (1000000 kiloBytes = 1 GigaByte)
+$custom="Custom data sent to BinAuth";
+#############################################################################################################
+#############################################################################################################
 
 //Send auth list to NDS on request.
 # option "list" sends the list and deletes each client entry that it finds
@@ -77,20 +101,30 @@ if (isset($_POST["auth_get"])) {
 		exit(0);
 	}
 
+	$authlist="";
+
 	if ($_POST["auth_get"] == "list") {
 		$auth_list=scandir("$gatewayhash");
 		array_shift($auth_list);
 		array_shift($auth_list);
-		echo implode(" ", $auth_list);
+		#echo implode(" ", $auth_list);
 		foreach ($auth_list as $client) {
+			$clientauth=file("$gatewayhash/$client");
+			$authlist=$authlist." ".rawurlencode(trim($clientauth[0]));
 			unlink("$gatewayhash/$client");
 		}
+		echo $authlist;
 
 	} else if ($_POST["auth_get"] == "view") {
 		$auth_list=scandir("$gatewayhash");
 		array_shift($auth_list);
 		array_shift($auth_list);
-		echo implode(" ", $auth_list);
+		#echo implode(" ", $auth_list);
+		foreach ($auth_list as $client) {
+			$clientauth=file("$gatewayhash/$client");
+			$authlist=$authlist." ".rawurlencode(trim($clientauth[0]));
+		}
+		echo trim($authlist);
 	}
 	exit(0);
 }
@@ -186,12 +220,19 @@ header("Pragma: no-cache");
 //Generate responsive page html
 display_header($gatewayname);
 
-//create auth list directory for this gateway
+#################################################################################
+# Create auth list directory for this gateway
+# This list will be sent to NDS when it requests it.
+#
+# Then display a "logged in" landing page once NDS has authenticated the client.
+# or a timed out error if we do not get authenticated by NDS
+#################################################################################
+
 $gwname=hash('sha256', trim($gatewayname));
 @mkdir("$gwname", 0777);
 
 if (isset($_GET["auth"])) {
-	$log="$clientip\n";
+	$log="$clientip $sessionlength $uploadrate $downloadrate $uploadquota $downloadquota ".rawurlencode($custom)."\n";
 	$logfile="$gwname/$clientip";
 
 	if (!file_exists($logfile)) {
@@ -224,6 +265,11 @@ if (isset($_GET["auth"])) {
 				<hr>
 				<p><italic-black>You can use your Browser, Email and other network Apps as you normally would.
 				</italic-black></p>";
+
+			echo "<form>
+				<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='".urldecode($originurl)."'\" >
+				</form><br>";
+
 			read_terms($me,$gatewayname);
 			display_footer();
 			exit(0);
@@ -276,7 +322,6 @@ if ($fullname == "" or $email == "") {
 	if ($invalid == true) {
 		echo "<br><b style=\"color:red;\">ERROR! Incomplete data passed from NDS</b>\n";
 	} else {
-		read_terms($me, $gatewayname);
 		echo "<form action=\"$me\" method=\"get\" >
 			<input type=\"hidden\" name=\"fas\" value=\"$string\">
 			<input type=\"hidden\" name=\"iv\" value=\"$iv\">
@@ -286,7 +331,8 @@ if ($fullname == "" or $email == "") {
 			Email Address:<br>
 			<input type=\"email\" name=\"email\" value=\"$email\">
 			<br><br>
-			<input type=\"submit\" value=\"Accept Terms of Service\">\n</form>\n";
+			<input type=\"submit\" value=\"Accept Terms of Service\">\n</form><br>\n";
+		read_terms($me, $gatewayname);
 	}
 } else {
 	# Output the "Thankyou page" with a continue button
@@ -340,6 +386,7 @@ display_footer();
 function display_header($gatewayname) {
 	$css=insert_css();
 	// define the image for the shortcut icon
+	// https://avatars0.githubusercontent.com/u/4403602 is the Nodogsplash Bulldog
 	$imageurl="https://avatars0.githubusercontent.com/u/4403602";
 	$imagetype="png";
 	$scriptname=basename($_SERVER['SCRIPT_NAME']);
@@ -367,6 +414,7 @@ function display_header($gatewayname) {
 
 function display_footer() {
 	// define the image to display
+	// https://avatars1.githubusercontent.com/u/62547912 is the openNDS Portal Lens Flare
 	$imageurl="https://avatars1.githubusercontent.com/u/62547912";
 	$imagetype="png";
 	$scriptname=basename($_SERVER['SCRIPT_NAME']);

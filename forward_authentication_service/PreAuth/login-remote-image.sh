@@ -7,6 +7,25 @@
 # This is changed to bash automatically by Makefile for Debian
 #
 
+#############################################################################################
+#
+# !!!Dependencies!!!
+#
+# If the remote image is served from an https site, ssl/tls support for wget is required.
+#
+# On OpenWrt this is provided by the following packages:
+#
+# libustream-mbedtls
+#
+# and
+#
+# ca-bundle
+#
+# On other operating systems the equivalent must be provided, eg wget-ssl and ca-bundle
+#
+#############################################################################################
+
+
 
 # Customise the Logfile location:
 #
@@ -39,6 +58,23 @@ logname="ndslog.log"
 
 
 # functions:
+
+get_image_file() {
+	imagepath="/etc/opennds/htdocs/images/remote"
+	mkdir "/tmp/remote"
+
+	if [ ! -d "$imagepath" ]; then
+		ln -s /tmp/remote /etc/opennds/htdocs/images/remote
+	fi
+
+	md5=$(echo -e "$imageurl" | md5sum);
+	filename=$(echo -e "$md5" | awk {'print($1)'});
+	filename="$filename.$imagetype"
+
+	if [ ! -f "$imagepath/$filename" ]; then
+		wget -q -P $imagepath -O $filename $imageurl
+	fi
+}
 
 htmlentityencode() {
 	entitylist="s/\"/\&quot;/ s/>/\&gt;/ s/</\&lt;/"
@@ -238,11 +274,22 @@ header="<!DOCTYPE html>
 	<hr>
 "
 
-# Define a common footer for every page served
+# We want to display an image from a remote server
+# Remote server can be https if required
+# All we need is the image url and image type (jpg, png etc.)
+# In this example the image is only refreshed after a reboot
+# But this is easy to change in get_image_file function
+
+imageurl="https://avatars1.githubusercontent.com/u/62547912"
+imagetype="png"
+
+get_image_file
+
 version="$(ndsctl status | grep Version)"
 year="$(date | awk -F ' ' '{print $(6)}')"
+
 footer="
-	<img style=\"height:60px; width:60px; float:left;\" src=\"/images/splash.jpg\" alt=\"Splash Page: For access to the Internet.\">
+	<img style=\"height:60px; width:60px; float:left;\" src=\"/images/remote/$filename\" alt=\"Splash Page: For access to the Internet.\">
 
 	<copy-right>
 		<br><br>
@@ -330,19 +377,24 @@ else
 	# the client user continues, so now is the time to deliver your message.
 
 	echo "<big-red>Thankyou!</big-red>"
-	echo "<br><b>Welcome $usernamehtml</b>"
+	echo "<br><b>Welcome $username</b>"
 
 	# Add your message here:
 	# You could retrieve text or images from a remote server using wget or curl
 	# as this router has Internet access whilst the client device does not (yet).
+
+	# You can also send a custom data string to BinAuth. Set the variable $custom to the desired value
+	# Max length 256 characters
+	custom="Custom data sent to BinAuth"
+
 	echo "<br><italic-black> Your News or Advertising could be here, contact the owners of this Hotspot to find out how!</italic-black>"
 
 	echo "<form action=\"/opennds_auth/\" method=\"get\">"
 	echo "<input type=\"hidden\" name=\"tok\" value=\"$tok\">"
 	echo "<input type=\"hidden\" name=\"redir\" value=\"$requested\"><br>"
+	echo "<input type=\"hidden\" name=\"custom\" value=\"$custom\">"
 	echo "<input type=\"submit\" value=\"Continue\" >"
 	echo "</form><hr>"
-
 	# In this example we have decided to log all clients who are granted access
 	write_log
 fi

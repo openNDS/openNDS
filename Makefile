@@ -44,8 +44,12 @@ install:
 	cp resources/status.html $(DESTDIR)/etc/opennds/htdocs/
 	cp resources/splash.jpg $(DESTDIR)/etc/opennds/htdocs/images/
 	mkdir -p $(DESTDIR)/usr/lib/opennds
-	cp forward_authentication_service/PreAuth/demo-preauth.sh $(DESTDIR)/usr/lib/opennds/login.sh
+	cp forward_authentication_service/binauth/binauth_log.sh $(DESTDIR)/usr/lib/opennds/
+	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/opennds/binauth_log.sh
+	cp forward_authentication_service/PreAuth/login.sh $(DESTDIR)/usr/lib/opennds/
 	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/opennds/login.sh
+	cp forward_authentication_service/PreAuth/login-remote-image.sh $(DESTDIR)/usr/lib/opennds/
+	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/opennds/login-remote-image.sh
 	cp forward_authentication_service/libs/get_client_interface.sh $(DESTDIR)/usr/lib/opennds/
 	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/opennds/get_client_interface.sh
 	cp forward_authentication_service/libs/get_client_token.sh $(DESTDIR)/usr/lib/opennds/

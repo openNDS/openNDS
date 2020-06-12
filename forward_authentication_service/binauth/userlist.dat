@@ -1,0 +1,3 @@
+username=staff, password=weneedit, session_length=3000
+username=guest, password=thanks, session_length=600
+username=member, password=letmein, session_length=1200

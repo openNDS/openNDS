@@ -30,7 +30,6 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <string.h>
-#include <stdarg.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -63,19 +62,45 @@ usage(void)
 		"  -h                  Print usage\n"
 		"\n"
 		"commands:\n"
-		"  status              View the status of opennds\n"
-		"  clients             Display machine-readable client list\n"
-		"  json [mac|ip|token] Display client list in json format\n"
-		"  stop                Stop the running opennds\n"
-		"  auth mac|ip|token   Authenticate user with specified mac, ip or token\n"
-		"  deauth mac|ip|token Deauthenticate user with specified mac, ip or token\n"
-		"  block mac           Block the given MAC address\n"
-		"  unblock mac         Unblock the given MAC address\n"
-		"  allow mac           Allow the given MAC address\n"
-		"  unallow mac         Unallow the given MAC address\n"
-		"  trust mac           Trust the given MAC address\n"
-		"  untrust mac         Untrust the given MAC address\n"
-		"  debuglevel n        Set debug level to n\n"
+		"  status\n"
+		"	View the status of opennds\n\n"
+		"  clients\n"
+		"	Display machine-readable client list\n\n"
+		"  json	mac|ip|token(optional)\n"
+		"	Display client list in json format\n"
+		"	mac|ip|token is optional, if not specified, all clients are listed\n\n"
+		"  stop\n"
+		"	Stop the running opennds\n\n"
+		"  auth mac|ip|token sessiontimeout(minutes) uploadrate(kb/s) downloadrate(kb/s) uploadquota(kB) downloadquota(kB) customstring\n"
+		"	Authenticate client with specified mac, ip or token\n"
+		"\n"
+		"	sessiontimeout sets the session duration. Unlimited if 0, defaults to global setting if null (double quotes).\n"
+		"	The client will be deauthenticated once the sessiontimout period has passed.\n"
+		"\n"
+		"	uploadrate and downloadrate are the maximum allowed data rates. Unlimited if 0, global setting if null (\"\").\n"
+		"\n"
+		"	uploadquota and downloadquota are the maximum volumes of data allowed. Unlimited if 0, global setting if null (\"\").\n"
+		"\n"
+		"	customstring is a custom string that will be passed to BinAuth.\n"
+		"\n"
+		"	Example: ndsctl auth 1400 300 1500 500000 1000000 \"This is a Custom String\"\n"
+		"\n"
+		"  deauth mac|ip|token\n"
+		"	Deauthenticate user with specified mac, ip or token\n\n"
+		"  block mac\n"
+		"	Block the given MAC address\n\n"
+		"  unblock mac\n"
+		"	Unblock the given MAC address\n\n"
+		"  allow mac\n"
+		"	Allow the given MAC address\n\n"
+		"  unallow mac\n"
+		"	Unallow the given MAC address\n\n"
+		"  trust mac\n"
+		"	Trust the given MAC address\n\n"
+		"  untrust mac\n"
+		"	Untrust the given MAC address\n\n"
+		"  debuglevel n\n"
+		"	Set debug level to n (0=silent, 1=Normal, 2=Info, 3=debug)\n"
 		"\n"
 	);
 }
@@ -219,9 +244,10 @@ main(int argc, char **argv)
 	const struct argument* arg;
 	const char *socket;
 	int i = 1;
-	int ret;
+	int counter;
 	char lockfile[] = "/tmp/ndsctl.lock";
-	char line[128] = {0};
+	char args[512] = {0};
+	char argi[64] = {0};
 	FILE *fd;
 
 	if ((fd = fopen(lockfile, "r")) != NULL) {
@@ -265,14 +291,6 @@ main(int argc, char **argv)
 		}
 	}
 
-	// Too many arguments
-	if (argc > (i+2)) {
-		usage();
-		fclose(fd);
-		remove(lockfile);
-		return 1;
-	}
-
 	arg = find_argument(argv[i]);
 
 	if (arg == NULL) {
@@ -282,8 +300,17 @@ main(int argc, char **argv)
 		return 1;
 	}
 
-	// Send command, argv[i+1] may be NULL.
-	ret = ndsctl_do(socket, arg, argv[i+1]);
+	// Collect command line arguments then send the command
+	snprintf(args, sizeof(args), "%s", argv[i+1]);
+
+	if (argc > i) {
+		for (counter=2; counter < argc-1; counter++) {
+			snprintf(argi, sizeof(argi), ",%s", argv[i+counter]);
+			strncat(args, argi, sizeof(argi));
+		}
+	}
+
+	ndsctl_do(socket, arg, args);
 	fclose(fd);
 	remove(lockfile);
 	return 0;

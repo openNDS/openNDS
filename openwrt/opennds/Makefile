@@ -7,7 +7,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=opennds
 PKG_FIXUP:=autoreconf
-PKG_VERSION:=5.0.2beta
+PKG_VERSION:=5.1.0beta
 PKG_RELEASE:=1
 
 PKG_SOURCE_URL:=https://codeload.github.com/opennds/opennds/tar.gz/v$(PKG_VERSION)?
@@ -59,13 +59,16 @@ define Package/opennds/install
 	$(CP) $(PKG_BUILD_DIR)/openwrt/opennds/files/etc/init.d/opennds $(1)/etc/init.d/
 	$(CP) $(PKG_BUILD_DIR)/openwrt/opennds/files/etc/uci-defaults/40_opennds $(1)/etc/uci-defaults/
 	$(CP) $(PKG_BUILD_DIR)/openwrt/opennds/files/usr/lib/opennds/restart.sh $(1)/usr/lib/opennds/
-	$(CP) $(PKG_BUILD_DIR)/forward_authentication_service/PreAuth/demo-preauth.sh $(1)/usr/lib/opennds/login.sh
+	$(CP) $(PKG_BUILD_DIR)/forward_authentication_service/binauth/binauth_log.sh $(1)/usr/lib/opennds/
+	$(CP) $(PKG_BUILD_DIR)/forward_authentication_service/PreAuth/login.sh $(1)/usr/lib/opennds/
+	$(CP) $(PKG_BUILD_DIR)/forward_authentication_service/PreAuth/login-remote-image.sh $(1)/usr/lib/opennds/
 	$(CP) $(PKG_BUILD_DIR)/forward_authentication_service/libs/get_client_interface.sh $(1)/usr/lib/opennds/
 	$(CP) $(PKG_BUILD_DIR)/forward_authentication_service/libs/get_client_token.sh $(1)/usr/lib/opennds/
 	$(CP) $(PKG_BUILD_DIR)/forward_authentication_service/libs/unescape.sh $(1)/usr/lib/opennds/
 	$(CP) $(PKG_BUILD_DIR)/forward_authentication_service/libs/authmon.sh $(1)/usr/lib/opennds/
 	$(CP) $(PKG_BUILD_DIR)/forward_authentication_service/libs/post-request.php $(1)/usr/lib/opennds/
 	$(CP) $(PKG_BUILD_DIR)/forward_authentication_service/fas-aes/fas-aes.php $(1)/etc/opennds/
+	$(CP) $(PKG_BUILD_DIR)/forward_authentication_service/fas-hid/fas-hid.php $(1)/etc/opennds/
 	$(CP) $(PKG_BUILD_DIR)/forward_authentication_service/fas-aes/fas-aes-https.php $(1)/etc/opennds/
 endef
 

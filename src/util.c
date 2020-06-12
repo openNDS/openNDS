@@ -358,7 +358,7 @@ char * get_uptime_string(char buf[64]) {
 	sysuptime = get_system_uptime ();
 	now = time(NULL);
 
-	debug(LOG_INFO, "Uncorrected NDS Uptime: %li seconds ", (now - started_time));
+	debug(LOG_DEBUG, "Uncorrected NDS Uptime: %li seconds ", (now - started_time));
 
 	if ((now - started_time) > sysuptime) {
 		uptimesecs = sysuptime;
@@ -379,7 +379,7 @@ time_t get_system_uptime() {
 	if (pfp != NULL) {
 		(void) fgets (buf, sizeof(buf), pfp);
 		sysuptime = atol(strtok(buf, "."));
-		debug(LOG_INFO, "Operating System Uptime: %li seconds ", sysuptime);
+		debug(LOG_DEBUG, "Operating System Uptime: %li seconds ", sysuptime);
 		fclose (pfp);
 		return sysuptime;
 	}
@@ -418,7 +418,7 @@ ndsctl_status(FILE *fp)
 	sysuptime = get_system_uptime ();
 	now = time(NULL);
 
-	debug(LOG_INFO, "Uncorrected Uptime: %li seconds ", (now - started_time));
+	debug(LOG_DEBUG, "Uncorrected Uptime: %li seconds ", (now - started_time));
 
 	if ((now - started_time) > sysuptime) {
 		uptimesecs = sysuptime;
@@ -467,13 +467,13 @@ ndsctl_status(FILE *fp)
 	fprintf(fp, "Traffic control: %s\n", config->traffic_control ? "yes" : "no");
 
 	if (config->traffic_control) {
-		if (config->download_limit > 0) {
-			fprintf(fp, "Download rate limit: %d kbit/s\n", config->download_limit);
+		if (config->download_rate > 0) {
+			fprintf(fp, "Download rate limit: %llu kbit/s\n", config->download_rate);
 		} else {
 			fprintf(fp, "Download rate limit: none\n");
 		}
-		if (config->upload_limit > 0) {
-			fprintf(fp, "Upload rate limit: %d kbit/s\n", config->upload_limit);
+		if (config->upload_rate > 0) {
+			fprintf(fp, "Upload rate limit: %llu kbit/s\n", config->upload_rate);
 		} else {
 			fprintf(fp, "Upload rate limit: none\n");
 		}
@@ -768,7 +768,9 @@ ndsctl_json_all(FILE *fp)
 void
 ndsctl_json(FILE *fp, const char *arg)
 {
-	if (arg && strlen(arg)) {
+	//if (arg && strlen(arg)) {
+	debug(LOG_DEBUG, "arg [%s %d]", arg, strlen(arg));
+	if (strlen(arg) > 6) {
 		ndsctl_json_one(fp, arg);
 	} else {
 		ndsctl_json_all(fp);

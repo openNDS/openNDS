@@ -97,8 +97,11 @@ typedef enum {
 	oSetMSS,
 	oMSSValue,
 	oTrafficControl,
-	oDownloadLimit,
-	oUploadLimit,
+	oRateCheckWindow,
+	oDownloadRate,
+	oUploadRate,
+	oDownloadQuota,
+	oUploadQuota,
 	oUploadIFB,
 	oNdsctlSocket,
 	oSyslogFacility,
@@ -154,9 +157,12 @@ static const struct {
 	{ "checkinterval", oCheckInterval },
 	{ "setmss", oSetMSS },
 	{ "mssvalue", oMSSValue },
-	{ "trafficcontrol",	oTrafficControl },
-	{ "downloadlimit", oDownloadLimit },
-	{ "uploadlimit", oUploadLimit },
+	{ "trafficcontrol", oTrafficControl },
+	{ "ratecheckwindow", oRateCheckWindow },
+	{ "downloadrate", oDownloadRate },
+	{ "uploadrate", oUploadRate },
+	{ "downloadquota", oDownloadQuota },
+	{ "uploadquota", oUploadQuota },
 	{ "ifb", oUploadIFB },
 	{ "syslogfacility", oSyslogFacility },
 	{ "ndsctlsocket", oNdsctlSocket },
@@ -242,8 +248,11 @@ config_init(void)
 	config.set_mss = DEFAULT_SET_MSS;
 	config.mss_value = DEFAULT_MSS_VALUE;
 	config.traffic_control = DEFAULT_TRAFFIC_CONTROL;
-	config.upload_limit =  DEFAULT_UPLOAD_LIMIT;
-	config.download_limit = DEFAULT_DOWNLOAD_LIMIT;
+	config.rate_check_window = DEFAULT_RATE_CHECK_WINDOW;
+	config.upload_rate =  DEFAULT_UPLOAD_RATE;
+	config.download_rate = DEFAULT_DOWNLOAD_RATE;
+	config.upload_quota =  DEFAULT_UPLOAD_QUOTA;
+	config.download_quota = DEFAULT_DOWNLOAD_QUOTA;
 	config.upload_ifb =  DEFAULT_UPLOAD_IFB;
 	config.syslog_facility = DEFAULT_SYSLOG_FACILITY;
 	config.log_syslog = DEFAULT_LOG_SYSLOG;
@@ -931,15 +940,36 @@ config_read(const char *filename)
 				exit(1);
 			}
 			break;
-		case oDownloadLimit:
-			if (sscanf(p1, "%d", &config.download_limit) < 1 || config.download_limit < 0) {
+		case oRateCheckWindow:
+			if (sscanf(p1, "%d", &config.rate_check_window) < 1 || config.rate_check_window < 0) {
 				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
 				debug(LOG_ERR, "Exiting...");
 				exit(1);
 			}
 			break;
-		case oUploadLimit:
-			if (sscanf(p1, "%d", &config.upload_limit) < 1 || config.upload_limit < 0) {
+		case oDownloadRate:
+			if (sscanf(p1, "%llu", &config.download_rate) < 1 || config.download_rate < 0) {
+				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+				debug(LOG_ERR, "Exiting...");
+				exit(1);
+			}
+			break;
+		case oUploadRate:
+			if (sscanf(p1, "%llu", &config.upload_rate) < 1 || config.upload_rate < 0) {
+				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+				debug(LOG_ERR, "Exiting...");
+				exit(1);
+			}
+			break;
+		case oDownloadQuota:
+			if (sscanf(p1, "%llu", &config.download_quota) < 1 || config.download_quota < 0) {
+				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+				debug(LOG_ERR, "Exiting...");
+				exit(1);
+			}
+			break;
+		case oUploadQuota:
+			if (sscanf(p1, "%llu", &config.upload_quota) < 1 || config.upload_quota < 0) {
 				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
 				debug(LOG_ERR, "Exiting...");
 				exit(1);

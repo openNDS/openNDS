@@ -76,7 +76,8 @@ static const char *lookup_mimetype(const char *filename);
 
 // Call the BinAuth script
 static int do_binauth(struct MHD_Connection *connection, const char *binauth, t_client *client,
-	int *seconds_ret, int *upload_ret, int *download_ret, const char *redirect_url)
+	int *seconds_ret, unsigned long long int *upload_rate_ret, unsigned long long int *download_rate_ret,
+	unsigned long long int *upload_quota_ret, unsigned long long int *download_quota_ret, const char *redirect_url)
 {
 	char username_enc[64] = {0};
 	char password_enc[64] = {0};
@@ -92,8 +93,10 @@ static int do_binauth(struct MHD_Connection *connection, const char *binauth, t_
 	const char *user_agent = NULL;
 	char enc_user_agent[256] = {0};
 	int seconds;
-	int upload;
-	int download;
+	unsigned long long int upload_rate;
+	unsigned long long int download_rate;
+	unsigned long long int upload_quota;
+	unsigned long long int download_quota;
 	int rc;
 
 	MHD_get_connection_values(connection, MHD_HEADER_KIND, get_user_agent_callback, &user_agent);
@@ -145,14 +148,18 @@ static int do_binauth(struct MHD_Connection *connection, const char *binauth, t_
 		return -1;
 	}
 
-	rc = sscanf(msg, "%d %d %d", &seconds, &upload, &download);
+	rc = sscanf(msg, "%d %llu %llu %llu %llu", &seconds, &upload_rate, &download_rate, &upload_quota, &download_quota);
 
 	// store assigned parameters
 	switch (rc) {
+		case 5:
+			*download_quota_ret = MAX(download_quota, 0);
+		case 4:
+			*upload_quota_ret = MAX(upload_quota, 0);
 		case 3:
-			*download_ret = MAX(download, 0);
+			*download_rate_ret = MAX(download_rate, 0);
 		case 2:
-			*upload_ret = MAX(upload, 0);
+			*upload_rate_ret = MAX(upload_rate, 0);
 		case 1:
 			*seconds_ret = MAX(seconds, 0);
 		case 0:
@@ -496,8 +503,10 @@ static int authenticate_client(struct MHD_Connection *connection,
 	s_config *config = config_get_config();
 	time_t now = time(NULL);
 	int seconds = 60 * config->session_timeout;
-	int upload = 0;
-	int download = 0;
+	unsigned long long int uploadrate = 0;
+	unsigned long long int downloadrate = 0;
+	unsigned long long int uploadquota = 0;
+	unsigned long long int downloadquota = 0;
 	int rc;
 	int ret;
 	char query_str[QUERYMAXLEN] = {0};
@@ -515,7 +524,18 @@ static int authenticate_client(struct MHD_Connection *connection,
 	debug(LOG_DEBUG, "redirect_url is [ %s ]", redirect_url);
 
 	if (config->binauth) {
-		rc = do_binauth(connection, config->binauth, client, &seconds, &upload, &download, redirect_url);
+		rc = do_binauth(
+			connection,
+			config->binauth,
+			client,
+			&seconds,
+			&uploadrate,
+			&downloadrate,
+			&uploadquota,
+			&downloadquota,
+			redirect_url
+		);
+
 		if (rc != 0) {
 			/*BinAuth denies access so redirect client back to login/splash page where they can try again.
 				If FAS is enabled, this will cause nesting of the contents of redirect_url,
@@ -536,9 +556,21 @@ static int authenticate_client(struct MHD_Connection *connection,
 		rc = auth_client_auth(client->id, NULL, NULL);
 	}
 
-	// set remaining client values that might have been set by binauth
-	client->download_rate = download;
-	client->upload_rate = upload;
+	// override remaining client values that might have been set by binauth
+	if (downloadrate > 0) {
+		client->download_rate = downloadrate;
+	}
+	if (uploadrate > 0) {
+		client->upload_rate = uploadrate;
+	}
+
+	if (downloadquota > 0) {
+		client->download_quota = downloadquota;
+	}
+	if (uploadquota > 0) {
+		client->upload_quota = uploadquota;
+	}
+
 
 	// error checking
 	if (rc != 0) {

@@ -50,6 +50,8 @@ typedef struct _t_client {
 	time_t session_end;			/**< @brief Scheduled Time the client will be deauthenticated */
 	t_counters counters;			/**< @brief Counters for input/output of the client. */
 	int window_counter;			/**< @brief Rate Check Window counter */
+	int rate_exceeded;			/**< @brief Rate Exceeded Check flag */
+	int initial_loop;			/**< @brief Check client initial loop flag */
 	unsigned long long int upload_rate;	/**< @brief Client Upload rate limit, kb/s */
 	unsigned long long int download_rate;	/**< @brief Client Download rate limit, kb/s */
 	unsigned long long int upload_quota;	/**< @brief Client Upload quota, kB */

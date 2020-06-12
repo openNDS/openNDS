@@ -155,7 +155,7 @@ void client_reset(t_client *client)
 	client->counters.outgoing = 0;
 	client->counters.last_updated = time(NULL);
 
-	// Reset seesion time
+	// Reset session time
 	client->session_start = 0;
 	client->session_end = 0;
 

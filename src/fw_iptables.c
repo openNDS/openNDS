@@ -848,10 +848,21 @@ iptables_fw_authenticate(t_client *client)
 		upload_rate = client->upload_rate;
 	}
 
+	//remove client rate block rule if left from a previous instance
+	iptables_do_command("-D FORWARD -s %s -j DROP", client->ip);
+
 	debug(LOG_NOTICE, "Authenticating %s %s", client->ip, client->mac);
+
 	// This rule is for marking upload (outgoing) packets, and for upload byte counting
-	rc |= iptables_do_command("-t mangle -A " CHAIN_OUTGOING " -s %s -m mac --mac-source %s -j MARK %s 0x%x", client->ip, client->mac, markop, FW_MARK_AUTHENTICATED);
+	rc |= iptables_do_command("-t mangle -A " CHAIN_OUTGOING " -s %s -m mac --mac-source %s -j MARK %s 0x%x",
+		client->ip,
+		client->mac,
+		markop,
+		FW_MARK_AUTHENTICATED
+	);
+
 	rc |= iptables_do_command("-t mangle -A " CHAIN_INCOMING " -d %s -j MARK %s 0x%x", client->ip, markop, FW_MARK_AUTHENTICATED);
+
 	// This rule is just for download (incoming) byte counting, see iptables_fw_counters_update()
 	rc |= iptables_do_command("-t mangle -A " CHAIN_INCOMING " -d %s -j ACCEPT", client->ip);
 
@@ -886,7 +897,16 @@ iptables_fw_deauthenticate(t_client *client)
 
 	// Remove the authentication rules.
 	debug(LOG_NOTICE, "Deauthenticating %s %s", client->ip, client->mac);
-	rc |= iptables_do_command("-t mangle -D " CHAIN_OUTGOING " -s %s -m mac --mac-source %s -j MARK %s 0x%x", client->ip, client->mac, markop, FW_MARK_AUTHENTICATED);
+
+	//remove client rate block rule if set
+	iptables_do_command("-D FORWARD -s %s -j DROP", client->ip);
+
+	rc |= iptables_do_command("-t mangle -D " CHAIN_OUTGOING " -s %s -m mac --mac-source %s -j MARK %s 0x%x",
+		client->ip,
+		client->mac,
+		markop,
+		FW_MARK_AUTHENTICATED
+	);
 	rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -j MARK %s 0x%x", client->ip, markop, FW_MARK_AUTHENTICATED);
 	rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -j ACCEPT", client->ip);
 

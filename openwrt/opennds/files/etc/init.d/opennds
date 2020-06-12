@@ -126,7 +126,7 @@ generate_uci_config() {
     debuglevel maxclients gatewayname gatewayinterface gatewayiprange \
     gatewayaddress gatewayport webroot splashpage statuspage \
     redirecturl sessiontimeout preauthidletimeout authidletimeout checkinterval \
-    setmss mssvalue trafficcontrol downloadrate uploadrate downloadquota uploadquota \
+    setmss mssvalue trafficcontrol ratecheckwindow downloadrate uploadrate downloadquota uploadquota \
     syslogfacility ndsctlsocket fw_mark_authenticated \
     fw_mark_blocked fw_mark_trusted
   do

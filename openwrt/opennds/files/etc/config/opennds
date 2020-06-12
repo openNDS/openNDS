@@ -135,18 +135,29 @@ config opennds
 
 	# Quotas and Rates
 	# Note: upload means to the Internet, download means from the Internet
-	# If set to 0, setting is ignored
 	# Defaults 0
 	# Integer values only
 	#
 	# If the client average data rate exceeds the value set here, the client will be forced out
 	# Values are in kb/s
+	# If set to 0, there is no limit
+	#
+	# Quotas and rates can also be set by FAS via Authmon Daemon, by BinAuth, and by ndsctl auth.
+	# Values set by these methods, will be override values set in this config file.
 	#
 	option uploadrate '0'
 	option downloadrate '0'
 	###########################################################################################
+	# The client data rate is calculated using a moving average.
+	# This allows clients to burst at maximum possible rate, only blocking if the moving average
+	# exceeds the specified upload or download rate.
+	# The moving average window size is equal to ratecheckwindow times checkinterval (seconds)
+	# Default 2
+	option ratecheckwindow '2'
+	###########################################################################################
 	# If the client data quota exceeds the value set here, the client will be forced out
 	# Values are in kB
+	# If set to 0, there is no limit
 	#
 	option uploadquota '0'
 	option downloadquota '0'

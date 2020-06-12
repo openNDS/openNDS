@@ -301,10 +301,10 @@ ndsctl_auth(FILE *fp, char *arg)
 	unsigned id;
 	int rc;
 	int seconds = 60 * config->session_timeout;
-	int uploadrate = 0;
-	int downloadrate = 0;
-	unsigned long long int uploadquota = 0;
-	unsigned long long int downloadquota = 0;
+	int uploadrate = config->upload_rate;
+	int downloadrate = config->download_rate;
+	unsigned long long int uploadquota = config->upload_quota;
+	unsigned long long int downloadquota = config->download_quota;
 	char customdata[256] = {0};
 	char *argcopy;
 	char *arg2;
@@ -316,8 +316,6 @@ ndsctl_auth(FILE *fp, char *arg)
 	char *arg8;
 	char *ptr;
 	time_t now = time(NULL);
-
-	//TODO - support for setting alternate values for seconds, upload and download can be implemented here by calling a BinAuth script
 
 	debug(LOG_DEBUG, "Entering ndsctl_auth [%s]", arg);
 

@@ -46,6 +46,10 @@ install:
 	mkdir -p $(DESTDIR)/usr/lib/opennds
 	cp forward_authentication_service/binauth/binauth_log.sh $(DESTDIR)/usr/lib/opennds/
 	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/opennds/binauth_log.sh
+	cp forward_authentication_service/binauth/binauth_sitewide.sh $(DESTDIR)/usr/lib/opennds/
+	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/opennds/binauth_sitewide.sh
+	cp forward_authentication_service/binauth/userlist.dat $(DESTDIR)/etc/opennds/
+	cp forward_authentication_service/binauth/splash_sitewide.html $(DESTDIR)/etc/opennds/htdocs/
 	cp forward_authentication_service/PreAuth/login.sh $(DESTDIR)/usr/lib/opennds/
 	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/opennds/login.sh
 	cp forward_authentication_service/PreAuth/login-remote-image.sh $(DESTDIR)/usr/lib/opennds/

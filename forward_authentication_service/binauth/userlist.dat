@@ -1,3 +1,3 @@
-username=staff, password=weneedit, session_length=3000
-username=guest, password=thanks, session_length=600
-username=member, password=letmein, session_length=1200
+username=staff, password=weneedit, session_length=3000, upload_rate=0, download_rate=0, upload_quota=0, download_quota=0
+username=guest, password=thanks, session_length=600, upload_rate=0, download_rate=0, upload_quota=0, download_quota=0
+username=member, password=letmein, session_length=1200, upload_rate=0, download_rate=0, upload_quota=0, download_quota=0

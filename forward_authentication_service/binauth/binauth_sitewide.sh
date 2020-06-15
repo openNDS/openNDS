@@ -120,7 +120,7 @@ if [ $action = "auth_client" ]; then
 	#
 
 	userlist="/etc/opennds/userlist.dat"
-	varlist="username password session_length"
+	varlist="username password session_length upload_rate download_rate upload_quota download_quota"
 
 	while read user; do
 
@@ -130,7 +130,7 @@ if [ $action = "auth_client" ]; then
 		done
 
 		if [ "$username" = "$3" -a "$password" = "$4" ]; then
-			echo "$session_length 0 0"
+			echo "$session_length $upload_rate $download_rate $upload_quota $download_quota"
 			exit_code=0
 			break
 		else
@@ -144,9 +144,11 @@ if [ $action = "auth_client" ]; then
 	redir=$(printf "${redir_enc//%/\\x}")
 	useragent_enc=$6
 	useragent=$(printf "${useragent_enc//%/\\x}")
+	customdata_enc=$9
+	customdata=$(printf "${customdata_enc//%/\\x}")
 
 	log_entry="method=$1, clientmac=$2, clientip=$7, username=$3, password=$4"
-	log_entry="$log_entry, redir=$redir, useragent=$useragent, deny_access=$exit_code, token=$9"
+	log_entry="$log_entry, redir=$redir, useragent=$useragent, deny_access=$exit_code, token=$8, custom=$customdata"
 else
 	log_entry="method=$1, clientmac=$2, bytes_incoming=$3, bytes_outgoing=$4, session_start=$5, session_end=$6, token=$7"
 fi

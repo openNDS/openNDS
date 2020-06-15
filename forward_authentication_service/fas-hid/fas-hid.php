@@ -56,7 +56,7 @@ $docroot=$_SERVER['DOCUMENT_ROOT'];
 $me=$_SERVER['SCRIPT_NAME'];
 $home=str_replace(basename($_SERVER['SCRIPT_NAME']),"",$_SERVER['SCRIPT_NAME']);
 
-$header="NDS Captive Portal";
+$header="openNDS Captive Portal";
 
 $invalid=false;
 
@@ -101,53 +101,57 @@ header("Cache-Control: no-cache");
 header("Pragma: no-cache");
 
 
-$imagepath="http://".$gatewayaddress."/images/splash.jpg";
+$imagepath="http://$gatewayaddress/images/splash.jpg";
 
 
 //Output our responsive page
-echo"<!DOCTYPE html>\n<html>\n<head>\n".
-	"<meta charset=\"utf-8\" />\n".
-	"<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n";
+echo "<!DOCTYPE html>\n<html>\n<head>
+	<meta charset=\"utf-8\" />
+	<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+	<link rel=\"shortcut icon\" href=$imagepath type=\"image/x-icon\">
+	<title>$header</title>
+	<style>
+";
 
-echo "<link rel=\"shortcut icon\" href=".$imagepath." type=\"image/x-icon\">";
-
-
-echo "<title>".$header."</title>\n"."<style>\n";
 insert_css();
-echo"\n</style>\n</head>\n<body>\n";
 
-//page header
-echo "<div class=\"offset\">\n";
-echo "<hr><b style=\"color:blue;\">".$gatewayname.
-	" </b><br><b>".$header."</b><br><hr>\n";
-echo"<div class=\"insert\">\n";
-
-echo "<img style=\"float:left; width:4em; height:4em;\" src=\"".$imagepath."\">";
+echo "</style>
+	</head>
+	<body>
+	<div class=\"offset\">
+	<b style=\"color:blue;\">$gatewayname</b>
+	<br>
+	<div class=\"insert\">
+";
 
 if ($terms == true) {
 	display_terms();
-	footer();
+	footer($imagepath);
 	exit(0);
 }
 
 if ($landing == true) {
-	echo "<p><big-red>You are now logged in and have access to the Internet.</big-red></p>";
-	echo "<hr>";
-	echo "<p><italic-black>You can use your Browser, Email and other network Apps as you normally would.</italic-black></p>";
-	echo "\n<form>\n<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='".$redir."'\" >\n</form>\n";
+	echo "<p><big-red>You are now logged in and have access to the Internet.</big-red></p>
+		<hr>
+		<p><italic-black>You can use your Browser, Email and other network Apps as you normally would.</italic-black></p>
+		<form>\n<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='".$redir."'\" >\n</form>
+	";
+
 	read_terms($me, $clientip, $gatewayname, $gatewayaddress, $hid, $redir);
-	footer();
+	footer($imagepath);
 	exit(0);
 }
 
 if (isset($_GET["status"])) {
 	if ($_GET["status"] == "authenticated") {
-		echo "<p><big-red>You are already logged in and have access to the Internet.</big-red></p>";
-		echo "<hr>";
-		echo "<p><italic-black>You can use your Browser, Email and other network Apps as you normally would.</italic-black></p>";
+		echo "<p><big-red>You are already logged in and have access to the Internet.</big-red></p>
+			<hr>
+			<p><italic-black>You can use your Browser, Email and other network Apps as you normally would.</italic-black></p>
+		";
+
 		$hid=$redir="status";
 		read_terms($me, $clientip, $gatewayname, $gatewayaddress, $hid, $redir);
-		footer();
+		footer($imagepath);
 		exit(0);
 	}
 }
@@ -162,23 +166,33 @@ if (isset($_GET["email"])) {
 
 //Initial Form
 if ($fullname == "" or $email == "") {
-	echo "<b>Enter Full Name and Email Address</b>\n";
+	echo "<big-red>Welcome!</big-red><br>
+		<b>Please enter your Full Name and Email Address</b>
+	";
+
 	$me=$_SERVER['SCRIPT_NAME'];
+
 	if ($invalid == true) {
 		echo "<br><b style=\"color:red;\">ERROR! Incomplete data passed from NDS</b>\n";
 	} else {
+		echo "<form action=\"$me\" method=\"get\" >
+			<input type=\"hidden\" name=\"clientip\" value=\"$clientip\">
+			<input type=\"hidden\" name=\"gatewayname\" value=\"$gatewayname\">
+			<input type=\"hidden\" name=\"gatewayaddress\" value=\"$gatewayaddress\">
+			<input type=\"hidden\" name=\"hid\" value=\"$hid\">
+			<input type=\"hidden\" name=\"redir\" value=\"$redir\">
+			<hr>Full Name:<br>
+			<input type=\"text\" name=\"fullname\" value=\"$fullname\">
+			<br>
+			Email Address:<br>
+			<input type=\"email\" name=\"email\" value=\"$email\">
+			<br><br>
+			<input type=\"submit\" value=\"Accept Terms of Service\">
+			</form>
+			<br>
+		";
+
 		read_terms($me, $clientip, $gatewayname, $gatewayaddress, $hid, $redir);
-		echo "<form action=\"".$me."\" method=\"get\" >\n";
-		echo "<input type=\"hidden\" name=\"clientip\" value=\"".$clientip."\">\n";
-		echo "<input type=\"hidden\" name=\"gatewayname\" value=\"".$gatewayname."\">\n";
-		echo "<input type=\"hidden\" name=\"gatewayaddress\" value=\"".$gatewayaddress."\">\n";
-		echo "<input type=\"hidden\" name=\"hid\" value=\"".$hid."\">\n";
-		echo "<input type=\"hidden\" name=\"redir\" value=\"".$redir."\">\n";
-		echo "<hr>Full Name:<br>\n";
-		echo "<input type=\"text\" name=\"fullname\" value=\"".$fullname."\">\n<br>\n";
-		echo "Email Address:<br>\n";
-		echo "<input type=\"email\" name=\"email\" value=\"".$email."\">\n<br><br>\n";
-		echo "<input type=\"submit\" value=\"Accept Terms of Service\">\n</form>\n";
 	}
 } else {
 	# Output the "Thankyou page" with a continue button
@@ -229,32 +243,38 @@ if ($fullname == "" or $email == "") {
 	}
 }
 
-footer();
+footer($imagepath);
 
 // Functions:
 
-function footer() {
-	echo "<hr>\n</div>\n";
-	echo "<div style=\"font-size:0.7em;\">\n";
-	echo "&copy; The openNDS Contributors 2004-".date("Y")."<br>";
-	echo "&copy; Blue Wave Projects and Services 2015-".date("Y")."<br>".
-		"This software is released under the GNU GPL license.\n";
-	echo "</div>\n";
-	echo "</div>\n";
-	echo "</body>\n</html>\n";
+function footer($imagepath) {
+	echo "<hr>
+		<div style=\"font-size:0.5em;\">
+		<img style=\"float:left; max-height:5em; height:auto; width:auto\" src=\"$imagepath\">
+		&copy; The openNDS Contributors 2004-".date("Y")."<br>
+		&copy; Blue Wave Projects and Services 2015-".date("Y")."<br>
+		This software is released under the GNU GPL license.<br><br>
+		</div>
+		</div>
+		</div>
+		</body>
+		</html>
+	\n";
 }
 
 function read_terms($me, $clientip, $gatewayname, $gatewayaddress, $hid, $redir) {
 	//terms of service button
-	echo "<form action=\"".$me."\" method=\"get\" >\n".
-		"<input type=\"hidden\" name=\"terms\" value=\"terms\">\n".
-		"<input type=\"hidden\" name=\"clientip\" value=\"".$clientip."\">\n".
-		"<input type=\"hidden\" name=\"gatewayname\" value=\"".$gatewayname."\">\n".
-		"<input type=\"hidden\" name=\"gatewayaddress\" value=\"".$gatewayaddress."\">\n".
-		"<input type=\"hidden\" name=\"hid\" value=\"".$hid."\">\n".
-		"<input type=\"hidden\" name=\"redir\" value=\"".$redir."\">\n".
-		"<input type=\"submit\" value=\"Read Terms of Service\" >\n".
-		"</form>\n";
+	echo "<form action=\"$me\" method=\"get\" >
+		<input type=\"hidden\" name=\"terms\" value=\"terms\">
+		<input type=\"hidden\" name=\"clientip\" value=\"".$clientip."\">
+		<input type=\"hidden\" name=\"gatewayname\" value=\"".$gatewayname."\">
+		<input type=\"hidden\" name=\"gatewayaddress\" value=\"".$gatewayaddress."\">
+		<input type=\"hidden\" name=\"hid\" value=\"".$hid."\">
+		<input type=\"hidden\" name=\"redir\" value=\"".$redir."\">
+		<input type=\"submit\" value=\"Read Terms of Service\" >
+		</form>
+		<br>
+	\n";
 }
 
 function display_terms () {
@@ -388,13 +408,22 @@ function insert_css() {
 		margin-right: 5%;
 	}
 
-	input[type=text], input[type=email] {
+	input[type=text], input[type=email], input[type=password] {
+		font-size: 1em;
+		line-height: 2.0em;
+		height: 2.0em;
+		width: 14.0em;
 		color: black;
 		background: lightgrey;
 	}
 
 	input[type=submit], input[type=button] {
+		font-size: 1em;
+		line-height: 2.0em;
+		height: 2.0em;
+		width: 14.0em;
 		color: black;
+		font-weight: bold;
 		background: lightblue;
 	}
 

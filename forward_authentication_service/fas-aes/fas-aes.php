@@ -159,7 +159,7 @@ $header="
 
 #footer
 if (isset($gatewayaddress)) {
-	$image="<img style=\"float:left; width:7em; height:7em;\" src=\"".$imagepath."\">";
+	$image="<img style=\"float:left; max-height:5em; height:auto; width:auto\" src=\"".$imagepath."\">";
 } else {
 	$image="";
 }

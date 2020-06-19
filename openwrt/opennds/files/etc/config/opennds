@@ -78,6 +78,31 @@ config opennds
 	#option webroot '/etc/opennds/htdocs'
 	###########################################################################################
 
+	# statuspage
+	# Default: status.html
+	#
+	# The page the client is show if the client is already authenticated but navigates to the captive portal.
+	#
+	# option statuspage 'status.html'
+	###########################################################################################
+
+
+	# splashpage
+	# Default: /etc/opennds/splash.html
+	#
+	# The html page used for templated splash page generation (if FAS/PreAuth is not enabled)
+	#
+	# splash.html displays a simplistic click to continue button.
+	#
+	# splash_sitewide.html displays a client login page asking for username and password.
+	#
+	# The BinAuth script binauth_sitewide.sh must be enabled for splash_sitewide to verify the
+	# entered credentials from the userlist.dat database file.
+	# The following two lines enable splash_sitewide templated authentication:
+	#option splashpage 'splash.html'
+	#option binauth '/usr/lib/opennds/binauth_sitewide.sh'
+	###########################################################################################
+
 	# Interface to use
 	# Use this option to set the device opennds will bind to.
 	# The value may be an interface section in /etc/config/network or a device name such as br-lan.

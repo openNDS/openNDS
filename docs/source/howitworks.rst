@@ -1,5 +1,5 @@
 How openNDS (NDS) works
-###########################
+#######################
 
 openNDS is a Captive Portal Engine. Any Captive Portal, including NDS, will have two main components:
 
@@ -149,9 +149,16 @@ openNDS implements these actions by inserting rules in the router's iptables man
 
 Because it inserts its rules at the beginning of existing chains, openNDS should be insensitive to most typical existing firewall configurations.
 
-Traffic control
+Data volume and Rate Quotas
+***************************
+
+openNDS (NDS) has built in *Data Volume* and *Data Rate* quota support.
+
+Data volume and data rate quotas can be set globally in the config file.
+
+The global values can be overridden on a client by client basis as required.
+
+Traffic Shaping
 ***************
 
-Data rate control on an IP connection basis can be achieved using Smart Queue Management (SQM) configured separately, with NDS being fully compatible.
-
-It should be noted that while setup options and BinAuth do accept traffic/quota settings, these values currently have no effect and are reserved for future development.
+openNDS (NDS) supports Traffic Shaping (Bandwidth Limiting) using the SQM - Smart Queue Management (sqm-scripts) package, available for OpenWrt and generic Linux.

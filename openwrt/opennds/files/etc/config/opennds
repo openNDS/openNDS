@@ -163,7 +163,7 @@ config opennds
 	# Defaults 0
 	# Integer values only
 	#
-	# If the client average data rate exceeds the value set here, the client will be forced out
+	# If the client average data rate exceeds the value set here, the client will be blocked
 	# Values are in kb/s
 	# If set to 0, there is no limit
 	#

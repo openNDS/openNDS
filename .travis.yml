@@ -8,7 +8,6 @@ before_script:
 # install: "pip install Sphinx"
 
 script:
- - make checkstyle
  - make
 # -W to turn warnings into errors
 # - cd docs/ ; make SPHINXOPTS=-W dummy

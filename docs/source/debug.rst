@@ -13,11 +13,17 @@ openNDS supports four levels of debugging to syslog.
 
   All other levels are undefined and will result in debug level 3 being set.
 
- To see maximally verbose debugging output from openNDS, set log level to 3. This can be done in the UCI configuration file on OpenWrt adding the line:
+ To see maximally verbose debugging output from openNDS, set log level to 3.
 
-  ``option debuglevel '3'``
+ On OpenWrt, you can use the following commands:
 
- Restart or reboot. Debug messages are logged to syslog. You can view messages with the logread command. 
+ .. code::
+
+  uci set opennds.@opennds[0].debuglevel='3'
+  uci commit opennds
+  service opennds restart
+
+ Debug messages are logged to syslog. You can view messages with the logread command. 
 
  The default level of logging is 1, and is more appropriate for routine use.
 

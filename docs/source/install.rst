@@ -1,8 +1,26 @@
 Installing openNDS
 ######################
 
-OpenWrt
-*******
+Prerequisites
+*************
+
+openNDS is designed to run on a device configured as an IPv4 router and will have at least two network interfaces:
+
+ **A WAN interface** (Wide Area Network). This interface must be connected to an Internet feed:
+
+ * Either an ISP CPE (Internet Service Provider Customer Premises Equipment)
+ * Or another router, such as the venue ADSL router.
+ * It must be configured as a DHCP client, obtaining its IPv4 address and DNS server from the connected network.
+
+ **A LAN interface** (Local Area Network). This interface MUST be configured to:
+
+ * Provide the Default IPv4 gateway in a private IPv4 subnet that is different to any private subnets between it and the ISP CPE
+ * Provide DHCP services to connected clients
+ * Provide DNS services to connected clients
+ * Provide Network Address Translation (NAT) for all outgoing traffic directed to the WAN interface.
+
+Installing on OpenWrt
+*********************
 
 * Have a router working with OpenWrt. At the time of writing, openNDS has been tested with OpenWrt 18.06.x, 19.7.x and Snapshot.
 
@@ -10,7 +28,7 @@ OpenWrt
 
 * Make sure your router is basically working before you try to install  openNDS. In particular, make sure your DHCP daemon is serving addresses on the interface that openNDS will manage.
 
-  The default is br-lan but can be changed to any interface by editing the /etc/config/opennds file.
+  The default interface is br-lan but can be changed to any LAN interface by editing the /etc/config/opennds file.
 
 * To install openNDS, you may use the OpenWrt Luci web interface or alternatively, ssh to your router and run the command:
 
@@ -49,15 +67,25 @@ OpenWrt
 
     ``opkg remove opennds``
 
-Debian
-******
+Generic Linux
+*************
 
-There isn't a package in the repository (yet). But we have support for a Debian package.
+openNDS can be compiled for most distributions of Linux
 
-Requirements beside Debian tools are:
+openNDS **requires the libmicrohttpd (MHD) library**. The version must be greater than 0.9.51, but preferably version 0.9.69 or higher.
 
-- libmicrohttpd-dev (>= 0.9.51) [avaiable in **stretch**]
+If your distribution of Linux has a package of version less then 0.9.69, you can set the openNDS config option *use_outdated_mhd* to 1. This will force openNDS to use it.
 
-But you can also compile libmicrohttpd your self if you're still running jessie or older.
+ Older versions of MHD convert & and + characters to spaces when present in form data.
 
-To compile openNDS and create the Debian package, see the chapter "How to Compile openNDS".
+ This can make a PreAuth or BinAuth impossible to use for a client if form data contains either of these characters eg. in username or password.
+
+ MHD versions earlier than 0.9.69 are detected.
+
+ If the option *use_outdated_mhd* is set to 0 (default), NDS will terminate if MHD is earlier than 0.9.69
+
+ If this option is set to 1, NDS will start but log an error.
+
+You can also compile libmicrohttpd yourself to get the latest version.
+
+To compile openNDS, see the chapter "How to Compile and install openNDS".

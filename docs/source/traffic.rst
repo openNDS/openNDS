@@ -1,10 +1,90 @@
-Traffic Control
-###############
+Data Quotas and Traffic Shaping
+###############################
 
-Overview
-********
+Data volume and Rate Quotas
+***************************
 
-openNDS (NDS) supports Traffic Control (Bandwidth Limiting) using the SQM - Smart Queue Management (sqm-scripts) package, available for OpenWrt and generic Linux.
+openNDS (NDS) has built in *Data Volume* and *Data Rate* quota support.
+
+Data volume and data rate quotas can be set globally in the config file.
+
+The global values can be overridden on a client by client basis as required.
+
+Data Volume Quota
+-----------------
+If a client exceeds the global data volume quota, or the individual client quota, that client will be forced out by deauthentication.
+To continue, the client must re-authenticate.
+
+Configuring Data Volume Quotas
+==============================
+Global volume quotas are configured in the config file.
+
+**Example UCI configuration options:**
+
+.. code-block:: sh
+
+	# If the client data quota exceeds the value set here, the client will be forced out
+	# Values are in kB
+	# If set to 0, there is no limit
+	# Integer values only
+	#
+	option uploadquota '0'
+	option downloadquota '0'
+
+Note: upload means to the Internet, download means from the Internet
+
+**Quotas for individual clients** will override configured global values and are set either by BinAuth or the Authmon Daemon (fas_secure_enable level 3) - see example BinAuth script (binauth_log.sh) and example FAS script (fas-aes-https.php).
+
+
+Data Rate Quota
+---------------
+A rate quota is a moving average data rate.
+
+The average is calculated  over a configured time window.
+
+If a client exceeds the global data rate quota, or the individual client quota, that client will be blocked for a configured interval before being allowed to continue automatically.
+
+As the Data Rate Quota is a moving average, clients are able to transfer data at the maximum rate the router can achieve for short bursts.
+
+Data Rate Quotas are ideal for allowing opening of web pages and emails etc in the fastest way possible, yet preventing an individual client from monopolizing all the available bandwidth by streaming or transferring large files.
+
+Configuring Data Rate Quotas
+============================
+Global Data Rate quotas are configured in the config file.
+
+.. code-block:: sh
+
+	# Note: upload means to the Internet, download means from the Internet
+	# Defaults 0
+	# Integer values only
+	#
+	# If the client average data rate exceeds the value set here, the client will be blocked
+	# Values are in kb/s
+	# If set to 0, there is no limit
+	#
+	# Quotas and rates can also be set by FAS via Authmon Daemon, by BinAuth, and by ndsctl auth.
+	# Values set by these methods, will be override values set in this config file.
+	#
+	option uploadrate '0'
+	option downloadrate '0'
+	###########################################################################################
+	# The client data rate is calculated using a moving average.
+	# This allows clients to burst at maximum possible rate, only blocking if the moving average
+	# exceeds the specified upload or download rate.
+	# The moving average window size is equal to ratecheckwindow times checkinterval (seconds)
+	# Default 2
+	option ratecheckwindow '2'
+
+Note: upload means to the Internet, download means from the Internet
+
+**Data Rate Quotas for individual clients** will override configured global values and are set either by BinAuth or the Authmon Daemon (fas_secure_enable level 3) - see example BinAuth script (binauth_log.sh) and example FAS script (fas-aes-https.php).
+
+
+Traffic Shaping
+***************
+
+openNDS (NDS) supports Traffic Shaping (Bandwidth Limiting) using the SQM - Smart Queue Management (sqm-scripts) package, available for OpenWrt and generic Linux.
+
 
 https://github.com/tohojo/sqm-scripts
 
@@ -47,7 +127,7 @@ The default SQM configuration file on OpenWrt is:
      option upload '10000'
      option qdisc 'fq_codel'
      option script 'simple.qos'
-     option qdisc_advanced '0
+     option qdisc_advanced '0'
      option ingress_ecn 'ECN'
      option egress_ecn 'ECN'
      option qdisc_really_really_advanced '0'

@@ -1,7 +1,7 @@
 Frequently Asked Questions
 ###########################
 
-What's the difference between v0.9, v1, v2, v3, v4 and v4?
+What's the difference between v0.9, v1, v2, v3, v4 and v5?
 **********************************************************
 
 **v0.9 and v1** are the same codebase with the same feature set.
@@ -51,7 +51,7 @@ for v0.9.
 
  * **FAS secure level 3**
 
-   Enabling https access to a remote, Internet based FAS server, ensuring the client device does not receive any security warnings or errors. Access to the FAS server using **https** protocol is enforced.
+   Enabling *https* access to a remote, Internet based FAS server, ensuring the client device does not receive any security warnings or errors. Access to the FAS server using **https** protocol is enforced.
 
    Level 3 otherwise functions in the same way as level 2 with aes256cbc encryption of NDS data.
 
@@ -106,7 +106,7 @@ Can I update from v0.9/v1/v2/v3/v4 to v5?
 
 * v4 NoDogSplash config files will be compatible but must be renamed.
 
-* MHD (libmicrohttpd) versions earlier than 0.9.69 are detected, a warning is given and openNDS terminates. A new config option is provided to force openNDS to use an earlier version and can be enabled at the discretion of the installer.
+* MHD (libmicrohttpd) versions earlier than 0.9.69 are detected, a warning is given and openNDS terminates. A new config option is provided to force openNDS to use an earlier version and can be enabled at the discretion and risk of the installer.
 
 How do I manage client data usage?
 **********************************
@@ -126,11 +126,17 @@ This can be installed as a package on OpenWrt.
 For other distributions of Linux it is available at:
 https://github.com/tohojo/sqm-scripts
 
-Is https capture supported?
-***************************
+Is an *https splash page* supported?
+************************************
+**Yes**. FAS Secure Level 3 enforces https protocol for the splash login page on an external FAS server.
+
+Is *https capture* supported?
+*****************************
 **No**. Because all connections would have a critical certificate failure.
 
  HTTPS web sites are now more or less a standard and to maintain security and user confidence it is essential that captive portals **DO NOT** attempt to capture port 443.
+
+ All modern client devices have the built in, industry standard, *Captive Portal Detection (CPD) service*. This is responsible for triggering the captive portal splash/login page.
 
 What is CPD / Captive Portal Detection?
 ***************************************

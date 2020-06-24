@@ -88,4 +88,4 @@ If your distribution of Linux has a package of version less then 0.9.69, you can
 
 You can also compile libmicrohttpd yourself to get the latest version.
 
-To compile openNDS, see the chapter "How to Compile and install openNDS".
+To compile libmicrohttpd and openNDS, see the chapter "How to Compile and install openNDS".

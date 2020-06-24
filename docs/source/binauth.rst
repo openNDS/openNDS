@@ -50,9 +50,9 @@ The method will be set to one of the following values:
 
 Additional arguments depend on the method type:
 
-auth_client
------------
-When the first argument is auth_client, the following arguments are:
+Method auth_client
+------------------
+The first argument is auth_client and the following arguments are set to:
 
  * arg[2] = client_mac
  * arg[3] = username
@@ -63,8 +63,10 @@ When the first argument is auth_client, the following arguments are:
  * arg[8] = client_token
  * arg[9] = url-escaped custom variable string
 
-ndsctl_auth
------------
+Method ndsctl_auth
+------------------
+The first argument is ndsctl_auth and the following arguments are set to:
+
  * arg[2] = client_mac
  * arg[3] = bytes_incoming (set to 0, reserved for future use)
  * arg[4] = bytes_outgoing (set to 0, reserved for future use)
@@ -75,6 +77,8 @@ ndsctl_auth
 
 All Other Methods
 -----------------
+When the first argument is other than auth_client or ndsctl_auth, the following arguments are set to:
+
  * arg[2] = client_mac
  * arg[3] = bytes_incoming (total incoming bytes for client)
  * arg[4] = bytes_outgoing (total incoming bytes for client)
@@ -96,7 +100,7 @@ In addition, the files can be extracted from the downloaded release archive file
 
 Example 1 - Sitewide Username/Password
 **************************************
-This example is a script designed to be used with or without FAS and provides site wide Username/Password login for groups of users, in this case "staff", "guest" and member with corresponding sets of credentials. If used without FAS, a special html splash page must be installed, otherwise FAS must forward the required username and password variables.
+This example is a script designed to be used with or without FAS and provides site wide Username/Password login for groups of users, in this case "staff", "guest" and "member" with corresponding sets of credentials. If used without FAS, a special html splash page must be installed, otherwise FAS must forward the required username and password variables.
 
 Manual Installation (Example 1)
 *******************************

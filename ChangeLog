@@ -1,3 +1,42 @@
+openNDS (5.1.0)
+
+  * Add - Generic Linux - install opennds.service [bluewavenet]
+  * Add - Documentation updates [bluewavenet]
+  * Add - config file updates [bluewavenet]
+  * Add - Install sitewide username/password splash support files [bluewavenet]
+  * Add - quotas to binauth_sitewide [bluewavenet]
+  * Add - Splash page updates [bluewavenet]
+  * Add - Implement Rate Quotas [bluewavenet]
+  * Fix - check if idle preauthenticated [bluewavenet]
+  * Add - support for rate quotas [bluewavenet]
+  * Fix - Correctly compare client counters and clean up debuglevel messages [bluewavenet]
+  * Add - Implement upload/download quotas Update fas-aes-https to support quotas [bluewavenet]
+  * Add - Rename demo-preauth scripts and install all scripts [bluewavenet]
+  * Add - fas-aes-https layout update [bluewavenet]
+  * Add - Set some defaults in fas-aes-https [bluewavenet]
+  * Add - custom data string to ndsctl auth [bluewavenet]
+  * Add - custom data string to fas-hid.php [bluewavenet]
+  * Add - Send custom data field to BinAuth via auth_client method [bluewavenet]
+  * Fix - missing token value in auth_client [bluewavenet]
+  * Add - upload/download quota and rate configuration values [bluewavenet]
+  * Add - Send client token to binauth [bluewavenet]
+  * Add - Rename upload_limit and download_limit to upload_rate and download_rate [bluewavenet]
+  * Fix - Pass correct session end time to binauth [bluewavenet]
+  * Add - some debuglevel 3 messages [bluewavenet]
+  * Add - description of the favicon and page footer images [bluewavenet]
+  * Add - Authmon collect authentication parameters from fas-aes-https [bluewavenet]
+  * Add - sessionlength to ndsctl auth [bluewavenet]
+  * Fix - Page fault when ndsctl auth is called and client not found [bluewavenet]
+  * Add - Enable BinAuth / fas_secure_enabled level 3 compatibility [bluewavenet]
+  * Fix - Correctly set BinAuth session_end [bluewavenet]
+  * Add - Updates to Templated Splash pages [bluewavenet]
+  * Add - Community Testing files [bluewavenet]
+  * Fix - BinAuth error passing client session times [bluewavenet]
+  * Fix - PHP notice - undefined constant [bluewavenet]
+  * Fix - OpenWrt CONFLICTS variable in Makefile [bluewavenet]
+
+ -- Rob White <dot@blue-wave.net> Wed, 24 Jun 2020 20:55:18 +0000
+
 openNDS (5.0.1)
 
   * Fix - Path Traversal Attack vulnerability allowed by libmicrohttpd's built in unescape functionality [bluewavenet] [lynxis]

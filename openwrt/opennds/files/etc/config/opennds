@@ -99,7 +99,7 @@ config opennds
 	# The BinAuth script binauth_sitewide.sh must be enabled for splash_sitewide to verify the
 	# entered credentials from the userlist.dat database file.
 	# The following two lines enable splash_sitewide templated authentication:
-	#option splashpage 'splash.html'
+	#option splashpage 'splash_sitewide.html'
 	#option binauth '/usr/lib/opennds/binauth_sitewide.sh'
 	###########################################################################################
 
@@ -239,7 +239,8 @@ config opennds
 	# Default: Not set
 	# If set, this is the remote fully qualified domain name (FQDN) of the FAS.
 	# The protocol must NOT be prepended to the FQDN (ie http:// or https://)
-	# To prevent CPD or browser security errors NDS prepends http:// before redirection.
+	# To prevent CPD or browser security errors NDS prepends the required http:// or https://
+	# before redirection, depending upon the fas_secure_enabled option.
 	# If set, DNS MUST resolve fasremotefqdn to be the same ip address as fasremoteip.
 	# Typical Remote Shared Hosting Example:
 	#option fasremotefqdn 'onboard-wifi.net'

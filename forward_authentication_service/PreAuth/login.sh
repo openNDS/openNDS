@@ -37,6 +37,8 @@ logname="ndslog.log"
 #logdir="/run/ndslog/"
 #logname="ndslog.log"
 
+#For logging
+ndspid=$(ps | grep '/usr/bin/opennds' | awk -F ' ' 'NR==2 {print $1}')
 
 # functions:
 
@@ -92,7 +94,6 @@ write_log () {
 		echo "$datetime, New log file created" > $logfile
 	fi
 
-	ndspid=$(ps | grep opennds | awk -F ' ' 'NR==2 {print $1}')
 	filesize=$(ls -s -1 $logfile | awk -F' ' '{print $1}')
 	available=$(df | grep "$mountpoint" | eval "$awkcmd")
 	sizeratio=$(($available/$filesize))
@@ -107,7 +108,7 @@ write_log () {
 }
 
 # Get the urlencoded querystring and user_agent
-query_enc="$1"
+query_enc=$(echo "$1" | sed "s/%3f/%20/")
 user_agent_enc="$2"
 
 # The query string is sent to us from NDS in a urlencoded form,
@@ -182,16 +183,18 @@ fi
 
 for var in $queryvarlist; do
 	nextvar=$(echo "$queryvarlist" | awk '{for(i=1;i<=NF;i++) if ($i=="'$var'") printf $(i+1)}')
-	eval $var=$(echo "$query_enc" | awk -F "$var%3d" '{print $2}' | awk -F "%2c%20$nextvar%3d" '{print $1}')
+	eval $var=$(echo "$query_enc" | awk -F "%20$var%3d" '{print $2}' | awk -F "%2c%20$nextvar%3d" '{print $1}')
 done
 
 # URL decode and htmlentity encode vars that need it:
 gatewayname=$(printf "${gatewayname//%/\\x}")
 htmlentityencode "$gatewayname"
 gatewaynamehtml=$entityencoded
+
 username=$(printf "${username//%/\\x}")
 htmlentityencode "$username"
 usernamehtml=$entityencoded
+
 emailaddr=$(printf "${emailaddr//%/\\x}")
 
 #requested might have trailing comma space separated, user defined parameters - so remove them as well as decoding
@@ -346,7 +349,7 @@ else
 	echo "<form action=\"/opennds_auth/\" method=\"get\">"
 	echo "<input type=\"hidden\" name=\"tok\" value=\"$tok\">"
 	echo "<input type=\"hidden\" name=\"redir\" value=\"$requested\"><br>"
-	echo "<input type=\"hidden\" name=\"custom\" value=\"$custom\">"
+	echo "<input type=\"text\" name=\"custom\" value=\"$custom\">"
 	echo "<input type=\"submit\" value=\"Continue\" >"
 	echo "</form><hr>"
 

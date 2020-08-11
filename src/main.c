@@ -343,7 +343,7 @@ setup_from_config(void)
 	if (config->unescape_callback_enabled == 0) {
 		debug(LOG_INFO, "MHD Unescape Callback is Disabled");
 
-		if ((webserver = MHD_start_daemon(MHD_USE_EPOLL_INTERNALLY | MHD_USE_TCP_FASTOPEN,
+		if ((webserver = MHD_start_daemon(MHD_USE_EPOLL_INTERNAL_THREAD | MHD_USE_TCP_FASTOPEN,
 								config->gw_port,
 								NULL, NULL,
 								libmicrohttpd_cb, NULL,
@@ -357,7 +357,7 @@ setup_from_config(void)
 	} else {
 		debug(LOG_NOTICE, "MHD Unescape Callback is Enabled");
 
-		if ((webserver = MHD_start_daemon(MHD_USE_EPOLL_INTERNALLY | MHD_USE_TCP_FASTOPEN,
+		if ((webserver = MHD_start_daemon(MHD_USE_EPOLL_INTERNAL_THREAD | MHD_USE_TCP_FASTOPEN,
 								config->gw_port,
 								NULL, NULL,
 								libmicrohttpd_cb, NULL,
@@ -373,13 +373,14 @@ setup_from_config(void)
 	// TODO: set listening socket - do we need it?
 
 	debug(LOG_NOTICE, "Created web server on %s", config->gw_address);
+	debug(LOG_NOTICE, "Handle [%i]", webserver);
 
 	// If login script is enabled, check if the script actually exists
 	if (config->login_option_enabled > 0) {
 		debug(LOG_NOTICE, "Login option is Enabled.\n");
 
 		if (!((stat(loginscript, &sb) == 0) && S_ISREG(sb.st_mode) && (sb.st_mode & S_IXUSR))) {
-			debug(LOG_ERR, "Login script does not exist or is not executeable: %s", loginscript);
+			debug(LOG_ERR, "Login script does not exist or is not executable: %s", loginscript);
 			debug(LOG_ERR, "Exiting...");
 			exit(1);
 		} else {
@@ -603,6 +604,9 @@ main_loop(void)
 
 	config = config_get_config();
 
+	// Set up everything we need based on the configuration
+	setup_from_config();
+
 	// Start client statistics and timeout clean-up thread
 	result = pthread_create(&tid_client_check, NULL, thread_client_timeout_check, NULL);
 	if (result != 0) {
@@ -641,9 +645,6 @@ int main(int argc, char **argv)
 	debug(LOG_INFO, "Reading and validating configuration file %s", config->configfile);
 	config_read(config->configfile);
 	config_validate();
-
-	// Set up everything we need based on the configuration
-	setup_from_config();
 
 	// Initializes the linked list of connected clients
 	client_list_init();

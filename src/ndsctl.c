@@ -184,8 +184,8 @@ static int
 ndsctl_do(const char *socket, const struct argument *arg, const char *param)
 {
 	int sock;
-	char buffer[4096];
-	char request[128];
+	char buffer[4096] = {0};
+	char request[1024] = {0};
 	int len, rlen;
 	int ret;
 
@@ -306,7 +306,7 @@ main(int argc, char **argv)
 	if (argc > i) {
 		for (counter=2; counter < argc-1; counter++) {
 			snprintf(argi, sizeof(argi), ",%s", argv[i+counter]);
-			strncat(args, argi, sizeof(argi));
+			strncat(args, argi, sizeof(args)-1);
 		}
 	}
 

@@ -343,7 +343,7 @@ setup_from_config(void)
 	if (config->unescape_callback_enabled == 0) {
 		debug(LOG_INFO, "MHD Unescape Callback is Disabled");
 
-		if ((webserver = MHD_start_daemon(MHD_USE_EPOLL_INTERNAL_THREAD | MHD_USE_TCP_FASTOPEN,
+		if ((webserver = MHD_start_daemon(MHD_USE_EPOLL_INTERNALLY | MHD_USE_TCP_FASTOPEN,
 								config->gw_port,
 								NULL, NULL,
 								libmicrohttpd_cb, NULL,
@@ -357,7 +357,7 @@ setup_from_config(void)
 	} else {
 		debug(LOG_NOTICE, "MHD Unescape Callback is Enabled");
 
-		if ((webserver = MHD_start_daemon(MHD_USE_EPOLL_INTERNAL_THREAD | MHD_USE_TCP_FASTOPEN,
+		if ((webserver = MHD_start_daemon(MHD_USE_EPOLL_INTERNALLY | MHD_USE_TCP_FASTOPEN,
 								config->gw_port,
 								NULL, NULL,
 								libmicrohttpd_cb, NULL,

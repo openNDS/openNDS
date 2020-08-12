@@ -10,7 +10,7 @@ struct MHD_Connection;
 int arp_get(char mac_addr[18], const char req_ip[]);
 
 
-enum MHD_Result libmicrohttpd_cb (void *cls,
+int libmicrohttpd_cb (void *cls,
 					struct MHD_Connection *connection,
 					const char *url,
 					const char *method,

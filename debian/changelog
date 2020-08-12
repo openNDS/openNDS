@@ -1,3 +1,13 @@
+openNDS (5.2.0-1) stable; urgency=medium
+
+  * This version for backport to Openwrt 19.07 - for compatibility with old MHD API
+  * Fix - Failure of MHD with some operating systems eg Debian [bluewavenet]
+  * Fix - potential buffer truncation in ndsctl
+  * Set - use_outdated_mhd to 1 (enabled) as default [bluewavenet]
+  * Set - maximum permissible version of MHD to 0.9.70 to ensure old MHD API is used [bluewavenet]
+
+ -- Rob White <dot@blue-wave.net>  Wed, 12 Aug 2020 17:43:57 +0000
+
 openNDS (5.1.0-1) stable; urgency=medium
 
   * Add - Generic Linux - install opennds.service [bluewavenet]

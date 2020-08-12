@@ -1,6 +1,6 @@
 .\" Man page generated from reStructuredText.
 .
-.TH "OPENNDS" "1" "Jun 24, 2020" "5.1.0" "openNDS"
+.TH "OPENNDS" "1" "Aug 12, 2020" "5.2.0" "openNDS"
 .SH NAME
 opennds \- opennds Documentation
 .
@@ -2353,6 +2353,8 @@ The libmicrohttpd library (MHD) is a dependency of openNDS so compiling and inst
 \fBNext, Download and un\-tar the libmicrohttpd source files.\fP
 .sp
 You can find a version number for MHD at \fI\%https://ftp.gnu.org/gnu/libmicrohttpd/\fP
+.sp
+The version number for MHD must not exceed 0.9.70 for versions of openNDS less than 6.0.0
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -2374,7 +2376,7 @@ where "0.9.70" is the MHD version number we are using in this example.
 .sp
 .nf
 .ft C
-\&./configure
+\&./configure \-\-disable\-https
 make
 sudo make install
 sudo ldconfig
@@ -2392,9 +2394,9 @@ You can find a release version number for openNDS at \fI\%https://github.com/ope
 .sp
 .nf
 .ft C
-wget https://codeload.github.com/opennds/opennds/tar.gz/v5.1.0
-tar \-xf v5.1.0
-cd openNDS\-5.1.0
+wget https://codeload.github.com/opennds/opennds/tar.gz/v5.2.0
+tar \-xf v5.2.0
+cd openNDS\-5.2.0
 make
 sudo make install
 systemctl enable opennds
@@ -2403,7 +2405,7 @@ systemctl enable opennds
 .UNINDENT
 .UNINDENT
 .sp
-Where "5.1.0" is the openNDS version we are using in this example.
+Where "5.2.0" is the openNDS version we are using in this example.
 .sp
 openNDS should now start automatically at boot time.
 .sp
@@ -2443,45 +2445,132 @@ On most Linux distributions you can read the system message log with the command
 .sp
 .nf
 .ft C
-sudo /usr/bin/cat /var/log/messages
+service opennds status
 .ft P
 .fi
 .UNINDENT
 .UNINDENT
 .SS OpenWrt Package
 .sp
-The OpenWrt package feed supports cross\-compiled openNDS packages for all OpenWrt targets. See the "Installing openNDS" section of this documentation.
-.SS Cross Compiling for OpenWrt
+The OpenWrt package feed supports cross\-compiled openNDS packages for all OpenWrt targets. See the "Installing openNDS" section of this documentation. The latest release of openNDS will be found in OpenWrt Snapshots, but will nevertheless be a stable release.
 .sp
-You can cross\-compile openNDS from source and create your own installable package using the package definition from the feeds package.
+To include openNDS into your OpenWRT image or to create an .ipk
+package (similar to Debian\(aqs .deb files), you can build an OpenWRT image.
+.sp
+You need a Unix console to enter commands into.
+.sp
+Install the dependencies of the build environment (eg on Debian/Ubuntu):
 .INDENT 0.0
 .INDENT 3.5
 .sp
 .nf
 .ft C
-git clone git://git.openwrt.org/trunk/openwrt.git
-cd openwrt
-\&./scripts/feeds update
-\&./scripts/feeds install
-\&./scripts/feeds install opennds
+sudo apt\-get install git subversion g++ libncurses5\-dev gawk zlib1g\-dev build\-essential
 .ft P
 .fi
 .UNINDENT
 .UNINDENT
 .sp
-Select the appropriate "Target System" and "Target Profile" in the menuconfig menu and build the image:
+Build Commands:
 .INDENT 0.0
 .INDENT 3.5
 .sp
 .nf
 .ft C
+git clone https://git.openwrt.org/openwrt/openwrt.git
+cd openwrt
+
+\&./scripts/feeds update \-a
+\&./scripts/feeds install \-a
+\&./scripts/feeds uninstall opennds
+
+git clone git://github.com/opennds/opennds.git
+cp \-rf opennds/openwrt/opennds package/
+rm \-rf opennds/
+
 make defconfig
 make menuconfig
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+At this point select the appropriate "Target System" and "Target Profile"
+depending on what target chipset/router you want to build for.
+Now select the openNDS package in "Network \-\-\-> Captive Portals".
+.sp
+Now compile/build everything:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
 make
 .ft P
 .fi
 .UNINDENT
 .UNINDENT
+.sp
+The images and all ipk packages are now inside the bin/ folder.
+You can install the openNDS .ipk using \fIopkg install <ipkg\-file>\fP on the router or just use the whole image.
+.sp
+For details please check the OpenWRT documentation.
+.sp
+### Note for developers
+.sp
+## Build Notes
+.sp
+You might want to use your own source location and not the remote repository.
+To do this you need to checkout the repository yourself and commit your changes locally:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+git clone git://github.com/opennds/opennds.git
+cd opennds
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+\&... apply your changes
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+git commit \-am "my change"
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Now create a symbolic link in the openNDS package folder using the abolute path:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+ln \-s /my/own/project/folder/opennds/.git openwrt/package/opennds/git\-src
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Also make sure to enable
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+"Advanced configuration options" => "Enable package source tree override"
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+in the menu when you do \fImake menuconfig\fP\&.
 .SH DEBUGGING OPENNDS
 .SS Syslog Logging
 .sp

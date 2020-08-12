@@ -77,6 +77,7 @@
 #define MIN_MHD_MAJOR 0
 #define MIN_MHD_MINOR 9
 #define MIN_MHD_PATCH 69
+#define MAX_MHD_PATCH 70
 
 /** XXX Ugly hack
  * We need to remember the thread IDs of threads that simulate wait with pthread_cond_timedwait
@@ -277,6 +278,9 @@ setup_from_config(void)
 
 		} else if (patch < MIN_MHD_PATCH) {
 			outdated = 1;
+
+		} else if (patch > MAX_MHD_PATCH) {
+			outdated = 2;
 		}
 
 		if (outdated == 1) {
@@ -288,6 +292,16 @@ setup_from_config(void)
 				exit(1);
 			}
 		}
+
+		if (outdated == 2) {
+			debug(LOG_ERR, "libmicrohttpd is too new, please downgrade to version %d.%d.%d or lower",
+				MIN_MHD_MAJOR, MIN_MHD_MINOR, MAX_MHD_PATCH);
+
+			debug(LOG_ERR, "exiting...");
+			exit(1);
+		}
+
+
 	}
 
 	// Encode gatewayname

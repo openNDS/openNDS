@@ -57,7 +57,7 @@ config opennds
 	# MHD versions earlier than 0.9.69 are detected.
 	# If this option is set to 0 (default), NDS will terminate if MHD is earlier than 0.9.69
 	# If this option is set to 1, NDS will start but log an error.
-	option use_outdated_mhd '0'
+	option use_outdated_mhd '1'
 	###########################################################################################
 
 	# MHD Unescape callback

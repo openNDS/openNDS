@@ -341,15 +341,22 @@ else
 	# as this router has Internet access whilst the client device does not (yet).
 
 	# You can also send a custom data string to BinAuth. Set the variable $custom to the desired value
+	# or uncomment the text input in the displayed form to get input from the client
 	# Max length 256 characters
-	custom="Custom data sent to BinAuth"
+	custom=""
 
 	echo "<br><italic-black> Your News or Advertising could be here, contact the owners of this Hotspot to find out how!</italic-black>"
 
 	echo "<form action=\"/opennds_auth/\" method=\"get\">"
 	echo "<input type=\"hidden\" name=\"tok\" value=\"$tok\">"
 	echo "<input type=\"hidden\" name=\"redir\" value=\"$requested\"><br>"
-	echo "<input type=\"text\" name=\"custom\" value=\"$custom\">"
+
+	#uncomment the next line to request a custom string input from the client and forward it to BinAuth
+	#echo "<input type=\"text\" name=\"custom\" value=\"$custom\" required><br>Custom Data<br><br>"
+
+	# or uncomment the next line to forward the variable %custom to BinAuth
+	#echo "<input type=\"hidden\" name=\"custom\" value=\"$custom\""
+
 	echo "<input type=\"submit\" value=\"Continue\" >"
 	echo "</form><hr>"
 

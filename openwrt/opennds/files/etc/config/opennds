@@ -379,6 +379,8 @@ config opennds
 	# Allow preauthenticated users to access an external IP address
 	# This is commonly referred to as a Walled Garden.
 	# Only IPv4 addresses can be used (not domain names)
+	# (Hint: use an ipset populated with resolved ip addresses if you have a list of domains)
+	#
 	#list preauthenticated_users 'allow tcp port 80 to 112.122.123.124'
 	#list preauthenticated_users 'allow udp port 8020 to 112.122.123.124'
 	#

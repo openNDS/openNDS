@@ -284,18 +284,24 @@ setup_from_config(void)
 		}
 
 		if (outdated == 1) {
-			debug(LOG_ERR, "libmicrohttpd is out of date, please upgrade to version %d.%d.%d or higher",
-				MIN_MHD_MAJOR, MIN_MHD_MINOR, MIN_MHD_PATCH);
+			debug(LOG_ERR, "libmicrohttpd is out of date, please upgrade to v%d.%d.%d or v%d.%d.%d",
+				MIN_MHD_MAJOR, MIN_MHD_MINOR, MIN_MHD_PATCH,
+				MIN_MHD_MAJOR, MIN_MHD_MINOR, MAX_MHD_PATCH
+			);
 
 			if (config->use_outdated_mhd == 0) {
 				debug(LOG_ERR, "exiting...");
 				exit(1);
+			} else {
+				debug(LOG_ERR, "Client entered data may be translated incorrectly, use with this possibility in mind...");
 			}
 		}
 
 		if (outdated == 2) {
-			debug(LOG_ERR, "libmicrohttpd is too new, please downgrade to version %d.%d.%d or lower",
-				MIN_MHD_MAJOR, MIN_MHD_MINOR, MAX_MHD_PATCH);
+			debug(LOG_ERR, "libmicrohttpd is too new, please downgrade to v%d.%d.%d or v%d.%d.%d",
+				MIN_MHD_MAJOR, MIN_MHD_MINOR, MIN_MHD_PATCH,
+				MIN_MHD_MAJOR, MIN_MHD_MINOR, MAX_MHD_PATCH
+			);
 
 			debug(LOG_ERR, "exiting...");
 			exit(1);

@@ -388,6 +388,33 @@ config opennds
 	#list preauthenticated_users 'allow tcp port [port number] ipset [ipset rule name]'
 	###########################################################################################
 
+	# Setting up an automated Walled Garden ipset.
+	#
+	# This requires the ipset and dnsmasq-full packages
+	# Install by running the following commands:
+	# opkg update
+	# opkg install ipset
+	# opkg remove dnsmasq
+	# opkg install dnsmasq-full
+	#
+	# Configure as follows:
+	# ipset create openndsset hash:ip
+	#
+	# Configure dnsmasq:
+	# uci add_list dhcp.@dnsmasq[0].ipset='/<fqdn1>/<fqdn2>/<fqdn3>/<fqdn...>/<fqdnN>/openndsset'
+	#	where <fqdn1> to <fqdnN> are the fully qualified domain names
+	# 	of the URLs you want to use to populate the ipset.
+	#	eg. For Facebook use facebook.com and fbcdn.net as fqdn1 and fqdn2
+	# uci add_list dhcp.@dnsmasq[0].ipset='/facebook.com/fbcdn.net/openndsset'
+	# uci commit dhcp
+	#
+	# Configure opennds by uncommenting the following two lines:
+	#list preauthenticated_users 'allow tcp port 80 ipset openndsset'
+	#list preauthenticated_users 'allow tcp port 443 ipset openndsset'
+
+
+	###########################################################################################
+
 	# User access to the router
 	#
 	# Essential - Allow ports for DNS and DHCP:

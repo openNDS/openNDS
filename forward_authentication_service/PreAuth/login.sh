@@ -188,6 +188,7 @@ done
 
 # URL decode and htmlentity encode vars that need it:
 gatewayname=$(printf "${gatewayname//%/\\x}")
+
 htmlentityencode "$gatewayname"
 gatewaynamehtml=$entityencoded
 
@@ -220,7 +221,9 @@ get_client_zone
 #	Prohibit the execution of javascript.
 #
 
-
+if [ "$status" = "authenticated" ]; then
+	gatewaynamehtml="Welcome"
+fi
 
 header="<!DOCTYPE html>
 	<html>

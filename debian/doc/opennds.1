@@ -1,6 +1,6 @@
 .\" Man page generated from reStructuredText.
 .
-.TH "OPENNDS" "1" "Aug 12, 2020" "5.2.0" "openNDS"
+.TH "OPENNDS" "1" "Aug 18, 2020" "5.2.0" "openNDS"
 .SH NAME
 opennds \- opennds Documentation
 .
@@ -34,14 +34,20 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 openNDS is a high performance, small footprint Captive Portal,
 offering by default a simple splash page restricted Internet connection, yet incorporates an API that allows the creation of sophisticated authentication applications.
 .sp
-It was derived originally from the codebase of the Wifi Guard Dog project.
+It is a fork of the NoDogSplash project that in turn was derived originally from the codebase of the Wifi Guard Dog project.
 .sp
 openNDS is released under the GNU General Public License.
 .INDENT 0.0
 .IP \(bu 2
+openNDS: \fI\%https://github.com/openNDS/openNDS\fP
+.IP \(bu 2
 Original Homepage \fIdown\fP: \fI\%http://kokoro.ucsd.edu/nodogsplash\fP
 .IP \(bu 2
+Archive: \fI\%https://web.archive.org/web/20140210131130/http://kokoro.ucsd.edu/nodogsplash\fP
+.IP \(bu 2
 Wifidog: \fI\%http://dev.wifidog.org/\fP
+.IP \(bu 2
+NoDogSplash: \fI\%https://github.com/nodogsplash/nodogsplash\fP
 .IP \(bu 2
 GNU GPL: \fI\%http://www.gnu.org/copyleft/gpl.html\fP
 .UNINDENT
@@ -124,7 +130,13 @@ Provide Network Address Translation (NAT) for all outgoing traffic directed to t
 .IP \(bu 2
 Have a router working with OpenWrt. At the time of writing, openNDS has been tested with OpenWrt 18.06.x, 19.7.x and Snapshot.
 .IP \(bu 2
-It may or may not work on older versions of OpenWrt or on other kinds of Linux\-based router firmware.
+OpenWrt version 19.07.x or less requires openNDS v5.2.0 or less.
+.IP \(bu 2
+OpenWrt Snapshot or versions higher than 19.07.x require openNDS v6.0.0 or higher.
+.IP \(bu 2
+Note: To run openNDS v6.0.0 or higher on OpenWrt 19.07.x or lower you must upgrade/install libmicrohttpd to v0.9.71 or higher first.
+.IP \(bu 2
+openNDS may or may not work on older versions of OpenWrt or on other kinds of Linux\-based router firmware.
 .IP \(bu 2
 Make sure your router is basically working before you try to install  openNDS. In particular, make sure your DHCP daemon is serving addresses on the interface that openNDS will manage.
 .sp
@@ -191,7 +203,8 @@ To uninstall openNDS:
 .sp
 openNDS can be compiled for most distributions of Linux
 .sp
-openNDS \fBrequires the libmicrohttpd (MHD) library\fP\&. The version must be greater than 0.9.51, but preferably version 0.9.69 or higher.
+openNDS \fBrequires the libmicrohttpd (MHD) library\fP\&. The version must be greater than 0.9.51 but no higher than 0.9.70 for openNDS v5.2.0.
+openNDS v6.0.0 or higher requires libmicrohttpd 0.9.71 or higher.
 .sp
 If your distribution of Linux has a package of version less then 0.9.69, you can set the openNDS config option \fIuse_outdated_mhd\fP to 1. This will force openNDS to use it.
 .INDENT 0.0
@@ -1862,6 +1875,160 @@ Further details about SQM can be found at the following links:
 \fI\%https://openwrt.org/docs/guide\-user/network/traffic\-shaping/sqm\fP
 .sp
 \fI\%https://openwrt.org/docs/guide\-user/network/traffic\-shaping/sqm\-details\fP
+.SH WALLED GARDEN
+.sp
+Preauthenticated clients are, by default, blocked from all access to the Internet.
+.sp
+Access to certain web sites can be allowed. For example, clients will automatically be granted access to an external FAS server for the purpose of authentication.
+.sp
+Access to other web sites may be manually granted so clients can be served content such as news, information, advertising, etc. This is achieved by openNDS by allowing access to the IP address of the web sites as required.
+.sp
+A set of such web sites is referred to as a Walled Garden.
+.sp
+Granting access by specifying the site IP address works well in simple cases but the administrative overhead can rapidly become very for example with social media sites that load balance high volumes of traffic over many possible IP addresses.
+.sp
+In addition, the IP address of any web site may change.
+.sp
+Rather than using IP addresses, a much more efficient method of granting access would be by using the web address (URL) of each site and have a background process populate a database of allowed IP addresses.
+.sp
+openNDS supports dynamic Walled Garden by utilising the combination of Dnsmasq(full version) and the ipset utility.
+.SS OpenWrt Walled Garden
+.sp
+Install by running the following commands:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+opkg update
+opkg install ipset
+opkg remove dnsmasq
+opkg install dnsmasq\-full
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Configure as follows:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+ipset create openndsset hash:ip
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Configure dnsmasq:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+uci add_list dhcp.@dnsmasq[0].ipset=\(aq/<fqdn1>/<fqdn2>/<fqdn3>/<fqdn...>/<fqdnN>/openndsset\(aq
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+where <fqdn1> to <fqdnN> are the fully qualified domain names of the URLs you want to use to populate the ipset.
+.sp
+eg. For Facebook use facebook.com and fbcdn.net as fqdn1 and fqdn2
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+uci add_list dhcp.@dnsmasq[0].ipset=\(aq/facebook.com/fbcdn.net/openndsset\(aq
+uci commit dhcp
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Configure opennds by uncommenting the following two lines:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+list preauthenticated_users \(aqallow tcp port 80 ipset openndsset\(aq
+list preauthenticated_users \(aqallow tcp port 443 ipset openndsset\(aq
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.SS Generic Linux Walled Garden
+.sp
+On most generic Linux platforms the procedure is in principle the same as for OpenWrt.
+.sp
+The ipset and full dnasmasq packages are requirements.
+.sp
+You can check the compile time options of dnsmasq with the following command:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+dnsmasq \-\-version | grep \-m1 \(aqCompile time options:\(aq | cut \-d: \-f2
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+If the returned string contains "no\-ipset" then you will have to upgrade dnsmasq to the full version.
+.sp
+Configure ipset as follows:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+ipset create openndsset hash:ip
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Configure dnsmasq by adding the following line to the dnsmasq config file:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+ipset=/<fqdn1>/<fqdn2>/<fqdn3>/<fqdn...>/<fqdnN>/openndsset
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+where <fqdn1> to <fqdnN> are the fully qualified domain names of the URLs you want to use to populate the ipset.
+eg. For Facebook use facebook.com and fbcdn.net as fqdn1 and fqdn2
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+ipset=\(aq/facebook.com/fbcdn.net/openndsset
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Configure openNDS by adding the following two lines to the "\fBFirewallRuleSet preauthenticated\-users\fP" section of the opennds.conf file:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+FirewallRule allow tcp port 80 ipset openndsset
+FirewallRule allow tcp port 443 ipset openndsset
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
 .SH USING NDSCTL
 .sp
 A openNDS install includes ndsctl, a separate application which provides some control over a running openNDS process by communicating with it over a unix socket. Some command line options:
@@ -2177,7 +2344,7 @@ Custom designed dynamically generated splash pages are supported using FAS and P
 .sp
 For details see the FAS and PreAuth chapters.
 .SH FREQUENTLY ASKED QUESTIONS
-.SS What\(aqs the difference between v0.9, v1, v2, v3, v4 and v5?
+.SS What\(aqs the difference between v0.9, v1, v2, v3, v4, v5 and v6?
 .sp
 \fBv0.9 and v1\fP are the same codebase with the same feature set.
 If the documentation says something about v1, this is usually also valid
@@ -2256,12 +2423,14 @@ Numerous library scripts are introduced to simplify development of applications.
 .UNINDENT
 .UNINDENT
 .UNINDENT
-.SS Can I update from v0.9 to v1?
 .sp
-Updating to v1.0.0 and v1.0.1, this is a very smooth update with full compatibility.
+\fBv6\fP is the first version of openNDS to use the updated libmicrohttpd API introduced with v0.9.71
+.SS Can I upgrade from v0.9 to v1?
+.sp
+Updating to v1.0.0 and v1.0.1, this is a very smooth upgrade with full compatibility.
 .sp
 Updating to 1.0.2 requires iptables v1.4.21 or above.
-.SS Can I update from v0.9/v1 to v2.0.0?
+.SS Can I upgrade from v0.9/v1 to v2.0.0?
 .sp
 You can, if:
 .INDENT 0.0
@@ -2270,7 +2439,7 @@ You don\(aqt use BinVoucher
 .IP \(bu 2
 You have iptables v1.4.21 or above
 .UNINDENT
-.SS Can I update from v0.9/v1/v2 to v3.0.0?
+.SS Can I upgrade from v0.9/v1/v2 to v3.0.0?
 .sp
 You can, if:
 .INDENT 0.0
@@ -2281,7 +2450,7 @@ You have iptables v1.4.21 or above
 .IP \(bu 2
 You use the new options contained in the version 3 configuration file
 .UNINDENT
-.SS Can I update from v0.9/v1/v2/v3 to v4?
+.SS Can I upgrade from v0.9/v1/v2/v3 to v4?
 .sp
 You can, if:
 .INDENT 0.0
@@ -2292,7 +2461,7 @@ You have iptables v1.4.21 or above
 .IP \(bu 2
 You use the new options contained in the version 4 configuration file
 .UNINDENT
-.SS Can I update from v0.9/v1/v2/v3/v4 to v5?
+.SS Can I upgrade from v0.9/v1/v2/v3/v4 to v5?
 .sp
 \fBNo.\fP Nodogsplash must be uninstalled before installing openNDS.
 .INDENT 0.0
@@ -2303,6 +2472,9 @@ v4 NoDogSplash config files will be compatible but must be renamed.
 .IP \(bu 2
 MHD (libmicrohttpd) versions earlier than 0.9.69 are detected, a warning is given and openNDS terminates. A new config option is provided to force openNDS to use an earlier version and can be enabled at the discretion and risk of the installer.
 .UNINDENT
+.SS Can I upgrade from v5 to v6?
+.sp
+You can if you upgrade libmicrohttpd to v0.9.71 or higher.
 .SS How do I manage client data usage?
 .sp
 openNDS (NDS) has built in \fIData Volume\fP and \fIData Rate\fP quota support.
@@ -2439,13 +2611,13 @@ ndsctl status
 .UNINDENT
 .UNINDENT
 .sp
-On most Linux distributions you can read the system message log with the command:
+On most Linux distributions you can read the last few entries for openNDS in the system message log with the command:
 .INDENT 0.0
 .INDENT 3.5
 .sp
 .nf
 .ft C
-service opennds status
+systemctl status opennds
 .ft P
 .fi
 .UNINDENT

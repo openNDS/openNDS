@@ -70,11 +70,11 @@ The status of openNDS can be checked with the following command:
 
  ndsctl status
 
-On most Linux distributions you can read the system message log with the command:
+On most Linux distributions you can read the last few entries for openNDS in the system message log with the command:
 
 .. code::
 
- service opennds status
+ systemctl status opennds
 
 OpenWrt Package
 ***************

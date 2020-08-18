@@ -1,8 +1,8 @@
 Frequently Asked Questions
 ###########################
 
-What's the difference between v0.9, v1, v2, v3, v4 and v5?
-**********************************************************
+What's the difference between v0.9, v1, v2, v3, v4, v5 and v6?
+**************************************************************
 
 **v0.9 and v1** are the same codebase with the same feature set.
 If the documentation says something about v1, this is usually also valid
@@ -63,15 +63,17 @@ for v0.9.
 
    Numerous library scripts are introduced to simplify development of applications.
 
-Can I update from v0.9 to v1?
-*****************************
+**v6** is the first version of openNDS to use the updated libmicrohttpd API introduced with v0.9.71
 
-Updating to v1.0.0 and v1.0.1, this is a very smooth update with full compatibility.
+Can I upgrade from v0.9 to v1?
+******************************
+
+Updating to v1.0.0 and v1.0.1, this is a very smooth upgrade with full compatibility.
 
 Updating to 1.0.2 requires iptables v1.4.21 or above.
 
-Can I update from v0.9/v1 to v2.0.0?
-************************************
+Can I upgrade from v0.9/v1 to v2.0.0?
+*************************************
 
 You can, if:
 
@@ -79,8 +81,8 @@ You can, if:
 * You have iptables v1.4.21 or above
 
 
-Can I update from v0.9/v1/v2 to v3.0.0?
-***************************************
+Can I upgrade from v0.9/v1/v2 to v3.0.0?
+****************************************
 
 You can, if:
 
@@ -88,8 +90,8 @@ You can, if:
 * You have iptables v1.4.21 or above
 * You use the new options contained in the version 3 configuration file
 
-Can I update from v0.9/v1/v2/v3 to v4?
-**************************************
+Can I upgrade from v0.9/v1/v2/v3 to v4?
+***************************************
 
 You can, if:
 
@@ -97,8 +99,8 @@ You can, if:
 * You have iptables v1.4.21 or above
 * You use the new options contained in the version 4 configuration file
 
-Can I update from v0.9/v1/v2/v3/v4 to v5?
-*****************************************
+Can I upgrade from v0.9/v1/v2/v3/v4 to v5?
+******************************************
 
 **No.** Nodogsplash must be uninstalled before installing openNDS.
 
@@ -107,6 +109,11 @@ Can I update from v0.9/v1/v2/v3/v4 to v5?
 * v4 NoDogSplash config files will be compatible but must be renamed.
 
 * MHD (libmicrohttpd) versions earlier than 0.9.69 are detected, a warning is given and openNDS terminates. A new config option is provided to force openNDS to use an earlier version and can be enabled at the discretion and risk of the installer.
+
+Can I upgrade from v5 to v6?
+****************************
+
+You can if you upgrade libmicrohttpd to v0.9.71 or higher.
 
 How do I manage client data usage?
 **********************************

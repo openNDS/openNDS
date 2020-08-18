@@ -22,9 +22,15 @@ openNDS is designed to run on a device configured as an IPv4 router and will hav
 Installing on OpenWrt
 *********************
 
-* Have a router working with OpenWrt. At the time of writing, openNDS has been tested with OpenWrt 18.06.x, 19.7.x and Snapshot.
+* Have a router working with OpenWrt. At the time of writing, openNDS has been tested with OpenWrt 18.06.x, 19.7.x and Snapshot. 
 
-* It may or may not work on older versions of OpenWrt or on other kinds of Linux-based router firmware.
+* OpenWrt version 19.07.x or less requires openNDS v5.2.0 or less. 
+
+* OpenWrt Snapshot or versions higher than 19.07.x require openNDS v6.0.0 or higher.
+
+* Note: To run openNDS v6.0.0 or higher on OpenWrt 19.07.x or lower you must upgrade/install libmicrohttpd to v0.9.71 or higher first.
+
+* openNDS may or may not work on older versions of OpenWrt or on other kinds of Linux-based router firmware.
 
 * Make sure your router is basically working before you try to install  openNDS. In particular, make sure your DHCP daemon is serving addresses on the interface that openNDS will manage.
 
@@ -72,7 +78,8 @@ Generic Linux
 
 openNDS can be compiled for most distributions of Linux
 
-openNDS **requires the libmicrohttpd (MHD) library**. The version must be greater than 0.9.51, but preferably version 0.9.69 or higher.
+openNDS **requires the libmicrohttpd (MHD) library**. The version must be greater than 0.9.51 but no higher than 0.9.70 for openNDS v5.2.0.
+openNDS v6.0.0 or higher requires libmicrohttpd 0.9.71 or higher.
 
 If your distribution of Linux has a package of version less then 0.9.69, you can set the openNDS config option *use_outdated_mhd* to 1. This will force openNDS to use it.
 

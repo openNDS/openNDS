@@ -14,6 +14,8 @@ The libmicrohttpd library (MHD) is a dependency of openNDS so compiling and inst
 
 You can find a version number for MHD at https://ftp.gnu.org/gnu/libmicrohttpd/
 
+The version number for MHD must not exceed 0.9.70 for versions of openNDS less than 6.0.0
+
 .. code::
 
  wget https://ftp.gnu.org/gnu/libmicrohttpd/libmicrohttpd-0.9.70.tar.gz
@@ -26,7 +28,7 @@ where "0.9.70" is the MHD version number we are using in this example.
 
 .. code::
 
- ./configure
+ ./configure --disable-https
  make
  sudo make install
  sudo ldconfig
@@ -39,14 +41,14 @@ You can find a release version number for openNDS at https://github.com/openNDS/
 
 .. code::
 
- wget https://codeload.github.com/opennds/opennds/tar.gz/v5.1.0
- tar -xf v5.1.0
- cd openNDS-5.1.0
+ wget https://codeload.github.com/opennds/opennds/tar.gz/v5.2.0
+ tar -xf v5.2.0
+ cd openNDS-5.2.0
  make
  sudo make install
  systemctl enable opennds
 
-Where "5.1.0" is the openNDS version we are using in this example.
+Where "5.2.0" is the openNDS version we are using in this example.
 
 openNDS should now start automatically at boot time.
 
@@ -68,12 +70,11 @@ The status of openNDS can be checked with the following command:
 
  ndsctl status
 
-On most Linux distributions you can read the system message log with the command:
+On most Linux distributions you can read the last few entries for openNDS in the system message log with the command:
 
 .. code::
 
- sudo /usr/bin/cat /var/log/messages
-
+ systemctl status opennds
 
 OpenWrt Package
 ***************

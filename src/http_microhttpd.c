@@ -55,8 +55,8 @@ static t_client *add_client(const char mac[], const char ip[]);
 static int authenticated(struct MHD_Connection *connection, const char *url, t_client *client);
 static int preauthenticated(struct MHD_Connection *connection, const char *url, t_client *client);
 static int authenticate_client(struct MHD_Connection *connection, const char *redirect_url, t_client *client);
-static enum MHD_Result get_host_value_callback(void *cls, enum MHD_ValueKind kind, const char *key, const char *value);
-static enum MHD_Result get_user_agent_callback(void *cls, enum MHD_ValueKind kind, const char *key, const char *value);
+static int get_host_value_callback(void *cls, enum MHD_ValueKind kind, const char *key, const char *value);
+static int get_user_agent_callback(void *cls, enum MHD_ValueKind kind, const char *key, const char *value);
 static int serve_file(struct MHD_Connection *connection, t_client *client, const char *url);
 static int show_splashpage(struct MHD_Connection *connection, t_client *client);
 static int show_statuspage(struct MHD_Connection *connection, t_client *client);
@@ -176,7 +176,7 @@ struct collect_query {
 	char **elements;
 };
 
-static enum MHD_Result collect_query_string(void *cls, enum MHD_ValueKind kind, const char *key, const char * value)
+static int collect_query_string(void *cls, enum MHD_ValueKind kind, const char *key, const char * value)
 {
 	// what happens when '?=foo' supplied?
 	struct collect_query *collect_query = cls;
@@ -190,7 +190,7 @@ static enum MHD_Result collect_query_string(void *cls, enum MHD_ValueKind kind, 
 }
 
 // a dump iterator required for counting all elements
-static enum MHD_Result counter_iterator(void *cls, enum MHD_ValueKind kind, const char *key, const char *value)
+static int counter_iterator(void *cls, enum MHD_ValueKind kind, const char *key, const char *value)
 {
 	return MHD_YES;
 }
@@ -346,7 +346,7 @@ get_client_ip(char ip_addr[INET6_ADDRSTRLEN], struct MHD_Connection *connection)
  * @param ptr - unused
  * @return
  */
-enum MHD_Result libmicrohttpd_cb(
+int libmicrohttpd_cb(
 	void *cls,
 	struct MHD_Connection *connection,
 	const char *url,
@@ -1231,7 +1231,7 @@ static int send_error(struct MHD_Connection *connection, int error)
  * @param value
  * @return MHD_YES or MHD_NO. MHD_NO means we found our item and this callback will not called again.
  */
-static enum MHD_Result get_host_value_callback(void *cls, enum MHD_ValueKind kind, const char *key, const char *value)
+static int get_host_value_callback(void *cls, enum MHD_ValueKind kind, const char *key, const char *value)
 {
 	const char **host = (const char **)cls;
 	if (MHD_HEADER_KIND != kind) {
@@ -1255,7 +1255,7 @@ static enum MHD_Result get_host_value_callback(void *cls, enum MHD_ValueKind kin
  * @param value
  * @return MHD_YES or MHD_NO. MHD_NO means we found our item and this callback will not called again.
  */
-static enum MHD_Result get_user_agent_callback(void *cls, enum MHD_ValueKind kind, const char *key, const char *value)
+static int get_user_agent_callback(void *cls, enum MHD_ValueKind kind, const char *key, const char *value)
 {
 	const char **user_agent = (const char **)cls;
 	if (MHD_HEADER_KIND != kind) {

@@ -68,7 +68,7 @@
 /* Check for libmicrohttp version in compiler
  *0.9.71 is the minimum version for NDS to work with the new API
  */
-#if MHD_VERSION < 0x00097100
+#if MHD_VERSION < 0x00095100
 #error libmicrohttp version >= 0.9.71 required
 #endif
 /* Check for libmicrohttp version at runtime

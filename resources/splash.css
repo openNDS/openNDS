@@ -41,7 +41,7 @@ img {
 	margin-right: 5%;
 }
 
-input[type=text], input[type=email], input[type=password] {
+input[type=text], input[type=email], input[type=password], input[type=number], input[type=tel]  {
 	font-size: 1em;
 	line-height: 2.0em;
 	height: 2.0em;

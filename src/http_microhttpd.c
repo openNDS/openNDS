@@ -55,8 +55,8 @@ static t_client *add_client(const char mac[], const char ip[]);
 static int authenticated(struct MHD_Connection *connection, const char *url, t_client *client);
 static int preauthenticated(struct MHD_Connection *connection, const char *url, t_client *client);
 static int authenticate_client(struct MHD_Connection *connection, const char *redirect_url, t_client *client);
-static int get_host_value_callback(void *cls, enum MHD_ValueKind kind, const char *key, const char *value);
-static int get_user_agent_callback(void *cls, enum MHD_ValueKind kind, const char *key, const char *value);
+static enum MHD_Result get_host_value_callback(void *cls, enum MHD_ValueKind kind, const char *key, const char *value);
+static enum MHD_Result get_user_agent_callback(void *cls, enum MHD_ValueKind kind, const char *key, const char *value);
 static int serve_file(struct MHD_Connection *connection, t_client *client, const char *url);
 static int show_splashpage(struct MHD_Connection *connection, t_client *client);
 static int show_statuspage(struct MHD_Connection *connection, t_client *client);
@@ -74,10 +74,27 @@ static const char *get_redirect_url(struct MHD_Connection *connection);
 static const char *lookup_mimetype(const char *filename);
 
 
-// Call the BinAuth script
-static int do_binauth(struct MHD_Connection *connection, const char *binauth, t_client *client,
-	int *seconds_ret, unsigned long long int *upload_rate_ret, unsigned long long int *download_rate_ret,
-	unsigned long long int *upload_quota_ret, unsigned long long int *download_quota_ret, const char *redirect_url)
+/* Call the BinAuth script or program with output and input arguments.
+ * Output arguments to BinAuth:
+ * We will send client->mac, username_enc, password_enc, redirect_url_enc_buf, enc_user_agent, client->ip, client->token, custom_enc.
+ * The BinAuth script will return &seconds, &upload_rate, &download_rate, &upload_quota, &download_quota
+ *
+ * Input arguments from BinAuth:
+ * BinAuth will return values for Session length, rates and quotas.
+ * It is the responsibility of the script to obtain/calculate/generate these values.
+*/
+
+static int do_binauth(
+	struct MHD_Connection *connection,
+	const char *binauth,
+	t_client *client,
+	int *seconds_ret,
+	unsigned long long int *upload_rate_ret,
+	unsigned long long int *download_rate_ret,
+	unsigned long long int *upload_quota_ret,
+	unsigned long long int *download_quota_ret,
+	const char *redirect_url
+	)
 {
 	char username_enc[64] = {0};
 	char password_enc[64] = {0};
@@ -99,10 +116,12 @@ static int do_binauth(struct MHD_Connection *connection, const char *binauth, t_
 	unsigned long long int download_quota;
 	int rc;
 
+	// Get the client user agent
 	MHD_get_connection_values(connection, MHD_HEADER_KIND, get_user_agent_callback, &user_agent);
 
 	debug(LOG_DEBUG, "BinAuth: User Agent is [ %s ]", user_agent);
 
+	// Get username, password and custom data string as passed in the query string
 	username = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "username");
 	password = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "password");
 	custom = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "custom");
@@ -176,7 +195,7 @@ struct collect_query {
 	char **elements;
 };
 
-static int collect_query_string(void *cls, enum MHD_ValueKind kind, const char *key, const char * value)
+static enum MHD_Result collect_query_string(void *cls, enum MHD_ValueKind kind, const char *key, const char * value)
 {
 	// what happens when '?=foo' supplied?
 	struct collect_query *collect_query = cls;
@@ -190,7 +209,7 @@ static int collect_query_string(void *cls, enum MHD_ValueKind kind, const char *
 }
 
 // a dump iterator required for counting all elements
-static int counter_iterator(void *cls, enum MHD_ValueKind kind, const char *key, const char *value)
+static enum MHD_Result counter_iterator(void *cls, enum MHD_ValueKind kind, const char *key, const char *value)
 {
 	return MHD_YES;
 }
@@ -346,7 +365,7 @@ get_client_ip(char ip_addr[INET6_ADDRSTRLEN], struct MHD_Connection *connection)
  * @param ptr - unused
  * @return
  */
-int libmicrohttpd_cb(
+enum MHD_Result libmicrohttpd_cb(
 	void *cls,
 	struct MHD_Connection *connection,
 	const char *url,
@@ -1231,7 +1250,7 @@ static int send_error(struct MHD_Connection *connection, int error)
  * @param value
  * @return MHD_YES or MHD_NO. MHD_NO means we found our item and this callback will not called again.
  */
-static int get_host_value_callback(void *cls, enum MHD_ValueKind kind, const char *key, const char *value)
+static enum MHD_Result get_host_value_callback(void *cls, enum MHD_ValueKind kind, const char *key, const char *value)
 {
 	const char **host = (const char **)cls;
 	if (MHD_HEADER_KIND != kind) {
@@ -1255,7 +1274,7 @@ static int get_host_value_callback(void *cls, enum MHD_ValueKind kind, const cha
  * @param value
  * @return MHD_YES or MHD_NO. MHD_NO means we found our item and this callback will not called again.
  */
-static int get_user_agent_callback(void *cls, enum MHD_ValueKind kind, const char *key, const char *value)
+static enum MHD_Result get_user_agent_callback(void *cls, enum MHD_ValueKind kind, const char *key, const char *value)
 {
 	const char **user_agent = (const char **)cls;
 	if (MHD_HEADER_KIND != kind) {

@@ -1,3 +1,13 @@
+openNDS (6.0.0)
+
+  * This version - for Openwrt after 19.07 - for compatibility with new MHD API
+  * Set - minimum version of MHD to 0.9.71 for new MHD API [bluewavenet]
+  * Set - use_outdated_mhd to 0 (disabled) as default [bluewavenet]
+  * Add - Multifield PreAuth login script with css update [bluewavenet]
+  * Add - Documentation and config option descriptions for configuring Walled Garden IP Sets
+
+ -- Rob White <dot@blue-wave.net> Wed, 21 Aug 2020 15:43:47 +0000
+
 openNDS (5.2.0)
 
   * This version - for backport to Openwrt 19.07 - for compatibility with old MHD API

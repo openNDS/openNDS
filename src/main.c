@@ -66,18 +66,17 @@
 #include <microhttpd.h>
 
 /* Check for libmicrohttp version in compiler
- *0.9.51 is the minimum version for NDS to work
+ *0.9.71 is the minimum version for NDS to work with the new API
  */
 #if MHD_VERSION < 0x00095100
-#error libmicrohttp version >= 0.9.51 required
+#error libmicrohttp version >= 0.9.71 required
 #endif
 /* Check for libmicrohttp version at runtime
  *0.9.69 is the minimum version to prevent loss of special characters in form data (BinAuth and PreAuth) 
  */
 #define MIN_MHD_MAJOR 0
 #define MIN_MHD_MINOR 9
-#define MIN_MHD_PATCH 69
-#define MAX_MHD_PATCH 70
+#define MIN_MHD_PATCH 71
 
 /** XXX Ugly hack
  * We need to remember the thread IDs of threads that simulate wait with pthread_cond_timedwait
@@ -278,36 +277,19 @@ setup_from_config(void)
 
 		} else if (patch < MIN_MHD_PATCH) {
 			outdated = 1;
-
-		} else if (patch > MAX_MHD_PATCH) {
-			outdated = 2;
 		}
 
 		if (outdated == 1) {
-			debug(LOG_ERR, "libmicrohttpd is out of date, please upgrade to v%d.%d.%d or v%d.%d.%d",
-				MIN_MHD_MAJOR, MIN_MHD_MINOR, MIN_MHD_PATCH,
-				MIN_MHD_MAJOR, MIN_MHD_MINOR, MAX_MHD_PATCH
-			);
+			debug(LOG_ERR, "libmicrohttpd is out of date, please upgrade to version %d.%d.%d or higher",
+				MIN_MHD_MAJOR, MIN_MHD_MINOR, MIN_MHD_PATCH);
 
 			if (config->use_outdated_mhd == 0) {
 				debug(LOG_ERR, "exiting...");
 				exit(1);
 			} else {
-				debug(LOG_ERR, "Client entered data may be translated incorrectly, use with this possibility in mind...");
+				debug(LOG_ERR, "Attempting use of outdated MHD - Data may be corrupted or openNDS may fail...");
 			}
 		}
-
-		if (outdated == 2) {
-			debug(LOG_ERR, "libmicrohttpd is too new, please downgrade to v%d.%d.%d or v%d.%d.%d",
-				MIN_MHD_MAJOR, MIN_MHD_MINOR, MIN_MHD_PATCH,
-				MIN_MHD_MAJOR, MIN_MHD_MINOR, MAX_MHD_PATCH
-			);
-
-			debug(LOG_ERR, "exiting...");
-			exit(1);
-		}
-
-
 	}
 
 	// Encode gatewayname
@@ -363,7 +345,7 @@ setup_from_config(void)
 	if (config->unescape_callback_enabled == 0) {
 		debug(LOG_INFO, "MHD Unescape Callback is Disabled");
 
-		if ((webserver = MHD_start_daemon(MHD_USE_EPOLL_INTERNALLY | MHD_USE_TCP_FASTOPEN,
+		if ((webserver = MHD_start_daemon(MHD_USE_EPOLL_INTERNAL_THREAD | MHD_USE_TCP_FASTOPEN,
 								config->gw_port,
 								NULL, NULL,
 								libmicrohttpd_cb, NULL,
@@ -377,7 +359,7 @@ setup_from_config(void)
 	} else {
 		debug(LOG_NOTICE, "MHD Unescape Callback is Enabled");
 
-		if ((webserver = MHD_start_daemon(MHD_USE_EPOLL_INTERNALLY | MHD_USE_TCP_FASTOPEN,
+		if ((webserver = MHD_start_daemon(MHD_USE_EPOLL_INTERNAL_THREAD | MHD_USE_TCP_FASTOPEN,
 								config->gw_port,
 								NULL, NULL,
 								libmicrohttpd_cb, NULL,

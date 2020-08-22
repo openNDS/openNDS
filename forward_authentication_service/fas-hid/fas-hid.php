@@ -137,7 +137,7 @@ if ($landing == true) {
 		<form>\n<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='".$redir."'\" >\n</form>
 	";
 
-	read_terms($me, $clientip, $gatewayname, $gatewayaddress, $hid, $redir);
+	read_terms($me, $clientip, $gatewayname, $gatewayaddress, $hid, $redir, $custom);
 	footer($imagepath);
 	exit(0);
 }
@@ -150,7 +150,7 @@ if (isset($_GET["status"])) {
 		";
 
 		$hid=$redir="status";
-		read_terms($me, $clientip, $gatewayname, $gatewayaddress, $hid, $redir);
+		read_terms($me, $clientip, $gatewayname, $gatewayaddress, $hid, $redir $custom);
 		footer($imagepath);
 		exit(0);
 	}
@@ -192,7 +192,7 @@ if ($fullname == "" or $email == "") {
 			<br>
 		";
 
-		read_terms($me, $clientip, $gatewayname, $gatewayaddress, $hid, $redir);
+		read_terms($me, $clientip, $gatewayname, $gatewayaddress, $hid, $redir $custom);
 	}
 } else {
 	# Output the "Thankyou page" with a continue button
@@ -216,7 +216,7 @@ if ($fullname == "" or $email == "") {
 		<input type=\"hidden\" name=\"redir\" value=\"".$redir."\"><br>
 		<input type=\"submit\" value=\"Continue\" >
 		</form><hr>\n";
-	read_terms($me, $clientip, $gatewayname, $gatewayaddress, $hid, $redir);
+	read_terms($me, $clientip, $gatewayname, $gatewayaddress, $hid, $redir $custom);
 
 	# In this example we have decided to log all clients who are granted access
 	# Note: the web server daemon must have read and write permissions to the folder defined in $logpath
@@ -262,7 +262,7 @@ function footer($imagepath) {
 	\n";
 }
 
-function read_terms($me, $clientip, $gatewayname, $gatewayaddress, $hid, $redir) {
+function read_terms($me, $clientip, $gatewayname, $gatewayaddress, $hid, $redir, $custom) {
 	//terms of service button
 	echo "<form action=\"$me\" method=\"get\" >
 		<input type=\"hidden\" name=\"terms\" value=\"terms\">
@@ -271,6 +271,7 @@ function read_terms($me, $clientip, $gatewayname, $gatewayaddress, $hid, $redir)
 		<input type=\"hidden\" name=\"gatewayaddress\" value=\"".$gatewayaddress."\">
 		<input type=\"hidden\" name=\"hid\" value=\"".$hid."\">
 		<input type=\"hidden\" name=\"redir\" value=\"".$redir."\">
+		<input type=\"hidden\" name=\"custom\" value=\"$custom\">
 		<input type=\"submit\" value=\"Read Terms of Service\" >
 		</form>
 		<br>

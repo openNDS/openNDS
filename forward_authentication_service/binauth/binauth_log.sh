@@ -115,7 +115,9 @@ if [ $action = "auth_client" ]; then
 	# This can be used to determine much information about the capabilities of the client.
 	# In this case it will be added to the log.
 	#
-	# Both redir and useragent are url-encoded, so decode:
+	# customdata is sent in argument nine
+	#
+	# redir, useragent and customdata are url-encoded, so decode:
 	redir_enc=$5
 	redir=$(printf "${redir_enc//%/\\x}")
 	useragent_enc=$6
@@ -126,6 +128,7 @@ if [ $action = "auth_client" ]; then
 	log_entry="method=$1, clientmac=$2, clientip=$7, username=$3, password=$4, redir=$redir, useragent=$useragent, token=$8, custom=$customdata"
 
 elif [ $action = "ndsctl_auth" ]; then
+	# in the case of authmon (FAS level 3) or ndsctl authentication
 	customdata_enc=$8
 	customdata=$(printf "${customdata_enc//%/\\x}")
 	log_entry="method=$1, clientmac=$2, bytes_incoming=$3, bytes_outgoing=$4, session_start=$5, session_end=$6, token=$7, custom=$customdata"
@@ -139,10 +142,18 @@ write_log
 
 # Set length of session in seconds (eg 24 hours is 86400 seconds - if set to 0 then defaults to global sessiontimeout value):
 session_length=0
-# The session length could be determined by FAS or PreAuth, on a per client basis, and embedded in the redir variable payload.
 
-# Finally before exiting, output the session length, followed by two integers (reserved for future use in traffic shaping)
-echo $session_length 0 0
+# Set Rate and Quota values for the client
+# The session length, rate and quota values could be determined by FAS or PreAuth, on a per client basis, and embedded in the customdata variable payload.
+# rates are in kb/s, quotas are in kB. Setting to 0 means no limit
+upload_rate=0
+download_rate=0
+upload_quota=0
+download_quota=0
+
+# Finally before exiting, output the session length, upload rate, download rate, upload quota and download quota.
+
+echo "$session_length $upload_rate $download_rate $upload_quota $download_quota"
 
 # exit 0 tells NDS is is ok to allow the client to have access.
 # exit 1 would tell NDS to deny access.

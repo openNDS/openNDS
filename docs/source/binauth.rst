@@ -86,6 +86,12 @@ When the first argument is other than auth_client or ndsctl_auth, the following 
  * arg[6] = session_end - the session end time
  * arg[7] = client_token
 
+Using the Custom Variable string
+--------------------------------
+Method auth_client - arg[9] contains the url-escaped custom variable string. openNDS extracts this variable from the query string of the http auth_client call from a FAS or Templated splash page.
+
+It is provided for general unspecified use and is url-escaped.
+A typical example of its use is for a level 0, 1, or 2 FAS to communicate quota values for individual clients, or groups of clients.
 
 Example BinAuth Scripts
 ***********************

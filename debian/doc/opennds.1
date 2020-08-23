@@ -1,6 +1,6 @@
 .\" Man page generated from reStructuredText.
 .
-.TH "OPENNDS" "1" "Aug 18, 2020" "5.2.0" "openNDS"
+.TH "OPENNDS" "1" "Aug 23, 2020" "6.0.0" "openNDS"
 .SH NAME
 opennds \- opennds Documentation
 .
@@ -1432,6 +1432,12 @@ arg[7] = client_token
 .UNINDENT
 .UNINDENT
 .UNINDENT
+.SS Using the Custom Variable string
+.sp
+Method auth_client \- arg[9] contains the url\-escaped custom variable string. openNDS extracts this variable from the query string of the http auth_client call from a FAS or Templated splash page.
+.sp
+It is provided for general unspecified use and is url\-escaped.
+A typical example of its use is for a level 0, 1, or 2 FAS to communicate quota values for individual clients, or groups of clients.
 .SS Example BinAuth Scripts
 .sp
 Two example BinAuth scripts are included in the source files available for download at:
@@ -1622,7 +1628,7 @@ openNDS (NDS) has built in \fIData Volume\fP and \fIData Rate\fP quota support.
 Data volume and data rate quotas can be set globally in the config file.
 .sp
 The global values can be overridden on a client by client basis as required.
-.SS Data Volume Quota
+.SS Global Data Volume Quota
 .sp
 If a client exceeds the global data volume quota, or the individual client quota, that client will be forced out by deauthentication.
 To continue, the client must re\-authenticate.
@@ -1651,7 +1657,7 @@ option downloadquota \(aq0\(aq
 Note: upload means to the Internet, download means from the Internet
 .sp
 \fBQuotas for individual clients\fP will override configured global values and are set either by BinAuth or the Authmon Daemon (fas_secure_enable level 3) \- see example BinAuth script (binauth_log.sh) and example FAS script (fas\-aes\-https.php).
-.SS Data Rate Quota
+.SS Global Data Rate Quota
 .sp
 A rate quota is a moving average data rate.
 .sp
@@ -1696,8 +1702,15 @@ option ratecheckwindow \(aq2\(aq
 .UNINDENT
 .sp
 Note: upload means to the Internet, download means from the Internet
+.SS Data Rate Quotas for Individual Clients
 .sp
 \fBData Rate Quotas for individual clients\fP will override configured global values and are set either by BinAuth or the Authmon Daemon (fas_secure_enable level 3) \- see example BinAuth script (binauth_log.sh) and example FAS script (fas\-aes\-https.php).
+.SS FAS Level 3
+.sp
+FAD level 3 uses the Authmon daemon to set quota values determined by the FAS. The example script fas\-aes\-https.php shows how to implement this.
+.SS FAS level 0,2 and 2
+.sp
+These levels use BinAuth to set quota values determined by the FAS. The FAS would utilise the BinAuth custom variable to send quota values to a BinAuth script configured to interpret the data passed to it in the variable. There is no set method for doing this, it is left to individual installers to develop their own method.
 .SS Traffic Shaping
 .sp
 openNDS (NDS) supports Traffic Shaping (Bandwidth Limiting) using the SQM \- Smart Queue Management (sqm\-scripts) package, available for OpenWrt and generic Linux.

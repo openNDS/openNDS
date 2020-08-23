@@ -10,8 +10,8 @@ Data volume and data rate quotas can be set globally in the config file.
 
 The global values can be overridden on a client by client basis as required.
 
-Data Volume Quota
------------------
+Global Data Volume Quota
+------------------------
 If a client exceeds the global data volume quota, or the individual client quota, that client will be forced out by deauthentication.
 To continue, the client must re-authenticate.
 
@@ -36,8 +36,8 @@ Note: upload means to the Internet, download means from the Internet
 **Quotas for individual clients** will override configured global values and are set either by BinAuth or the Authmon Daemon (fas_secure_enable level 3) - see example BinAuth script (binauth_log.sh) and example FAS script (fas-aes-https.php).
 
 
-Data Rate Quota
----------------
+Global Data Rate Quota
+----------------------
 A rate quota is a moving average data rate.
 
 The average is calculated  over a configured time window.
@@ -77,8 +77,17 @@ Global Data Rate quotas are configured in the config file.
 
 Note: upload means to the Internet, download means from the Internet
 
+Data Rate Quotas for Individual Clients
+---------------------------------------
 **Data Rate Quotas for individual clients** will override configured global values and are set either by BinAuth or the Authmon Daemon (fas_secure_enable level 3) - see example BinAuth script (binauth_log.sh) and example FAS script (fas-aes-https.php).
 
+FAS Level 3
+===========
+FAD level 3 uses the Authmon daemon to set quota values determined by the FAS. The example script fas-aes-https.php shows how to implement this.
+
+FAS level 0,2 and 2
+===================
+These levels use BinAuth to set quota values determined by the FAS. The FAS would utilise the BinAuth custom variable to send quota values to a BinAuth script configured to interpret the data passed to it in the variable. There is no set method for doing this, it is left to individual installers to develop their own method.
 
 Traffic Shaping
 ***************

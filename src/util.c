@@ -227,7 +227,7 @@ get_iface_ip(const char ifname[], int ip6)
 		snprintf(iptype, sizeof(iptype), "inet");
  	}
 
-	snprintf(cmd, sizeof(cmd), "ip address | grep -A4 %s: | grep '%s ' | awk '{print $2}' | awk -F'/' '{printf $1}'",
+	snprintf(cmd, sizeof(cmd), "ip address | grep -A2 ': %s' | grep '%s ' | awk '{print $2}' | awk -F'/' 'NR==1 {printf $1}'",
 		ifname,
 		iptype
 	);

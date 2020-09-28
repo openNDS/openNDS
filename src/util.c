@@ -464,6 +464,7 @@ ndsctl_status(FILE *fp)
 		fprintf(fp, "Redirect URL: %s\n", config->redirectURL);
 	}
 
+	/*
 	fprintf(fp, "Traffic control: %s\n", config->traffic_control ? "yes" : "no");
 
 	if (config->traffic_control) {
@@ -478,6 +479,30 @@ ndsctl_status(FILE *fp)
 			fprintf(fp, "Upload rate limit: none\n");
 		}
 	}
+	*/
+
+	if (config->download_rate > 0) {
+		fprintf(fp, "Global Download rate limit: %llu kbit/s\n", config->download_rate);
+	} else {
+		fprintf(fp, "Global Download rate limit: none\n");
+	}
+	if (config->upload_rate > 0) {
+		fprintf(fp, "Global Upload rate limit: %llu kbit/s\n", config->upload_rate);
+	} else {
+		fprintf(fp, "Global Upload rate limit: none\n");
+	}
+
+	if (config->download_quota > 0) {
+		fprintf(fp, "Global Download quota: %llu kB\n", config->download_quota);
+	} else {
+		fprintf(fp, "Global Download quota: none\n");
+	}
+	if (config->upload_quota > 0) {
+		fprintf(fp, "Global Upload quota: %llu kB\n", config->upload_quota);
+	} else {
+		fprintf(fp, "Global Upload quota: none\n");
+	}
+
 
 	download_bytes = iptables_fw_total_download();
 	fprintf(fp, "Total download: %llu kByte", download_bytes / 1000);

@@ -83,7 +83,7 @@ usage(void)
 		"\n"
 		"	customstring is a custom string that will be passed to BinAuth.\n"
 		"\n"
-		"	Example: ndsctl auth 1400 300 1500 500000 1000000 \"This is a Custom String\"\n"
+		"	Example: ndsctl auth 10.13.1.138 1400 300 1500 500000 1000000 \"This is a Custom String\"\n"
 		"\n"
 		"  deauth mac|ip|token\n"
 		"	Deauthenticate user with specified mac, ip or token\n\n"

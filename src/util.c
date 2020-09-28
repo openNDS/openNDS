@@ -592,6 +592,7 @@ ndsctl_status(FILE *fp)
 	fprintf(fp, "========\n");
 }
 
+// Deprecate ndsctl clients
 void
 ndsctl_clients(FILE *fp)
 {
@@ -636,6 +637,9 @@ ndsctl_clients(FILE *fp)
 		fprintf(fp, "avg_down_speed=%.2f\n", ((double)download_bytes) / 125 / durationsecs);
 		fprintf(fp, "uploaded=%llu\n", upload_bytes/1000);
 		fprintf(fp, "avg_up_speed=%.2f\n\n", ((double)upload_bytes) / 125 / durationsecs);
+
+		fprintf(fp, "Warning - ndsctl clients is deprecated and will be removed in future versions.\n");
+		fprintf(fp, "please use status or json options instead.\n");
 
 		indx++;
 		client = client->next;

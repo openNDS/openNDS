@@ -150,7 +150,7 @@ if (isset($_GET["status"])) {
 		";
 
 		$hid=$redir="status";
-		read_terms($me, $clientip, $gatewayname, $gatewayaddress, $hid, $redir $custom);
+		read_terms($me, $clientip, $gatewayname, $gatewayaddress, $hid, $redir, $custom);
 		footer($imagepath);
 		exit(0);
 	}

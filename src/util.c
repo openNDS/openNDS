@@ -227,9 +227,10 @@ get_iface_ip(const char ifname[], int ip6)
 		snprintf(iptype, sizeof(iptype), "inet");
  	}
 
-	snprintf(cmd, sizeof(cmd), "ip address | grep -A2 ': %s' | grep '%s ' | awk '{print $2}' | awk -F'/' 'NR==1 {printf $1}'",
+	snprintf(cmd, sizeof(cmd), "ip address | grep -A2 ': %s' | grep '%s ' | awk '$NF == \"%s\" {print $2}' | awk -F'/' 'NR==1 {printf $1}'",
 		ifname,
-		iptype
+		iptype,
+		ifname
 	);
 
 	debug(LOG_NOTICE, "Attempting to Bind to interface: %s", ifname);
@@ -482,25 +483,25 @@ ndsctl_status(FILE *fp)
 	*/
 
 	if (config->download_rate > 0) {
-		fprintf(fp, "Download rate limit: %llu kbit/s\n", config->download_rate);
+		fprintf(fp, "Download rate limit (default per client): %llu kbit/s\n", config->download_rate);
 	} else {
-		fprintf(fp, "Download rate limit: none\n");
+		fprintf(fp, "Download rate limit (default per client): no limit\n");
 	}
 	if (config->upload_rate > 0) {
-		fprintf(fp, "Upload rate limit: %llu kbit/s\n", config->upload_rate);
+		fprintf(fp, "Upload rate limit (default per client): %llu kbit/s\n", config->upload_rate);
 	} else {
-		fprintf(fp, "Upload rate limit: none\n");
+		fprintf(fp, "Upload rate limit (default per client): no limit\n");
 	}
 
 	if (config->download_quota > 0) {
-		fprintf(fp, "Download quota: %llu kB\n", config->download_quota);
+		fprintf(fp, "Download quota (default per client): %llu kB\n", config->download_quota);
 	} else {
-		fprintf(fp, "Download quota: none\n");
+		fprintf(fp, "Download quota (default per client): no limit\n");
 	}
 	if (config->upload_quota > 0) {
-		fprintf(fp, "Upload quota: %llu kB\n", config->upload_quota);
+		fprintf(fp, "Upload quota (default per client): %llu kB\n", config->upload_quota);
 	} else {
-		fprintf(fp, "Upload quota: none\n");
+		fprintf(fp, "Upload quota (default per client): no limit\n");
 	}
 
 

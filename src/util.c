@@ -538,6 +538,7 @@ ndsctl_status(FILE *fp)
 		}
 
 		fprintf(fp, "  Token: %s\n", client->token ? client->token : "none");
+		fprintf(fp, "  State: %s\n", fw_connection_state_as_string(client->fw_connection_state));
 
 		if (client->download_rate == 0) {
 			fprintf(fp, "  Download rate limit: not set\n");
@@ -672,7 +673,7 @@ ndsctl_clients(FILE *fp)
 		fprintf(fp, "avg_up_speed=%.2f\n\n", ((double)upload_bytes) / 125 / durationsecs);
 
 		fprintf(fp, "Warning - ndsctl clients is deprecated and will be removed in future versions.\n");
-		fprintf(fp, "please use status or json options instead.\n");
+		fprintf(fp, "Please use status or json options instead.\n\n");
 
 		indx++;
 		client = client->next;

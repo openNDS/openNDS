@@ -540,28 +540,28 @@ ndsctl_status(FILE *fp)
 		fprintf(fp, "  Token: %s\n", client->token ? client->token : "none");
 		fprintf(fp, "  State: %s\n", fw_connection_state_as_string(client->fw_connection_state));
 
-		if (client->download_rate == 0) {
-			fprintf(fp, "  Download rate limit: not set\n");
-		} else {
-			fprintf(fp, "  Download rate limit: %llu kb/s\n", client->download_rate);
-		}
-
 		if (client->upload_rate == 0) {
 			fprintf(fp, "  Upload rate limit: not set\n");
 		} else {
 			fprintf(fp, "  Upload rate limit: %llu kb/s\n", client->upload_rate);
 		}
 
-		if (client->download_quota == 0) {
-			fprintf(fp, "  Download quota: not set\n");
+		if (client->download_rate == 0) {
+			fprintf(fp, "  Download rate limit: not set\n");
 		} else {
-			fprintf(fp, "  Download quota: %llu kB\n", client->download_quota);
+			fprintf(fp, "  Download rate limit: %llu kb/s\n", client->download_rate);
 		}
 
 		if (client->upload_quota == 0) {
 			fprintf(fp, "  Upload quota: not set\n");
 		} else {
 			fprintf(fp, "  Upload quota: %llu kB\n", client->upload_quota);
+		}
+
+		if (client->download_quota == 0) {
+			fprintf(fp, "  Download quota: not set\n");
+		} else {
+			fprintf(fp, "  Download quota: %llu kB\n", client->download_quota);
 		}
 
 		download_bytes = client->counters.incoming;
@@ -573,10 +573,15 @@ ndsctl_status(FILE *fp)
 			durationsecs = 1;
 		}
 
-		fprintf(fp,
-			"  Download this session: %llu kB; Session avg: %.2f kb/s\n  Upload this session: %llu kB; Session avg: %.2f kb/s\n\n",
-			download_bytes / 1000, ((double)download_bytes) / 125 / durationsecs,
-			upload_bytes / 1000, ((double)upload_bytes) / 125 / durationsecs);
+		fprintf(fp, "  Upload this session: %llu kB; Session avg: %.2f kb/s\n",
+			upload_bytes / 1000,
+			((double)upload_bytes) / 125 / durationsecs)
+		;
+
+		fprintf(fp, "  Download this session: %llu kB; Session avg: %.2f kb/s\n\n",
+			download_bytes / 1000,
+			((double)download_bytes) / 125 / durationsecs)
+		;
 
 		indx++;
 		client = client->next;

@@ -631,7 +631,7 @@ ndsctl_status(FILE *fp)
 	fprintf(fp, "========\n");
 }
 
-// Deprecate ndsctl clients
+// TODO Deprecated ndsctl clients, remove at future date
 void
 ndsctl_clients(FILE *fp)
 {
@@ -688,40 +688,83 @@ ndsctl_clients(FILE *fp)
 }
 
 static void
-ndsctl_json_client(FILE *fp, const t_client *client, time_t now)
+ndsctl_json_client(FILE *fp, const t_client *client, time_t now, char *indent)
 {
 	unsigned long int durationsecs;
 	unsigned long long int download_bytes, upload_bytes;
 
-	fprintf(fp, "\"id\":\"%d\",\n", client->id);
-	fprintf(fp, "\"ip\":\"%s\",\n", client->ip);
-	fprintf(fp, "\"mac\":\"%s\",\n", client->mac);
-	fprintf(fp, "\"added\":\"%lld\",\n", (long long) client->session_start);
-	fprintf(fp, "\"active\":\"%lld\",\n", (long long) client->counters.last_updated);
+	fprintf(fp, "  %s\"mac\":\"%s\",\n", indent, client->mac);
+	fprintf(fp, "  %s\"ip\":\"%s\",\n", indent, client->ip);
+	fprintf(fp, "  %s\"added\":\"%lld\",\n", indent, (long long) client->session_start);
+	fprintf(fp, "  %s\"active\":\"%lld\",\n", indent, (long long) client->counters.last_updated);
+
 	if (client->session_start) {
-		fprintf(fp, "\"duration\":\"%lu\",\n", now - client->session_start);
+		fprintf(fp, "  %s\"duration\":\"%lu\",\n", indent, now - client->session_start);
 	} else {
-		fprintf(fp, "\"duration\":\"%lu\",\n", 0ul);
+		fprintf(fp, "  %s\"duration\":\"%lu\",\n", indent, 0ul);
 	}
-	fprintf(fp, "\"token\":\"%s\",\n", client->token ? client->token : "none");
-	fprintf(fp, "\"state\":\"%s\",\n", fw_connection_state_as_string(client->fw_connection_state));
+	fprintf(fp, "  %s\"token\":\"%s\",\n", indent, client->token ? client->token : "none");
+	fprintf(fp, "  %s\"state\":\"%s\",\n", indent, fw_connection_state_as_string(client->fw_connection_state));
 
 	durationsecs = now - client->session_start;
 	download_bytes = client->counters.incoming;
 	upload_bytes = client->counters.outgoing;
 
-	fprintf(fp, "\"downloaded\":\"%llu\",\n", download_bytes / 1000);
-	fprintf(fp, "\"avg_down_speed\":\"%.2f\",\n", ((double)download_bytes) / 125 / durationsecs);
-	fprintf(fp, "\"uploaded\":\"%llu\",\n", upload_bytes / 1000);
-	fprintf(fp, "\"avg_up_speed\":\"%.2f\"\n", ((double)upload_bytes)/ 125 / durationsecs);
+	if (client->upload_rate == 0) {
+		fprintf(fp, "  %s\"upload_rate_limit\":\"null\",\n", indent);
+	} else {
+		fprintf(fp, "  %s\"upload_rate_limit\":\"%llu\",\n", indent, client->upload_rate);
+	}
+
+	if (client->download_rate == 0) {
+		fprintf(fp, "  %s\"download_rate_limit\":\"null\",\n", indent);
+	} else {
+		fprintf(fp, "  %s\"download_rate_limit\":\"%llu\",\n", indent, client->download_rate);
+	}
+
+	if (client->upload_quota == 0) {
+		fprintf(fp, "  %s\"upload_quota\":\"null\",\n", indent);
+	} else {
+		fprintf(fp, "  %s\"upload_quota\":\"%llu\",\n", indent, client->upload_quota);
+	}
+
+	if (client->download_quota == 0) {
+		fprintf(fp, "  %s\"download_quota\":\"null\",\n", indent);
+	} else {
+		fprintf(fp, "  %s\"download_quota\":\"%llu\",\n", indent, client->download_quota);
+	}
+
+	// prevent divison by 0
+	if (durationsecs < 1) {
+		durationsecs = 1;
+	}
+
+	fprintf(fp, "  %s\"upload_this_session\":\"%llu\",\n",
+		indent,
+		(upload_bytes / 1000)
+	);
+
+	fprintf(fp, "  %s\"upload_session_avg\":\"%.2f\",\n",
+		indent,
+		(double)upload_bytes / 125 / durationsecs
+	);
+
+	fprintf(fp, "  %s\"download_this_session\":\"%llu\",\n",
+		indent,
+		(download_bytes / 1000)
+	);
+
+	fprintf(fp, "  %s\"download_session_avg\":\"%.2f\"\n",
+		indent,
+		(double)download_bytes / 125 / durationsecs
+	);
 }
 
 static void
-ndsctl_json_one(FILE *fp, const char *arg)
+ndsctl_json_one(FILE *fp, const char *arg, char *indent)
 {
 	t_client *client;
 	time_t now;
-
 	now = time(NULL);
 
 	// Update the client's counters so info is current
@@ -733,7 +776,7 @@ ndsctl_json_one(FILE *fp, const char *arg)
 
 	if (client) {
 		fprintf(fp, "{\n");
-		ndsctl_json_client(fp, client, now);
+		ndsctl_json_client(fp, client, now, indent);
 		fprintf(fp, "}\n");
 	} else {
 		fprintf(fp, "{}\n");
@@ -743,7 +786,7 @@ ndsctl_json_one(FILE *fp, const char *arg)
 }
 
 static void
-ndsctl_json_all(FILE *fp)
+ndsctl_json_all(FILE *fp, char *indent)
 {
 	t_client *client;
 	time_t now;
@@ -760,25 +803,25 @@ ndsctl_json_all(FILE *fp)
 
 	LOCK_CLIENT_LIST();
 
-	fprintf(fp, "{\n\"client_list_length\": \"%d\",\n", get_client_list_length());
+	fprintf(fp, "{\n  \"client_list_length\":\"%d\",\n", get_client_list_length());
 
 	client = client_get_first_client();
 
-	fprintf(fp, "\"clients\":{\n");
+	fprintf(fp, "  \"clients\":{\n");
 
 	while (client != NULL) {
-		fprintf(fp, "\"%s\":{\n", client->mac);
-		ndsctl_json_client(fp, client, now);
+		fprintf(fp, "%s\"%s\":{\n", indent, client->mac);
+		ndsctl_json_client(fp, client, now, indent);
 
 		client = client->next;
 		if (client) {
-			fprintf(fp, "},\n");
+			fprintf(fp, "%s},\n", indent);
 		} else {
-			fprintf(fp, "}\n");
+			fprintf(fp, "%s}\n", indent);
 		}
 	}
 
-	fprintf(fp, "}\n}\n");
+	fprintf(fp, "  }\n");
 
 	UNLOCK_CLIENT_LIST();
 
@@ -791,32 +834,36 @@ ndsctl_json_all(FILE *fp)
 		}
 
 		// output the count of trusted macs and list them in json array format
-		fprintf(fp, "{\n\"trusted_list_length\": \"%d\",\n", count);
-		fprintf(fp, "\"trusted\":[\n");
+		fprintf(fp, "  \"trusted_list_length\":\"%d\",\n", count);
+		fprintf(fp, "  \"trusted\":[\n");
 
 		for (trust_mac = config->trustedmaclist; trust_mac != NULL; trust_mac = trust_mac->next) {
 
 			if (count > 1) {
-				fprintf(fp, "\"%s\",\n", trust_mac->mac);
+				fprintf(fp, "    \"%s\",\n", trust_mac->mac);
 				count--;
 			} else {
-				fprintf(fp, "\"%s\"\n", trust_mac->mac);
+				fprintf(fp, "    \"%s\"\n", trust_mac->mac);
 			}
 		}
 
-		fprintf(fp, "]\n}\n");
+		fprintf(fp, "  ]\n");
 	}
+	fprintf(fp, "}\n");
 }
 
 void
 ndsctl_json(FILE *fp, const char *arg)
 {
+	char indent[5] = {0};
 	//if (arg && strlen(arg)) {
 	debug(LOG_DEBUG, "arg [%s %d]", arg, strlen(arg));
 	if (strlen(arg) > 6) {
-		ndsctl_json_one(fp, arg);
+		//snprintf(indent, sizeof(indent), "%s", "");
+		ndsctl_json_one(fp, arg, indent);
 	} else {
-		ndsctl_json_all(fp);
+		snprintf(indent, sizeof(indent), "%s", "    ");
+		ndsctl_json_all(fp, indent);
 	}
 }
 

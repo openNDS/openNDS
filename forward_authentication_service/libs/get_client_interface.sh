@@ -4,7 +4,7 @@
 #This software is released under the GNU GPL license.
 #
 # Warning - shebang sh is for compatibliity with busybox ash (eg on OpenWrt)
-# This is changed to bash automatically by Makefile for Debian
+# This is changed to bash automatically by Makefile for generic Linux
 #
 
 
@@ -17,9 +17,11 @@ if [ -z $(command -v ip) ]; then
 	exit 1
 fi
 
-if [ -z $(command -v iw) ]; then
+if [ -z $(command -v iww) ]; then
 	echo "iw utility not available" | logger -p "daemon.warn" -s -t "NDS-Library[$pid]"
-	exit 1
+	iwstatus=false
+else
+	iwstatus=true
 fi
 
 # mac address of client is passed as a command line argument
@@ -57,28 +59,31 @@ if [ -z "$clientlocalif" ]; then
 	exit 1
 fi
 
-# Get list of wireless interfaces on this device
-# This list will contain all the wireless interfaces configured on the device
-# eg wlan0, wlan0-1, wlan1, wlan1-1 etc
-interface_list=$(iw dev | awk -F 'Interface ' 'NF>1{printf $2" "}')
+clientmeshif=""
 
-# Scan the wireless interfaces on this device for the client mac
-for interface in $interface_list; do
-	macscan=$(iw dev $interface station dump | awk -F " " 'match($s, "'"$mac"'")>0{printf $2}')
+if [ "$iwstatus" = true ]; then 
+	# Get list of wireless interfaces on this device
+	# This list will contain all the wireless interfaces configured on the device
+	# eg wlan0, wlan0-1, wlan1, wlan1-1 etc
+	interface_list=$(iw dev | awk -F 'Interface ' 'NF>1{printf $2" "}')
 
-	if [ ! -z "$macscan" ]; then
-		clientmeshif=""
-		clientlocalif=$interface
-		break
-	else
-		clientlocalip=$(ip -4 neigh | awk -F ' ' 'match($s,"'"$mac"' ")>0 {printf $1}')
-		ping=$(ping -W 1 -c 1 $clientlocalip)
-		meshmac=$(iw dev $interface mpp dump | awk -F "$mac " 'NF>1{printf $2}')
-		if [ ! -z "$meshmac" ]; then
-			clientmeshif=$meshmac
+	# Scan the wireless interfaces on this device for the client mac
+	for interface in $interface_list; do
+		macscan=$(iw dev $interface station dump | awk -F " " 'match($s, "'"$mac"'")>0{printf $2}')
+
+		if [ ! -z "$macscan" ]; then
+			clientlocalif=$interface
+			break
+		else
+			clientlocalip=$(ip -4 neigh | awk -F ' ' 'match($s,"'"$mac"' ")>0 {printf $1}')
+			ping=$(ping -W 1 -c 1 $clientlocalip)
+			meshmac=$(iw dev $interface mpp dump | awk -F "$mac " 'NF>1{printf $2}')
+			if [ ! -z "$meshmac" ]; then
+				clientmeshif=$meshmac
+			fi
 		fi
-	fi
-done
+	done
+fi
 
 # Return the local interface the client is using, the mesh node mac address and the local mesh interface
 echo "$clientlocalif $clientmeshif"

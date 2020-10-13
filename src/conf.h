@@ -29,7 +29,7 @@
 #ifndef _CONF_H_
 #define _CONF_H_
 
-#define VERSION "6.0.1beta"
+#define VERSION "7.0.0beta"
 
 /*
  * Defines how many times should we try detecting the interface with the default route (in seconds).
@@ -132,6 +132,17 @@ typedef struct _MAC_t {
 	struct _MAC_t *next;
 } t_MAC;
 
+// Walled Garden Ports
+typedef struct _WGP_t {
+	unsigned int wgport;
+	struct _WGP_t *next;
+} t_WGP;
+
+// Walled Garden FQDNs
+typedef struct _WGFQDN_t {
+	char *wgfqdn;
+	struct _WGFQDN_t *next;
+} t_WGFQDN;
 
 // Configuration structure
 typedef struct {
@@ -195,6 +206,8 @@ typedef struct {
 	int ip6;				//@brief enable IPv6
 	char *binauth;				//@brief external authentication program
 	char *preauth;				//@brief external preauthentication program
+	t_WGP walledgardenportlist;		//@brief list of Walled Garden Ports
+	t_WGFQDN *walledgardenfqdnlist;		//@brief list of Walled Garden FQDNs
 } s_config;
 
 // @brief Get the current gateway configuration

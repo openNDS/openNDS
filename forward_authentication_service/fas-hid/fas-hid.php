@@ -150,7 +150,7 @@ if (isset($_GET["status"])) {
 		";
 
 		$hid=$redir="status";
-		read_terms($me, $clientip, $gatewayname, $gatewayaddress, $hid, $redir $custom);
+		read_terms($me, $clientip, $gatewayname, $gatewayaddress, $hid, $redir, $custom);
 		footer($imagepath);
 		exit(0);
 	}
@@ -192,7 +192,7 @@ if ($fullname == "" or $email == "") {
 			<br>
 		";
 
-		read_terms($me, $clientip, $gatewayname, $gatewayaddress, $hid, $redir $custom);
+		read_terms($me, $clientip, $gatewayname, $gatewayaddress, $hid, $redir, $custom);
 	}
 } else {
 	# Output the "Thankyou page" with a continue button
@@ -216,7 +216,7 @@ if ($fullname == "" or $email == "") {
 		<input type=\"hidden\" name=\"redir\" value=\"".$redir."\"><br>
 		<input type=\"submit\" value=\"Continue\" >
 		</form><hr>\n";
-	read_terms($me, $clientip, $gatewayname, $gatewayaddress, $hid, $redir $custom);
+	read_terms($me, $clientip, $gatewayname, $gatewayaddress, $hid, $redir, $custom);
 
 	# In this example we have decided to log all clients who are granted access
 	# Note: the web server daemon must have read and write permissions to the folder defined in $logpath

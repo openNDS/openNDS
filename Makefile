@@ -67,4 +67,7 @@ install:
 	cp forward_authentication_service/fas-aes/fas-aes.php $(DESTDIR)/etc/opennds/
 	cp forward_authentication_service/fas-aes/fas-aes-https.php $(DESTDIR)/etc/opennds/
 
+installservice:
+	cp opennds.service /etc/systemd/system
+	systemctl daemon-reload
 

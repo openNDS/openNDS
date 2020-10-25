@@ -200,14 +200,14 @@ typedef struct {
 	t_MAC *trustedmaclist;			//@brief list of trusted macs
 	t_MAC *blockedmaclist;			//@brief list of blocked macs
 	t_MAC *allowedmaclist;			//@brief list of allowed macs
+	t_WGP *walledgarden_port_list;		//@brief list of Walled Garden Ports
+	t_WGFQDN *walledgarden_fqdn_list;		//@brief list of Walled Garden FQDNs
 	unsigned int fw_mark_authenticated;	//@brief iptables mark for authenticated packets
 	unsigned int fw_mark_blocked;		//@brief iptables mark for blocked packets
 	unsigned int fw_mark_trusted;		//@brief iptables mark for trusted packets
 	int ip6;				//@brief enable IPv6
 	char *binauth;				//@brief external authentication program
 	char *preauth;				//@brief external preauthentication program
-	t_WGP walledgardenportlist;		//@brief list of Walled Garden Ports
-	t_WGFQDN *walledgardenfqdnlist;		//@brief list of Walled Garden FQDNs
 } s_config;
 
 // @brief Get the current gateway configuration
@@ -243,6 +243,8 @@ char * get_empty_ruleset_policy(const char[]);
 void parse_trusted_mac_list(const char[]);
 void parse_blocked_mac_list(const char[]);
 void parse_allowed_mac_list(const char[]);
+void parse_walledgarden_fqdn_list(const char[]);
+void parse_walledgarden_port_list(const char[]);
 
 int is_blocked_mac(const char *mac);
 int is_allowed_mac(const char *mac);

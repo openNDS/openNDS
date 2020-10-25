@@ -412,6 +412,8 @@ ndsctl_status(FILE *fp)
 	t_MAC *allow_mac;
 	t_MAC *block_mac;
 	time_t sysuptime;
+	t_WGP *allowed_wgport;
+	t_WGFQDN *allowed_wgfqdn;
 
 	config = config_get_config();
 
@@ -623,6 +625,28 @@ ndsctl_status(FILE *fp)
 		fprintf(fp, "\n");
 		for (trust_mac = config->trustedmaclist; trust_mac != NULL; trust_mac = trust_mac->next) {
 			fprintf(fp, "  %s\n", trust_mac->mac);
+		}
+	} else {
+		fprintf(fp, " none\n");
+	}
+
+	fprintf(fp, "Walled Garden FQDNs:");
+
+	if (config->walledgarden_fqdn_list != NULL) {
+		fprintf(fp, "\n");
+		for (allowed_wgfqdn = config->walledgarden_fqdn_list; allowed_wgfqdn != NULL; allowed_wgfqdn = allowed_wgfqdn->next) {
+			fprintf(fp, "  %s\n", allowed_wgfqdn->wgfqdn);
+		}
+	} else {
+		fprintf(fp, " none\n");
+	}
+
+	fprintf(fp, "Walled Garden Ports:");
+
+	if (config->walledgarden_port_list != NULL) {
+		fprintf(fp, "\n");
+		for (allowed_wgport = config->walledgarden_port_list; allowed_wgport != NULL; allowed_wgport = allowed_wgport->next) {
+			fprintf(fp, "  %u\n", allowed_wgport->wgport);
 		}
 	} else {
 		fprintf(fp, " none\n");

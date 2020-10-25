@@ -116,7 +116,9 @@ typedef enum {
 	oFWMarkTrusted,
 	oFWMarkBlocked,
 	oBinAuth,
-	oPreAuth
+	oPreAuth,
+	oWalledGardenFqdnList,
+	oWalledGardenPortList
 } OpCodes;
 
 /** @internal
@@ -178,6 +180,8 @@ static const struct {
 	{ "fw_mark_blocked", oFWMarkBlocked },
 	{ "binauth", oBinAuth },
 	{ "preauth", oPreAuth },
+	{ "walledgarden_fqdn_list", oWalledGardenFqdnList },
+	{ "walledgarden_port_list", oWalledGardenPortList },
 	{ NULL, oBadOption },
 };
 
@@ -269,6 +273,8 @@ config_init(void)
 	config.ip6 = DEFAULT_IP6;
 	config.binauth = NULL;
 	config.preauth = NULL;
+	config.walledgarden_fqdn_list = NULL;
+	config.walledgarden_port_list = NULL;
 
 	// Set up default FirewallRuleSets, and their empty ruleset policies
 	rs = add_ruleset("trusted-users");
@@ -869,6 +875,12 @@ config_read(const char *filename)
 		case oAllowedMACList:
 			parse_allowed_mac_list(p1);
 			break;
+		case oWalledGardenFqdnList:
+			parse_walledgarden_fqdn_list(p1);
+			break;
+		case oWalledGardenPortList:
+			parse_walledgarden_port_list(p1);
+			break;
 		case oMACmechanism:
 			if (!strcasecmp("allow", p1)) {
 				config.macmechanism = MAC_ALLOW;
@@ -1072,6 +1084,61 @@ int check_mac_format(const char possiblemac[])
 	return ether_aton(possiblemac) != NULL;
 }
 
+//////
+int add_to_walledgarden_fqdn_list(const char possiblefqdn[])
+{
+	char fqdn[128];
+	t_WGFQDN *p = NULL;
+
+	// check for valid format
+	//if (!check_mac_format(possiblemac)) {
+	//	debug(LOG_WARNING, "[%s] is not a valid FQDN", possiblefqdn);
+	//	debug(LOG_WARNING, "[%s]  - please remove from walledgardenfqdn list in config file", possiblefqdn);
+	//	return 1;
+	//}
+
+	sscanf(possiblefqdn, "%s", fqdn);
+	//safe_asprintf(&fqdn, "%s", possiblefqdn);
+
+	// See if FQDN is already on the list; don't add duplicates
+	//for (p = config.walledgarden_fqdn_list; p != NULL; p = p->next) {
+	//	if (!strcasecmp(p->fqdn, fqdn)) {
+	//		debug(LOG_INFO, "FQDN [%s] already on walled garden list", fqdn);
+	//		return 1;
+	//	}
+	//}
+
+	// Add FQDN to head of list
+	p = safe_malloc(sizeof(t_WGFQDN));
+	p->wgfqdn = safe_strdup(fqdn);
+	p->next = config.walledgarden_fqdn_list;
+	config.walledgarden_fqdn_list = p;
+	debug(LOG_INFO, "Added Walled Garden FQDN [%s] to list", possiblefqdn);
+	//free (p);
+	return 0;
+}
+
+int add_to_walledgarden_port_list(const char possibleport[])
+{
+	unsigned int port;
+	t_WGP *p = NULL;
+
+	sscanf(possibleport, "%u", &port);
+
+	// Add walled garden port to head of list
+	p = safe_malloc(sizeof(t_WGP));
+	p->wgport = port;
+	p->next = config.walledgarden_port_list;
+	config.walledgarden_port_list = p;
+	debug(LOG_INFO, "Added Walled Garden port [%u] to list", port);
+	//free (p);
+	return 0;
+}
+
+
+
+//////
+
 int add_to_trusted_mac_list(const char possiblemac[])
 {
 	char mac[18];
@@ -1100,6 +1167,7 @@ int add_to_trusted_mac_list(const char possiblemac[])
 	p->next = config.trustedmaclist;
 	config.trustedmaclist = p;
 	debug(LOG_INFO, "Added MAC address [%s] to trusted list", mac);
+	//free (p);
 	return 0;
 }
 
@@ -1436,6 +1504,56 @@ void parse_allowed_mac_list(const char ptr[])
 	while ((possiblemac = strsep(&ptrcopy, ", \t"))) {
 		if (strlen(possiblemac) > 0) {
 			if (add_to_allowed_mac_list(possiblemac) < 0) {
+				exit(1);
+			}
+		}
+	}
+
+	free(ptrcopyptr);
+}
+
+/* Given a pointer to a comma or whitespace delimited sequence of
+ * Walled Garden FQDNs, add each FQDN to config.walledgardenfqdnlist
+ */
+void parse_walledgarden_fqdn_list(const char ptr[])
+{
+	char *ptrcopy = NULL;
+	char *ptrcopyptr;
+	char *possiblefqdn = NULL;
+
+	debug(LOG_DEBUG, "Parsing string [%s] for Walled Garden FQDNs to allow", ptr);
+
+	// strsep modifies original, so let's make a copy
+	ptrcopyptr = ptrcopy = safe_strdup(ptr);
+
+	while ((possiblefqdn = strsep(&ptrcopy, ", \t"))) {
+		if (strlen(possiblefqdn) > 0) {
+			if (add_to_walledgarden_fqdn_list(possiblefqdn) < 0) {
+				exit(1);
+			}
+		}
+	}
+
+	free(ptrcopyptr);
+}
+
+/* Given a pointer to a comma or whitespace delimited sequence of
+ * Walled Garden FQDN ports, add each port number to config.walledgardenportlist
+ */
+void parse_walledgarden_port_list(const char ptr[])
+{
+	char *ptrcopy = NULL;
+	char *ptrcopyptr;
+	char *possibleport = NULL;
+
+	debug(LOG_DEBUG, "Parsing string [%s] for Walled Garden Ports to allow", ptr);
+
+	// strsep modifies original, so let's make a copy
+	ptrcopyptr = ptrcopy = safe_strdup(ptr);
+
+	while ((possibleport = strsep(&ptrcopy, ", \t"))) {
+		if (strlen(possibleport) > 0) {
+			if (add_to_walledgarden_port_list(possibleport) < 0) {
 				exit(1);
 			}
 		}

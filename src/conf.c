@@ -44,7 +44,7 @@
 #include "conf.h"
 #include "auth.h"
 #include "util.h"
-
+#include "http_microhttpd_utils.h"
 
 /** @internal
  * Holds the current configuration of the gateway */
@@ -1089,55 +1089,43 @@ int add_to_walledgarden_fqdn_list(const char possiblefqdn[])
 {
 	char fqdn[128];
 	t_WGFQDN *p = NULL;
+	char possiblefqdn_urlencoded[256] = {0};
 
-	// check for valid format
-	//if (!check_mac_format(possiblemac)) {
-	//	debug(LOG_WARNING, "[%s] is not a valid FQDN", possiblefqdn);
-	//	debug(LOG_WARNING, "[%s]  - please remove from walledgardenfqdn list in config file", possiblefqdn);
-	//	return 1;
-	//}
+	// Sanitise FQDN
+	uh_urlencode(possiblefqdn_urlencoded, sizeof(possiblefqdn_urlencoded), possiblefqdn, strlen(possiblefqdn));
+	debug(LOG_DEBUG, "[%s] is the urlencoded FQDN", possiblefqdn_urlencoded);
 
-	sscanf(possiblefqdn, "%s", fqdn);
-	//safe_asprintf(&fqdn, "%s", possiblefqdn);
+	if (strcmp(possiblefqdn_urlencoded, possiblefqdn) == 0) {
 
-	// See if FQDN is already on the list; don't add duplicates
-	//for (p = config.walledgarden_fqdn_list; p != NULL; p = p->next) {
-	//	if (!strcasecmp(p->fqdn, fqdn)) {
-	//		debug(LOG_INFO, "FQDN [%s] already on walled garden list", fqdn);
-	//		return 1;
-	//	}
-	//}
+		sscanf(possiblefqdn, "%s", fqdn);
 
-	// Add FQDN to head of list
-	p = safe_malloc(sizeof(t_WGFQDN));
-	p->wgfqdn = safe_strdup(fqdn);
-	p->next = config.walledgarden_fqdn_list;
-	config.walledgarden_fqdn_list = p;
-	debug(LOG_INFO, "Added Walled Garden FQDN [%s] to list", possiblefqdn);
-	//free (p);
+		// Add FQDN to head of list
+		p = safe_malloc(sizeof(t_WGFQDN));
+		p->wgfqdn = safe_strdup(fqdn);
+		p->next = config.walledgarden_fqdn_list;
+		config.walledgarden_fqdn_list = p;
+		debug(LOG_INFO, "Added Walled Garden FQDN [%s] to list", possiblefqdn);
+	} else {
+		debug(LOG_WARNING, "Invalid FQDN [%s], please remove from the list; skipping..", possiblefqdn);
+	}
 	return 0;
 }
 
 int add_to_walledgarden_port_list(const char possibleport[])
 {
-	unsigned int port;
+	unsigned short int port;
 	t_WGP *p = NULL;
 
-	sscanf(possibleport, "%u", &port);
+	sscanf(possibleport, "%hu", &port);
 
 	// Add walled garden port to head of list
 	p = safe_malloc(sizeof(t_WGP));
 	p->wgport = port;
 	p->next = config.walledgarden_port_list;
 	config.walledgarden_port_list = p;
-	debug(LOG_INFO, "Added Walled Garden port [%u] to list", port);
-	//free (p);
+	debug(LOG_INFO, "Added Walled Garden port [%hu] to list", port);
 	return 0;
 }
-
-
-
-//////
 
 int add_to_trusted_mac_list(const char possiblemac[])
 {
@@ -1167,7 +1155,6 @@ int add_to_trusted_mac_list(const char possiblemac[])
 	p->next = config.trustedmaclist;
 	config.trustedmaclist = p;
 	debug(LOG_INFO, "Added MAC address [%s] to trusted list", mac);
-	//free (p);
 	return 0;
 }
 

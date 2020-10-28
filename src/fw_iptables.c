@@ -368,6 +368,7 @@ iptables_fw_init(void)
 	t_MAC *pt;
 	t_MAC *pb;
 	t_MAC *pa;
+	t_WGP *allowed_wgport;
 	int rc = 0;
 	int macmechanism;
 
@@ -570,7 +571,10 @@ iptables_fw_init(void)
 	 *    jump to CHAIN_TRUSTED_TO_ROUTER, and load and use users-to-router ruleset
 	 */
 	if (is_empty_ruleset("trusted-users-to-router")) {
-		rc |= iptables_do_command("-t filter -A " CHAIN_TO_ROUTER " -m mark --mark 0x%x%s -j %s", FW_MARK_TRUSTED, markmask, get_empty_ruleset_policy("trusted-users-to-router"));
+		rc |= iptables_do_command("-t filter -A " CHAIN_TO_ROUTER " -m mark --mark 0x%x%s -j %s",
+			FW_MARK_TRUSTED, markmask,
+			get_empty_ruleset_policy("trusted-users-to-router")
+		);
 	} else {
 		rc |= iptables_do_command("-t filter -A " CHAIN_TO_ROUTER " -m mark --mark 0x%x%s -j " CHAIN_TRUSTED_TO_ROUTER, FW_MARK_TRUSTED, markmask);
 		// CHAIN_TRUSTED_TO_ROUTER, related and established packets ACCEPT
@@ -621,10 +625,25 @@ iptables_fw_init(void)
 	}
 
 
-	// Allow access to remote FAS - CHAIN_OUTGOING and CHAIN_TO_INTERNET packets for remote FAS, ACCEPT
+	// Allow access to remote FAS - CHAIN_TO_INTERNET packets for remote FAS, ACCEPT
 	if (fas_port && strcmp(fas_remoteip, gw_ip)) {
 		rc |= iptables_do_command("-t filter -A " CHAIN_TO_INTERNET " -p tcp --destination %s --dport %d -j ACCEPT", fas_remoteip, fas_port);
 	}
+
+	// Allow access to Walled Garden ipset - CHAIN_TO_INTERNET packets for Walled Garden, ACCEPT
+	if (config->walledgarden_fqdn_list != NULL && config->walledgarden_port_list == NULL) {
+		rc |= iptables_do_command("-t filter -I " CHAIN_TO_INTERNET " -m set --match-set walledgarden dst -j ACCEPT");
+	}
+
+	if (config->walledgarden_fqdn_list != NULL && config->walledgarden_port_list != NULL) {
+		for (allowed_wgport = config->walledgarden_port_list; allowed_wgport != NULL; allowed_wgport = allowed_wgport->next) {
+			debug(LOG_INFO, "Iptables: walled garden port [%u]", allowed_wgport->wgport);
+			rc |= iptables_do_command("-t filter -I " CHAIN_TO_INTERNET " -p tcp --dport %u -m set --match-set walledgarden dst -j ACCEPT",
+				allowed_wgport->wgport
+			);
+		}
+	}
+
 
 	// CHAIN_TO_INTERNET, packets marked TRUSTED:
 
@@ -634,7 +653,10 @@ iptables_fw_init(void)
 	 *    jump to CHAIN_TRUSTED, and load and use trusted-users ruleset
 	 */
 	if (is_empty_ruleset("trusted-users")) {
-		rc |= iptables_do_command("-t filter -A " CHAIN_TO_INTERNET " -m mark --mark 0x%x%s -j %s", FW_MARK_TRUSTED, markmask, get_empty_ruleset_policy("trusted-users"));
+		rc |= iptables_do_command("-t filter -A " CHAIN_TO_INTERNET " -m mark --mark 0x%x%s -j %s",
+			FW_MARK_TRUSTED, markmask,
+			get_empty_ruleset_policy("trusted-users")
+		);
 	} else {
 		rc |= iptables_do_command("-t filter -A " CHAIN_TO_INTERNET " -m mark --mark 0x%x%s -j " CHAIN_TRUSTED, FW_MARK_TRUSTED, markmask);
 		// CHAIN_TRUSTED, related and established packets ACCEPT
@@ -654,9 +676,16 @@ iptables_fw_init(void)
 	 *    jump to CHAIN_AUTHENTICATED, and load and use authenticated-users ruleset
 	 */
 	if (is_empty_ruleset("authenticated-users")) {
-		rc |= iptables_do_command("-t filter -A " CHAIN_TO_INTERNET " -m mark --mark 0x%x%s -j %s", FW_MARK_AUTHENTICATED, markmask, get_empty_ruleset_policy("authenticated-users"));
+		rc |= iptables_do_command("-t filter -A " CHAIN_TO_INTERNET " -m mark --mark 0x%x%s -j %s",
+			FW_MARK_AUTHENTICATED,
+			markmask,
+			get_empty_ruleset_policy("authenticated-users")
+		);
 	} else {
-		rc |= iptables_do_command("-t filter -A " CHAIN_TO_INTERNET " -m mark --mark 0x%x%s -j " CHAIN_AUTHENTICATED, FW_MARK_AUTHENTICATED, markmask);
+		rc |= iptables_do_command("-t filter -A " CHAIN_TO_INTERNET " -m mark --mark 0x%x%s -j " CHAIN_AUTHENTICATED,
+			FW_MARK_AUTHENTICATED,
+			markmask
+		);
 		// CHAIN_AUTHENTICATED, related and established packets ACCEPT
 		rc |= iptables_do_command("-t filter -A " CHAIN_AUTHENTICATED " -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT");
 		// CHAIN_AUTHENTICATED, append the "authenticated-users" ruleset

@@ -412,12 +412,22 @@ config opennds
 	# list walledgarden_fqdn_list 'fqdn1 fqdn2 fqdn3 .... fqdnN'
 	# list walledgarden_port_list 'port1 port2 port3 .... portN'
 	#
-	# Note: Specified port numbers apply to ALL specified FQDN's
+	# Note: If walledgarden_port_list is NOT specified, then Walled Garden access is granted
+	# for both tcp and udp protocols on ALL ports for each fqdn specified in walledgarden_fqdn_list.
+	#
+	# Note: If walledgarden_port_list IS specified, then:
+	#  1. Specified port numbers apply to ALL FQDN's specified in walledgarden_fqdn_list.
+	#  2. Only tcp protocol Walled Garden access is granted.
 
-	# Autonomous configuration example
-	# To add Facebook to the Walled Garden, the two list entries would be:
-	# list walledgarden_fqdn_list 'facebook.com fbcdn.net'
-	# list walledgarden_port_list '443 80'
+	# Autonomous configuration examples:
+	#
+	# 1. To add Facebook to the Walled Garden, the list entries would be:
+	# 	list walledgarden_fqdn_list 'facebook.com fbcdn.net'
+	# 	list walledgarden_port_list '443 80'
+	#
+	# 2. To add Paypal to the Walled Garden, the list entries would be:
+	# 	list walledgarden_fqdn_list 'paypal.com paypalobjects.com'
+	# 	list walledgarden_port_list '443'
 
 	###########################################################################################
 

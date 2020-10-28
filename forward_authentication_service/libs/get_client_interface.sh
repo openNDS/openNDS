@@ -17,7 +17,7 @@ if [ -z $(command -v ip) ]; then
 	exit 1
 fi
 
-if [ -z $(command -v iww) ]; then
+if [ -z $(command -v iw) ]; then
 	echo "iw utility not available" | logger -p "daemon.warn" -s -t "NDS-Library[$pid]"
 	iwstatus=false
 else

@@ -254,6 +254,11 @@ setup_from_config(void)
 	char gw_name_urlencoded[QUERYMAXLEN] = {0};
 	struct stat sb;
 	time_t sysuptime;
+	t_WGP *allowed_wgport;
+	t_WGFQDN *allowed_wgfqdn;
+	char wgfqdns[1024] = {0};
+	char *dnsmasqcmd;
+
 	s_config *config;
 
 	config = config_get_config();
@@ -290,6 +295,63 @@ setup_from_config(void)
 				debug(LOG_ERR, "Attempting use of outdated MHD - Data may be corrupted or openNDS may fail...");
 			}
 		}
+	}
+
+	// Check we have ipset support and if we do, set it up
+	if (config->walledgarden_fqdn_list) {
+		// Check ipset command is available
+		if (execute_ret_url_encoded(msg, sizeof(msg) - 1, "ipset -v") == 0) {
+			debug(LOG_NOTICE, "ipset support is available");
+		} else {
+			debug(LOG_ERR, "ipset support not available - please install package to provide it");
+			debug(LOG_ERR, "Exiting...");
+			exit(1);
+		}
+
+		// Check we have dnsmasq ipset compile option
+		if (execute_ret_url_encoded(msg, sizeof(msg) - 1, "dnsmasq --version | grep ' ipset '") == 0) {
+			debug(LOG_NOTICE, "dnsmasq ipset support is available");
+		} else {
+			debug(LOG_ERR, "Please install dnsmasq full version with ipset compile option");
+			debug(LOG_ERR, "Exiting...");
+			exit(1);
+		}
+
+		// If Walled Garden ipset exists, destroy it.
+		execute_ret_url_encoded(msg, sizeof(msg) - 1, "ipset destroy walledgarden");
+
+		// Set up the Walled Garden
+		if (execute_ret_url_encoded(msg, sizeof(msg) - 1, "ipset create walledgarden hash:ip") == 0) {
+			debug(LOG_INFO, "Walled Garden ipset created");
+		} else {
+			debug(LOG_ERR, "Failed to create Walled Garden");
+			debug(LOG_ERR, "Exiting...");
+			exit(1);
+		}
+
+		// Configure dnsmasq
+		for (allowed_wgfqdn = config->walledgarden_fqdn_list; allowed_wgfqdn != NULL; allowed_wgfqdn = allowed_wgfqdn->next) {
+
+			// Make sure we don't have a buffer overflow
+			if ((sizeof(wgfqdns) - strlen(wgfqdns)) > (strlen(allowed_wgfqdn->wgfqdn) + 15)) {
+				strcat(wgfqdns, "/");
+				strcat(wgfqdns, allowed_wgfqdn->wgfqdn);
+			} else {
+				break;
+			}
+		}
+		strcat(wgfqdns, "/walledgarden");
+		debug(LOG_INFO, "Dnsmasq Walled Garden config [%s]", wgfqdns);
+		safe_asprintf(&dnsmasqcmd, "/usr/lib/opennds/ipsetconfig.sh %s", wgfqdns);
+		if (execute_ret_url_encoded(msg, sizeof(msg) - 1, dnsmasqcmd) == 0) {
+			debug(LOG_INFO, "Dnsmasq configured for Walled Garden");
+		} else {
+			debug(LOG_ERR, "Failed to configure Dnsmasq for Walled Garden");
+			debug(LOG_ERR, "Exiting...");
+			exit(1);
+		}
+
+		free(dnsmasqcmd);
 	}
 
 	// Encode gatewayname
@@ -375,7 +437,7 @@ setup_from_config(void)
 	// TODO: set listening socket - do we need it?
 
 	debug(LOG_NOTICE, "Created web server on %s", config->gw_address);
-	debug(LOG_NOTICE, "Handle [%i]", webserver);
+	debug(LOG_INFO, "Handle [%i]", webserver);
 
 	// If login script is enabled, check if the script actually exists
 	if (config->login_option_enabled > 0) {

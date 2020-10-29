@@ -904,10 +904,11 @@ config_read(const char *filename)
 			config.statuspage = safe_strdup(p1);
 			break;
 
-		// TODO: Deprecate RedirectURL
 		case oRedirectURL:
-			config.redirectURL = safe_strdup(p1);
-			debug(LOG_WARNING, "RedirectURL is now deprecated, please use FAS to provide this functionality");
+			// disable support for redirectURL
+			// TODO Remove code at later date
+			//config.redirectURL = safe_strdup(p1);
+			debug(LOG_ERR, "RedirectURL is no longer supported, please use FAS to provide this functionality");
 			break;
 		case oAuthIdleTimeout:
 			if (sscanf(p1, "%d", &config.auth_idle_timeout) < 1 || config.auth_idle_timeout < 0) {

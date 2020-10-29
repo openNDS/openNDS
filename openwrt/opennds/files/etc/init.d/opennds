@@ -125,7 +125,7 @@ generate_uci_config() {
     walledgarden_fqdn_list walledgarden_port_list login_option_enabled use_outdated_mhd unescape_callback_enabled daemon \
     debuglevel maxclients gatewayname gatewayinterface gatewayiprange \
     gatewayaddress gatewayport webroot splashpage statuspage \
-    redirecturl sessiontimeout preauthidletimeout authidletimeout checkinterval \
+    sessiontimeout preauthidletimeout authidletimeout checkinterval \
     setmss mssvalue trafficcontrol ratecheckwindow downloadrate uploadrate downloadquota uploadquota \
     syslogfacility ndsctlsocket fw_mark_authenticated \
     fw_mark_blocked fw_mark_trusted

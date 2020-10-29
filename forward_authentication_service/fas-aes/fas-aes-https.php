@@ -171,6 +171,7 @@ if (isset($_GET['fas']) and isset($_GET['iv']))  {
 		if ($name == "gatewayname") {$gatewayname=$value;}
 		if ($name == "tok") {$tok=$value;}
 		if ($name == "gatewayaddress") {$gatewayaddress=$value;}
+		if ($name == "gatewaymac") {$gatewaymac=$value;}
 		if ($name == "authdir") {$authdir=$value;}
 		if ($name == "originurl") {$originurl=$value;}
 		if ($name == "clientif") {$clientif=$value;}

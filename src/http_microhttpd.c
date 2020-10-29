@@ -988,12 +988,13 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 	} else if (config->fas_secure_enabled == 2 || config->fas_secure_enabled == 3) {
 		get_client_interface(clientif, sizeof(clientif), client->mac);
 		snprintf(querystr, QUERYMAXLEN,
-			"clientip=%s%sclientmac=%s%sgatewayname=%s%stok=%s%sgatewayaddress=%s%sauthdir=%s%soriginurl=%s%sclientif=%s",
+			"clientip=%s%sclientmac=%s%sgatewayname=%s%stok=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s",
 			client->ip, QUERYSEPARATOR,
 			client->mac, QUERYSEPARATOR,
 			config->gw_name, QUERYSEPARATOR,
 			client->token, QUERYSEPARATOR,
 			config->gw_address, QUERYSEPARATOR,
+			config->gw_mac, QUERYSEPARATOR,
 			config->authdir, QUERYSEPARATOR,
 			originurl, QUERYSEPARATOR,
 			clientif);

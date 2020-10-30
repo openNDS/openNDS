@@ -717,7 +717,7 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 		debug(LOG_DEBUG, "PreAuth: query: %s", query);
 	}
 
-	rc = execute_ret(msg, HTMLMAXSIZE - 1, "%s '%s' '%s'", config->preauth, enc_query, enc_user_agent);
+	rc = execute_ret(msg, HTMLMAXSIZE - 1, "%s '%s' '%s' '%d'", config->preauth, enc_query, enc_user_agent, config->login_option_enabled);
 
 	if (rc != 0) {
 		debug(LOG_WARNING, "Preauth script: %s '%s' - failed to execute", config->preauth, query);

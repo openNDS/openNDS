@@ -342,15 +342,9 @@ setup_from_config(void)
 		}
 		strcat(wgfqdns, "/walledgarden");
 		debug(LOG_INFO, "Dnsmasq Walled Garden config [%s]", wgfqdns);
-		safe_asprintf(&dnsmasqcmd, "/usr/lib/opennds/ipsetconfig.sh %s", wgfqdns);
-		if (execute_ret_url_encoded(msg, sizeof(msg) - 1, dnsmasqcmd) == 0) {
-			debug(LOG_INFO, "Dnsmasq configured for Walled Garden");
-		} else {
-			debug(LOG_ERR, "Failed to configure Dnsmasq for Walled Garden");
-			debug(LOG_ERR, "Exiting...");
-			exit(1);
-		}
-
+		safe_asprintf(&dnsmasqcmd, "/usr/lib/opennds/ipsetconfig.sh %s &", wgfqdns);
+		system(dnsmasqcmd);
+		debug(LOG_INFO, "Dnsmasq configured for Walled Garden");
 		free(dnsmasqcmd);
 	}
 
@@ -440,25 +434,33 @@ setup_from_config(void)
 	debug(LOG_INFO, "Handle [%i]", webserver);
 
 	// If login script is enabled, check if the script actually exists
-	if (config->login_option_enabled > 0) {
+	if (config->login_option_enabled == 1) {
 		debug(LOG_NOTICE, "Login option is Enabled.\n");
-
-		if (!((stat(loginscript, &sb) == 0) && S_ISREG(sb.st_mode) && (sb.st_mode & S_IXUSR))) {
-			debug(LOG_ERR, "Login script does not exist or is not executable: %s", loginscript);
-			debug(LOG_ERR, "Exiting...");
-			exit(1);
-		} else {
-			config->preauth = loginscript;
-		}
-
-	} else {
-		debug(LOG_INFO, "Using config options for FAS or Templated Splash.\n");
+		config->preauth = loginscript;
 	}
+
+	if (config->login_option_enabled > 0 && config->fas_port == 0 && config->allow_legacy_splash == 0) {
+		debug(LOG_NOTICE, "Continue option is Enabled.\n");
+		config->preauth = loginscript;
+	}
+
+	if (config->login_option_enabled == 0 && config->fas_port == 0 && config->allow_legacy_splash == 1) {
+		debug(LOG_NOTICE, "Legacy html Splash Page is Enabled.\n");
+		config->preauth = NULL;
+	}
+
 
 	// If PreAuth is enabled, override any FAS configuration
 	if (config->preauth) {
 		debug(LOG_NOTICE, "Preauth is Enabled - Overiding FAS configuration.\n");
 		debug(LOG_INFO, "Preauth Script is %s\n", config->preauth);
+
+
+		if (!((stat(config->preauth, &sb) == 0) && S_ISREG(sb.st_mode) && (sb.st_mode & S_IXUSR))) {
+			debug(LOG_ERR, "Login script does not exist or is not executable: %s", config->preauth);
+			debug(LOG_ERR, "Exiting...");
+			exit(1);
+		}
 
 		//override all other FAS settings
 		config->fas_remoteip = safe_strdup(config->gw_ip);

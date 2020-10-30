@@ -83,6 +83,7 @@ typedef enum {
 	oFasURL,
 	oFasSSL,
 	oLoginOptionEnabled,
+	oAllowLegacySplash,
 	oUseOutdatedMHD,
 	oUnescapeCallbackEnabled,
 	oFasSecureEnabled,
@@ -146,6 +147,7 @@ static const struct {
 	{ "fasurl", oFasURL },
 	{ "fasssl", oFasSSL },
 	{ "login_option_enabled", oLoginOptionEnabled },
+	{ "allow_legacy_splash", oAllowLegacySplash },
 	{ "use_outdated_mhd", oUseOutdatedMHD },
 	{ "unescape_callback_enabled", oUnescapeCallbackEnabled },
 	{ "fas_secure_enabled", oFasSecureEnabled },
@@ -229,6 +231,7 @@ config_init(void)
 	config.fas_port = DEFAULT_FASPORT;
 	config.fas_key = NULL;
 	config.login_option_enabled = DEFAULT_LOGIN_OPTION_ENABLED;
+	config.allow_legacy_splash = DEFAULT_ALLOW_LEGACY_SPLASH;
 	config.use_outdated_mhd = DEFAULT_USE_OUTDATED_MHD;
 	config.unescape_callback_enabled = DEFAULT_UNESCAPE_CALLBACK_ENABLED;
 	config.fas_secure_enabled = DEFAULT_FAS_SECURE_ENABLED;
@@ -806,6 +809,13 @@ config_read(const char *filename)
 			break;
 		case oLoginOptionEnabled:
 			if (sscanf(p1, "%d", &config.login_option_enabled) < 1) {
+				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+				debug(LOG_ERR, "Exiting...");
+				exit(1);
+			}
+			break;
+		case oAllowLegacySplash:
+			if (sscanf(p1, "%d", &config.allow_legacy_splash) < 1) {
 				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
 				debug(LOG_ERR, "Exiting...");
 				exit(1);

@@ -980,7 +980,7 @@ iptables_fw_total_upload()
 	}
 
 	pclose(output);
-	debug(LOG_WARNING, "Can't find target %s in mangle table", CHAIN_OUTGOING);
+	debug(LOG_INFO, "Can't find target %s in mangle table", CHAIN_OUTGOING);
 	return 0;
 }
 
@@ -1018,7 +1018,7 @@ iptables_fw_total_download()
 	}
 
 	pclose(output);
-	debug(LOG_WARNING, "Can't find target %s in mangle table", CHAIN_INCOMING);
+	debug(LOG_INFO, "Can't find target %s in mangle table", CHAIN_INCOMING);
 	return 0;
 }
 

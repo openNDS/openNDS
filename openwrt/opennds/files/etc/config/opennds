@@ -70,10 +70,17 @@ config opennds
 	option unescape_callback_enabled '0'
 	###########################################################################################
 
+	# Allow use of legacy html splash page
+	# Default '0'
+	# If set to '0' use of legacy html splash page is not allowed
+	# If set to '1' the legacy html splash page is allowed if FAS is not configured
+	#option allow_legacy_splash '0'
+	###########################################################################################
+
 	# WebRoot
 	# Default: /etc/opennds/htdocs
 	#
-	# The local path where the splash page content resides.
+	# The local path where the system css file, and legacy splash page content resides.
 	# ie. Serve the file splash.html from this directory
 	#option webroot '/etc/opennds/htdocs'
 	###########################################################################################
@@ -81,7 +88,7 @@ config opennds
 	# statuspage
 	# Default: status.html
 	#
-	# The page the client is show if the client is already authenticated but navigates to the captive portal.
+	# The page the client is shown if the client is already authenticated but navigates to the captive portal.
 	#
 	# option statuspage 'status.html'
 	###########################################################################################
@@ -90,7 +97,7 @@ config opennds
 	# splashpage
 	# Default: /etc/opennds/splash.html
 	#
-	# The html page used for templated splash page generation (if FAS/PreAuth is not enabled)
+	# The legacy html page used for templated splash page generation (if FAS/PreAuth is not enabled)
 	#
 	# splash.html displays a simplistic click to continue button.
 	#

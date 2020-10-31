@@ -23,10 +23,11 @@ how to customize its behaviour for your application.
 
  openNDS provides two pre-installed methods.
 
- * **Click to Continue**. A simple static web page with template variables (*default*). This provides basic notification and a simple click/tap to continue button.
- * **Username/email-address login**. A simple dynamic set of web pages that provide username/email-address login, a welcome page and logs access by client users. (*Installed by default and enabled by a single entry in the configuration file*)
+ * **Click to Continue**. (*default*) A simple dynamic set of web pages that provide "Click to Continue" login, a welcome page and logging of acceptance by client users.
 
-Customising the page seen by users is a simple matter of editing the respective html or script files.
+ * **Username/email-address login**. (*Selectable in the configuration file*) A simple dynamic set of web pages that provide username/email-address login, a welcome page and logging of acceptance by client users.
+
+Customising the page seen by users is a simple matter of editing the relevant script file.
 
 **Write Your Own Captive Portal.**
 

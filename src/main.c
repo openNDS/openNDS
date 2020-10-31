@@ -434,13 +434,13 @@ setup_from_config(void)
 	debug(LOG_INFO, "Handle [%i]", webserver);
 
 	// If login script is enabled, check if the script actually exists
-	if (config->login_option_enabled == 1) {
-		debug(LOG_NOTICE, "Login option is Enabled.\n");
+	if (config->login_option_enabled >= 1) {
+		debug(LOG_NOTICE, "Login option is Enabled using mode %d.\n", config->login_option_enabled);
 		config->preauth = loginscript;
 	}
 
-	if (config->login_option_enabled > 0 && config->fas_port == 0 && config->allow_legacy_splash == 0) {
-		debug(LOG_NOTICE, "Continue option is Enabled.\n");
+	if (config->login_option_enabled == 0 && config->fas_port == 0 && config->allow_legacy_splash == 0) {
+		debug(LOG_NOTICE, "Click to Continue option is Enabled.\n");
 		config->preauth = loginscript;
 	}
 

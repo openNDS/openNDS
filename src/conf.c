@@ -83,6 +83,7 @@ typedef enum {
 	oFasURL,
 	oFasSSL,
 	oLoginOptionEnabled,
+	oAllowLegacySplash,
 	oUseOutdatedMHD,
 	oUnescapeCallbackEnabled,
 	oFasSecureEnabled,
@@ -146,6 +147,7 @@ static const struct {
 	{ "fasurl", oFasURL },
 	{ "fasssl", oFasSSL },
 	{ "login_option_enabled", oLoginOptionEnabled },
+	{ "allow_legacy_splash", oAllowLegacySplash },
 	{ "use_outdated_mhd", oUseOutdatedMHD },
 	{ "unescape_callback_enabled", oUnescapeCallbackEnabled },
 	{ "fas_secure_enabled", oFasSecureEnabled },
@@ -229,6 +231,7 @@ config_init(void)
 	config.fas_port = DEFAULT_FASPORT;
 	config.fas_key = NULL;
 	config.login_option_enabled = DEFAULT_LOGIN_OPTION_ENABLED;
+	config.allow_legacy_splash = DEFAULT_ALLOW_LEGACY_SPLASH;
 	config.use_outdated_mhd = DEFAULT_USE_OUTDATED_MHD;
 	config.unescape_callback_enabled = DEFAULT_UNESCAPE_CALLBACK_ENABLED;
 	config.fas_secure_enabled = DEFAULT_FAS_SECURE_ENABLED;
@@ -811,6 +814,13 @@ config_read(const char *filename)
 				exit(1);
 			}
 			break;
+		case oAllowLegacySplash:
+			if (sscanf(p1, "%d", &config.allow_legacy_splash) < 1) {
+				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+				debug(LOG_ERR, "Exiting...");
+				exit(1);
+			}
+			break;
 		case oUseOutdatedMHD:
 			if (sscanf(p1, "%d", &config.use_outdated_mhd) < 1) {
 				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
@@ -904,10 +914,11 @@ config_read(const char *filename)
 			config.statuspage = safe_strdup(p1);
 			break;
 
-		// TODO: Deprecate RedirectURL
 		case oRedirectURL:
-			config.redirectURL = safe_strdup(p1);
-			debug(LOG_WARNING, "RedirectURL is now deprecated, please use FAS to provide this functionality");
+			// disable support for redirectURL
+			// TODO Remove code at later date
+			//config.redirectURL = safe_strdup(p1);
+			debug(LOG_ERR, "RedirectURL is no longer supported, please use FAS to provide this functionality");
 			break;
 		case oAuthIdleTimeout:
 			if (sscanf(p1, "%d", &config.auth_idle_timeout) < 1 || config.auth_idle_timeout < 0) {

@@ -717,7 +717,7 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 		debug(LOG_DEBUG, "PreAuth: query: %s", query);
 	}
 
-	rc = execute_ret(msg, HTMLMAXSIZE - 1, "%s '%s' '%s'", config->preauth, enc_query, enc_user_agent);
+	rc = execute_ret(msg, HTMLMAXSIZE - 1, "%s '%s' '%s' '%d'", config->preauth, enc_query, enc_user_agent, config->login_option_enabled);
 
 	if (rc != 0) {
 		debug(LOG_WARNING, "Preauth script: %s '%s' - failed to execute", config->preauth, query);
@@ -988,12 +988,13 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 	} else if (config->fas_secure_enabled == 2 || config->fas_secure_enabled == 3) {
 		get_client_interface(clientif, sizeof(clientif), client->mac);
 		snprintf(querystr, QUERYMAXLEN,
-			"clientip=%s%sclientmac=%s%sgatewayname=%s%stok=%s%sgatewayaddress=%s%sauthdir=%s%soriginurl=%s%sclientif=%s",
+			"clientip=%s%sclientmac=%s%sgatewayname=%s%stok=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s",
 			client->ip, QUERYSEPARATOR,
 			client->mac, QUERYSEPARATOR,
 			config->gw_name, QUERYSEPARATOR,
 			client->token, QUERYSEPARATOR,
 			config->gw_address, QUERYSEPARATOR,
+			config->gw_mac, QUERYSEPARATOR,
 			config->authdir, QUERYSEPARATOR,
 			originurl, QUERYSEPARATOR,
 			clientif);

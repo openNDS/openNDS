@@ -86,7 +86,11 @@ if [ "$iwstatus" = true ]; then
 fi
 
 # Return the local interface the client is using, the mesh node mac address and the local mesh interface
-echo "$clientlocalif $clientmeshif"
+if [ -z "$clientmeshif" ]; then
+	printf "%s" "$clientlocalif"
+else
+	printf "%s" "$clientlocalif $clientmeshif"
+fi
 
 exit 0
 

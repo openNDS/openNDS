@@ -145,6 +145,12 @@ typedef struct _WGFQDN_t {
 	struct _WGFQDN_t *next;
 } t_WGFQDN;
 
+// Custom FAS Parameters
+typedef struct _FASPARAM_t {
+	char *fasparam;
+	struct _FASPARAM_t *next;
+} t_FASPARAM;
+
 // Configuration structure
 typedef struct {
 	char configfile[255];			//@brief name of the config file
@@ -203,7 +209,9 @@ typedef struct {
 	t_MAC *blockedmaclist;			//@brief list of blocked macs
 	t_MAC *allowedmaclist;			//@brief list of allowed macs
 	t_WGP *walledgarden_port_list;		//@brief list of Walled Garden Ports
-	t_WGFQDN *walledgarden_fqdn_list;		//@brief list of Walled Garden FQDNs
+	t_WGFQDN *walledgarden_fqdn_list;	//@brief list of Walled Garden FQDNs
+	t_FASPARAM *fas_custom_parameters_list;	//@brief list of Custom FAS parameters
+	char *custom_params;			//@brief FAS custom parameter string
 	unsigned int fw_mark_authenticated;	//@brief iptables mark for authenticated packets
 	unsigned int fw_mark_blocked;		//@brief iptables mark for blocked packets
 	unsigned int fw_mark_trusted;		//@brief iptables mark for trusted packets
@@ -247,6 +255,7 @@ void parse_blocked_mac_list(const char[]);
 void parse_allowed_mac_list(const char[]);
 void parse_walledgarden_fqdn_list(const char[]);
 void parse_walledgarden_port_list(const char[]);
+void parse_fas_custom_parameters_list(const char[]);
 
 int is_blocked_mac(const char *mac);
 int is_allowed_mac(const char *mac);

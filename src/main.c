@@ -297,6 +297,24 @@ setup_from_config(void)
 		}
 	}
 
+	// Setup custom FAS parameters if configured
+	char fasparam[512] = {0};
+	t_FASPARAM *fas_fasparam;
+	if (config->fas_custom_parameters_list) {
+		for (fas_fasparam = config->fas_custom_parameters_list; fas_fasparam != NULL; fas_fasparam = fas_fasparam->next) {
+
+			// Make sure we don't have a buffer overflow
+			if ((sizeof(fasparam) - strlen(fasparam)) > (strlen(fas_fasparam->fasparam) + 4)) {
+				strcat(fasparam, QUERYSEPARATOR);
+				strcat(fasparam, fas_fasparam->fasparam);
+			} else {
+				break;
+			}
+		}
+			config->custom_params = safe_strdup(fasparam);
+		debug(LOG_NOTICE, "Custom FAS parameter string [%s]", config->custom_params);
+	}
+
 	// Check we have ipset support and if we do, set it up
 	if (config->walledgarden_fqdn_list) {
 		// Check ipset command is available

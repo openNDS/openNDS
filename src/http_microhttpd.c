@@ -968,6 +968,9 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 
 	char hash[128] = {0};
 	char clientif[64] = {0};
+	char *cmd = NULL;
+	char msg[128] = {0};
+	char param_urlencoded[256] = {0};
 
 	s_config *config = config_get_config();
 
@@ -977,18 +980,52 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 	} else if (config->fas_secure_enabled == 1) {
 
 			if (config->fas_hid) {
+
+				// URL encode custom parameters
+				if (config->custom_params) {
+					uh_urlencode(param_urlencoded, sizeof(param_urlencoded), config->custom_params, strlen(config->custom_params));
+					debug(LOG_DEBUG, "[%s] is the urlencoded Custom FAS Parameter string", param_urlencoded);
+
+					safe_asprintf(&cmd,
+						"printf \"%s\" \"%s\" | sed  's/%s/\\&/g;s/%s/=/g'",
+						FORMAT_SPECIFIER,
+						param_urlencoded,
+						URL_COMMASPACE,
+						CUSTOM_SEPARATOR
+					);
+
+					debug(LOG_DEBUG, "Translation command [%s]", cmd);
+					execute_ret_url_encoded(msg, sizeof(msg) - 1, cmd);
+					free(cmd);
+				}
+
 				hash_str(hash, sizeof(hash), client->token);
 				debug(LOG_DEBUG, "hid=%s", hash);
-				snprintf(querystr, QUERYMAXLEN, "?clientip=%s&gatewayname=%s&hid=%s&gatewayaddress=%s",
-					client->ip, config->url_encoded_gw_name, hash, config->gw_address);
+				get_client_interface(clientif, sizeof(clientif), client->mac);
+				debug(LOG_INFO, "clientif: [%s]", clientif);
+				snprintf(querystr, QUERYMAXLEN,
+					"?clientip=%s&gatewayname=%s&hid=%s&gatewayaddress=%s&gatewaymac=%s&clientif=%s%s",
+					client->ip,
+					config->url_encoded_gw_name,
+					hash,
+					config->gw_address,
+					config->gw_mac,
+					clientif,
+					msg
+				);
 			} else {
-				snprintf(querystr, QUERYMAXLEN, "?clientip=%s&gatewayname=%s", client->ip, config->url_encoded_gw_name);
+				snprintf(querystr, QUERYMAXLEN,
+					"?clientip=%s&gatewayname=%s",
+					client->ip,
+					config->url_encoded_gw_name
+				);
 			}
 
 	} else if (config->fas_secure_enabled == 2 || config->fas_secure_enabled == 3) {
 		get_client_interface(clientif, sizeof(clientif), client->mac);
+		debug(LOG_INFO, "clientif: [%s]", clientif);
 		snprintf(querystr, QUERYMAXLEN,
-			"clientip=%s%sclientmac=%s%sgatewayname=%s%stok=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s",
+			"clientip=%s%sclientmac=%s%sgatewayname=%s%stok=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s%s",
 			client->ip, QUERYSEPARATOR,
 			client->mac, QUERYSEPARATOR,
 			config->gw_name, QUERYSEPARATOR,
@@ -997,7 +1034,9 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 			config->gw_mac, QUERYSEPARATOR,
 			config->authdir, QUERYSEPARATOR,
 			originurl, QUERYSEPARATOR,
-			clientif);
+			clientif,
+			config->custom_params
+		);
 
 	} else {
 		snprintf(querystr, QUERYMAXLEN, "?clientip=%s&gatewayname=%s", client->ip, config->url_encoded_gw_name);

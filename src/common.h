@@ -32,8 +32,16 @@
 /* Max length of a query string in bytes */
 #define QUERYMAXLEN 4096
 
-/* Separator for Preauth query string */
+/* Separator for Preauth and Encrypted query string */
 #define QUERYSEPARATOR ", "
+
+/* Separator for html query string */
+#define HTMLQUERYSEPARATOR "&"
+
+// Define a custom separator for custom parameter name/value pairs ie urlencoded "="
+#define CUSTOM_SEPARATOR "%3d"
+#define FORMAT_SPECIFIER "%s"
+#define URL_COMMASPACE "%2c%20"
 
 /* Max dynamic html page size in bytes */
 #define HTMLMAXSIZE 4096

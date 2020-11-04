@@ -119,7 +119,8 @@ typedef enum {
 	oBinAuth,
 	oPreAuth,
 	oWalledGardenFqdnList,
-	oWalledGardenPortList
+	oWalledGardenPortList,
+	oFasCustomParametersList
 } OpCodes;
 
 /** @internal
@@ -184,6 +185,7 @@ static const struct {
 	{ "preauth", oPreAuth },
 	{ "walledgarden_fqdn_list", oWalledGardenFqdnList },
 	{ "walledgarden_port_list", oWalledGardenPortList },
+	{ "fas_custom_parameters_list", oFasCustomParametersList },
 	{ NULL, oBadOption },
 };
 
@@ -240,6 +242,7 @@ config_init(void)
 	config.fas_url = NULL;
 	config.fas_ssl = NULL;
 	config.fas_hid = NULL;
+	config.custom_params = NULL;
 	config.fas_path = DEFAULT_FASPATH;
 	config.webroot = safe_strdup(DEFAULT_WEBROOT);
 	config.splashpage = safe_strdup(DEFAULT_SPLASHPAGE);
@@ -278,6 +281,7 @@ config_init(void)
 	config.preauth = NULL;
 	config.walledgarden_fqdn_list = NULL;
 	config.walledgarden_port_list = NULL;
+	config.fas_custom_parameters_list = NULL;
 
 	// Set up default FirewallRuleSets, and their empty ruleset policies
 	rs = add_ruleset("trusted-users");
@@ -891,6 +895,9 @@ config_read(const char *filename)
 		case oWalledGardenPortList:
 			parse_walledgarden_port_list(p1);
 			break;
+		case oFasCustomParametersList:
+			parse_fas_custom_parameters_list(p1);
+			break;
 		case oMACmechanism:
 			if (!strcasecmp("allow", p1)) {
 				config.macmechanism = MAC_ALLOW;
@@ -1095,7 +1102,6 @@ int check_mac_format(const char possiblemac[])
 	return ether_aton(possiblemac) != NULL;
 }
 
-//////
 int add_to_walledgarden_fqdn_list(const char possiblefqdn[])
 {
 	char fqdn[128];
@@ -1135,6 +1141,23 @@ int add_to_walledgarden_port_list(const char possibleport[])
 	p->next = config.walledgarden_port_list;
 	config.walledgarden_port_list = p;
 	debug(LOG_INFO, "Added Walled Garden port [%hu] to list", port);
+	return 0;
+}
+
+int add_to_fas_custom_parameters_list(const char possibleparam[])
+{
+	char param[128];
+	t_FASPARAM *p = NULL;
+
+	sscanf(possibleparam, "%s", param);
+
+	// Add Parameter to head of list
+	p = safe_malloc(sizeof(t_FASPARAM));
+	p->fasparam = safe_strdup(param);
+	p->next = config.fas_custom_parameters_list;
+
+	config.fas_custom_parameters_list = p;
+	debug(LOG_NOTICE, "Added Custom Parameter [%s]", possibleparam);
 	return 0;
 }
 
@@ -1559,6 +1582,51 @@ void parse_walledgarden_port_list(const char ptr[])
 
 	free(ptrcopyptr);
 }
+
+/* Given a pointer to a comma or whitespace delimited sequence of
+ * Custom FAS Parameters, add each parameter to config.fas_custom_parameters_list
+ */
+void parse_fas_custom_parameters_list(const char ptr[])
+{
+	char *ptrcopy = NULL;
+	char *possibleparam = NULL;
+	char msg[128] = {0};
+	char *cmd = NULL;
+	char possibleparam_urlencoded[256] = {0};
+
+	debug(LOG_INFO, "Parsing list [%s] for Custom FAS Parameters", ptr);
+
+	// strsep modifies original, so let's make a copy
+	ptrcopy = safe_strdup(ptr);
+
+	while ((possibleparam = strsep(&ptrcopy, ", \t"))) {
+		if (strlen(possibleparam) > 0) {
+
+			// URL encode Parameter before parsing
+			memset(possibleparam_urlencoded, 0, sizeof(possibleparam_urlencoded));
+			uh_urlencode(possibleparam_urlencoded, sizeof(possibleparam_urlencoded), possibleparam, strlen(possibleparam));
+			debug(LOG_DEBUG, "[%s] is the urlencoded Custom FAS Parameter", possibleparam_urlencoded);
+
+			safe_asprintf(&cmd,
+				"echo \"%s\" | awk -F'%s' 'NF==2 && $1!=\"\" && $2!=\"\" {printf \"%s\",$0}'",
+				possibleparam_urlencoded,
+				CUSTOM_SEPARATOR,
+				FORMAT_SPECIFIER
+			);
+			debug(LOG_DEBUG, "Parse command [%s]", cmd);
+			memset(msg, 0, sizeof(msg));
+			execute_ret_url_encoded(msg, sizeof(msg) - 1, cmd);
+			free(cmd);
+			if (strcmp(msg, possibleparam_urlencoded) == 0) {
+				debug(LOG_INFO, "Adding parameter [%s] [%s]", possibleparam, msg);
+				add_to_fas_custom_parameters_list(possibleparam);
+			} else {
+				debug(LOG_WARNING, "Invalid Custom Parameter [%s] [%s] - skipping", possibleparam, msg);
+			}
+		}
+	}
+}
+
 
 /** Set the debug log level.  See syslog.h
  *  Return 0 on success.

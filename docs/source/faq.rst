@@ -1,18 +1,18 @@
 Frequently Asked Questions
 ###########################
 
-What's the difference between v0.9, v1, v2, v3, v4, v5 and v6?
-**************************************************************
+What's the difference between NoDogSplash (all versions), openNDS v5, v6,v7?
+****************************************************************************
 
-**v0.9 and v1** are the same codebase with the same feature set.
-If the documentation says something about v1, this is usually also valid
-for v0.9.
+**NoDogSplash** and openNDS are derived from the same code base. You cannot upgrade from NoDogSplash to openNDS, instead you must first uninstall NodogSplash before installing openNDS.
 
-**v2** was developed before version v1 was released. In v2 the http code was replaced by libmicrohttpd and the template engine was rewritten. Many features became defunct because of this procedure.
+NoDogSplash is optimised for running on devices with very limited resources and supports only a single *static* templated html splash page.
 
-**v3** cleans up the source code and adds three major new features,
+**openNDS** supports dynamic html splash page generation (at default, still with minimal resource utilisation) and an API to support the coding of sophisticated Captive Portal solutions.
 
- * **FAS**
+**openNDS v5** This was the first release of openNDS after forking from NoDogsplash. The following enhancements are included:
+
+ * **openNDS API (FAS)**
 
    A forwarding authentication service. FAS supports development of "Credential Verification" running on any dynamic web serving platform, on the same device as openNDS, on another device on the local network, or on an Internet hosted web server.
 
@@ -22,98 +22,57 @@ for v0.9.
 
  * **BinAuth**
 
-   Enabling an external script to be called for simple username/password authentication as well as doing post authentication processing such as setting session durations. This is similar to the old binvoucher feature, but more flexible.
+   Enabling an external script to be called for doing post authentication processing such as setting session durations or writing local logs.
 
- In addition, in v3, the ClientTimeout setting was split into PreauthIdleTimeout and AuthIdleTimeout and for the ClientForceTimeout setting, SessionTimeout is now used instead.
+ * **Enforce HTTPS option**
 
-**v4** continues to add enhancements towards improving NDS as a Captive Portal Engine that can be used in the development of custom solutions.
-
- Three major new features are introduced.
-
- * **FAS FQDN**
-
-   Enabling simple configuration for a FAS running on a remote shared web hosting server.
-
- * **FAS secure level 1**
-
-   From v4.3.0 onwards,  FAS secure level 1 supports token hashing. This enhances security and mitigates issues accessing ndsctl remotely to obtain the client token. This is particularly useful on legacy router devices with small flash and ram capacity.
-
-
- * **FAS secure level 2**
-
-   Enabling aes256cbc encryption of NDS data transferred to remote FAS, thus preventing knowledgable client users from bypassing verification. Access to the FAS server using **http** protocol is enforced.
-
-**v5** represents the first version of openNDS after forking from NoDogSplash. This split of codebase allows openNDS to continue development as a powerful Captive Portal engine with API to enable sophisticated applications to be developed.
-
-  *NoDogSplash will continue as an optimised, simplistic Captive Portal solution for use on IoT or legacy devices with severe restrictions on available resources.*
-
- Version 5 introduces many enhancements including major additional functionality:
-
- * **FAS secure level 3**
-
-   Enabling *https* access to a remote, Internet based FAS server, ensuring the client device does not receive any security warnings or errors. Access to the FAS server using **https** protocol is enforced.
-
-   Level 3 otherwise functions in the same way as level 2 with aes256cbc encryption of NDS data.
+   This option enables *https* access to a remote, Internet based FAS server, ensuring the client device does not receive any security warnings or errors. Access to the FAS server using **https** protocol is enforced.
 
  * **Data volume and Rate Quotas**
 
-   Enabling built in *Data Volume* and *Data Rate* quota support. Data volume and data rate quotas can be set globally in the config file. The global values can be overridden on a client by client basis as required.
+   This option enables built in *Data Volume* and *Data Rate* quota support. Data volume and data rate quotas can be set globally in the config file. The global values can be overridden on a client by client basis as required.
 
  * **Introduction of library scripts**
 
    Numerous library scripts are introduced to simplify development of applications.
 
-**v6** is the first version of openNDS to use the updated libmicrohttpd API introduced with v0.9.71
 
-Can I upgrade from v0.9 to v1?
-******************************
+**openNDS v6** This is the first version of openNDS to use the updated libmicrohttpd API introduced with v0.9.71
 
-Updating to v1.0.0 and v1.0.1, this is a very smooth upgrade with full compatibility.
-
-Updating to 1.0.2 requires iptables v1.4.21 or above.
-
-Can I upgrade from v0.9/v1 to v2.0.0?
-*************************************
-
-You can, if:
-
-* You don't use BinVoucher
-* You have iptables v1.4.21 or above
+**openNDS v7** This version contains several major enhancements, including:
 
 
-Can I upgrade from v0.9/v1/v2 to v3.0.0?
-****************************************
+ * **Autonomous Walled Garden Support**
 
-You can, if:
+   A simple openNDS configuration option enables Autonomous Walled Garden operation based on a list of target FQDNs
 
-* You don't use BinVoucher
-* You have iptables v1.4.21 or above
-* You use the new options contained in the version 3 configuration file
+ * **Custom Parameter Support**
 
-Can I upgrade from v0.9/v1/v2/v3 to v4?
-***************************************
+   A list of static Custom Parameters can be set as a configuration option. Once set, these parameters are fixed and will be sent to remote FAS servers.
 
-You can, if:
+   This functionality was added specifically to support remote configuration tools such as Opensync, but can be generally useful for passing local fixed information to a remote FAS.
 
-* You don't use BinVoucher
-* You have iptables v1.4.21 or above
-* You use the new options contained in the version 4 configuration file
+   It is important that this is NOT confused with the dynamic Custom Variables that can be defined as a part of a FAS/Client dialogue.
 
-Can I upgrade from v0.9/v1/v2/v3/v4 to v5?
+Can I upgrade from NoDogSplash to openNDS?
 ******************************************
 
-**No.** Nodogsplash must be uninstalled before installing openNDS.
+No.
 
-* Previous implementations of FAS/PreAuth and BinAuth should function without modification.
+You must first uninstall NoDogSplash before installing openNDS.
 
-* v4 NoDogSplash config files will be compatible but must be renamed.
+Can I upgrade from v5 to v6
+***************************
 
-* MHD (libmicrohttpd) versions earlier than 0.9.69 are detected, a warning is given and openNDS terminates. A new config option is provided to force openNDS to use an earlier version and can be enabled at the discretion and risk of the installer.
+Yes, but you will also need to upgrade libmicrohttpd to version v0.9.71 or higher.
 
-Can I upgrade from v5 to v6?
+Can I upgrade from v6 to v7?
 ****************************
 
-You can if you upgrade libmicrohttpd to v0.9.71 or higher.
+You can, if:
+
+* You don't use RedirectURL (this has been deprecated for some time as it mostly did not work with client CPD implementations. It has now been removed. A reliable replacement is a FAS Welcome Page.
+* You don't use the Templated html splash page (splash.html). Templated splash is now deprecated and disabled. It can be re-enabled by setting the allow_legacy_splash option to allow time for migration. Support will be removed entirely in a later version.
 
 How do I manage client data usage?
 **********************************
@@ -143,7 +102,7 @@ Is *https capture* supported?
 
  HTTPS web sites are now more or less a standard and to maintain security and user confidence it is essential that captive portals **DO NOT** attempt to capture port 443.
 
- All modern client devices have the built in, industry standard, *Captive Portal Detection (CPD) service*. This is responsible for triggering the captive portal splash/login page.
+ All modern client devices have the built in, industry standard, *Captive Portal Detection (CPD) service*. This is responsible for triggering the captive portal splash/login page and is specifically intended to make attempted https capture unnecessary.
 
 What is CPD / Captive Portal Detection?
 ***************************************

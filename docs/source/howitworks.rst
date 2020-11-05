@@ -32,7 +32,7 @@ The Thing That Does the Capturing (NDS)
 
  As soon as this initial port 80 request is received on the default gateway interface, NDS will "Capture" it, make a note of the client device identity, allocate a unique token for the client device, then redirect the client browser to the Portal component of NDS.
 
-The Thing That Provides the Portal (Splash, FAS or PreAuth)
+The Thing That Provides the Portal (FAS or PreAuth)
 ===========================================================
 
  The client browser is redirected to the Portal component. This is a web service that is configured to know how to communicate with the core engine of NDS.
@@ -40,10 +40,10 @@ The Thing That Provides the Portal (Splash, FAS or PreAuth)
  This is commonly known as the Splash Page.
 
  NDS has its own web server built in and this can be used to serve the Portal "Splash" pages to the client browser, or a separate web server can be used.
- 
- NDS comes with two standard Splash Page options pre-installed.
 
- One provides a trivial Click to Continue splash page with template variables and the other provides a Client User form requiring Name and Email address to be entered.
+ openNDS comes with two standard Splash Page options pre-installed.
+
+ One provides a trivial Click to Continue splash page and the other provides a Client User form requiring Name and Email address to be entered.
 
  Both of these can be customised or a complete specialised Portal can be written by the installer (See FAS, PreAuth).
 
@@ -59,7 +59,7 @@ The Thing That Provides the Portal (Splash, FAS or PreAuth)
 
  If the BinAuth script returns positively (ie return code 0), NDS then "authenticates" the client device, allowing access to the Internet.
 
- Where FAS is used, secure modes are provided (levels 1 and 2), where the client token and other required variables are kept securely hidden from the Client, ensuring verification cannot be bypassed.
+ Where FAS is used, secure modes are provided (levels 1, 2 and 3), where the client token and other required variables are kept securely hidden from the Client, ensuring verification cannot be bypassed.
 
 .. note::
 

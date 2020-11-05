@@ -1,3 +1,24 @@
+openNDS (7.0.0-1) stable; urgency=medium
+
+  * This version introduces major new enhancements and the disabling or removal of deprecated functionality
+  * Fix - get_iface_ip in case of interface is vif or multihomed [bluewavenet]
+  * Fix - Add missing client identifier argument in ndsctl help text [bluewavenet]
+  * Deprecate - ndsctl clients option [bluewavenet]
+  * Add - global quotas to output of ndsctl status [bluewavenet]
+  * Fix - fix missing delimiter in fas-hid [bluewavenet]
+  * Add - Report Rate Check Window in ndsctl status and show client quotas [bluewavenet]
+  * Add - Quota and rate reporting to ndsctl json. Format output and fix json syntax errors [bluewavenet]
+  * Fix - get_client_interface for case of iw utility not available [bluewavenet]
+  * Fix - php notice for pedantic php servers in post-request [bluewavenet]
+  * Add - built in autonomous Walled Garden operation [bluewavenet]
+  * Remove - support for deprecated RedirectURL [bluewavenet]
+  * Add - gatewaymac to the encrypted query string [bluewavenet]
+  * Deprecate - legacy splash.html and disable it [bluewavenet]
+  * Add - support for login mode in PreAuth  [bluewavenet]
+  * Add - Support for Custom Parameters [bluewavenet]
+
+ -- Rob White <dot@blue-wave.net>  Wed, 5 Nov 2020 18:22:32 +0000
+
 openNDS (6.0.0-1) stable; urgency=medium
 
   * This version - for Openwrt after 19.07 - for compatibility with new MHD API

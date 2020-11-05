@@ -28,6 +28,7 @@ config opennds
 
 	# Login Option
 	# Default: 0
+	# Integer value sent to PreAuth script as login mode
 	#
 	# opennds comes preconfigured for two basic modes of operation
 	# A default preauth login script, requiring username and email address to be entered.
@@ -48,6 +49,19 @@ config opennds
 	# See documentation at: https://openndsdocs.readthedocs.io/
 	#
 	option login_option_enabled '0'
+	###########################################################################################
+
+	# Define Custom Parameters
+	# Custom parameters are sent as fixed values to FAS
+	# Default None
+	#
+	# Custom Parameters listed in the form of param_name=param_value
+	# param_name and param_value must be htmlentity encoded if containing white space or single quotes
+	#
+	#list fas_custom_parameters_list '<param_name1=param_value1> <param_name2=param_value2> [.....] <param_nameN=param_valueN>'
+	#
+	# Example:
+	#list fas_custom_parameters_list 'location=main_building admin_email=norman@bates-motel.com>'
 	###########################################################################################
 
 	# Use outdated libmicrohttpd (MHD)

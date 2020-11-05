@@ -6,15 +6,15 @@ Overview
 openNDS (NDS) has the ability to forward requests to a third party authentication service (FAS). This is enabled via simple configuration options.
 
 These options are:
- 1. **fasport**. This enables Forwarding Authentication Service (FAS). Redirection is changed from splash.html to a FAS. The value is the IP port number of the FAS.
+ 1. **fasport**. This enables Forwarding Authentication Service (FAS). Redirection is changed from the default login.sh to a separate FAS. The value is the IP port number of the FAS.
  2. **fasremoteip**. If set, this is the remote ip address of the FAS, if not set it will take the value of the NDS gateway address.
  3. **fasremotefqdn** If set, this is the remote fully qualified domain name (FQDN) of the FAS
  4. **faspath**. This is the path from the FAS Web Root (not the file system root) to the FAS login page.
  5. **fas_secure_enable**. This can have four values, "0", "1", "2" or "3" providing different levels of security.
  6. **faskey** Used in combination with fas_secure_enable level 1, 2 and 3, this is a key phrase for NDS to encrypt data sent to FAS.
- 
+
 .. note::
- FAS (and Preauth/FAS) enables pre authentication processing. NDS authentication is the process that NDS uses to allow a client device to access the Internet through the Firewall. In contrast, Forward Authentication is a process of "Credential Verification", after which FAS, if the verification process is successful, passes the client token to NDS for access to the Internet to be granted.
+ FAS (and Preauth/FAS) enables pre authentication processing. NDS authentication is the process that openNDS uses to allow a client device to access the Internet through the Firewall. In contrast, Forward Authentication is a process of "Credential Verification", after which FAS, if the verification process is successful, passes the client token to NDS for access to the Internet to be granted.
 
 Using FAS
 *********
@@ -22,15 +22,15 @@ Using FAS
 **Note**:
 All addresses (with the exception of fasremoteip) are relative to the *client* device, even if the FAS is located remotely.
 
-When FAS is enabled, NDS automatically configures firewall access to the FAS service.
+When FAS is enabled, openNDS automatically configures firewall access to the FAS service.
 
-The FAS service must serve a splash page of its own to replace the NDS splash.html. For fas_secure_enable "0", "1", and "2" this is enforced as http. For fas_secure_enable level "3", it is enforced as https.
+The FAS service must serve a splash page of its own to replace the openNDS served output of the default login.sh script. For fas_secure_enable "0", "1", and "2" this is enforced as http. For fas_secure_enable level "3", it is enforced as https.
 
 Typically, the FAS service will be written in PHP or any other language that can provide dynamic web content.
 
 FAS can then provide an action form for the client, typically requesting login, or self account creation for login.
 
-The FAS can be on the same device as NDS, on the same local area network as NDS, or on an Internet hosted web server.
+The FAS can be on the same device as openNDS, on the same local area network as NDS, or on an Internet hosted web server.
 
 Security
 ********
@@ -41,7 +41,7 @@ Security
    The client token is sent to the FAS in clear text in the query string of the redirect along with authaction and redir.
 
    **If set to "1"** The FAS is enforced by NDS to use **http** protocol.
-   When the sha256sum command is available AND faskey is set, the client token will be hashed and sent to the FAS identified as "hid" in the query string. The gatewayaddress is also sent on the query string, allowing the FAS to construct the authaction parameter. FAS must return the sha256sum of the concatenation of the original hid and faskey to be used by NDS for client authentication. This is returned in the normal way in the query string identified as "tok". NDS will automatically detect whether hid mode is active or the raw token is being returned.
+   When the sha256sum command is available AND faskey is set, the client token will be hashed and sent to the FAS identified as "hid" in the query string. The gatewayaddress is also sent on the query string, allowing the FAS to construct the authaction parameter. FAS must return the sha256sum of the concatenation of the original hid and faskey to be used by openNDS for client authentication. This is returned in the normal way in the query string identified as "tok". openNDS will automatically detect whether hid mode is active or the raw token is being returned.
 
    Should sha256sum not be available or faskey is not set, then it is the responsibility of the FAS to request the token from ndsctl.
 
@@ -59,7 +59,7 @@ Security
 
    The FAS must use the query string passed initialisation vector and the pre shared fas_key to decrypt the query string. An example FAS level 2 php script (fas-aes.php) is preinstalled in the /etc/opennds directory and also supplied in the source code.
 
-   **If set to "3"** The FAS is enforced by NDS to use **https** protocol.
+   **If set to "3"** The FAS is enforced by openNDS to use **https** protocol.
    Level 3 is the same as level 2 except the use of https protocol is enforced for FAS. In addition, the "authmon" daemon is loaded. This allows the external FAS, after client verification, to effectively traverse inbound firewalls and address translation to achieve NDS authentication without generating browser security warnings or errors. An example FAS level 3 php script (fas-aes-https.php) is preinstalled in the /etc/opennds directory and also supplied in the source code.
 
 **Option faskey must be set** if fas secure is set to levels 2 and 3 but is optional for level 1.
@@ -81,7 +81,7 @@ Example FAS Query strings
 
   `http://fasremoteip:fasport/faspath?authaction=http://gatewayaddress:gatewayport/opennds_auth/?clientip=[clientip]&gatewayname=[gatewayname]&tok=[token]&redir=[requested_url]`
 
-   Although the simplest to set up, a knowledgeable user could bypass FAS, so running fas_secure_enabled at level 1 or 2 is recommended.
+   Although the simplest to set up, a knowledgeable user could bypass FAS, so running fas_secure_enabled at level 1, 2 or 3 is recommended.
 
 
   **Level 1** (fas_secure_enabled = 1), NDS sends only information required to identify, the instance of NDS, the client and the client's originally requested URL. The client token is never exposed.
@@ -133,8 +133,25 @@ Example FAS Query strings
    **clientif** is the interface string identifying the interface the client is connected to in the form of:
     [local interface] [meshnode mac] [local mesh interface]
 
+  It is the responsibility of FAS to parse the decrypted string for the variables it requires.
 
-  Future versions of NDS may send additional variables and the order of the variables in the decrypted string may also vary, so it is the responsiblity of FAS to parse the decrypted string for the variables it requires.
+Custom Parameters
+*****************
+
+Custom Parameters are primarily intended to be used by remote configuration tools and are generally useful for passing static information to a remote FAS.
+
+A list of Custom Parameters can be defined in the configuration file.
+Once a custom parameter is defined in the configuration, its value will be fixed.
+
+Parameters must be of the form param_name=param_value and may not contain white space or single quote characters.
+
+Custom parameters are added to the query string when FAS level 1 and faskey are both set.
+
+Custom parameters are added to the encrypted query string when FAS levels 2 and 3 are set.
+
+The fas_custom_parameters_list option in the configuration file is used to set custom parameters. This is detailed in the default configuration file.
+
+It is the responsibility of FAS to parse the query string for the custom parameters it requires.
 
 Network Zones - Determining the Interface the Client is Connected To
 ********************************************************************

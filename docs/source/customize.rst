@@ -1,7 +1,7 @@
 Customising openNDS
 ########################
 
-After initial installation, openNDS (NDS) should be working in its most basic mode and client Captive Portal Detection (CPD) should pop up the default splash page.
+After initial installation, openNDS (NDS) should be working in its most basic mode and client Captive Portal Detection (CPD) should pop up the default Click to Continue page.
 
 Before attempting to customise NDS you should ensure it is working in this basic mode before you start.
 
@@ -71,11 +71,17 @@ Finally you must tell UCI to commit your changes to the configuration file:
 
   uci commit opennds
 
-The Default Click and Go Splash Page
+The Legacy Click and Go Splash Page
 ************************************
 
-Enabled by setting option login_option_enabled = "0" (default)
-The default default splash page can be found at:
+The legacy Click to Continue html splash page is deprecated and disabled.
+It will be removed entirely in later releases.
+
+To allow time for migration, this can be re-enabled by setting options:
+ allow_legacy_splash = '1' and
+ login_option_enabled = "0" (default)
+
+ The legacy splash page can be found at:
 
   ``/etc/opennds/htdocs/splash.html``
 
@@ -146,10 +152,23 @@ Also, note that any images you reference should reside in the subdirectory /etc/
 Dynamic Splash Pages
 ********************
 
+Default Dynamic Click to Continue
+=================================
+
+The pre-installed dynamic login page is enabled by setting option login_option_enabled = "0".
+This is the default assuming
+allow_legacy_splash = '0', the default value.
+
+It generates a Click to Continue page.
+
+User clicks on "Continue" are recorded in the log file /tmp/ndslog.log
+Details of how the script works are contained in comments in the script itself.
+
+
 Pre-Installed User Login Dynamic Splash Page
 ============================================
 
-The pre-installed dynamic splash page is enabled by setting option login_option_enabled = "1".
+The pre-installed dynamic login page is enabled by setting option login_option_enabled = "1".
 
 It generates a login page asking for username and email address.
 User logins are recorded in the log file /tmp/ndslog.log

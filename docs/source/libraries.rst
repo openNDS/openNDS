@@ -4,7 +4,7 @@ Library Utilities
 Overview
 ********
 
-A number of library utilities are included. These may be used by NDS itself, FAS, Preauth and BinAuth. These may in the future, be enhanced, have additional functionality added.
+A number of library utilities are included. These may be used by NDS itself, FAS and Preauth. These may in the future, be enhanced, have additional functionality added.
 
 By default, library utilities will be installed in the folder
 
@@ -17,7 +17,7 @@ get_client_token.sh
 ###################
 This utility allows the unique token of a client to be determined from the client ip address.
 
-It can be used in BinAuth, PreAuth and local FAS scripts.
+It can be used in PreAuth and local FAS scripts.
 
   Usage: get_client_token.sh [clientip]
 
@@ -30,7 +30,11 @@ get_client_interface.sh
 #######################
 This utility allows the interface a client is using to be determined from the client mac address.
 
-It is used by NDS when fas secure level 2 is set. Its output is sent to FAS in the encrypted query string as the variable "clientif"
+It can be used in PreAuth and local FAS scripts.
+
+It is used by NDS when fas secure levels 1 and 2 are set along with faskey also being set.
+
+Its output is sent to FAS in the encrypted query string as the variable "clientif"
 
   Usage: get_client_interface.sh [clientmac]
 
@@ -65,5 +69,5 @@ eg In the OpenWrt configuration file
   Returns: [unescapedstring]
 
   Where:
-  
+
     [-option] is unescape type, currently -url only

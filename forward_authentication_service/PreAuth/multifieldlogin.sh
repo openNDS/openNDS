@@ -7,39 +7,6 @@
 # This is changed to bash automatically by Makefile for Debian
 #
 
-
-# Customise the Logfile location:
-#
-# mountpoint is the mount point for the storage the log is to be kept on
-#
-# /tmp on OpenWrt is tmpfs (ram disk) and does not survive a reboot.
-#
-# /run on Raspbian is also tmpfs and also does not survive a reboot.
-#
-# These choices for OpenWrt and Raspbian are a good default for testing purposes
-# as long term use on internal flash could cause memory wear
-# In a production system, use the mount point of a usb drive for example
-#
-#
-# logdir is the directory path for the log file
-#
-#
-# logname is the name of the log file
-#
-
-#For Openwrt:
-mountpoint="/tmp"
-logdir="/tmp/ndslog/"
-logname="ndslog.log"
-
-#For Raspbian:
-#mountpoint="/run"
-#logdir="/run/ndslog/"
-#logname="ndslog.log"
-
-#For logging
-ndspid=$(ps | grep '/usr/bin/opennds' | awk -F ' ' 'NR==2 {print $1}')
-
 # functions:
 validate_client() {
 	#Add your custom client validation here
@@ -90,31 +57,54 @@ get_client_zone () {
 
 write_log () {
 
-	if [ ! -d "$logdir" ]; then
-		mkdir -p "$logdir"
-	fi
+	if [ ! -z $logname ]; then
 
-	logfile="$logdir""$logname"
-	awkcmd="awk ""'\$6==""\"$mountpoint\"""{print \$4}'"
-	min_freespace_to_log_ratio=10
-	datetime=$(date)
+		if [ ! -d "$logdir" ]; then
+			mkdir -p "$logdir"
+		fi
 
-	if [ ! -f "$logfile" ]; then
-		echo "$datetime, New log file created" > $logfile
-	fi
+		logfile="$logdir""$logname"
+		awkcmd="awk ""'\$6==""\"$mountpoint\"""{print \$4}'"
+		min_freespace_to_log_ratio=10
+		datetime=$(date)
 
-	filesize=$(ls -s -1 $logfile | awk -F' ' '{print $1}')
-	available=$(df | grep "$mountpoint" | eval "$awkcmd")
-	sizeratio=$(($available/$filesize))
+		if [ ! -f "$logfile" ]; then
+			echo "$datetime, New log file created" > $logfile
+		fi
 
-	if [ $sizeratio -ge $min_freespace_to_log_ratio ]; then
-		userinfo="username=$username, emailAddress=$emailaddr"
-		clientinfo="macaddress=$clientmac, clientzone=$client_zone, useragent=$user_agent"
-		echo "$datetime, $userinfo, $clientinfo" >> $logfile
-	else
-		echo "PreAuth - log file too big, please archive contents" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
+		filesize=$(ls -s -1 $logfile | awk -F' ' '{print $1}')
+		available=$(df | grep "$mountpoint" | eval "$awkcmd")
+		sizeratio=$(($available/$filesize))
+
+		if [ $sizeratio -ge $min_freespace_to_log_ratio ]; then
+			userinfo="username=$username, emailAddress=$emailaddr, phone=$phone, addr=$addr, code=$code"
+			clientinfo="macaddress=$clientmac, clientzone=$client_zone, useragent=$user_agent"
+			echo "$datetime, $userinfo, $clientinfo" >> $logfile
+		else
+			echo "PreAuth - log file too big, please archive contents" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
+		fi
 	fi
 }
+
+# Customise the Logfile location, use the tmpfs "temporary" directory to prevent flash wear.
+# Location depends upon OS distro in use:
+tempdir="/tmp /run /var"
+mountpoint=""
+logdir=""
+logname=""
+
+for var in $tempdir; do
+	_mountpoint=$(df | awk -F ' ' '$1=="tmpfs" && $6=="'$var'" {print $6}')
+	if [ "$_mountpoint" = "$var" ]; then
+		mountpoint="$var"
+		logdir="$var/ndslog/"
+		logname="ndslog.log"
+		break
+	fi
+done
+
+#For syslog
+ndspid=$(pgrep '/usr/bin/opennds')
 
 # Get the urlencoded querystring and user_agent
 query_enc=$(echo "$1" | sed "s/%3f/%20/")

@@ -254,7 +254,6 @@ setup_from_config(void)
 	char gw_name_urlencoded[QUERYMAXLEN] = {0};
 	struct stat sb;
 	time_t sysuptime;
-	t_WGP *allowed_wgport;
 	t_WGFQDN *allowed_wgfqdn;
 	char wgfqdns[1024] = {0};
 	char *dnsmasqcmd;

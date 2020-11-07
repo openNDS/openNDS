@@ -18,11 +18,11 @@ The version number for MHD must not exceed 0.9.70 for versions of openNDS less t
 
 .. code::
 
- wget https://ftp.gnu.org/gnu/libmicrohttpd/libmicrohttpd-0.9.70.tar.gz
- tar  -xf libmicrohttpd-0.9.70.tar.gz
- cd libmicrohttpd-0.9.70
+ wget https://ftp.gnu.org/gnu/libmicrohttpd/libmicrohttpd-0.9.71.tar.gz
+ tar  -xf libmicrohttpd-0.9.71.tar.gz
+ cd libmicrohttpd-0.9.71
 
-where "0.9.70" is the MHD version number we are using in this example.
+where "0.9.71" is the MHD version number we are using in this example.
 
 **Now configure and compile:**
 
@@ -30,8 +30,10 @@ where "0.9.70" is the MHD version number we are using in this example.
 
  ./configure --disable-https
  make
+ sudo rm /usr/local/lib/libmicrohttpd*
  sudo make install
- sudo ldconfig
+ sudo rm /etc/ld.so.cache
+ sudo ldconfig -v
  cd ..
 
 
@@ -41,14 +43,14 @@ You can find a release version number for openNDS at https://github.com/openNDS/
 
 .. code::
 
- wget https://codeload.github.com/opennds/opennds/tar.gz/v5.2.0
- tar -xf v5.2.0
- cd openNDS-5.2.0
+ wget https://codeload.github.com/opennds/opennds/tar.gz/v7.0.1
+ tar -xf v7.0.1
+ cd openNDS-7.0.1
  make
  sudo make install
- systemctl enable opennds
+ sudo systemctl enable opennds
 
-Where "5.2.0" is the openNDS version we are using in this example.
+Where "7.0.1" is the openNDS version we are using in this example.
 
 openNDS should now start automatically at boot time.
 
@@ -56,25 +58,31 @@ It can be manually started, restarted, stopped or disabled with the following co
 
 .. code::
 
- systemctl start opennds
+ sudo systemctl start opennds
 
- systemctl restart opennds
+ sudo systemctl restart opennds
 
- systemctl stop opennds
+ sudo systemctl stop opennds
 
- systemctl disable opennds
+ sudo systemctl disable opennds
 
 The status of openNDS can be checked with the following command:
 
 .. code::
 
- ndsctl status
+ sudo ndsctl status
 
 On most Linux distributions you can read the last few entries for openNDS in the system message log with the command:
 
 .. code::
 
- systemctl status opennds
+ sudo systemctl status opennds
+
+If openNDS fails to start, check for error messages with the command:
+
+.. code::
+
+ sudo journalctl -e
 
 OpenWrt Package
 ***************

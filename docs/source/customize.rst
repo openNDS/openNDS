@@ -74,8 +74,8 @@ Finally you must tell UCI to commit your changes to the configuration file:
 The Legacy Click and Go Splash Page
 ************************************
 
-The legacy Click to Continue html splash page is deprecated and disabled.
-It will be removed entirely in later releases.
+**The legacy Click to Continue html splash page is deprecated and disabled.
+It will be removed entirely in later releases.**
 
 To allow time for migration, this can be re-enabled by setting options:
  allow_legacy_splash = '1' and
@@ -161,7 +161,11 @@ allow_legacy_splash = '0', the default value.
 
 It generates a Click to Continue page.
 
-User clicks on "Continue" are recorded in the log file /tmp/ndslog.log
+User clicks on "Continue" are recorded in the log file /[tmpfs_dir]/ndslog/ndslog.log
+
+Where [tmpfs_dir] is the operating system "temporary" tmpfs mount point.
+This will be  /tmp /run or /var and is automatically detected.
+
 Details of how the script works are contained in comments in the script itself.
 
 
@@ -171,7 +175,11 @@ Pre-Installed User Login Dynamic Splash Page
 The pre-installed dynamic login page is enabled by setting option login_option_enabled = "1".
 
 It generates a login page asking for username and email address.
-User logins are recorded in the log file /tmp/ndslog.log
+User logins are recorded in the log file /[tmpfs_dir]/ndslog/ndslog.log
+
+Where [tmpfs_dir] is the operating system "temporary" tmpfs mount point.
+This will be  /tmp /run or /var and is automatically detected.
+
 Details of how the script works are contained in comments in the script itself.
 
 

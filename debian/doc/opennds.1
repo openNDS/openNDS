@@ -1,6 +1,6 @@
 .\" Man page generated from reStructuredText.
 .
-.TH "OPENNDS" "1" "Nov 05, 2020" "7.0.0" "openNDS"
+.TH "OPENNDS" "1" "Nov 07, 2020" "7.0.1" "openNDS"
 .SH NAME
 opennds \- opennds Documentation
 .
@@ -2167,8 +2167,8 @@ uci commit opennds
 .UNINDENT
 .SS The Legacy Click and Go Splash Page
 .sp
-The legacy Click to Continue html splash page is deprecated and disabled.
-It will be removed entirely in later releases.
+\fBThe legacy Click to Continue html splash page is deprecated and disabled.
+It will be removed entirely in later releases.\fP
 .INDENT 0.0
 .TP
 .B To allow time for migration, this can be re\-enabled by setting options:
@@ -2285,14 +2285,22 @@ allow_legacy_splash = \(aq0\(aq, the default value.
 .sp
 It generates a Click to Continue page.
 .sp
-User clicks on "Continue" are recorded in the log file /tmp/ndslog.log
+User clicks on "Continue" are recorded in the log file /[tmpfs_dir]/ndslog/ndslog.log
+.sp
+Where [tmpfs_dir] is the operating system "temporary" tmpfs mount point.
+This will be  /tmp /run or /var and is automatically detected.
+.sp
 Details of how the script works are contained in comments in the script itself.
 .SS Pre\-Installed User Login Dynamic Splash Page
 .sp
 The pre\-installed dynamic login page is enabled by setting option login_option_enabled = "1".
 .sp
 It generates a login page asking for username and email address.
-User logins are recorded in the log file /tmp/ndslog.log
+User logins are recorded in the log file /[tmpfs_dir]/ndslog/ndslog.log
+.sp
+Where [tmpfs_dir] is the operating system "temporary" tmpfs mount point.
+This will be  /tmp /run or /var and is automatically detected.
+.sp
 Details of how the script works are contained in comments in the script itself.
 .SS Custom Dynamic Splash Pages
 .sp
@@ -2435,15 +2443,15 @@ The version number for MHD must not exceed 0.9.70 for versions of openNDS less t
 .sp
 .nf
 .ft C
-wget https://ftp.gnu.org/gnu/libmicrohttpd/libmicrohttpd\-0.9.70.tar.gz
-tar  \-xf libmicrohttpd\-0.9.70.tar.gz
-cd libmicrohttpd\-0.9.70
+wget https://ftp.gnu.org/gnu/libmicrohttpd/libmicrohttpd\-0.9.71.tar.gz
+tar  \-xf libmicrohttpd\-0.9.71.tar.gz
+cd libmicrohttpd\-0.9.71
 .ft P
 .fi
 .UNINDENT
 .UNINDENT
 .sp
-where "0.9.70" is the MHD version number we are using in this example.
+where "0.9.71" is the MHD version number we are using in this example.
 .sp
 \fBNow configure and compile:\fP
 .INDENT 0.0
@@ -2453,8 +2461,10 @@ where "0.9.70" is the MHD version number we are using in this example.
 .ft C
 \&./configure \-\-disable\-https
 make
+sudo rm /usr/local/lib/libmicrohttpd*
 sudo make install
-sudo ldconfig
+sudo rm /etc/ld.so.cache
+sudo ldconfig \-v
 cd ..
 .ft P
 .fi
@@ -2469,18 +2479,18 @@ You can find a release version number for openNDS at \fI\%https://github.com/ope
 .sp
 .nf
 .ft C
-wget https://codeload.github.com/opennds/opennds/tar.gz/v5.2.0
-tar \-xf v5.2.0
-cd openNDS\-5.2.0
+wget https://codeload.github.com/opennds/opennds/tar.gz/v7.0.1
+tar \-xf v7.0.1
+cd openNDS\-7.0.1
 make
 sudo make install
-systemctl enable opennds
+sudo systemctl enable opennds
 .ft P
 .fi
 .UNINDENT
 .UNINDENT
 .sp
-Where "5.2.0" is the openNDS version we are using in this example.
+Where "7.0.1" is the openNDS version we are using in this example.
 .sp
 openNDS should now start automatically at boot time.
 .sp
@@ -2490,13 +2500,13 @@ It can be manually started, restarted, stopped or disabled with the following co
 .sp
 .nf
 .ft C
-systemctl start opennds
+sudo systemctl start opennds
 
-systemctl restart opennds
+sudo systemctl restart opennds
 
-systemctl stop opennds
+sudo systemctl stop opennds
 
-systemctl disable opennds
+sudo systemctl disable opennds
 .ft P
 .fi
 .UNINDENT
@@ -2508,7 +2518,7 @@ The status of openNDS can be checked with the following command:
 .sp
 .nf
 .ft C
-ndsctl status
+sudo ndsctl status
 .ft P
 .fi
 .UNINDENT
@@ -2520,7 +2530,19 @@ On most Linux distributions you can read the last few entries for openNDS in the
 .sp
 .nf
 .ft C
-systemctl status opennds
+sudo systemctl status opennds
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+If openNDS fails to start, check for error messages with the command:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+sudo journalctl \-e
 .ft P
 .fi
 .UNINDENT

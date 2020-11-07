@@ -31,22 +31,17 @@ config opennds
 	# Integer value sent to PreAuth script as login mode
 	#
 	# opennds comes preconfigured for two basic modes of operation
-	# A default preauth login script, requiring username and email address to be entered.
-	# and
-	# A default static splash page (splash.html) with template variables and click to continue
 	#
-	# 0: Use static splash page or FAS config options
-	# 1: Use default preauth login script
+	# 1.Default Dynamic Click to Continue
+	# The pre-installed dynamic login page is enabled by setting option login_option_enabled = “0”.
+	# This is the default assuming allow_legacy_splash = ‘0’, the default value.
+	# It generates a Click to Continue page followed by a info/advertising page.
+	# User clicks on “Continue” are recorded in the log file /[tmpfs_dir]/ndslog/ndslog.log
 	#
-	# The default preauth login script is installed as part of the openNDS package providing
-	# username/emailaddress login as an alternative to the basic splash page.
-	#
-	# It generates a login page asking for username and email address.
-	# User logins are recorded in the log file /tmp/ndslog.log
-	# Details of how the script works are contained in comments in the script itself.
-	#
-	# Both modes may be customised or a full custom system can be developed using FAS and BinAuth
-	# See documentation at: https://openndsdocs.readthedocs.io/
+	# 2.Username/Emailaddress Dynamic Login
+	# The pre-installed dynamic login page is enabled by setting option login_option_enabled = “1”.
+	# It generates a login page asking for username and email address followed by a info/advertising page.
+	# User logins are recorded in the log file /[tmpfs_dir]/ndslog/ndslog.log
 	#
 	option login_option_enabled '0'
 	###########################################################################################
@@ -127,6 +122,7 @@ config opennds
 	# Interface to use
 	# Use this option to set the device opennds will bind to.
 	# The value may be an interface section in /etc/config/network or a device name such as br-lan.
+	# The selected interface must be allocated an IPv4 address.
 	option gatewayinterface 'br-lan'
 	###########################################################################################
 

@@ -1,3 +1,14 @@
+openNDS (7.0.1)
+
+  * This version contains fixes and some minor updates
+  * Fix - Failure of Default Dynamic Splash page on some operating systems [bluewavenet]
+  * Fix - A compiler warning - some compiler configurations were aborting compilation [bluewavenet]
+  * Update - Added helpful comments in configuration files [bluewavenet]
+  * Remove - references to deprecated RedirectURL in opennde.conf [bluewavenet]
+  * Update - Documentation updates and corrections [bluewavenet]
+
+ -- Rob White <dot@blue-wave.net> Wed, 7 Nov 2020 12:40:33 +0000
+
 openNDS (7.0.0)
 
   * This version introduces major new enhancements and the disabling or removal of deprecated functionality

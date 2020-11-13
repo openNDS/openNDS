@@ -1,3 +1,11 @@
+Creation of a Debian Package
+
+**Currently (v5.0.0 onwards), creation of a Debian package is broken for openNDS.
+**
+
+To compile and install openNDS in place, please see the linux_generic README file.
+
+The instructions following are from the original README.md
 
 To create a Debian package of openNDS (a \*.deb file),
 you first need to have installed the following programs and libraries:

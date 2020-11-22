@@ -17,41 +17,10 @@
 
 # Mode 1. login_option_enabled set to 1 - generate a "username/email_address splash page (with Terms of Service).
 
-# Mode 2. login_option_enabled set to 2 - generate a "username/email_address splash page incorporating a remote image.
-#
-##########################################################################################
-# Note for Mode 2:
-# If the remote image is served from an https site, ssl/tls support for wget is required.
-#
-# On OpenWrt this is provided by the following packages:
-# libustream-mbedtls
-# and
-# ca-bundle
-#
-# On other operating systems the equivalent must be provided, eg wget-ssl and ca-bundle
-##########################################################################################
-
 # Some programming hints are included at the end of this file.
 
 
 # functions:
-
-get_image_file() {
-	imagepath="/etc/opennds/htdocs/images/remote"
-	mkdir "/tmp/remote"
-
-	if [ ! -d "$imagepath" ]; then
-		ln -s /tmp/remote /etc/opennds/htdocs/images/remote
-	fi
-
-	md5=$(echo -e "$imageurl" | md5sum);
-	filename=$(echo -e "$md5" | awk {'print($1)'});
-	filename="$filename.$imagetype"
-
-	if [ ! -f "$imagepath/$filename" ]; then
-		wget -q -P $imagepath -O $filename $imageurl
-	fi
-}
 
 get_arguments() {
 	# Get the urlencoded querystring, user_agent and mode

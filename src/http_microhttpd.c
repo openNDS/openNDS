@@ -698,6 +698,7 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 	char msg[HTMLMAXSIZE] = {0};
 	const char *user_agent = NULL;
 	char enc_user_agent[256] = {0};
+	char *preauthpath = NULL;
 
 	// Encoded querystring could be bigger than the unencoded version
 	char enc_query[QUERYMAXLEN + QUERYMAXLEN/2] = {0};
@@ -706,35 +707,41 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 	int ret;
 	struct MHD_Response *response;
 
-	MHD_get_connection_values(connection, MHD_HEADER_KIND, get_user_agent_callback, &user_agent);
+	safe_asprintf(&preauthpath, "/%s/", config->preauthdir, config->fas_path);
 
-	debug(LOG_DEBUG, "PreAuth: User Agent is [ %s ]", user_agent);
+	if (strcmp(preauthpath, config->fas_path) == 0) {
+		free (preauthpath);
+		MHD_get_connection_values(connection, MHD_HEADER_KIND, get_user_agent_callback, &user_agent);
+		debug(LOG_DEBUG, "PreAuth: User Agent is [ %s ]", user_agent);
+		uh_urlencode(enc_user_agent, sizeof(enc_user_agent), user_agent, strlen(user_agent));
 
-	uh_urlencode(enc_user_agent, sizeof(enc_user_agent), user_agent, strlen(user_agent));
+		if (query) {
+			uh_urlencode(enc_query, sizeof(enc_query), query, strlen(query));
+			debug(LOG_DEBUG, "PreAuth: query: %s", query);
+		}
 
-	if (query) {
-		uh_urlencode(enc_query, sizeof(enc_query), query, strlen(query));
-		debug(LOG_DEBUG, "PreAuth: query: %s", query);
+		rc = execute_ret(msg, HTMLMAXSIZE - 1, "%s '%s' '%s' '%d'", config->preauth, enc_query, enc_user_agent, config->login_option_enabled);
+
+		if (rc != 0) {
+			debug(LOG_WARNING, "Preauth script: %s '%s' - failed to execute", config->preauth, query);
+			return -1;
+		}
+
+		// serve the script output (in msg)
+		response = MHD_create_response_from_buffer(strlen(msg), (char *)msg, MHD_RESPMEM_MUST_COPY);
+
+		if (!response) {
+			return send_error(connection, 503);
+		}
+
+		MHD_add_response_header(response, "Content-Type", "text/html; charset=utf-8");
+		ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
+		MHD_destroy_response(response);
+		return ret;
+	} else {
+		free (preauthpath);
+		return send_error(connection, 404);
 	}
-
-	rc = execute_ret(msg, HTMLMAXSIZE - 1, "%s '%s' '%s' '%d'", config->preauth, enc_query, enc_user_agent, config->login_option_enabled);
-
-	if (rc != 0) {
-		debug(LOG_WARNING, "Preauth script: %s '%s' - failed to execute", config->preauth, query);
-		return -1;
-	}
-
-	// serve the script output (in msg)
-	response = MHD_create_response_from_buffer(strlen(msg), (char *)msg, MHD_RESPMEM_MUST_COPY);
-
-	if (!response) {
-		return send_error(connection, 503);
-	}
-
-	MHD_add_response_header(response, "Content-Type", "text/html; charset=utf-8");
-	ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
-	MHD_destroy_response(response);
-	return ret;
 }
 
 /**

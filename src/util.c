@@ -461,8 +461,8 @@ ndsctl_status(FILE *fp)
 
 	fprintf(fp, "Client Check Interval: %ds\n", config->checkinterval);
 	fprintf(fp, "Rate Check Window: %d check intervals (%ds)\n", config->rate_check_window, (config->rate_check_window * config->checkinterval));
-	fprintf(fp, "Preauth Idle Timeout: %dm\n", config->preauth_idle_timeout);
-	fprintf(fp, "Auth Idle Timeout: %dm\n", config->auth_idle_timeout);
+	fprintf(fp, "Preauthenticated Client Idle Timeout: %dm\n", config->preauth_idle_timeout);
+	fprintf(fp, "Authenticated Client Idle Timeout: %dm\n", config->auth_idle_timeout);
 
 	if (config->redirectURL) {
 		fprintf(fp, "Redirect URL: %s\n", config->redirectURL);

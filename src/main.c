@@ -310,8 +310,8 @@ setup_from_config(void)
 				break;
 			}
 		}
-			config->custom_params = safe_strdup(fasparam);
-		debug(LOG_NOTICE, "Custom FAS parameter string [%s]", config->custom_params);
+		config->custom_params = safe_strdup(fasparam);
+		debug(LOG_DEBUG, "Custom FAS parameter string [%s]", config->custom_params);
 	}
 
 	// Check we have ipset support and if we do, set it up

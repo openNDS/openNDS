@@ -716,17 +716,16 @@ ndsctl_json_client(FILE *fp, const t_client *client, time_t now, char *indent)
 {
 	unsigned long int durationsecs;
 	unsigned long long int download_bytes, upload_bytes;
+	char clientif[64] = {0};
+
+	get_client_interface(clientif, sizeof(clientif), client->mac);
 
 	fprintf(fp, "  %s\"mac\":\"%s\",\n", indent, client->mac);
 	fprintf(fp, "  %s\"ip\":\"%s\",\n", indent, client->ip);
-	fprintf(fp, "  %s\"added\":\"%lld\",\n", indent, (long long) client->session_start);
-	fprintf(fp, "  %s\"active\":\"%lld\",\n", indent, (long long) client->counters.last_updated);
-
-	if (client->session_start) {
-		fprintf(fp, "  %s\"duration\":\"%lu\",\n", indent, now - client->session_start);
-	} else {
-		fprintf(fp, "  %s\"duration\":\"%lu\",\n", indent, 0ul);
-	}
+	fprintf(fp, "  %s\"clientif\":\"%s\",\n", indent, clientif);
+	fprintf(fp, "  %s\"session_start\":\"%lld\",\n", indent, (long long) client->session_start);
+	fprintf(fp, "  %s\"session_end\":\"%lld\",\n", indent, (long long) client->session_end);
+	fprintf(fp, "  %s\"last_active\":\"%lld\",\n", indent, (long long) client->counters.last_updated);
 	fprintf(fp, "  %s\"token\":\"%s\",\n", indent, client->token ? client->token : "none");
 	fprintf(fp, "  %s\"state\":\"%s\",\n", indent, fw_connection_state_as_string(client->fw_connection_state));
 

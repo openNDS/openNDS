@@ -717,9 +717,12 @@ ndsctl_json_client(FILE *fp, const t_client *client, time_t now, char *indent)
 	unsigned long int durationsecs;
 	unsigned long long int download_bytes, upload_bytes;
 	char clientif[64] = {0};
+	s_config *config;
 
+	config = config_get_config();
 	get_client_interface(clientif, sizeof(clientif), client->mac);
 
+	fprintf(fp, "  %s\"gatewayname\":\"%s\",\n", indent, config->url_encoded_gw_name);
 	fprintf(fp, "  %s\"mac\":\"%s\",\n", indent, client->mac);
 	fprintf(fp, "  %s\"ip\":\"%s\",\n", indent, client->ip);
 	fprintf(fp, "  %s\"clientif\":\"%s\",\n", indent, clientif);

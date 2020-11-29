@@ -90,7 +90,7 @@ parse_variables() {
 	queryvarlist="clientip gatewayname hid status redir username emailaddr client_zone terms continue"
 	for var in $queryvarlist; do
 		parsestr=$(echo "$query_enc" | awk -F "%20$var%3d" '{print $2}' | awk -F "%3d" '{print $1}')
-		eval $var=$(echo "$parsestr" | awk -F "%2c%20" '{
+		evalstr=$(echo "$parsestr" | awk -F "%2c%20" '{
 			if (NF>2) {
 				for(i=1;i<NF;i++) {
 					if (i==1) {
@@ -103,6 +103,8 @@ parse_variables() {
 				printf("%s", $(1))
 			}
 		}')
+
+		eval $var=$(echo "\"$evalstr\"")
 	done
 }
 

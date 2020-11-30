@@ -167,6 +167,7 @@ typedef struct {
 	char *gw_ip;				//@brief Internal IP (v4 or v6) for our web server
 	char *gw_address;			//@brief Internal IP with port for our web server
 	char *gw_mac;				//@brief MAC address of the interface we manage
+	char *gw_fqdn;				//@brief FQDN of the client status page
 	unsigned int gw_port;			//@brief Port the webserver will run on
 	unsigned int fas_port;			//@brief Port the fas server will run on
 	int login_option_enabled;		//@brief Use default PreAuth Login script

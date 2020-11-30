@@ -426,7 +426,7 @@ display_terms() {
 		</p>
 	"
 
-	# Inemnity
+	# Indemnity
 	echo "
 		<hr><b>Indemnity</b>
 

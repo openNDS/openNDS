@@ -256,7 +256,7 @@ setup_from_config(void)
 	time_t sysuptime;
 	t_WGFQDN *allowed_wgfqdn;
 	char wgfqdns[1024] = {0};
-	char *dnsmasqcmd;
+	char *dnscmd;
 
 	s_config *config;
 
@@ -296,94 +296,6 @@ setup_from_config(void)
 		}
 	}
 
-	// Setup custom FAS parameters if configured
-	char fasparam[512] = {0};
-	t_FASPARAM *fas_fasparam;
-	if (config->fas_custom_parameters_list) {
-		for (fas_fasparam = config->fas_custom_parameters_list; fas_fasparam != NULL; fas_fasparam = fas_fasparam->next) {
-
-			// Make sure we don't have a buffer overflow
-			if ((sizeof(fasparam) - strlen(fasparam)) > (strlen(fas_fasparam->fasparam) + 4)) {
-				strcat(fasparam, QUERYSEPARATOR);
-				strcat(fasparam, fas_fasparam->fasparam);
-			} else {
-				break;
-			}
-		}
-		config->custom_params = safe_strdup(fasparam);
-		debug(LOG_DEBUG, "Custom FAS parameter string [%s]", config->custom_params);
-	}
-
-	// Check we have ipset support and if we do, set it up
-	if (config->walledgarden_fqdn_list) {
-		// Check ipset command is available
-		if (execute_ret_url_encoded(msg, sizeof(msg) - 1, "ipset -v") == 0) {
-			debug(LOG_NOTICE, "ipset support is available");
-		} else {
-			debug(LOG_ERR, "ipset support not available - please install package to provide it");
-			debug(LOG_ERR, "Exiting...");
-			exit(1);
-		}
-
-		// Check we have dnsmasq ipset compile option
-		if (execute_ret_url_encoded(msg, sizeof(msg) - 1, "dnsmasq --version | grep ' ipset '") == 0) {
-			debug(LOG_NOTICE, "dnsmasq ipset support is available");
-		} else {
-			debug(LOG_ERR, "Please install dnsmasq full version with ipset compile option");
-			debug(LOG_ERR, "Exiting...");
-			exit(1);
-		}
-
-		// If Walled Garden ipset exists, destroy it.
-		execute_ret_url_encoded(msg, sizeof(msg) - 1, "ipset destroy walledgarden");
-
-		// Set up the Walled Garden
-		if (execute_ret_url_encoded(msg, sizeof(msg) - 1, "ipset create walledgarden hash:ip") == 0) {
-			debug(LOG_INFO, "Walled Garden ipset created");
-		} else {
-			debug(LOG_ERR, "Failed to create Walled Garden");
-			debug(LOG_ERR, "Exiting...");
-			exit(1);
-		}
-
-		// Configure dnsmasq
-		for (allowed_wgfqdn = config->walledgarden_fqdn_list; allowed_wgfqdn != NULL; allowed_wgfqdn = allowed_wgfqdn->next) {
-
-			// Make sure we don't have a buffer overflow
-			if ((sizeof(wgfqdns) - strlen(wgfqdns)) > (strlen(allowed_wgfqdn->wgfqdn) + 15)) {
-				strcat(wgfqdns, "/");
-				strcat(wgfqdns, allowed_wgfqdn->wgfqdn);
-			} else {
-				break;
-			}
-		}
-		strcat(wgfqdns, "/walledgarden");
-		debug(LOG_INFO, "Dnsmasq Walled Garden config [%s]", wgfqdns);
-		safe_asprintf(&dnsmasqcmd, "/usr/lib/opennds/ipsetconfig.sh %s &", wgfqdns);
-		system(dnsmasqcmd);
-		debug(LOG_INFO, "Dnsmasq configured for Walled Garden");
-		free(dnsmasqcmd);
-	}
-
-	// Encode gatewayname
-	htmlentityencode(gw_name_entityencoded, sizeof(gw_name_entityencoded), config->gw_name, strlen(config->gw_name));
-	config->http_encoded_gw_name = gw_name_entityencoded;
-
-	uh_urlencode(gw_name_urlencoded, sizeof(gw_name_urlencoded), config->gw_name, strlen(config->gw_name));
-	config->url_encoded_gw_name = gw_name_urlencoded;
-
-	// Set the time when opennds started
-	sysuptime = get_system_uptime ();
-	debug(LOG_INFO, "main: System Uptime is %li seconds", sysuptime);
-
-	if (!started_time) {
-		debug(LOG_INFO, "Setting started_time");
-		started_time = time(NULL);
-	} else if (started_time < (time(NULL) - sysuptime)) {
-		debug(LOG_WARNING, "Detected possible clock skew - re-setting started_time");
-		started_time = time(NULL);
-	}
-
 	// If we don't have the Gateway IP address, get it. Exit on failure.
 	if (!config->gw_ip) {
 		debug(LOG_DEBUG, "Finding IP address of %s", config->gw_interface);
@@ -412,6 +324,121 @@ setup_from_config(void)
 	// Make sure fas_remoteip is set. Note: This does not enable FAS.
 	if (!config->fas_remoteip) {
 		config->fas_remoteip = safe_strdup(config->gw_ip);
+	}
+
+	// Setup custom FAS parameters if configured
+	char fasparam[512] = {0};
+	t_FASPARAM *fas_fasparam;
+	if (config->fas_custom_parameters_list) {
+		for (fas_fasparam = config->fas_custom_parameters_list; fas_fasparam != NULL; fas_fasparam = fas_fasparam->next) {
+
+			// Make sure we don't have a buffer overflow
+			if ((sizeof(fasparam) - strlen(fasparam)) > (strlen(fas_fasparam->fasparam) + 4)) {
+				strcat(fasparam, QUERYSEPARATOR);
+				strcat(fasparam, fas_fasparam->fasparam);
+			} else {
+				break;
+			}
+		}
+		config->custom_params = safe_strdup(fasparam);
+		debug(LOG_DEBUG, "Custom FAS parameter string [%s]", config->custom_params);
+	}
+
+	if (config->gw_fqdn || config->walledgarden_fqdn_list) {
+		// For Client status Page - configure the hosts file
+		if (config->gw_fqdn) {
+			safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"hostconf\" \"%s\" \"%s\"",
+				config->gw_ip,
+				config->gw_fqdn
+			);
+
+			if (execute_ret_url_encoded(msg, sizeof(msg) - 1, dnscmd) == 0) {
+				debug(LOG_INFO, "Dnsmasq configured for Walled Garden");
+			} else {
+				debug(LOG_ERR, "Client Status Page: Hosts setup script failed to execute");
+			}
+			free(dnscmd);
+		}
+
+		// For Walled Garden - Check we have ipset support and if we do, set it up
+		if (config->walledgarden_fqdn_list) {
+			// Check ipset command is available
+			if (execute_ret_url_encoded(msg, sizeof(msg) - 1, "ipset -v") == 0) {
+				debug(LOG_NOTICE, "ipset support is available");
+			} else {
+				debug(LOG_ERR, "ipset support not available - please install package to provide it");
+				debug(LOG_ERR, "Exiting...");
+				exit(1);
+			}
+
+			// Check we have dnsmasq ipset compile option
+			if (execute_ret_url_encoded(msg, sizeof(msg) - 1, "dnsmasq --version | grep ' ipset '") == 0) {
+				debug(LOG_NOTICE, "dnsmasq ipset support is available");
+			} else {
+				debug(LOG_ERR, "Please install dnsmasq full version with ipset compile option");
+				debug(LOG_ERR, "Exiting...");
+				exit(1);
+			}
+
+			// If Walled Garden ipset exists, destroy it.
+			execute_ret_url_encoded(msg, sizeof(msg) - 1, "ipset destroy walledgarden");
+
+			// Set up the Walled Garden
+			if (execute_ret_url_encoded(msg, sizeof(msg) - 1, "ipset create walledgarden hash:ip") == 0) {
+				debug(LOG_INFO, "Walled Garden ipset created");
+			} else {
+				debug(LOG_ERR, "Failed to create Walled Garden");
+				debug(LOG_ERR, "Exiting...");
+				exit(1);
+			}
+
+			// Configure dnsmasq
+			for (allowed_wgfqdn = config->walledgarden_fqdn_list; allowed_wgfqdn != NULL; allowed_wgfqdn = allowed_wgfqdn->next) {
+
+				// Make sure we don't have a buffer overflow
+				if ((sizeof(wgfqdns) - strlen(wgfqdns)) > (strlen(allowed_wgfqdn->wgfqdn) + 15)) {
+					strcat(wgfqdns, "/");
+					strcat(wgfqdns, allowed_wgfqdn->wgfqdn);
+				} else {
+					break;
+				}
+			}
+
+			strcat(wgfqdns, "/walledgarden");
+			debug(LOG_DEBUG, "Dnsmasq Walled Garden config [%s]", wgfqdns);
+			safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"ipsetconf\" \"%s\"", wgfqdns);
+			if (execute_ret_url_encoded(msg, sizeof(msg) - 1, dnscmd) == 0) {
+				debug(LOG_INFO, "Dnsmasq configured for Walled Garden");
+			} else {
+				debug(LOG_ERR, "Walled Garden Dnsmasq setup script failed to execute");
+			}
+			free(dnscmd);
+		}
+
+		safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" &");
+		debug(LOG_DEBUG, "restart command [ %s ]", dnscmd);
+		system(dnscmd);
+		debug(LOG_INFO, "Dnsmasq restarted");
+		free(dnscmd);
+	}
+
+	// Encode gatewayname
+	htmlentityencode(gw_name_entityencoded, sizeof(gw_name_entityencoded), config->gw_name, strlen(config->gw_name));
+	config->http_encoded_gw_name = gw_name_entityencoded;
+
+	uh_urlencode(gw_name_urlencoded, sizeof(gw_name_urlencoded), config->gw_name, strlen(config->gw_name));
+	config->url_encoded_gw_name = gw_name_urlencoded;
+
+	// Set the time when opennds started
+	sysuptime = get_system_uptime ();
+	debug(LOG_INFO, "main: System Uptime is %li seconds", sysuptime);
+
+	if (!started_time) {
+		debug(LOG_INFO, "Setting started_time");
+		started_time = time(NULL);
+	} else if (started_time < (time(NULL) - sysuptime)) {
+		debug(LOG_WARNING, "Detected possible clock skew - re-setting started_time");
+		started_time = time(NULL);
 	}
 
 	// Initializes the web server

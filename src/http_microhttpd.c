@@ -219,6 +219,8 @@ static int is_foreign_hosts(struct MHD_Connection *connection, const char *host)
 	char our_host[MAX_HOSTPORTLEN];
 	s_config *config = config_get_config();
 	snprintf(our_host, MAX_HOSTPORTLEN, "%s", config->gw_address);
+	debug(LOG_INFO, "Our host: %s Requested host: %s", our_host, host);
+
 
 	// we serve all request without a host entry as well we serve all request going to our gw_address
 	if (host == NULL)
@@ -226,6 +228,14 @@ static int is_foreign_hosts(struct MHD_Connection *connection, const char *host)
 
 	if (!strcmp(host, our_host))
 		return 0;
+
+	if (!strcmp(host, config->gw_ip))
+		return 0;
+
+	if (config->gw_fqdn) {
+		if (!strcmp(host, config->gw_fqdn))
+			return 0;
+	}
 
 	// port 80 is special, because the hostname doesn't need a port
 	if (config->gw_port == 80 && !strcmp(host, config->gw_ip))
@@ -422,7 +432,7 @@ enum MHD_Result libmicrohttpd_cb(
 
 	if (client && (client->fw_connection_state == FW_MARK_AUTHENTICATED ||
 			client->fw_connection_state == FW_MARK_TRUSTED)) {
-		// client already authed - dangerous!!! This should never happen
+		// client is already authenticated, maybe they clicked/tapped "back" on the CPD browser or maybe they want the info page.
 		return authenticated(connection, url, client);
 	}
 
@@ -629,13 +639,18 @@ static int authenticated(struct MHD_Connection *connection,
 	const char *host = NULL;
 	char redirect_to_us[128];
 	char *fasurl = NULL;
+	char msg[HTMLMAXSIZE] = {0};
+	int rc;
 	int ret;
+	struct MHD_Response *response;
 
 	ret = MHD_get_connection_values(connection, MHD_HEADER_KIND, get_host_value_callback, &host);
 
 	if (ret < 1) {
 		debug(LOG_ERR, "authenticated: Error getting host");
 		return ret;
+	} else {
+		debug(LOG_INFO, "An authenticated client is requesting: host [%s] url [%s]", host, url);
 	}
 
 	/* check if this is a late request, meaning the user tries to get the internet, but ended up here,
@@ -672,7 +687,7 @@ static int authenticated(struct MHD_Connection *connection,
 		}
 	}
 
-	if (check_authdir_match(url, config->preauthdir)) {
+	if (check_authdir_match(url, config->preauthdir) && strcmp(url, "/opennds_preauth/") != 0) {
 		if (config->fas_port) {
 			safe_asprintf(&fasurl, "?clientip=%s&gatewayname=%s&gatewayaddress=%s&status=authenticated",
 				client->ip, config->url_encoded_gw_name, config->gw_address);
@@ -685,7 +700,29 @@ static int authenticated(struct MHD_Connection *connection,
 		}
 	}
 
-	// user doesn't want the splashpage or tried to auth itself
+	// User just entered gatewayaddress:gatewayport so give them the info page
+	if (strcmp(url, "/") == 0) {
+		rc = execute_ret(msg, HTMLMAXSIZE - 1, "/usr/lib/opennds/client_params.sh '%s'", client->ip);
+
+		if (rc != 0) {
+			debug(LOG_WARNING, "Script: /usr/lib/opennds/client_params.sh - failed to execute");
+			return -1;
+		}
+
+		// serve the script output (in msg)
+		response = MHD_create_response_from_buffer(strlen(msg), (char *)msg, MHD_RESPMEM_MUST_COPY);
+
+		if (!response) {
+			return send_error(connection, 503);
+		}
+
+		MHD_add_response_header(response, "Content-Type", "text/html; charset=utf-8");
+		ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
+		MHD_destroy_response(response);
+		return ret;
+	}
+
+	// Client wants a specific file eg /images/splash.jpg etc.:
 	return serve_file(connection, client, url);
 }
 
@@ -707,7 +744,7 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 	int ret;
 	struct MHD_Response *response;
 
-	safe_asprintf(&preauthpath, "/%s/", config->preauthdir, config->fas_path);
+	safe_asprintf(&preauthpath, "/%s/", config->preauthdir);
 
 	if (strcmp(preauthpath, config->fas_path) == 0) {
 		free (preauthpath);
@@ -766,7 +803,19 @@ static int preauthenticated(struct MHD_Connection *connection,
 	int ret;
 	s_config *config = config_get_config();
 
-	debug(LOG_DEBUG, "url: %s", url);
+	ret = MHD_get_connection_values(connection, MHD_HEADER_KIND, get_host_value_callback, &host);
+
+	if (ret < 1) {
+		debug(LOG_ERR, "preauthenticated: Error getting host");
+		return ret;
+	}
+
+	debug(LOG_DEBUG, "preauthenticated: host [%s] url [%s]", host, url);
+
+	// User just entered gatewayaddress:gatewayport so block them
+	if (strcmp(url, "/") == 0 && strcmp(host, config->gw_address) == 0) {
+		return send_error(connection, 511);
+	}
 
 	// Check for preauthdir
 	if (check_authdir_match(url, config->preauthdir)) {
@@ -776,13 +825,6 @@ static int preauthenticated(struct MHD_Connection *connection,
 		get_query(connection, &query, QUERYSEPARATOR);
 
 		ret = show_preauthpage(connection, query);
-		return ret;
-	}
-
-	ret = MHD_get_connection_values(connection, MHD_HEADER_KIND, get_host_value_callback, &host);
-
-	if (ret < 1) {
-		debug(LOG_ERR, "preauthenticated: Error getting host");
 		return ret;
 	}
 
@@ -1233,9 +1275,28 @@ static int send_error(struct MHD_Connection *connection, int error)
 	const char *page_400 = "<html><head><title>Error 400</title></head><body><h1>Error 400 - Bad Request</h1></body></html>";
 	const char *page_403 = "<html><head><title>Error 403</title></head><body><h1>Error 403 - Forbidden</h1></body></html>";
 	const char *page_404 = "<html><head><title>Error 404</title></head><body><h1>Error 404 - Not Found</h1></body></html>";
-	const char *page_500 = "<html><head><title>Error 500</title></head><body><h1>Error 500 - Internal Server Error. Oh no!</body></html>";
+	const char *page_500 = "<html><head><title>Error 500</title></head><body><h1>Error 500 - Internal Server Error. Oh no!</h1></body></html>";
 	const char *page_501 = "<html><head><title>Error 501</title></head><body><h1>Error 501 - Not Implemented</h1></body></html>";
 	const char *page_503 = "<html><head><title>Error 503</title></head><body><h1>Error 503 - Internal Server Error</h1></body></html>";
+	const char *page_511 = "\
+		<!DOCTYPE html>\
+		<html>\
+		<head>\
+		<meta http-equiv=\"Cache-Control\" content=\"no-cache, no-store, must-revalidate\">\
+		<meta http-equiv=\"Pragma\" content=\"no-cache\">\
+		<meta http-equiv=\"Expires\" content=\"0\">\
+		<meta charset=\"utf-8\">\
+		<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\
+		<link rel=\"shortcut icon\" href=\"/images/splash.jpg\" type=\"image/x-icon\">\
+		<link rel=\"stylesheet\" type=\"text/css\" href=\"/splash.css\">\
+		<title>511 Network Authentication Required</title></head>\
+		<body>\
+		<h1>Network Authentication Required</h1>\
+		<form action=\"http://detectportal.firefox.com/success.txt\" method=\"get\" target=\"_blank\">\
+		<input type=\"submit\" value=\"Continue\" >\
+		</form>\
+		</body></html>"
+	;
 
 	const char *mimetype = lookup_mimetype("foo.html");
 
@@ -1281,6 +1342,11 @@ static int send_error(struct MHD_Connection *connection, int error)
 		response = MHD_create_response_from_buffer(strlen(page_503), (char *)page_503, MHD_RESPMEM_PERSISTENT);
 		MHD_add_response_header(response, "Content-Type", mimetype);
 		ret = MHD_queue_response(connection, MHD_HTTP_INTERNAL_SERVER_ERROR, response);
+		break;
+	case 511:
+		response = MHD_create_response_from_buffer(strlen(page_511), (char *)page_511, MHD_RESPMEM_PERSISTENT);
+		MHD_add_response_header(response, "Content-Type", mimetype);
+		ret = MHD_queue_response(connection, MHD_HTTP_NETWORK_AUTHENTICATION_REQUIRED, response);
 		break;
 	}
 

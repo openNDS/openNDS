@@ -156,6 +156,16 @@ config opennds
 	option gatewayname 'OpenWrt openNDS'
 	###########################################################################################
 
+	# GatewayFQDN
+	# Default: not set
+	# This is the simulated FQDN used by a client to access the Client Status Page
+	# If not set, the Status page can be accessed at: http://gatewayaddress:gatewayport/
+	#
+	# Warning - if set, services on port 80 of the gateway will no longer be accessible (eg Luci AdminUI)
+	#
+	#option gatewayfqdn 'status.client'
+	###########################################################################################
+
 	# MaxClients
 	# Default 20
 	# The maximum number of clients allowed to connect

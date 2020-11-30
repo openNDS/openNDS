@@ -75,6 +75,7 @@ typedef enum {
 	// TODO: deprecate oGatewayAddress option
 	oGatewayAddress,
 	oGatewayPort,
+	oGatewayFQDN,
 	oFasPort,
 	oFasKey,
 	oFasPath,
@@ -141,6 +142,7 @@ static const struct {
 	// TODO: remove/deprecate gatewayaddress keyword
 	{ "gatewayaddress", oGatewayAddress },
 	{ "gatewayport", oGatewayPort },
+	{ "gatewayfqdn", oGatewayFQDN },
 	{ "fasport", oFasPort },
 	{ "faskey", oFasKey },
 	{ "fasremoteip", oFasRemoteIP },
@@ -225,6 +227,7 @@ config_init(void)
 	config.gw_name = safe_strdup(DEFAULT_GATEWAYNAME);
 	config.http_encoded_gw_name = NULL;
 	config.url_encoded_gw_name = NULL;
+	config.gw_fqdn = NULL;
 	config.gw_interface = NULL;
 	config.gw_iprange = safe_strdup(DEFAULT_GATEWAY_IPRANGE);
 	config.gw_address = NULL;
@@ -786,6 +789,9 @@ config_read(const char *filename)
 		case oGatewayName:
 			config.gw_name = safe_strdup(p1);
 			break;
+		case oGatewayFQDN:
+			config.gw_fqdn = safe_strdup(p1);
+			break;
 		case oGatewayInterface:
 			config.gw_interface = safe_strdup(p1);
 			break;
@@ -798,7 +804,7 @@ config_read(const char *filename)
 			config.gw_ip = safe_strdup(p1);
 			break;
 		case oGatewayPort:
-			if (sscanf(p1, "%u", &config.gw_port) < 1) {
+			if (sscanf(p1, "%u", &config.gw_port) < 81) {
 				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
 				debug(LOG_ERR, "Exiting...");
 				exit(1);

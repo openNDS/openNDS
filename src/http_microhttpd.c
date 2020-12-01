@@ -658,7 +658,7 @@ static int authenticated(struct MHD_Connection *connection,
 	 */
 	if (is_foreign_hosts(connection, host)) {
 		// might happen if the firewall rule isn't yet installed
-		return send_refresh(connection);
+			return send_error(connection, 511);
 	}
 
 	if (check_authdir_match(url, config->denydir)) {
@@ -812,9 +812,11 @@ static int preauthenticated(struct MHD_Connection *connection,
 
 	debug(LOG_DEBUG, "preauthenticated: host [%s] url [%s]", host, url);
 
-	// User just entered gatewayaddress:gatewayport so block them
-	if (strcmp(url, "/") == 0 && strcmp(host, config->gw_address) == 0) {
-		return send_error(connection, 511);
+	// User just accessed gatewayaddress:gatewayport either directly or by redirect
+	if (strcmp(url, "/") == 0) {
+		if (strcmp(host, config->gw_address) == 0 || strcmp(host, config->gw_ip) == 0 || strcmp(host, config->gw_fqdn) == 0) {
+			return send_error(connection, 511);
+		}
 	}
 
 	// Check for preauthdir
@@ -1268,6 +1270,7 @@ static int send_refresh(struct MHD_Connection *connection)
 static int send_error(struct MHD_Connection *connection, int error)
 {
 	struct MHD_Response *response = NULL;
+
 	/* cannot automate since cannot translate automagically between error number and MHD's status codes
 	 * -- and cannot rely on MHD_HTTP_ values to provide an upper bound for an array
 	 */
@@ -1278,29 +1281,12 @@ static int send_error(struct MHD_Connection *connection, int error)
 	const char *page_500 = "<html><head><title>Error 500</title></head><body><h1>Error 500 - Internal Server Error. Oh no!</h1></body></html>";
 	const char *page_501 = "<html><head><title>Error 501</title></head><body><h1>Error 501 - Not Implemented</h1></body></html>";
 	const char *page_503 = "<html><head><title>Error 503</title></head><body><h1>Error 503 - Internal Server Error</h1></body></html>";
-	const char *page_511 = "\
-		<!DOCTYPE html>\
-		<html>\
-		<head>\
-		<meta http-equiv=\"Cache-Control\" content=\"no-cache, no-store, must-revalidate\">\
-		<meta http-equiv=\"Pragma\" content=\"no-cache\">\
-		<meta http-equiv=\"Expires\" content=\"0\">\
-		<meta charset=\"utf-8\">\
-		<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\
-		<link rel=\"shortcut icon\" href=\"/images/splash.jpg\" type=\"image/x-icon\">\
-		<link rel=\"stylesheet\" type=\"text/css\" href=\"/splash.css\">\
-		<title>511 Network Authentication Required</title></head>\
-		<body>\
-		<h1>Network Authentication Required</h1>\
-		<form action=\"http://detectportal.firefox.com/success.txt\" method=\"get\" target=\"_blank\">\
-		<input type=\"submit\" value=\"Continue\" >\
-		</form>\
-		</body></html>"
-	;
-
+	char *page_511 = NULL;
+	char *status_url = NULL;
 	const char *mimetype = lookup_mimetype("foo.html");
 
 	int ret = MHD_NO;
+	s_config *config = config_get_config();
 
 	switch (error) {
 	case 200:
@@ -1344,9 +1330,41 @@ static int send_error(struct MHD_Connection *connection, int error)
 		ret = MHD_queue_response(connection, MHD_HTTP_INTERNAL_SERVER_ERROR, response);
 		break;
 	case 511:
-		response = MHD_create_response_from_buffer(strlen(page_511), (char *)page_511, MHD_RESPMEM_PERSISTENT);
+		if (config->gw_fqdn) {
+			safe_asprintf(&status_url, "http://%s/", config->gw_fqdn);
+		} else {
+			safe_asprintf(&status_url, "http://%s/", config->gw_ip);
+		}
+		safe_asprintf(&page_511,
+			"<!DOCTYPE html>\n\
+			<html>\n\
+			<head>\n\
+			<meta http-equiv=\"Cache-Control\" content=\"no-cache, no-store, must-revalidate\">\n\
+			<meta http-equiv=\"Pragma\" content=\"no-cache\">\n\
+			<meta http-equiv=\"Expires\" content=\"0\">\n\
+			<meta charset=\"utf-8\">\n\
+			<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n\
+			<link rel=\"shortcut icon\" href=\"/images/splash.jpg\" type=\"image/x-icon\">\n\
+			<link rel=\"stylesheet\" type=\"text/css\" href=\"/splash.css\">\n\
+			<title>Error 511 Network Authentication Required</title></head>\n\
+			<body>\n\
+			<h1>Network Authentication Required</h1>\n\
+			<form action=\"%s\" method=\"get\">\n\
+			<input type=\"submit\" value=\"Refresh\">\n\
+			</form>\n\
+			<br>\n\
+			<form action=\"http://detectportal.firefox.com/success.txt\" method=\"get\" target=\"_blank\">\n\
+			<input type=\"submit\" value=\"Continue\" >\n\
+			</form>\n\
+			</body></html>\n",
+			status_url
+		);
+		debug(LOG_DEBUG, " page_511 html: [ %s ]", page_511);
+		response = MHD_create_response_from_buffer(strlen(page_511), (char *)page_511, MHD_RESPMEM_MUST_COPY);
 		MHD_add_response_header(response, "Content-Type", mimetype);
 		ret = MHD_queue_response(connection, MHD_HTTP_NETWORK_AUTHENTICATION_REQUIRED, response);
+		free(page_511);
+		free(status_url);
 		break;
 	}
 

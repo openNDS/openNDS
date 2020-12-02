@@ -262,6 +262,9 @@ setup_from_config(void)
 
 	config = config_get_config();
 
+	// Before we do anything else, reset the firewall (cleans it, in case we are restarting after opennds crash)
+	iptables_fw_destroy();
+
 	// Check for libmicrohttp version at runtime, ie actual installed version
 	int major = 0;
 	int minor = 0;
@@ -690,10 +693,7 @@ setup_from_config(void)
 		debug(LOG_INFO, "Binauth Script is %s\n", config->binauth);
 	}
 
-	// Reset the firewall (cleans it, in case we are restarting after opennds crash)
-	iptables_fw_destroy();
-
-	// Then initialize it
+	// Now initialize the firewall
 	if (iptables_fw_init() != 0) {
 		debug(LOG_ERR, "Error initializing firewall rules! Cleaning up");
 		iptables_fw_destroy();

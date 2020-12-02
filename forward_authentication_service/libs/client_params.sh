@@ -39,7 +39,7 @@ htmlentityencode() {
 parse_parameters() {
 	param_str=$(ndsctl json $clientip)
 
-	for param in gatewayname mac ip clientif session_start session_end last_active token state upload_rate_limit \
+	for param in gatewayname mac version ip clientif session_start session_end last_active token state upload_rate_limit \
 		download_rate_limit upload_quota download_quota upload_this_session download_this_session  \
 		upload_session_avg  download_session_avg
 	do
@@ -89,7 +89,6 @@ header() {
 
 footer() {
 	# Define a common footer html for every page served
-	version="$(ndsctl status | grep Version)"
 	year="$(date | awk -F ' ' '{print $(6)}')"
 	footer="
 		<img style=\"height:30px; width:60px; float:left;\" src=\"/images/splash.jpg\" alt=\"Splash Page: For access to the Internet.\">

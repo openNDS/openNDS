@@ -207,15 +207,14 @@ header() {
 }
 
 footer() {
-	# Define a common footer html for every page served
-	version="$(ndsctl status | grep Version)"
-	year="$(date | awk -F ' ' '{print $(6)}')"
+	# Define a common footer html for every page served (with openNDS version on the thankyou page)
+
 	footer="
 		<img style=\"height:30px; width:60px; float:left;\" src=\"/images/splash.jpg\" alt=\"Splash Page: For access to the Internet.\">
 
 		<copy-right>
 			<br><br>
-			openNDS $version.
+			openNDS $version
 		</copy-right>
 		</div>
 		</div>
@@ -458,7 +457,11 @@ thankyou_page () {
 	# We at least need the client token to authenticate.
 	# In this example we will also log the client mac address.
 
-	varlist="id ip mac added active duration token state downloaded avg_down_speed uploaded avg_up_speed"
+	# varlist is a list of variables we might be interested in
+	varlist="version mac ip clientif session_start session_end last_active token state
+		upload_rate_limit download_rate_limit upload_quota download_quota
+		upload_this_session upload_session_avg download_this_session download_session_avg"
+
 	clientinfo=$(ndsctl json $clientip)
 
 	if [ "$clientinfo" = "ndsctl is locked by another process" ]; then

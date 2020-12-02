@@ -640,6 +640,7 @@ static int authenticated(struct MHD_Connection *connection,
 	char redirect_to_us[128];
 	char *fasurl = NULL;
 	char msg[HTMLMAXSIZE] = {0};
+	char clientif[64] = {0};
 	int rc;
 	int ret;
 	struct MHD_Response *response;
@@ -668,16 +669,31 @@ static int authenticated(struct MHD_Connection *connection,
 	}
 
 	if (check_authdir_match(url, config->authdir)) {
+		get_client_interface(clientif, sizeof(clientif), client->mac);
+
 		if (config->fas_port && !config->preauth) {
-			safe_asprintf(&fasurl, "%s?clientip=%s&gatewayname=%s&gatewayaddress=%s&status=authenticated",
-				config->fas_url, client->ip, config->url_encoded_gw_name, config->gw_address);
+			safe_asprintf(&fasurl, "%s?clientip=%s&gatewayname=%s&gatewayaddress=%s&clientif=%s&status=authenticated",
+				config->fas_url,
+				client->ip,
+				config->url_encoded_gw_name,
+				config->gw_address,
+				clientif
+			);
 			debug(LOG_DEBUG, "fasurl %s", fasurl);
 			ret = send_redirect_temp(connection, client, fasurl);
 			free(fasurl);
 			return ret;
 		} else if (config->fas_port && config->preauth) {
-			safe_asprintf(&fasurl, "?clientip=%s%sgatewayname=%s%sgatewayaddress=%s%sstatus=authenticated",
-				client->ip, QUERYSEPARATOR, config->url_encoded_gw_name, QUERYSEPARATOR,  config->gw_address, QUERYSEPARATOR);
+			safe_asprintf(&fasurl, "?clientip=%s%sgatewayname=%s%sgatewayaddress=%s%sclientif=%s%sstatus=authenticated",
+				client->ip,
+				QUERYSEPARATOR,
+				config->url_encoded_gw_name,
+				QUERYSEPARATOR,
+				config->gw_address,
+				QUERYSEPARATOR,
+				clientif,
+				QUERYSEPARATOR
+			);
 			debug(LOG_DEBUG, "fasurl %s", fasurl);
 			ret = show_preauthpage(connection, fasurl);
 			free(fasurl);

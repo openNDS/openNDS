@@ -255,7 +255,7 @@ function login_page($key) {
 
 function status_page($gatewayname, $clientif, $imagepath) {
 	$me=$_SERVER['SCRIPT_NAME'];
-	$gatewayname=$_GET['gatewayname'];
+	$gatewayaddress=$_GET["gatewayaddress"];
 
 	// Is the client already logged in?
 	if ($_GET["status"] == "authenticated") {
@@ -266,7 +266,6 @@ function status_page($gatewayname, $clientif, $imagepath) {
 		";
 
 		read_terms($me, $gatewayname, $gatewayaddress, $clientif);
-		footer($imagepath);
 	} else {
 		echo "
 			<p><big-red>ERROR 404 - Page Not Found.</big-red></p>
@@ -346,7 +345,7 @@ function footer($imagepath) {
 		<div style=\"font-size:0.5em;\">
 			<img style=\"float:left; max-height:5em; height:auto; width:auto\" src=\"$imagepath\">
 			&copy; The openNDS Contributors 2004-".date("Y")."<br>
-			&copy; Blue Wave Projects and Services 2015-".date("Y")."<br>
+			&copy; BlueWave Projects and Services 2015-".date("Y")."<br>
 			This software is released under the GNU GPL license.<br><br>
 		</div>
 		</div>

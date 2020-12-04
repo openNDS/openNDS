@@ -36,6 +36,9 @@
 
 */
 
+// Allow immediate flush to browser
+if (ob_get_level()){ob_end_clean();}
+
 #####################################################################################
 // The pre-shared key "faskey" (this must be the same as in the openNDS config):
 $key="1234567890";
@@ -146,6 +149,7 @@ function thankyou_page($key) {
 	";
 
 	read_terms($me, $gatewayname, $gatewayaddress, $clientif);
+	flush();
 	write_log();
 }
 
@@ -165,7 +169,6 @@ function write_log() {
 
 	if (!file_exists("$logpath"."ndslog")) {
 		mkdir("$logpath"."ndslog", 0700);
-		#chmod("$logpath"."ndslog", 0666);
 	}
 
 	$me=$_SERVER['SCRIPT_NAME'];
@@ -247,6 +250,7 @@ function login_page($key) {
 			";
 
 			read_terms($me, $gatewayname, $gatewayaddress, $clientif);
+			flush();
 		}
 	} else {
 		thankyou_page($key);
@@ -273,6 +277,7 @@ function status_page($gatewayname, $clientif, $imagepath) {
 			<p><italic-black>The requested resource could not be found.</italic-black></p>
 		";
 	}
+	flush();
 }
 
 function landing_page($gatewayname, $clientif, $imagepath) {
@@ -306,6 +311,7 @@ function landing_page($gatewayname, $clientif, $imagepath) {
 	";
 
 	read_terms($me, $gatewayname, $gatewayaddress, $clientif);
+	flush();
 }
 
 function splash_header($imagepath, $gatewayname, $client_zone) {
@@ -337,6 +343,7 @@ function splash_header($imagepath, $gatewayname, $client_zone) {
 		</med-blue><br>
 		<div class=\"insert\">
 	";
+	flush();
 }
 
 function footer($imagepath) {
@@ -534,6 +541,7 @@ function display_terms () {
 			<input type=\"button\" VALUE=\"Continue\" onClick=\"history.go(-1);return true;\">
 		</form>
 	";
+	flush();
 }
 
 function insert_css() {
@@ -628,6 +636,7 @@ function insert_css() {
 	}
 
 	";
+	flush();
 }
 
 ?>

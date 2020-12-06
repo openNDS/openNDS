@@ -625,7 +625,7 @@ setup_from_config(void)
 			// Get the sha256 digest of gatewayname
 			safe_asprintf(&fasssl,
 				"echo \"<?php echo openssl_digest('%s', 'sha256'); ?>\" | %s",
-				config->gw_name,
+				config->url_encoded_gw_name,
 				config->fas_ssl
 			);
 

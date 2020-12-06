@@ -1095,7 +1095,7 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 			"clientip=%s%sclientmac=%s%sgatewayname=%s%stok=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s%s",
 			client->ip, QUERYSEPARATOR,
 			client->mac, QUERYSEPARATOR,
-			config->gw_name, QUERYSEPARATOR,
+			config->url_encoded_gw_name, QUERYSEPARATOR,
 			client->token, QUERYSEPARATOR,
 			config->gw_address, QUERYSEPARATOR,
 			config->gw_mac, QUERYSEPARATOR,

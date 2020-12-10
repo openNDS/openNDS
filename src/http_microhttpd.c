@@ -157,6 +157,7 @@ static int do_binauth(
 
 	// execute the script
 	rc = execute_ret_url_encoded(msg, sizeof(msg) - 1, argv);
+	debug(LOG_DEBUG, "BinAuth returned arguments: %s", msg);
 	free(argv);
 
 	// unlock ndsctl
@@ -168,6 +169,7 @@ static int do_binauth(
 	}
 
 	rc = sscanf(msg, "%d %llu %llu %llu %llu", &seconds, &upload_rate, &download_rate, &upload_quota, &download_quota);
+	debug(LOG_DEBUG, "BinAuth returned session length: %d", seconds);
 
 	// store assigned parameters
 	switch (rc) {
@@ -587,6 +589,10 @@ static int authenticate_client(struct MHD_Connection *connection,
 	}
 
 	// override remaining client values that might have been set by binauth
+	if (seconds != (60 * config->session_timeout)) {
+		client->session_end = (client->session_start + seconds);
+	}
+
 	if (downloadrate > 0) {
 		client->download_rate = downloadrate;
 	}
@@ -1038,6 +1044,7 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 	char *cmd = NULL;
 	char msg[128] = {0};
 	char param_urlencoded[256] = {0};
+	char query_str[QUERYMAXLEN] = {0};
 
 	s_config *config = config_get_config();
 
@@ -1068,8 +1075,10 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 
 				hash_str(hash, sizeof(hash), client->token);
 				debug(LOG_DEBUG, "hid=%s", hash);
+
 				get_client_interface(clientif, sizeof(clientif), client->mac);
-				debug(LOG_INFO, "clientif: [%s]", clientif);
+				debug(LOG_INFO, "clientif: [%s] url_encoded_gw_name: [%s]", clientif, config->url_encoded_gw_name);
+
 				snprintf(querystr, QUERYMAXLEN,
 					"?clientip=%s&gatewayname=%s&hid=%s&gatewayaddress=%s&gatewaymac=%s&clientif=%s%s",
 					client->ip,
@@ -1109,6 +1118,7 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 		snprintf(querystr, QUERYMAXLEN, "?clientip=%s&gatewayname=%s", client->ip, config->url_encoded_gw_name);
 	}
 
+	debug(LOG_DEBUG, "Constructed Query String [%s]", querystr);
 	return querystr;
 }
 
@@ -1143,7 +1153,7 @@ int send_redirect_temp(struct MHD_Connection *connection, t_client *client, cons
 
 	safe_asprintf(&redirect, redirect_body, url, url);
 
-	debug(LOG_DEBUG, "send_redirect_temp: MHD_create_response_from_buffer");
+	debug(LOG_DEBUG, "send_redirect_temp: MHD_create_response_from_buffer. url [%s]", url);
 
 	response = MHD_create_response_from_buffer(strlen(redirect), redirect, MHD_RESPMEM_MUST_FREE);
 

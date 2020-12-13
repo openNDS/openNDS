@@ -51,30 +51,44 @@ $fullname=$email=$gatewayname=$clientip=$gatewayaddress=$hid=$gatewaymac=$client
 
 //Parse the querystring
 
-if (isset($_GET['gatewayname'])) {$gatewayname=$_GET['gatewayname'];}
+//Decode and Parse the querystring
 
-if (isset($_GET['clientip'])) {$clientip=$_GET['clientip'];}
+if (isset($_GET['status'])) {
+	$redir=$_GET['redir'];
+	$redir_r=explode("fas=", $redir);
+	$fas=$redir_r[1];
+} else if (isset($_GET['fas']))  {
+	$fas=$_GET['fas'];
+} else {
+	exit(0);
+}
 
-if (isset($_GET['gatewayaddress'])) {$gatewayaddress=$_GET['gatewayaddress'];}
+if (isset($fas)) {
+	$decoded=base64_decode($fas);
+	$dec_r=explode(", ",$decoded);
 
-if (isset($_GET['hid'])) {$hid=$_GET['hid'];}
-
-if (isset($_GET['gatewaymac'])) {$gatewaymac=$_GET['gatewaymac'];}
-
-if (isset($_GET['clientif'])) {
-	$clientif=$_GET['clientif'];
-	// Work out the client zone:
-	$client_zone_r=explode(" ",trim($clientif));
-
-	if ( ! isset($client_zone_r[1])) {
-		$client_zone="LocalZone:".$client_zone_r[0];
-	} else {
-		$client_zone="MeshZone:".str_replace(":","",$client_zone_r[1]);
+	foreach ($dec_r as $dec) {
+		list($name,$value)=explode("=",$dec);
+		if ($name == "clientip") {$clientip=$value;}
+		if ($name == "clientmac") {$clientmac=$value;}
+		if ($name == "gatewayname") {$gatewayname=$value;}
+		if ($name == "hid") {$hid=$value;}
+		if ($name == "gatewayaddress") {$gatewayaddress=$value;}
+		if ($name == "gatewaymac") {$gatewaymac=$value;}
+		if ($name == "authdir") {$authdir=$value;}
+		if ($name == "originurl") {$originurl=$value;}
+		if ($name == "clientif") {$clientif=$value;}
 	}
 }
 
-if (isset($_GET['redir'])) {$redir=$_GET['redir'];}
+// Work out the client zone:
+$client_zone_r=explode(" ",trim($clientif));
 
+if ( ! isset($client_zone_r[1])) {
+	$client_zone="LocalZone:".$client_zone_r[0];
+} else {
+	$client_zone="MeshZone:".str_replace(":","",$client_zone_r[1]);
+}
 
 // Set the path to an image to display. This must be accessible to the client (hint: set up a Walled Garden if you want an Internet based image).
 $imagepath="http://$gatewayaddress/images/splash.jpg";
@@ -91,19 +105,19 @@ if (isset($_GET["terms"])) {
 	footer($imagepath);
 } elseif (isset($_GET["status"])) {
 	// The status page is triggered by a client if already authenticated by openNDS (eg by clicking "back" on their browser)
-	status_page($gatewayname, $clientif, $imagepath);
+	status_page();
 	footer($imagepath);
-} elseif (isset($_GET["originurl"])) {
+} elseif (isset($_GET["landing"])) {
 	// The landing page is served to the client immediately after openNDS authentication, but many CPDs will immediately close
-	landing_page($gatewayname, $clientif, $imagepath);
+	landing_page();
 	footer($imagepath);
 } else {
-	login_page($key);
+	login_page();
 	footer($imagepath);
 }
 
 // Functions:
-function thankyou_page($key) {
+function thankyou_page() {
 	# Output the "Thankyou page" with a continue button
 	# You could include information or advertising on this page
 	# Be aware that many devices will close the login browser as soon as
@@ -112,21 +126,24 @@ function thankyou_page($key) {
 	# You can also send a custom data string to BinAuth. Set the variable $custom to the desired value
 	# Max length 256 characters
 	$custom="Custom data sent to BinAuth";
+	$custom=rawurlencode($custom);
 
 	$me=$_SERVER['SCRIPT_NAME'];
 	$host=$_SERVER['HTTP_HOST'];
-	$clientip=$_GET["clientip"];
-	$gatewayname=$_GET["gatewayname"];
-	$gatewayaddress=$_GET["gatewayaddress"];
-	$gatewaymac=$_GET["gatewaymac"];
-	$clientif=$_GET["clientif"];
-	$redir=$_GET["redir"];
-	$hid=$_GET["hid"];
+	$fas=$GLOBALS["fas"];
+	$clientip=$GLOBALS["clientip"];
+	$gatewayname=$GLOBALS["gatewayname"];
+	$gatewayaddress=$GLOBALS["gatewayaddress"];
+	$gatewaymac=$GLOBALS["gatewaymac"];
+	$key=$GLOBALS["key"];
+	$hid=$GLOBALS["hid"];
+	$clientif=$GLOBALS["clientif"];
+	$originurl=$GLOBALS["originurl"];
 	$fullname=$_GET["fullname"];
 	$email=$_GET["email"];
 
 	$authaction="http://$gatewayaddress/opennds_auth/";
-	$redir="http://".$host.$me."?originurl=".rawurlencode($redir)."&gatewayname=".rawurlencode($gatewayname)."&gatewayaddress=$gatewayaddress&clientif=$clientif";
+	$redir="http://".$host.$me."?fas=$fas&landing=1";
 	$tok=hash('sha256', $hid.$key);
 
 	echo "
@@ -148,7 +165,7 @@ function thankyou_page($key) {
 		<hr>
 	";
 
-	read_terms($me, $gatewayname, $gatewayaddress, $clientif);
+	read_terms();
 	flush();
 	write_log();
 }
@@ -172,21 +189,23 @@ function write_log() {
 	}
 
 	$me=$_SERVER['SCRIPT_NAME'];
+	$script=basename($me, '.php');
 	$host=$_SERVER['HTTP_HOST'];
 	$user_agent=$_SERVER['HTTP_USER_AGENT'];
-	$clientip=$_GET["clientip"];
-	$gatewayname=$_GET["gatewayname"];
-	$gatewayaddress=$_GET["gatewayaddress"];
-	$gatewaymac=$_GET["gatewaymac"];
-	$clientif=$_GET["clientif"];
-	$redir=$_GET["redir"];
-	$hid=$_GET["hid"];
+	$clientip=$GLOBALS["clientip"];
+	$clientmac=$GLOBALS["clientmac"];
+	$gatewayname=$GLOBALS["gatewayname"];
+	$gatewayaddress=$GLOBALS["gatewayaddress"];
+	$gatewaymac=$GLOBALS["gatewaymac"];
+	$clientif=$GLOBALS["clientif"];
+	$originurl=$GLOBALS["originurl"];
+	$redir=rawurldecode($originurl);
 	$fullname=$_GET["fullname"];
 	$email=$_GET["email"];
 
 
-	$log=date('d/m/Y H:i:s', $_SERVER['REQUEST_TIME']).
-		", $gatewayname, $fullname, $email, $clientif, $user_agent\n";
+	$log=date('Y-m-d H:i:s', $_SERVER['REQUEST_TIME']).
+		", $script, $gatewayname, $fullname, $email, $clientip, $clientmac, $clientif, $user_agent, $redir\n";
 
 	if ($logpath == "") {
 		$logfile="ndslog/ndslog_log.php";
@@ -201,15 +220,17 @@ function write_log() {
 	@file_put_contents($logfile, $log,  FILE_APPEND );
 }
 
-function login_page($key) {
+function login_page() {
 	$fullname=$email="";
 	$me=$_SERVER['SCRIPT_NAME'];
-	$clientip=$_GET["clientip"];
-	$gatewayname=$_GET["gatewayname"];
-	$gatewayaddress=$_GET["gatewayaddress"];
-	$gatewaymac=$_GET["gatewaymac"];
-	$clientif=$_GET["clientif"];
-	$redir=$_GET["redir"];
+	$fas=$_GET["fas"];
+	$clientip=$GLOBALS["clientip"];
+	$clientmac=$GLOBALS["clientmac"];
+	$gatewayname=$GLOBALS["gatewayname"];
+	$gatewayaddress=$GLOBALS["gatewayaddress"];
+	$gatewaymac=$GLOBALS["gatewaymac"];
+	$clientif=$GLOBALS["clientif"];
+	$originurl=$GLOBALS["originurl"];
 
 	if (isset($_GET["fullname"])) {
 		$fullname=ucwords($_GET["fullname"]);
@@ -225,19 +246,12 @@ function login_page($key) {
 			<b>Please enter your Full Name and Email Address</b>
 		";
 
-		if (! isset($_GET['hid']))  {
+		if (! isset($_GET['fas']))  {
 			echo "<br><b style=\"color:red;\">ERROR! Incomplete data passed from NDS</b>\n";
 		} else {
-			$hid=$_GET["hid"];
 			echo "
 				<form action=\"$me\" method=\"get\" >
-					<input type=\"hidden\" name=\"clientip\" value=\"$clientip\">
-					<input type=\"hidden\" name=\"gatewayname\" value=\"$gatewayname\">
-					<input type=\"hidden\" name=\"hid\" value=\"$hid\">
-					<input type=\"hidden\" name=\"gatewayaddress\" value=\"$gatewayaddress\">
-					<input type=\"hidden\" name=\"gatewaymac\" value=\"$gatewaymac\">
-					<input type=\"hidden\" name=\"clientif\" value=\"$clientif\">
-					<input type=\"hidden\" name=\"redir\" value=\"$redir\">
+					<input type=\"hidden\" name=\"fas\" value=\"$fas\">
 					<hr>Full Name:<br>
 					<input type=\"text\" name=\"fullname\" value=\"$fullname\">
 					<br>
@@ -246,20 +260,27 @@ function login_page($key) {
 					<br><br>
 					<input type=\"submit\" value=\"Accept Terms of Service\">
 				</form>
-				<br>
+				<hr>
 			";
 
-			read_terms($me, $gatewayname, $gatewayaddress, $clientif);
+			read_terms();
 			flush();
 		}
 	} else {
-		thankyou_page($key);
+		thankyou_page();
 	}
 }
 
-function status_page($gatewayname, $clientif, $imagepath) {
+function status_page() {
 	$me=$_SERVER['SCRIPT_NAME'];
-	$gatewayaddress=$_GET["gatewayaddress"];
+	$clientip=$GLOBALS["clientip"];
+	$clientmac=$GLOBALS["clientmac"];
+	$gatewayname=$GLOBALS["gatewayname"];
+	$gatewayaddress=$GLOBALS["gatewayaddress"];
+	$gatewaymac=$GLOBALS["gatewaymac"];
+	$clientif=$GLOBALS["clientif"];
+	$originurl=$GLOBALS["originurl"];
+	$redir=rawurldecode($originurl);
 
 	// Is the client already logged in?
 	if ($_GET["status"] == "authenticated") {
@@ -269,7 +290,18 @@ function status_page($gatewayname, $clientif, $imagepath) {
 			<p><italic-black>You can use your Browser, Email and other network Apps as you normally would.</italic-black></p>
 		";
 
-		read_terms($me, $gatewayname, $gatewayaddress, $clientif);
+		read_terms();
+
+		echo "
+			<p>
+			Your device originally requested <b>$redir</b>
+			<br>
+			Click or tap Continue to go to there.
+			</p>
+			<form>
+				<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='".$redir."'\" >
+			</form>
+		";
 	} else {
 		echo "
 			<p><big-red>ERROR 404 - Page Not Found.</big-red></p>
@@ -280,11 +312,13 @@ function status_page($gatewayname, $clientif, $imagepath) {
 	flush();
 }
 
-function landing_page($gatewayname, $clientif, $imagepath) {
+function landing_page() {
 	$me=$_SERVER['SCRIPT_NAME'];
-	$originurl=$_GET["originurl"];
-	$gatewayaddress=$_GET["gatewayaddress"];
-	$gatewayname=rawurldecode($gatewayname);
+	$fas=$_GET["fas"];
+	$originurl=$GLOBALS["originurl"];
+	$gatewayaddress=$GLOBALS["gatewayaddress"];
+	$gatewayname=$GLOBALS["gatewayname"];
+	$clientif=$GLOBALS["clientif"];
 	$redir=rawurldecode($originurl);
 
 	echo "
@@ -307,22 +341,23 @@ function landing_page($gatewayname, $clientif, $imagepath) {
 		<form>
 			<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='".$redir."'\" >
 		</form>
-		<br>
+		<hr>
 	";
 
-	read_terms($me, $gatewayname, $gatewayaddress, $clientif);
+	read_terms();
 	flush();
 }
 
 function splash_header($imagepath, $gatewayname, $client_zone) {
+	$gatewayname=htmlentities(rawurldecode($gatewayname), ENT_HTML5, "UTF-8", FALSE);
+
 	// Add headers to stop browsers from cacheing 
 	header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
 	header("Cache-Control: no-cache");
 	header("Pragma: no-cache");
 
 	// Output the common header html
-	echo "
-		<!DOCTYPE html>\n<html>\n<head>
+	echo "<!DOCTYPE html>\n<html>\n<head>
 		<meta charset=\"utf-8\" />
 		<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
 		<link rel=\"shortcut icon\" href=$imagepath type=\"image/x-icon\">
@@ -363,13 +398,13 @@ function footer($imagepath) {
 	exit(0);
 }
 
-function read_terms($me, $gatewayname, $gatewayaddress, $clientif) {
+function read_terms() {
 	#terms of service button
+	$me=$_SERVER['SCRIPT_NAME'];
+	$fas=$GLOBALS["fas"];
 	echo "
 		<form action=\"$me\" method=\"get\">
-			<input type=\"hidden\" name=\"gatewayname\" value=\"$gatewayname\">
-			<input type=\"hidden\" name=\"gatewayaddress\" value=\"$gatewayaddress\">
-			<input type=\"hidden\" name=\"clientif\" value=\"$clientif\">
+			<input type=\"hidden\" name=\"fas\" value=\"$fas\">
 			<input type=\"hidden\" name=\"terms\" value=\"yes\">
 			<input type=\"submit\" value=\"Read Terms of Service\" >
 		</form>

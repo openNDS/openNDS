@@ -645,6 +645,8 @@ static int authenticated(struct MHD_Connection *connection,
 	const char *host = NULL;
 	char redirect_to_us[128];
 	char *fasurl = NULL;
+	char query_str[QUERYMAXLEN] = {0};
+	char *query = query_str;
 	char msg[HTMLMAXSIZE] = {0};
 	char clientif[64] = {0};
 	int rc;
@@ -678,14 +680,14 @@ static int authenticated(struct MHD_Connection *connection,
 		get_client_interface(clientif, sizeof(clientif), client->mac);
 
 		if (config->fas_port && !config->preauth) {
-			safe_asprintf(&fasurl, "%s?clientip=%s&gatewayname=%s&gatewayaddress=%s&clientif=%s&status=authenticated",
+			get_query(connection, &query, HTMLQUERYSEPARATOR);
+			safe_asprintf(&fasurl, "%s%s%sstatus=authenticated",
 				config->fas_url,
-				client->ip,
-				config->url_encoded_gw_name,
-				config->gw_address,
-				clientif
+				query,
+				HTMLQUERYSEPARATOR
 			);
-			debug(LOG_DEBUG, "fasurl %s", fasurl);
+			debug(LOG_DEBUG, "fasurl [%s]", fasurl);
+			debug(LOG_DEBUG, "query [%s]", query);
 			ret = send_redirect_temp(connection, client, fasurl);
 			free(fasurl);
 			return ret;
@@ -945,11 +947,11 @@ static int encode_and_redirect_to_splashpage(struct MHD_Connection *connection, 
 		// Generate secure query string or authaction url
 		// Note: config->fas_path contains a leading / as it is the path from the FAS web root.
 		if (config->fas_secure_enabled == 0) {
-			safe_asprintf(&splashpageurl, "%s?authaction=http://%s/%s/%s&redir=%s",
-				config->fas_url, config->gw_address, config->authdir, querystr, originurl);
+			safe_asprintf(&splashpageurl, "%s?authaction=http://%s/%s/%s",
+				config->fas_url, config->gw_address, config->authdir, querystr);
 		} else if (config->fas_secure_enabled == 1) {
-				safe_asprintf(&splashpageurl, "%s%s&redir=%s",
-					config->fas_url, querystr, originurl);
+				safe_asprintf(&splashpageurl, "%s%s",
+					config->fas_url, querystr);
 		} else if (config->fas_secure_enabled == 2 || config->fas_secure_enabled == 3) {
 			safe_asprintf(&phpcmd,
 				"echo '<?php \n"
@@ -980,8 +982,8 @@ static int encode_and_redirect_to_splashpage(struct MHD_Connection *connection, 
 			}
 			free(phpcmd);
 		} else {
-			safe_asprintf(&splashpageurl, "%s?%s&redir=%s",
-				config->fas_url, querystr, originurl);
+			safe_asprintf(&splashpageurl, "%s?%s",
+				config->fas_url, querystr);
 		}
 	} else {
 		safe_asprintf(&splashpageurl, "http://%s/%s?redir=%s",
@@ -1041,59 +1043,53 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 
 	char hash[128] = {0};
 	char clientif[64] = {0};
-	char *cmd = NULL;
-	char msg[128] = {0};
-	char param_urlencoded[256] = {0};
 	char query_str[QUERYMAXLEN] = {0};
+	char query_str_b64[QUERYMAXLEN] = {0};
 
 	s_config *config = config_get_config();
 
 	if (config->fas_secure_enabled == 0) {
-		snprintf(querystr, QUERYMAXLEN, "?clientip=%s&gatewayname=%s&tok=%s", client->ip, config->url_encoded_gw_name, client->token);
+		snprintf(querystr, QUERYMAXLEN, "?clientip=%s&gatewayname=%s&tok=%s&redir=%s",
+			client->ip,
+			config->url_encoded_gw_name,
+			client->token,
+			originurl
+		);
 
 	} else if (config->fas_secure_enabled == 1) {
 
 			if (config->fas_hid) {
-
-				// URL encode custom parameters
-				if (config->custom_params) {
-					uh_urlencode(param_urlencoded, sizeof(param_urlencoded), config->custom_params, strlen(config->custom_params));
-					debug(LOG_DEBUG, "[%s] is the urlencoded Custom FAS Parameter string", param_urlencoded);
-
-					safe_asprintf(&cmd,
-						"printf \"%s\" \"%s\" | sed  's/%s/\\&/g;s/%s/=/g'",
-						FORMAT_SPECIFIER,
-						param_urlencoded,
-						URL_COMMASPACE,
-						CUSTOM_SEPARATOR
-					);
-
-					debug(LOG_DEBUG, "Translation command [%s]", cmd);
-					execute_ret_url_encoded(msg, sizeof(msg) - 1, cmd);
-					free(cmd);
-				}
-
 				hash_str(hash, sizeof(hash), client->token);
 				debug(LOG_DEBUG, "hid=%s", hash);
 
 				get_client_interface(clientif, sizeof(clientif), client->mac);
 				debug(LOG_INFO, "clientif: [%s] url_encoded_gw_name: [%s]", clientif, config->url_encoded_gw_name);
 
-				snprintf(querystr, QUERYMAXLEN,
-					"?clientip=%s&gatewayname=%s&hid=%s&gatewayaddress=%s&gatewaymac=%s&clientif=%s%s",
-					client->ip,
-					config->url_encoded_gw_name,
-					hash,
-					config->gw_address,
-					config->gw_mac,
+				snprintf(query_str, QUERYMAXLEN,
+					"clientip=%s%sclientmac=%s%sgatewayname=%s%shid=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s%s",
+					client->ip, QUERYSEPARATOR,
+					client->mac, QUERYSEPARATOR,
+					config->url_encoded_gw_name, QUERYSEPARATOR,
+					hash, QUERYSEPARATOR,
+					config->gw_address, QUERYSEPARATOR,
+					config->gw_mac, QUERYSEPARATOR,
+					config->authdir, QUERYSEPARATOR,
+					originurl, QUERYSEPARATOR,
 					clientif,
-					msg
+					config->custom_params
+				);
+
+				b64_encode(query_str_b64, sizeof(query_str_b64), query_str, strlen(query_str));
+				snprintf(querystr, QUERYMAXLEN,
+					"?fas=%s",
+					query_str_b64
 				);
 			} else {
 				snprintf(querystr, QUERYMAXLEN,
-					"?clientip=%s&gatewayname=%s",
+					"?clientip=%s&gatewayname=%s&redir=%s",
 					client->ip,
-					config->url_encoded_gw_name
+					config->url_encoded_gw_name,
+					originurl
 				);
 			}
 
@@ -1121,8 +1117,6 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 	debug(LOG_DEBUG, "Constructed Query String [%s]", querystr);
 	return querystr;
 }
-
-/////
 
 /**
  *	Add client making a request to client list.
@@ -1380,7 +1374,7 @@ static int send_error(struct MHD_Connection *connection, int error)
 			</form>\n\
 			<br>\n\
 			<form action=\"http://detectportal.firefox.com/success.txt\" method=\"get\" target=\"_blank\">\n\
-			<input type=\"submit\" value=\"Continue\" >\n\
+			<input type=\"submit\" value=\"Portal Login\" >\n\
 			</form>\n\
 			</body></html>\n",
 			status_url

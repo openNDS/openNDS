@@ -1,6 +1,7 @@
 #ifndef NDS_MICROHTTPD_H
 #define NDS_MICROHTTPD_H
 
+#include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 

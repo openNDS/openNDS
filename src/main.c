@@ -427,10 +427,10 @@ setup_from_config(void)
 
 	// Encode gatewayname
 	htmlentityencode(gw_name_entityencoded, sizeof(gw_name_entityencoded), config->gw_name, strlen(config->gw_name));
-	config->http_encoded_gw_name = gw_name_entityencoded;
+	config->http_encoded_gw_name = safe_strdup(gw_name_entityencoded);
 
 	uh_urlencode(gw_name_urlencoded, sizeof(gw_name_urlencoded), config->gw_name, strlen(config->gw_name));
-	config->url_encoded_gw_name = gw_name_urlencoded;
+	config->url_encoded_gw_name = safe_strdup(gw_name_urlencoded);
 
 	// Set the time when opennds started
 	sysuptime = get_system_uptime ();
@@ -483,17 +483,17 @@ setup_from_config(void)
 	// If login script is enabled, check if the script actually exists
 	if (config->login_option_enabled >= 1) {
 		debug(LOG_NOTICE, "Login option is Enabled using mode %d.\n", config->login_option_enabled);
-		config->preauth = loginscript;
+		config->preauth = safe_strdup(loginscript);
 	}
 
 	if (config->login_option_enabled == 0 && config->fas_port == 0 && config->allow_legacy_splash == 0) {
 		debug(LOG_NOTICE, "Click to Continue option is Enabled.\n");
-		config->preauth = loginscript;
+		config->preauth = safe_strdup(loginscript);
 	}
 
 	if (config->login_option_enabled == 0 && config->fas_port == 0 && config->allow_legacy_splash == 1) {
 		debug(LOG_NOTICE, "Legacy html Splash Page is Enabled.\n");
-		config->preauth = NULL;
+		config->preauth = safe_strdup(NULL);
 	}
 
 
@@ -511,7 +511,7 @@ setup_from_config(void)
 
 		//override all other FAS settings
 		config->fas_remoteip = safe_strdup(config->gw_ip);
-		config->fas_remotefqdn = NULL;
+		config->fas_remotefqdn = safe_strdup(NULL);
 		config->fas_port = config->gw_port;
 		safe_asprintf(&preauth_dir, "/%s/", config->preauthdir);
 		config->fas_path = safe_strdup(preauth_dir);

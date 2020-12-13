@@ -61,5 +61,6 @@ int htmlentityencode(char *buf, int blen, const char *src, int slen);
 int uh_urldecode(char *buf, int blen, const char *src, int slen);
 int uh_urlencode(char *buf, int blen, const char *src, int slen);
 int uh_b64decode(char *buf, int blen, const void *src, int slen);
+int b64_encode(char *buf, int blen, const void *src, int slen);
 
 #endif

@@ -107,14 +107,14 @@ configure_log_location() {
 	logdir="/tmp/ndslog/"
 	logname="ndslog.log"
 
-for var in $tempdir; do
-	_mountpoint=$(df | awk -F ' ' '$1=="tmpfs" && $6=="'$var'" {print $6}')
-	if [ "$_mountpoint" = "$var" ]; then
-		mountpoint="$var"
-		logdir="$mountpoint/ndslog/"
-		break
-	fi
-done
+	for var in $tempdir; do
+		_mountpoint=$(df | awk -F ' ' '$1=="tmpfs" && $6=="'$var'" {print $6}')
+		if [ "$_mountpoint" = "$var" ]; then
+			mountpoint="$var"
+			logdir="$mountpoint/ndslog/"
+			break
+		fi
+	done
 
 	#For syslog
 	ndspid=$(pgrep '/usr/bin/opennds')

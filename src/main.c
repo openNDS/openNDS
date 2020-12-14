@@ -545,8 +545,8 @@ setup_from_config(void)
 
 		// If FAS key is set, then check the prerequisites
 
-		// FAS secure Level 1
-		if (config->fas_key && config->fas_secure_enabled == 1) {
+		// FAS secure Level >=1
+		if (config->fas_key && config->fas_secure_enabled >= 1) {
 			// Check sha256sum command is available
 			if (execute_ret_url_encoded(msg, sizeof(msg) - 1, "printf 'test' | sha256sum") == 0) {
 				safe_asprintf(&fashid, "sha256sum");

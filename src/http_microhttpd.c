@@ -116,6 +116,7 @@ static int do_binauth(
 	unsigned long long int upload_quota;
 	unsigned long long int download_quota;
 	int rc;
+	s_config *config;
 
 	config = config_get_config();
 
@@ -599,6 +600,13 @@ static int authenticate_client(struct MHD_Connection *connection,
 	}
 
 	// override remaining client values that might have been set by binauth
+
+	if (seconds == 0) {
+		seconds = (60 * config->session_timeout);
+	}
+
+	debug(LOG_DEBUG, "timout seconds: %d", seconds);
+
 	if (seconds != (60 * config->session_timeout)) {
 		client->session_end = (client->session_start + seconds);
 	}

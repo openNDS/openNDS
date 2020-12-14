@@ -126,7 +126,7 @@ function thankyou_page() {
 	# You can also send a custom data string to BinAuth. Set the variable $custom to the desired value
 	# Max length 256 characters
 	$custom="Custom data sent to BinAuth";
-	$custom=rawurlencode($custom);
+	$custom=base64_encode($custom);
 
 	$me=$_SERVER['SCRIPT_NAME'];
 	$host=$_SERVER['HTTP_HOST'];

@@ -21,7 +21,6 @@ while true; do
 
 	if [ ${#authlist} -ge 2 ]; then
 
-
 		for authparams in $authlist; do
 			authparams=$(printf "${authparams//%/\\x}")
 			logger -s -p daemon.notice -t "authmon" "authentication parameters $authparams"

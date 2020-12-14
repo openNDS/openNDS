@@ -245,6 +245,7 @@ int uh_b64decode(char *buf, int blen, const void *src, int slen)
 		buf[len++] = (char)(cout);
 	}
 
+	debug(LOG_DEBUG, "b64 decoded string: %s, decoded length: %d", buf, len);
 	buf[len++] = 0;
 	return len;
 }

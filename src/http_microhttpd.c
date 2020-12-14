@@ -98,6 +98,7 @@ static int do_binauth(
 {
 	char username_enc[64] = {0};
 	char password_enc[64] = {0};
+	char custom_dec_b64[384 *4 / 3] = {0};
 	char custom_enc[384] = {0};
 	char lockfile[] = "/tmp/ndsctl.lock";
 	FILE *fd;
@@ -115,6 +116,8 @@ static int do_binauth(
 	unsigned long long int upload_quota;
 	unsigned long long int download_quota;
 	int rc;
+
+	config = config_get_config();
 
 	// Get the client user agent
 	MHD_get_connection_values(connection, MHD_HEADER_KIND, get_user_agent_callback, &user_agent);
@@ -134,14 +137,21 @@ static int do_binauth(
 		password="na";
 	}
 
-	if (!custom || strlen(custom) == 0) {
-		custom="na";
+	if (config->preauth) {
+		uh_urlencode(custom_enc, sizeof(custom_enc), custom, strlen(custom));
+	} else {
+
+		if (!custom || strlen(custom) == 0) {
+			custom="bmE";
+		}
+		uh_b64decode(custom_dec_b64, sizeof(custom_dec_b64), custom, strlen(custom));
+		uh_urlencode(custom_enc, sizeof(custom_enc), custom_dec_b64, strlen(custom_dec_b64));
 	}
-	debug(LOG_DEBUG, "BinAuth: custom data [ %s ]", custom);
+
+	debug(LOG_DEBUG, "BinAuth: custom data [ %s ]", custom_enc);
 
 	uh_urlencode(username_enc, sizeof(username_enc), username, strlen(username));
 	uh_urlencode(password_enc, sizeof(password_enc), password, strlen(password));
-	uh_urlencode(custom_enc, sizeof(custom_enc), custom, strlen(custom));
 	uh_urlencode(redirect_url_enc_buf, sizeof(redirect_url_enc_buf), redirect_url, strlen(redirect_url));
 	uh_urlencode(enc_user_agent, sizeof(enc_user_agent), user_agent, strlen(user_agent));
 
@@ -1094,14 +1104,17 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 			}
 
 	} else if (config->fas_secure_enabled == 2 || config->fas_secure_enabled == 3) {
+		hash_str(hash, sizeof(hash), client->token);
+		debug(LOG_DEBUG, "hid=%s", hash);
+
 		get_client_interface(clientif, sizeof(clientif), client->mac);
 		debug(LOG_INFO, "clientif: [%s]", clientif);
 		snprintf(querystr, QUERYMAXLEN,
-			"clientip=%s%sclientmac=%s%sgatewayname=%s%stok=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s%s",
+			"clientip=%s%sclientmac=%s%sgatewayname=%s%shid=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s%s",
 			client->ip, QUERYSEPARATOR,
 			client->mac, QUERYSEPARATOR,
 			config->url_encoded_gw_name, QUERYSEPARATOR,
-			client->token, QUERYSEPARATOR,
+			hash, QUERYSEPARATOR,
 			config->gw_address, QUERYSEPARATOR,
 			config->gw_mac, QUERYSEPARATOR,
 			config->authdir, QUERYSEPARATOR,

@@ -337,8 +337,8 @@ setup_from_config(void)
 
 			// Make sure we don't have a buffer overflow
 			if ((sizeof(fasparam) - strlen(fasparam)) > (strlen(fas_fasparam->fasparam) + 4)) {
-				strcat(fasparam, QUERYSEPARATOR);
 				strcat(fasparam, fas_fasparam->fasparam);
+				strcat(fasparam, QUERYSEPARATOR);
 			} else {
 				break;
 			}
@@ -480,7 +480,7 @@ setup_from_config(void)
 	debug(LOG_NOTICE, "Created web server on %s", config->gw_address);
 	debug(LOG_INFO, "Handle [%i]", webserver);
 
-	// If login script is enabled, check if the script actually exists
+	// Check if login script is enabled
 	if (config->login_option_enabled >= 1) {
 		debug(LOG_NOTICE, "Login option is Enabled using mode %d.\n", config->login_option_enabled);
 		config->preauth = safe_strdup(loginscript);
@@ -493,11 +493,11 @@ setup_from_config(void)
 
 	if (config->login_option_enabled == 0 && config->fas_port == 0 && config->allow_legacy_splash == 1) {
 		debug(LOG_NOTICE, "Legacy html Splash Page is Enabled.\n");
-		config->preauth = safe_strdup(NULL);
+		config->preauth = NULL;
 	}
 
 
-	// If PreAuth is enabled, override any FAS configuration
+	// If PreAuth is enabled, override any FAS configuration and check script exists
 	if (config->preauth) {
 		debug(LOG_NOTICE, "Preauth is Enabled - Overiding FAS configuration.\n");
 		debug(LOG_INFO, "Preauth Script is %s\n", config->preauth);
@@ -511,7 +511,7 @@ setup_from_config(void)
 
 		//override all other FAS settings
 		config->fas_remoteip = safe_strdup(config->gw_ip);
-		config->fas_remotefqdn = safe_strdup(NULL);
+		config->fas_remotefqdn = NULL;
 		config->fas_port = config->gw_port;
 		safe_asprintf(&preauth_dir, "/%s/", config->preauthdir);
 		config->fas_path = safe_strdup(preauth_dir);

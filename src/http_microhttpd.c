@@ -778,6 +778,7 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 	const char *user_agent = NULL;
 	char enc_user_agent[256] = {0};
 	char *preauthpath = NULL;
+	char *cmd = NULL;
 
 	// Encoded querystring could be bigger than the unencoded version
 	char enc_query[QUERYMAXLEN + QUERYMAXLEN/2] = {0};
@@ -791,15 +792,15 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 	if (strcmp(preauthpath, config->fas_path) == 0) {
 		free (preauthpath);
 		MHD_get_connection_values(connection, MHD_HEADER_KIND, get_user_agent_callback, &user_agent);
-		debug(LOG_DEBUG, "PreAuth: User Agent is [ %s ]", user_agent);
 		uh_urlencode(enc_user_agent, sizeof(enc_user_agent), user_agent, strlen(user_agent));
+		debug(LOG_DEBUG, "PreAuth: Encoded User Agent is [ %s ]", enc_user_agent);
 
-		if (query) {
-			uh_urlencode(enc_query, sizeof(enc_query), query, strlen(query));
-			debug(LOG_DEBUG, "PreAuth: query: %s", query);
-		}
+		uh_urlencode(enc_query, sizeof(enc_query), query, strlen(query));
+		debug(LOG_DEBUG, "PreAuth: Encoded query: %s", enc_query);
 
-		rc = execute_ret(msg, HTMLMAXSIZE - 1, "%s '%s' '%s' '%d'", config->preauth, enc_query, enc_user_agent, config->login_option_enabled);
+		safe_asprintf(&cmd, "%s '%s' '%s' '%d'", config->preauth, enc_query, enc_user_agent, config->login_option_enabled);
+		rc = execute_ret_url_encoded(msg, HTMLMAXSIZE - 1, cmd);
+		free(cmd);
 
 		if (rc != 0) {
 			debug(LOG_WARNING, "Preauth script: %s '%s' - failed to execute", config->preauth, query);
@@ -898,6 +899,7 @@ static int preauthenticated(struct MHD_Connection *connection,
 
 	// check if this is a redirect query with a foreign host as target
 	if (is_foreign_hosts(connection, host)) {
+		debug(LOG_DEBUG, "preauthenticated: foreign host [%s] detected", host);
 		return redirect_to_splashpage(connection, client, host, url);
 	}
 
@@ -1043,7 +1045,6 @@ static int redirect_to_splashpage(struct MHD_Connection *connection, t_client *c
 	debug(LOG_DEBUG, "Query string is [ %s ]", query);
 	safe_asprintf(&originurl_raw, "http://%s%s%s", host, url, query);
 	uh_urlencode(originurl, sizeof(originurl), originurl_raw, strlen(originurl_raw));
-
 	debug(LOG_DEBUG, "originurl: %s", originurl);
 
 	querystr=construct_querystring(client, originurl, querystr);
@@ -1084,7 +1085,7 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 				debug(LOG_INFO, "clientif: [%s] url_encoded_gw_name: [%s]", clientif, config->url_encoded_gw_name);
 
 				snprintf(query_str, QUERYMAXLEN,
-					"clientip=%s%sclientmac=%s%sgatewayname=%s%shid=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s%s",
+					"clientip=%s%sclientmac=%s%sgatewayname=%s%shid=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s%s%s",
 					client->ip, QUERYSEPARATOR,
 					client->mac, QUERYSEPARATOR,
 					config->url_encoded_gw_name, QUERYSEPARATOR,
@@ -1094,6 +1095,7 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 					config->authdir, QUERYSEPARATOR,
 					originurl, QUERYSEPARATOR,
 					clientif,
+					QUERYSEPARATOR,
 					config->custom_params
 				);
 

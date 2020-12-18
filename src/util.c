@@ -66,7 +66,6 @@
 #include "debug.h"
 #include "fw_iptables.h"
 
-
 // Defined in main.c
 extern time_t started_time;
 

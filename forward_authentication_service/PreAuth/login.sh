@@ -21,14 +21,53 @@
 
 
 # functions:
+wait_for_ndsctl () {
+	local lockfile="/tmp/ndsctl.lock"
+	local timeout=10
+	for tic in $(seq $timeout); do
+
+		if [ ! -f "$lockfile" ]; then
+			break
+		fi
+
+		sleep 1
+
+		if [ $tic == $timeout ] ; then
+			break
+		fi
+
+	done
+}
+
 
 get_arguments() {
-	# Get the urlencoded querystring, user_agent and mode
-	query_enc=$(echo "$1" | sed "s/%3f/%20/")
+	# Get the query-string, user_agent and mode
+	query_enc=$1
+	frag="="
+	query=""
+	i=9
+	query_enc_type=${query_enc:0:9}
+	fas=${query_enc:9:1024}
+	while true; do
+		frag=${query_enc:$i:336}
+
+		if [ -z "$frag" ]; then
+			break
+		fi
+		frag=$(printf "${frag//%/\\x}")
+echo "b64frag=$frag<br><br>"
+		wait_for_ndsctl
+		frag=$(ndsctl b64decode $frag)
+echo "frag=$frag<br><br>"
+		query="$frag"
+		parse_variables
+		i=$((i+272))
+	done
+
 	user_agent_enc="$2"
 	mode="$3"
 
-	# Arguments are sent to us from NDS in a urlencoded form,
+	# Arguments may be sent to us from NDS in a urlencoded form,
 	# we can decode an argument as follows:
 	# arg[N]=$(printf "${arg[N]_enc//%/\\x}")
 
@@ -36,7 +75,7 @@ get_arguments() {
 	user_agent=$(printf "${user_agent_enc//%/\\x}")
 
 	# Parse for the variables returned by NDS in the querystring argument:
-	parse_variables
+	#parse_variables
 
 	#Check if we parsed the client zone, if not, get it
 	get_client_zone
@@ -60,6 +99,45 @@ get_arguments() {
 		gatewaynamehtml="Welcome"
 	fi
 }
+
+parse_variables() {
+	# Parse for the variables returned by NDS:
+	queryvarlist="clientip clientmac gatewayname hid gatewayaddress gatewaymac authdir originurl clientif admin_email location"
+	for var in $queryvarlist; do
+		evalstr=$(echo "$query" | awk -F"$var=" '{print $2}' | awk -F', ' '{print $1}')
+echo "$var=$evalstr!!<br>"
+		if [ -z "$evalstr" ]; then
+			continue
+		fi
+
+		eval $var=$(echo "\"$evalstr\"")
+	done
+
+echo "$clientip!!<br>$clientmac!!<br>$gatewayname!!<br>$hid!!<br>$gatewayaddress!!<br>$gatewaymac!!<br>$authdir!!<br>$originurl!!<br>$clientif!!<br>$admin_email!!<br>$location"
+
+}
+
+#parse_variables() {
+#	# Parse for the variables returned by NDS:
+#	queryvarlist="clientip gatewayname hid status redir username emailaddr client_zone terms continue"
+#	for var in $queryvarlist; do
+#		parsestr=$(echo "$query_enc" | awk -F "%20$var%3d" '{print $2}' | awk -F "%3d" '{print $1}')
+#		evalstr=$(echo "$parsestr" | awk -F "%2c%20" '{
+#			if (NF>2) {
+#				for(i=1;i<NF;i++) {
+#					if (i==1) {
+#						printf("%s", $(i))
+#					} else {
+#						printf("%%2c%%20%s", $(i))
+#					}
+#				}
+#			} else {
+#				printf("%s", $(1))
+#			}
+#		}')
+#		eval $var=$(echo "\"$evalstr\"")
+#	done
+#}
 
 configure_log_location() {
 	# Generate the Logfile location; use the tmpfs "temporary" directory to prevent flash wear.
@@ -85,41 +163,17 @@ configure_log_location() {
 	ndspid=$(pgrep '/usr/bin/opennds')
 }
 
-parse_variables() {
-	# Parse for the variables returned by NDS:
-	queryvarlist="clientip gatewayname hid status redir username emailaddr client_zone terms continue"
-	for var in $queryvarlist; do
-		parsestr=$(echo "$query_enc" | awk -F "%20$var%3d" '{print $2}' | awk -F "%3d" '{print $1}')
-		evalstr=$(echo "$parsestr" | awk -F "%2c%20" '{
-			if (NF>2) {
-				for(i=1;i<NF;i++) {
-					if (i==1) {
-						printf("%s", $(i))
-					} else {
-						printf("%%2c%%20%s", $(i))
-					}
-				}
-			} else {
-				printf("%s", $(1))
-			}
-		}')
-
-		eval $var=$(echo "\"$evalstr\"")
-	done
-}
 
 read_terms() {
 	#terms of service button
 	echo "
 		<form action=\"/opennds_preauth/\" method=\"get\">
-			<input type=\"hidden\" name=\"gatewayname\" value=\"$gatewayname\">
-			<input type=\"hidden\" name=\"client_zone\" value=\"$client_zone\">
+			<input type=\"hidden\" name=\"fas\" value=\"$fas\">
 			<input type=\"hidden\" name=\"terms\" value=\"yes\">
 			<input type=\"submit\" value=\"Read Terms of Service   \" >
 		</form>
 	"
 }
-
 
 check_authenticated() {
 	if [ "$status" = "authenticated" ]; then
@@ -233,12 +287,7 @@ login_form() {
 		</italic-black>
 		<hr>
 		<form action=\"/opennds_preauth/\" method=\"get\">
-			<input type=\"hidden\" name=\"clientip\" value=\"$clientip\">
-			<input type=\"hidden\" name=\"gatewayname\" value=\"$gatewaynamehtml\">
-			<input type=\"hidden\" name=\"hid\" value=\"$hid\">
-			<input type=\"hidden\" name=\"gatewayaddress\" value=\"$gatewayaddress\">
-			<input type=\"hidden\" name=\"client_zone\" value=\"$client_zone\">
-			<input type=\"hidden\" name=\"redir\" value=\"$requested\">
+			<input type=\"hidden\" name=\"fas\" value=\"$fas\">
 			<input type=\"text\" name=\"username\" value=\"$usernamehtml\" autocomplete=\"on\" ><br>Name<br><br>
 			<input type=\"email\" name=\"emailaddr\" value=\"$emailaddr\" autocomplete=\"on\" ><br>Email<br><br>
 			<input type=\"submit\" value=\"Accept Terms of Service\" >
@@ -260,12 +309,7 @@ continue_form() {
 		</italic-black>
 		<hr>
 		<form action=\"/opennds_preauth/\" method=\"get\">
-			<input type=\"hidden\" name=\"clientip\" value=\"$clientip\">
-			<input type=\"hidden\" name=\"gatewayname\" value=\"$gatewaynamehtml\">
-			<input type=\"hidden\" name=\"hid\" value=\"$hid\">
-			<input type=\"hidden\" name=\"gatewayaddress\" value=\"$gatewayaddress\">
-			<input type=\"hidden\" name=\"client_zone\" value=\"$client_zone\">
-			<input type=\"hidden\" name=\"redir\" value=\"$requested\">
+			<input type=\"hidden\" name=\"fas\" value=\"$fas\">
 			<input type=\"hidden\" name=\"continue\" value=\"clicked\">
 			<input type=\"submit\" value=\"Accept Terms of Service\" >
 		</form>

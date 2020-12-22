@@ -311,12 +311,34 @@ t_client *
 client_list_find_by_token(const char token[])
 {
 	t_client *ptr;
+	s_config *config;
+	config = config_get_config();
+	char hid[128] = {0};
+	char rhid[128] = {0};
+	char *rhidraw = NULL;
 
 	ptr = firstclient;
 	while (ptr) {
-		if (!strcmp(ptr->token, token)) {
-			return ptr;
+		//Check if token (tok) or hash_id (hid) mode
+		if (strlen(token) > 8) {
+			// hid mode
+			hash_str(hid, sizeof(hid), ptr->token);
+			safe_asprintf(&rhidraw, "%s%s", hid, config->fas_key);
+			hash_str(rhid, sizeof(rhid), rhidraw);
+			free (rhidraw);
+
+			if (token && !strcmp(rhid, token)) {
+				// rhid is valid
+				return ptr;
+			}
+		} else {
+			// tok mode
+			if (token && !strcmp(ptr->token, token)) {
+				// Token is valid
+				return ptr;
+			}
 		}
+
 		ptr = ptr->next;
 	}
 

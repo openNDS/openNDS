@@ -38,7 +38,7 @@
 #include <errno.h>
 
 #include "ndsctl.h"
-
+#include "common.h"
 
 struct argument {
 	const char *cmd;
@@ -187,8 +187,8 @@ static int
 ndsctl_do(const char *socket, const struct argument *arg, const char *param)
 {
 	int sock;
-	char buffer[4096] = {0};
-	char request[4096 *4 /3] = {0};
+	char buffer[MAX_BUF] = {0};
+	char request[MAX_BUF *4 /3] = {0};
 	int len, rlen;
 	int ret;
 
@@ -249,8 +249,8 @@ main(int argc, char **argv)
 	int i = 1;
 	int counter;
 	char lockfile[] = "/tmp/ndsctl.lock";
-	char args[512] = {0};
-	char argi[64] = {0};
+	char args[1024] = {0};
+	char argi[512] = {0};
 	FILE *fd;
 
 	if ((fd = fopen(lockfile, "r")) != NULL) {

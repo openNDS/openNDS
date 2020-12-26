@@ -195,7 +195,7 @@ config opennds
 	# If set to 0, there is no limit
 	#
 	# Quotas and rates can also be set by FAS via Authmon Daemon, by BinAuth, and by ndsctl auth.
-	# Values set by these methods, will be override values set in this config file.
+	# Values set by these methods, will override values set in this config file.
 	#
 	option uploadrate '0'
 	option downloadrate '0'

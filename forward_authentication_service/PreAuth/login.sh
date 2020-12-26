@@ -9,63 +9,108 @@
 
 # In this example script we want to either ask the client user for
 # their username and email address or to give them a click to continue button.
-# An option to display a remote image is also supported.
 #
 # Splash page modes are selected in the openNDS config using the login_option_enabled parameter.
 #
 # Mode 0. login_option_enabled set to 0 - generate a simple "click to continue" splash page (with Terms of Service).
-
 # Mode 1. login_option_enabled set to 1 - generate a "username/email_address splash page (with Terms of Service).
 
-# Some programming hints are included at the end of this file.
-
-
 # functions:
-wait_for_ndsctl () {
-	local lockfile="/tmp/ndsctl.lock"
-	local timeout=10
-	for tic in $(seq $timeout); do
+do_ndsctl () {
+	local timeout=2
+	ndsstatus="ready"
 
-		if [ ! -f "$lockfile" ]; then
-			break
+	for tic in $(seq $timeout); do
+		ndsctlout=$(ndsctl $ndsctlcmd)
+
+		for keyword in $ndsctlout; do
+
+			if [ $keyword = "locked" ]; then
+				ndsstatus="busy"
+				sleep 1
+				break
+			fi
+		done
+
+		if [ $tic = $timeout ] ; then
+			busy_page
 		fi
 
-		sleep 1
-
-		if [ $tic == $timeout ] ; then
+		if [ "$ndsstatus" = "ready" ]; then
 			break
 		fi
 
 	done
 }
 
-
 get_arguments() {
 	# Get the query-string, user_agent and mode
+	# The query string is urlencoded AND base64 encoded
 	query_enc=$1
-	frag="="
+	user_agent_enc="$2"
+	mode="$3"
+
+	# The base64 encoded query string can be very long and exceed the maximum length for a script argument
+	# This is true in OpenWrt and is likely many other operating systems, particularly those that use Busybox ASH shell
+	# To be safe we will fragment the querystring for b64 decoding
+
+	# The b64encoded data begins at the 10th character, ie character number 9 (numbering starts at zero).
+	#
+	# some variables:
+	fullfrag="="
 	query=""
 	i=9
 	query_enc_type=${query_enc:0:9}
 	fas=${query_enc:9:1024}
-	while true; do
-		frag=${query_enc:$i:336}
 
-		if [ -z "$frag" ]; then
+	#fas is urlencoded, so we must urldecode
+	fas=$(printf "${fas//%/\\x}")
+
+	#But parts MAY be user entered so we must sanitize by html entity encoding
+	htmlentityencode "$fas"
+	fas=$entityencoded
+
+	# strip off any fas variables this script might have added, ie username and email
+	fas="${fas%%,*}"
+
+
+	# Fragment and decode:
+	while true; do
+		# get a full fragment
+		fullfrag=${query_enc:$i:336}
+
+		if [ -z "$fullfrag" ]; then
 			break
 		fi
-		frag=$(printf "${frag//%/\\x}")
-echo "b64frag=$frag<br><br>"
-		wait_for_ndsctl
-		frag=$(ndsctl b64decode $frag)
-echo "frag=$frag<br><br>"
+
+		#The fragments are urlencoded, so we must urldecode
+		fullfrag=$(printf "${fullfrag//%/\\x}")
+
+		#But parts MAY be user entered so we must sanitize by html entity encoding
+		htmlentityencode "$fullfrag"
+		fullfrag=$entityencoded
+
+		# strip off any fas variables this script might have added, ie username and email
+		b64frag="${fullfrag%%,*}"
+
+		# Find the length of the stripped fragment
+		fraglen=$((${#b64frag}))
+
+		# Find the stripped off fas variables as we need them too
+		fasvars="$fasvars""${fullfrag:$fraglen:1024}"
+
+		#base64 decode the current fragment
+		ndsctlcmd="b64decode $b64frag"
+		do_ndsctl
+		frag=$ndsctlout
+
+		# parse variables in this fragment (each time round this loop we will add more parsed variables)
 		query="$frag"
+		queryvarlist=$ndsparamlist
 		parse_variables
+		# Increment the pointer by a factor of 4
 		i=$((i+272))
 	done
-
-	user_agent_enc="$2"
-	mode="$3"
 
 	# Arguments may be sent to us from NDS in a urlencoded form,
 	# we can decode an argument as follows:
@@ -74,8 +119,10 @@ echo "frag=$frag<br><br>"
 	# The User Agent argument is sent urlencoded, so:
 	user_agent=$(printf "${user_agent_enc//%/\\x}")
 
-	# Parse for the variables returned by NDS in the querystring argument:
-	#parse_variables
+	# Now we need to parse any fas variables this script may have added. These are in the string $fasvars:
+	queryvarlist=$fasvarlist
+	query="$fasvars"
+	parse_variables
 
 	#Check if we parsed the client zone, if not, get it
 	get_client_zone
@@ -90,54 +137,23 @@ echo "frag=$frag<br><br>"
 	htmlentityencode "$username"
 	usernamehtml=$entityencoded
 
-	emailaddr=$(printf "${emailaddr//%/\\x}")
+	emailaddress=$(printf "${emailaddress//%/\\x}")
 
-	#requested might have trailing comma space separated, user defined parameters - so remove them as well as decoding
-	requested=$(printf "${redir//%/\\x}" | awk -F ', ' '{print $1}')
-
-	if [ "$status" = "authenticated" ]; then
-		gatewaynamehtml="Welcome"
-	fi
 }
 
 parse_variables() {
-	# Parse for the variables returned by NDS:
-	queryvarlist="clientip clientmac gatewayname hid gatewayaddress gatewaymac authdir originurl clientif admin_email location"
+	# Parse for variables in $query from the list in $queryvarlist:
+
 	for var in $queryvarlist; do
 		evalstr=$(echo "$query" | awk -F"$var=" '{print $2}' | awk -F', ' '{print $1}')
-echo "$var=$evalstr!!<br>"
+
 		if [ -z "$evalstr" ]; then
 			continue
 		fi
 
 		eval $var=$(echo "\"$evalstr\"")
 	done
-
-echo "$clientip!!<br>$clientmac!!<br>$gatewayname!!<br>$hid!!<br>$gatewayaddress!!<br>$gatewaymac!!<br>$authdir!!<br>$originurl!!<br>$clientif!!<br>$admin_email!!<br>$location"
-
 }
-
-#parse_variables() {
-#	# Parse for the variables returned by NDS:
-#	queryvarlist="clientip gatewayname hid status redir username emailaddr client_zone terms continue"
-#	for var in $queryvarlist; do
-#		parsestr=$(echo "$query_enc" | awk -F "%20$var%3d" '{print $2}' | awk -F "%3d" '{print $1}')
-#		evalstr=$(echo "$parsestr" | awk -F "%2c%20" '{
-#			if (NF>2) {
-#				for(i=1;i<NF;i++) {
-#					if (i==1) {
-#						printf("%s", $(i))
-#					} else {
-#						printf("%%2c%%20%s", $(i))
-#					}
-#				}
-#			} else {
-#				printf("%s", $(1))
-#			}
-#		}')
-#		eval $var=$(echo "\"$evalstr\"")
-#	done
-#}
 
 configure_log_location() {
 	# Generate the Logfile location; use the tmpfs "temporary" directory to prevent flash wear.
@@ -190,54 +206,69 @@ check_authenticated() {
 				</italic-black>
 			</p>
 		"
+
+		read_terms
 		footer
-		exit 0
 	fi
 }
 
-name_email_login() {
-	# For this simple example, we check that both the username and email address fields have been filled in.
-	# If not then serve the initial page, again if necessary.
-	# We are not doing any specific validation in this example, but here is the place to do it if you need to.
-	#
-	# Note if only one of username or email address fields is entered then that value will be preserved
-	# and displayed on the page when it is re-served.
-	#
-	# Note also $clientip, $gatewayname and $requested (redir) must always be preserved
-	#
-
-	if [ ! -z "$username" ] && [ ! -z "$emailaddr" ]; then
-		thankyou_page
-		footer
-		exit 0
-	fi
-
-	login_form
+busy_page() {
+	header
+	echo "
+		<p>
+			<big-red>
+				Sorry: The Portal is Busy
+			</big-red>
+		</p>
+		<hr>
+		<p>
+			<italic-black>
+				Please Try Again Later
+			</italic-black>
+		</p>
+	"
 
 	footer
 	exit 0
 }
 
-click_to_continue() {
-	# Note $clientip, $gatewayname and $requested (redir) must always be preserved
+
+name_email_login() {
+	# In this example, we check that both the username and email address fields have been filled in.
+	# If not then serve the initial page, again if necessary.
+	# We are not doing any specific validation here, but here is the place to do it if you need to.
 	#
+	# Note if only one of username or email address fields is entered then that value will be preserved
+	# and displayed on the page when it is re-served.
+	#
+	# The client is required to accept the terms of service.
+
+	if [ ! -z "$username" ] && [ ! -z "$emailaddress" ]; then
+		thankyou_page
+		footer
+	fi
+
+	login_form
+	footer
+}
+
+click_to_continue() {
+	# This is the simple click to continue splash page with no client validation.
+	# The client is however required to accept the terms of service.
 
 
 	if [ "$continue" = "clicked" ]; then
 		thankyou_page
 		footer
-		exit 0
 	fi
 
 	continue_form
-
 	footer
-	exit 0
 }
 
 header() {
 # Define a common header html for every page served
-	header="<!DOCTYPE html>
+	echo "<!DOCTYPE html>
 		<html>
 		<head>
 		<meta http-equiv=\"Cache-Control\" content=\"no-cache, no-store, must-revalidate\">
@@ -257,13 +288,13 @@ header() {
 		</med-blue><br>
 		<div class=\"insert\" style=\"max-width:100%;\">
 	"
-	echo "$header"
 }
 
 footer() {
 	# Define a common footer html for every page served (with openNDS version on the thankyou page)
 
-	footer="
+	echo "
+		<hr>
 		<img style=\"height:30px; width:60px; float:left;\" src=\"/images/splash.jpg\" alt=\"Splash Page: For access to the Internet.\">
 
 		<copy-right>
@@ -275,12 +306,13 @@ footer() {
 		</body>
 		</html>
 	"
-	echo "$footer"
+
+	exit 0
 }
 
 login_form() {
 	# Define a login form
-	login_form="
+	echo "
 		<big-red>Welcome!</big-red><br>
 		<italic-black>
 			To access the Internet you must enter your full name and email address then Accept the Terms of Service to proceed.
@@ -289,19 +321,19 @@ login_form() {
 		<form action=\"/opennds_preauth/\" method=\"get\">
 			<input type=\"hidden\" name=\"fas\" value=\"$fas\">
 			<input type=\"text\" name=\"username\" value=\"$usernamehtml\" autocomplete=\"on\" ><br>Name<br><br>
-			<input type=\"email\" name=\"emailaddr\" value=\"$emailaddr\" autocomplete=\"on\" ><br>Email<br><br>
+			<input type=\"email\" name=\"emailaddress\" value=\"$emailaddress\" autocomplete=\"on\" ><br>Email<br><br>
 			<input type=\"submit\" value=\"Accept Terms of Service\" >
 		</form>
 		<br>
 	"
-	echo "$login_form"
+
 	read_terms
-	echo "<hr>"
+	footer
 }
 
 continue_form() {
 	# Define a click to Continue form
-	continue_form="
+	echo "
 		<big-red>Welcome!</big-red><br>
 		<med-blue>You are connected to $client_zone</med-blue><br>
 		<italic-black>
@@ -315,10 +347,111 @@ continue_form() {
 		</form>
 		<br>
 	"
-	echo "$continue_form"
+
 	read_terms
-	echo "<hr>"
+	footer
 }
+
+thankyou_page () {
+	# If we got here, we have both the username and emailaddress fields as completed on the login page on the client,
+	# or Continue has been clicked on the "Click to Continue" page
+	# No further validation is required so we can grant access to the client. The token is not actually required.
+
+	# We now output the "Thankyou page" with a "Continue" button.
+
+	# This is the place to include information or advertising on this page,
+	# as this page will stay open until the client user taps or clicks "Continue"
+
+	# Be aware that many devices will close the login browser as soon as
+	# the client user continues, so now is the time to deliver your message.
+
+	echo "
+		<big-red>
+			Thankyou for using this service
+		</big-red>
+		<br>
+		<b>
+			Welcome $usernamehtml
+		</b>
+	"
+
+	# Add your message here:
+	# You could retrieve text or images from a remote server using wget or curl
+	# as this router has Internet access whilst the client device does not (yet).
+	echo "
+		<br>
+		<italic-black>
+			Your News or Advertising could be here, contact the owners of this Hotspot to find out how!
+		</italic-black>
+	"
+
+	if [ -z "$binauth_custom" ]; then
+		customhtml=""
+	else
+		htmlentityencode "$binauth_custom"
+		binauth_custom=$entityencoded
+		# Additionally convert any spaces
+		binauth_custom=$(echo "$binauth_custom" | sed "s/ /\_/g")
+		customhtml="<input type=\"hidden\" name=\"binauth_custom\" value=\"$binauth_custom\">"
+	fi
+
+	# Continue to the landing page, the client is authenticated there
+	echo "
+		<form action=\"/opennds_preauth/\" method=\"get\">
+			<input type=\"hidden\" name=\"fas\" value=\"$fas\">
+			$customhtml
+			<input type=\"hidden\" name=\"landing\" value=\"yes\">
+			<input type=\"submit\" value=\"Continue\" >
+		</form>
+		<br>
+	"
+
+	# In this example we have decided to log all clients who are granted access
+	write_log
+
+	# Serve the rest of the page:
+	read_terms
+	footer
+}
+
+landing_page() {
+	originurl=$(printf "${originurl//%/\\x}")
+
+	# We are ready to authenticate the client
+
+	rhid=$(printf "$hid$key" | sha256sum | awk -F' ' '{printf $1}')
+	ndsctlcmd="auth $rhid $quotas $binauth_custom"
+	do_ndsctl
+	authstat=$ndsctlout
+	# TODO: We can do additional error checking here - do we need to?
+	
+	echo "
+		<p>
+			<big-red>
+				You are now logged in and have been granted access to the Internet.
+			</big-red>
+		</p>
+		<hr>
+		<p>
+			<italic-black>
+				You can use your Browser, Email and other network Apps as you normally would.
+			</italic-black>
+		</p>
+		<p>
+			Your device originally requested <b>$originurl</b>
+			<br>
+			Click or tap Continue to go to there.
+		</p>
+		<form>
+			<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='$originurl'\" >
+		</form>
+		<hr>
+	"
+
+	read_terms
+	footer
+}
+
 
 display_terms() {
 	# This is the all important "Terms of service"
@@ -484,122 +617,21 @@ display_terms() {
 		<form>
 			<input type=\"button\" VALUE=\"Continue\" onClick=\"history.go(-1);return true;\">
 		</form>
-		<hr>
 	"
 	footer
-	exit 0
-}
-
-
-thankyou_page () {
-	# If we got here, we have both the username and emailaddr fields as completed on the login page on the client,
-	# or Continue has been clicked on the "Click to Continue" page
-	# so we will now call ndsctl to get client data we need to authenticate and add to our log.
-
-	# Variables returned from ndsctl are listed in $varlist.
-
-	# We at least need the client token to authenticate.
-	# In this example we will also log the client mac address.
-
-	# varlist is a list of variables we might be interested in
-	varlist="version mac ip clientif session_start session_end last_active token state
-		upload_rate_limit download_rate_limit upload_quota download_quota
-		upload_this_session upload_session_avg download_this_session download_session_avg"
-
-	clientinfo=$(ndsctl json $clientip)
-
-	if [ "$clientinfo" = "ndsctl is locked by another process" ]; then
-		echo "
-			<big-red>
-				Sorry
-			</big-red>
-			<italic-black>
-				The portal is busy, please try again.
-			</italic-black>
-			<hr>
-		"
-
-		if [ $mode -eq 0 ]; then
-			continue_form
-		elif [ $mode -eq 1 ]; then
-			login_form
-		fi
-
-		footer
-		exit 0
-	else
-		# Populate varlist with client data:
-		for var in $varlist; do
-			eval $var=$(echo "$clientinfo" | grep $var | awk -F'"' '{print $4}')
-		done
-	fi
-
-	# For openNDS auth we need from varlist:
-	tok=$token
-	clientmac=$mac
-
-	# You can choose to send a custom data string to BinAuth. Set the variable $custom to the desired value
-	# OR uncomment the text input in the displayed form to get input from the client
-	# Max length 256 characters
-
-	custom=""
-
-	# We now output the "Thankyou page" with a "Continue" button.
-
-	# This is the place to include information or advertising on this page,
-	# as this page will stay open until the client user taps or clicks "Continue"
-
-	# Be aware that many devices will close the login browser as soon as
-	# the client user continues, so now is the time to deliver your message.
-
-	echo "
-		<big-red>
-			Thankyou for using this service
-		</big-red>
-		<br>
-		<b>
-			Welcome $usernamehtml
-		</b>
-	"
-
-	# Add your message here:
-	# You could retrieve text or images from a remote server using wget or curl
-	# as this router has Internet access whilst the client device does not (yet).
-	echo "
-		<br>
-		<italic-black>
-			Your News or Advertising could be here, contact the owners of this Hotspot to find out how!
-		</italic-black>
-	"
-
-	# Now display the next form
-	echo "
-		<form action=\"/opennds_auth/\" method=\"get\">
-			<input type=\"hidden\" name=\"tok\" value=\"$tok\">
-			<input type=\"hidden\" name=\"redir\" value=\"$requested\"><br>
-	"
-
-	# Uncomment the next line to request a custom string input from the client and forward it to BinAuth
-	#echo "<input type=\"text\" name=\"custom\" value=\"$custom\" required><br>Custom Data<br><br>"
-
-	# or uncomment the next line to forward a pre defined variable %custom to BinAuth
-	#echo "<input type=\"hidden\" name=\"custom\" value=\"$custom\""
-
-	# Now finish outputting the form html
-	echo "
-			<input type=\"submit\" value=\"Continue\" >
-		</form>
-		<hr>
-	"
-
-	# In this example we have decided to log all clients who are granted access
-	write_log
-
 }
 
 htmlentityencode() {
-	entitylist="s/\"/\&quot;/ s/>/\&gt;/ s/</\&lt;/"
+	entitylist="
+		s/\"/\&quot;/g
+		s/>/\&gt;/g
+		s/</\&lt;/g
+		s/%/\&#37;/g
+		s/'/\&#39;/g
+		s/\`/\&#96;/g
+	"
 	local buffer="$1"
+
 	for entity in $entitylist; do
 		entityencoded=$(echo "$buffer" | sed "$entity")
 		buffer=$entityencoded
@@ -607,8 +639,16 @@ htmlentityencode() {
 }
 
 htmlentitydecode() {
-	entitylist="s/\&quot;/\"/ s/\&gt;/>/ s/\&lt;/</"
+	entitylist="
+		s/\&quot;/\"/g
+		s/\&gt;/>/g
+		s/\&lt;/</g
+		s/\&#37;/%/g
+		s/\&#39;/'/g
+		s/\&#96;/\`/g
+	"
 	local buffer="$1"
+
 	for entity in $entitylist; do
 		entitydecoded=$(echo "$buffer" | sed "$entity")
 		buffer=$entitydecoded
@@ -666,7 +706,7 @@ write_log () {
 		sizeratio=$(($available/$filesize))
 
 		if [ $sizeratio -ge $min_freespace_to_log_ratio ]; then
-			userinfo="username=$username, emailAddress=$emailaddr"
+			userinfo="username=$username, emailAddress=$emailaddress"
 			clientinfo="macaddress=$clientmac, clientzone=$client_zone, useragent=$user_agent"
 			echo "$datetime, $userinfo, $clientinfo" >> $logfile
 		else
@@ -677,9 +717,53 @@ write_log () {
 #### end of functions ####
 
 
-##################################
-#### Start - Main entry point ####
-##################################
+#########################################
+#					#
+#  Start - Main entry point		#
+#					#
+#  This script starts executing here	#
+#					#
+#########################################
+
+# Preshared key
+#########################################
+# Default value is 1234567890 when faskey is not set
+# Change to match faskey if faskey is set
+key="1234567890"
+
+# Quotas and Data Rates
+#########################################
+# Set length of session in minutes (eg 24 hours is 1440 minutes - if set to 0 then defaults to global sessiontimeout value):
+session_length="0"
+
+# Set Rate and Quota values for the client
+# The session length, rate and quota values could be determined by this script, on a per client basis.
+# rates are in kb/s, quotas are in kB. - if set to 0 then defaults to global value).
+upload_rate="0"
+download_rate="0"
+upload_quota="0"
+download_quota="0"
+
+quotas="$session_length $upload_rate $download_rate $upload_quota $download_quota"
+#########################################
+
+# The list of Parameters sent from openNDS:
+# Note you can add custom parameters to the config file and to read them you must also add them here.
+# Custom parameters are "Portal" information and are the same for all clients eg "admin_email" and "location" 
+ndsparamlist="clientip clientmac gatewayname version hid gatewayaddress gatewaymac authdir originurl clientif admin_email location"
+
+# The list of FAS Variables used in the Login Dialogue generated by this script.
+# These FAS variables received from the login form presented to the client.
+# For the default login.sh operating in mode 1, we will have "username" and "emailaddress"
+fasvarlist="username emailaddress terms landing status binauth_custom"
+
+# You can choose to send a custom data string to BinAuth. Set the variable $binauth_custom to the desired value.
+# Note1: As this script runs on the openNDS router and creates its own log file, there is little point also enabling Binauth.
+#	BinAuth is intended more for use with EXTERNAL FAS servers that don't have direct access to the local router.
+#	Nevertheless it can be enabled at the same time as this script if so desired.
+# Note2: Spaces will be translated to underscore characters.
+# Note3: You must escape any quotes.
+binauth_custom="This is sample text with the intention of sending it to \"BinAuth\" for post authentication processing."
 
 # Customise the Logfile location, use the tmpfs "temporary" directory to prevent flash wear.
 configure_log_location
@@ -687,7 +771,10 @@ configure_log_location
 # Get the query string arguments and parse/decode them
 get_arguments $1 $2 $3
 
+
+############################################################################
 ### We are now ready to generate the html for the Portal "Splash" pages: ###
+############################################################################
 
 # Output the page common header
 header
@@ -695,6 +782,11 @@ header
 # Check if Terms of Service is requested
 if [ "$terms" = "yes" ]; then
 	display_terms
+fi
+
+# Check if landing page is requested
+if [ "$landing" = "yes" ]; then
+	landing_page
 fi
 
 # Check if the client is already logged in (have probably tapped "back" on their browser)
@@ -713,39 +805,12 @@ else
 	footer
 fi
 
-
-#########################################################################################
-# That's it, we generated the dynamic html and sent it to MHD to be served to the client.
-#########################################################################################
-
 # Hints:
-#
-# We could ask for anything we like and add our own variables to the html forms
-# we generate.
-#
-# If we can if desired show a sequence of forms or information pages.
-#
-# To return to this script and show additional pages, the form action must be set to:
-#	<form action=\"/opennds_preauth/\" method=\"get\">
-# Note: quotes ( " ) must be escaped with the "\" character.
-#
-# Any variables we need to preserve and pass back to ourselves or NDS must be added
-# to the form as hidden:
-#	<input type=\"hidden\" name=......
-# Such variables will appear in the query string when NDS re-calls this script.
-# We can then parse for them again.
-#
-# When the logic of this script decides we should allow the client to access the Internet
-# we inform NDS with a final page displaying a continue button with the form action set to:
-#	"<form action=\"/opennds_auth/\" method=\"get\">"
-#
-# We must also send NDS the client token as a hidden variable.
-#
-# Note that the output of this script will be served by openNDS built in web server and
+# The output of this script will be served by openNDS built in web server (MHD) and
 # ultimately displayed on the client device screen via the CPD process on that device.
 #
 # It should be noted when designing a custom splash page that for security reasons
-# most client device CPD implementations MAY:
+# most client device CPD implementations MAY do one or all of the following:
 #
 #	1.Immediately close the browser when the client has authenticated.
 #	2.Prohibit the use of href links.

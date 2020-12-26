@@ -223,7 +223,8 @@ ndsctl_handler(int fd)
 {
 	int done, i, ret = 0;
 	char request[MAX_BUF];
-	ssize_t read_bytes, len;
+	//ssize_t read_bytes, len;
+	int read_bytes, len;
 	FILE* fp;
 
 	debug(LOG_DEBUG, "Entering thread_ndsctl_handler....");
@@ -343,7 +344,7 @@ ndsctl_auth(FILE *fp, char *arg)
 	arg3 = strsep(&argcopy, ",");
 	debug(LOG_DEBUG, "arg3 [%s]", arg3);
 
-	if (arg3 != NULL) {
+	if (strtol(arg3, &ptr, 10) > 0) {
 		seconds = 60 * strtol(arg3, &ptr, 10);
 	}
 
@@ -395,17 +396,13 @@ ndsctl_auth(FILE *fp, char *arg)
 	if (id) {
 		// set client values
 		client->session_start = now;
+		client->session_end = now + seconds;
 		client->upload_rate = uploadrate;
 		client->download_rate = downloadrate;
 		client->upload_quota = uploadquota;
 		client->download_quota = downloadquota;
-		if (seconds) {
-			client->session_end = now + seconds;
-		} else {
-			client->session_end = 0;
-		}
 
-		debug(LOG_DEBUG, "ndsctl_thread: client session end time [ %lu ]", client->session_end);
+		debug(LOG_DEBUG, "ndsctl_thread: client session start time [ %lu ], end time [ %lu ]", now, client->session_end);
 
 		rc = auth_client_auth_nolock(id, "ndsctl_auth", customdata);
 	} else {

@@ -27,7 +27,7 @@
 #define _COMMON_H_
 
 /** @brief Read buffer for socket read? */
-#define MAX_BUF 4096
+#define MAX_BUF 1024
 
 /* Max length of a query string in bytes */
 #define QUERYMAXLEN 4096

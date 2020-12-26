@@ -234,7 +234,7 @@ config_init(void)
 	config.gw_ip = NULL;
 	config.gw_port = DEFAULT_GATEWAYPORT;
 	config.fas_port = DEFAULT_FASPORT;
-	config.fas_key = NULL;
+	config.fas_key = safe_strdup(DEFAULT_FASKEY);
 	config.login_option_enabled = DEFAULT_LOGIN_OPTION_ENABLED;
 	config.allow_legacy_splash = DEFAULT_ALLOW_LEGACY_SPLASH;
 	config.use_outdated_mhd = DEFAULT_USE_OUTDATED_MHD;

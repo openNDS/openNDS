@@ -29,6 +29,8 @@ do_ndsctl () {
 				ndsstatus="busy"
 				sleep 1
 				break
+			elif [ $keyword = "Failed" ]; then
+				login_failed
 			fi
 		done
 
@@ -232,6 +234,26 @@ busy_page() {
 	exit 0
 }
 
+login_failed() {
+	echo "
+		<p>
+			<big-red>
+				Sorry: Login Failure
+			</big-red>
+		</p>
+		<hr>
+		<p>
+			<italic-black>
+				Invalid Authentication Key
+			</italic-black>
+		</p>
+	"
+
+	footer
+	exit 0
+}
+
+
 
 name_email_login() {
 	# In this example, we check that both the username and email address fields have been filled in.
@@ -424,7 +446,8 @@ landing_page() {
 	do_ndsctl
 	authstat=$ndsctlout
 	# TODO: We can do additional error checking here - do we need to?
-	
+	echo "authstat=$authstat!!<br>"
+
 	echo "
 		<p>
 			<big-red>

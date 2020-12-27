@@ -1,5 +1,5 @@
 <?php
-/* (c) Blue Wave Projects and Services 2015-2020. This software is released under the GNU GPL license.
+/* (c) Blue Wave Projects and Services 2015-2021. This software is released under the GNU GPL license.
 
  This is a FAS script providing an example of remote Forward Authentication for openNDS (NDS) on an http web server supporting PHP.
 
@@ -72,12 +72,15 @@ if (isset($fas)) {
 		if ($name == "clientip") {$clientip=$value;}
 		if ($name == "clientmac") {$clientmac=$value;}
 		if ($name == "gatewayname") {$gatewayname=$value;}
+		if ($name == "version") {$version=$value;}
 		if ($name == "hid") {$hid=$value;}
 		if ($name == "gatewayaddress") {$gatewayaddress=$value;}
 		if ($name == "gatewaymac") {$gatewaymac=$value;}
 		if ($name == "authdir") {$authdir=$value;}
 		if ($name == "originurl") {$originurl=$value;}
 		if ($name == "clientif") {$clientif=$value;}
+		if ($name == "admin_email") {$admin_email=$value;}
+		if ($name == "location") {$location=$value;}
 	}
 }
 
@@ -97,23 +100,23 @@ $imagepath="http://$gatewayaddress/images/splash.jpg";
 //Start Outputting the requested responsive page:
 #######################################################
 
-splash_header($imagepath, $gatewayname, $client_zone);
+splash_header();
 
 if (isset($_GET["terms"])) {
 	// ToS requested
 	display_terms();
-	footer($imagepath);
+	footer();
 } elseif (isset($_GET["status"])) {
 	// The status page is triggered by a client if already authenticated by openNDS (eg by clicking "back" on their browser)
 	status_page();
-	footer($imagepath);
+	footer();
 } elseif (isset($_GET["landing"])) {
 	// The landing page is served to the client immediately after openNDS authentication, but many CPDs will immediately close
 	landing_page();
-	footer($imagepath);
+	footer();
 } else {
 	login_page();
-	footer($imagepath);
+	footer();
 }
 
 // Functions:
@@ -138,6 +141,7 @@ function thankyou_page() {
 	$key=$GLOBALS["key"];
 	$hid=$GLOBALS["hid"];
 	$clientif=$GLOBALS["clientif"];
+	$client_zone=$GLOBALS["client_zone"];
 	$originurl=$GLOBALS["originurl"];
 	$fullname=$_GET["fullname"];
 	$email=$_GET["email"];
@@ -153,6 +157,7 @@ function thankyou_page() {
 		<br>
 		<b>Welcome $fullname</b>
 		<br>
+		<med-blue>You are connected to $client_zone</med-blue><br>
 		<italic-black>
 			Your News or Advertising could be here, contact the owners of this Hotspot to find out how!
 		</italic-black>
@@ -230,6 +235,7 @@ function login_page() {
 	$gatewayaddress=$GLOBALS["gatewayaddress"];
 	$gatewaymac=$GLOBALS["gatewaymac"];
 	$clientif=$GLOBALS["clientif"];
+	$client_zone=$GLOBALS["client_zone"];
 	$originurl=$GLOBALS["originurl"];
 
 	if (isset($_GET["fullname"])) {
@@ -243,6 +249,7 @@ function login_page() {
 	if ($fullname == "" or $email == "") {
 		echo "
 			<big-red>Welcome!</big-red><br>
+			<med-blue>You are connected to $client_zone</med-blue><br>
 			<b>Please enter your Full Name and Email Address</b>
 		";
 
@@ -279,12 +286,14 @@ function status_page() {
 	$gatewayaddress=$GLOBALS["gatewayaddress"];
 	$gatewaymac=$GLOBALS["gatewaymac"];
 	$clientif=$GLOBALS["clientif"];
+	$client_zone=$GLOBALS["client_zone"];
 	$originurl=$GLOBALS["originurl"];
 	$redir=rawurldecode($originurl);
 
 	// Is the client already logged in?
 	if ($_GET["status"] == "authenticated") {
 		echo "
+			<med-blue>You are connected to $client_zone</med-blue><br>
 			<p><big-red>You are already logged in and have access to the Internet.</big-red></p>
 			<hr>
 			<p><italic-black>You can use your Browser, Email and other network Apps as you normally would.</italic-black></p>
@@ -319,9 +328,11 @@ function landing_page() {
 	$gatewayaddress=$GLOBALS["gatewayaddress"];
 	$gatewayname=$GLOBALS["gatewayname"];
 	$clientif=$GLOBALS["clientif"];
+	$client_zone=$GLOBALS["client_zone"];
 	$redir=rawurldecode($originurl);
 
 	echo "
+		<med-blue>You are connected to $client_zone</med-blue><br>
 		<p>
 			<big-red>
 				You are now logged in and have been granted access to the Internet.
@@ -348,7 +359,9 @@ function landing_page() {
 	flush();
 }
 
-function splash_header($imagepath, $gatewayname, $client_zone) {
+function splash_header() {
+	$gatewayname=$GLOBALS["gatewayname"];
+	$imagepath=$GLOBALS["imagepath"];
 	$gatewayname=htmlentities(rawurldecode($gatewayname), ENT_HTML5, "UTF-8", FALSE);
 
 	// Add headers to stop browsers from cacheing 
@@ -373,22 +386,24 @@ function splash_header($imagepath, $gatewayname, $client_zone) {
 		<body>
 		<div class=\"offset\">
 		<med-blue>
-			$gatewayname <br>
-			$client_zone
+			$gatewayname
 		</med-blue><br>
 		<div class=\"insert\">
 	";
 	flush();
 }
 
-function footer($imagepath) {
+function footer() {
+	$imagepath=$GLOBALS["imagepath"];
+	$version=$GLOBALS["version"];
+	$year=date("Y");
 	echo "
 		<hr>
 		<div style=\"font-size:0.5em;\">
-			<img style=\"float:left; max-height:5em; height:auto; width:auto\" src=\"$imagepath\">
-			&copy; The openNDS Contributors 2004-".date("Y")."<br>
-			&copy; BlueWave Projects and Services 2015-".date("Y")."<br>
-			This software is released under the GNU GPL license.<br><br>
+			<img style=\"height:30px; width:60px; float:left;\" src=\"$imagepath\" alt=\"Splash Page: For access to the Internet.\">
+			&copy; The openNDS Project 2015 - $year<br>
+			openNDS $version
+			<br><br>
 		</div>
 		</div>
 		</div>

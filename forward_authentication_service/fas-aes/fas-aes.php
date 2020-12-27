@@ -1,5 +1,5 @@
 <?php
-/* (c) Blue Wave Projects and Services 2015-2019. This software is released under the GNU GPL license.
+/* (c) Blue Wave Projects and Services 2015-2021. This software is released under the GNU GPL license.
 
  This is a FAS script providing an example of remote Forward Authentication for openNDS (NDS) on an http web server supporting PHP.
 
@@ -118,23 +118,23 @@ $imagepath="http://$gatewayaddress/images/splash.jpg";
 //Start Outputting the requested responsive page:
 #######################################################
 
-splash_header($imagepath, $gatewayname, $client_zone);
+splash_header();
 
 if (isset($_GET["terms"])) {
 	// ToS requested
 	display_terms();
-	footer($imagepath);
+	footer();
 } elseif (isset($_GET["status"])) {
 	// The status page is triggered by a client if already authenticated by openNDS (eg by clicking "back" on their browser)
 	status_page();
-	footer($imagepath);
+	footer();
 } elseif (isset($_GET["landing"])) {
 	// The landing page is served to the client immediately after openNDS authentication, but many CPDs will immediately close
 	landing_page();
-	footer($imagepath);
+	footer();
 } else {
 	login_page();
-	footer($imagepath);
+	footer();
 }
 
 // Functions:
@@ -253,6 +253,7 @@ function login_page() {
 	$gatewayaddress=$GLOBALS["gatewayaddress"];
 	$gatewaymac=$GLOBALS["gatewaymac"];
 	$clientif=$GLOBALS["clientif"];
+	$client_zone=$GLOBALS["client_zone"];
 	$originurl=$GLOBALS["originurl"];
 
 	if (isset($_GET["fullname"])) {
@@ -266,6 +267,7 @@ function login_page() {
 	if ($fullname == "" or $email == "") {
 		echo "
 			<big-red>Welcome!</big-red><br>
+			<med-blue>You are connected to $client_zone</med-blue><br>
 			<b>Please enter your Full Name and Email Address</b>
 		";
 
@@ -344,6 +346,7 @@ function landing_page() {
 	$gatewayaddress=$GLOBALS["gatewayaddress"];
 	$gatewayname=$GLOBALS["gatewayname"];
 	$clientif=$GLOBALS["clientif"];
+	$client_zone=$GLOBALS["client_zone"];
 	$redir=rawurldecode($originurl);
 
 	echo "
@@ -353,6 +356,7 @@ function landing_page() {
 			</big-red>
 		</p>
 		<hr>
+		<med-blue>You are connected to $client_zone</med-blue><br>
 		<p>
 			<italic-black>
 				You can use your Browser, Email and other network Apps as you normally would.
@@ -373,7 +377,9 @@ function landing_page() {
 	flush();
 }
 
-function splash_header($imagepath, $gatewayname, $client_zone) {
+function splash_header() {
+	$imagepath=$GLOBALS["imagepath"];
+	$gatewayname=$GLOBALS["gatewayname"];
 	$gatewayname=htmlentities(rawurldecode($gatewayname), ENT_HTML5, "UTF-8", FALSE);
 
 	// Add headers to stop browsers from cacheing 
@@ -398,22 +404,24 @@ function splash_header($imagepath, $gatewayname, $client_zone) {
 		<body>
 		<div class=\"offset\">
 		<med-blue>
-			$gatewayname <br>
-			$client_zone
+			$gatewayname
 		</med-blue><br>
 		<div class=\"insert\">
 	";
 	flush();
 }
 
-function footer($imagepath) {
+function footer() {
+	$imagepath=$GLOBALS["imagepath"];
+	$version=$GLOBALS["version"];
+	$year=date("Y");
 	echo "
 		<hr>
 		<div style=\"font-size:0.5em;\">
-			<img style=\"float:left; max-height:5em; height:auto; width:auto\" src=\"$imagepath\">
-			&copy; The openNDS Contributors 2004-".date("Y")."<br>
-			&copy; BlueWave Projects and Services 2015-".date("Y")."<br>
-			This software is released under the GNU GPL license.<br><br>
+			<img style=\"height:30px; width:60px; float:left;\" src=\"$imagepath\" alt=\"Splash Page: For access to the Internet.\">
+			&copy; The openNDS Project 2015 - $year<br>
+			openNDS $version
+			<br><br>
 		</div>
 		</div>
 		</div>
@@ -427,9 +435,12 @@ function read_terms() {
 	#terms of service button
 	$me=$_SERVER['SCRIPT_NAME'];
 	$fas=$GLOBALS["fas"];
+	$iv=$GLOBALS["iv"];
+
 	echo "
 		<form action=\"$me\" method=\"get\">
 			<input type=\"hidden\" name=\"fas\" value=\"$fas\">
+			<input type=\"hidden\" name=\"iv\" value=\"$iv\">
 			<input type=\"hidden\" name=\"terms\" value=\"yes\">
 			<input type=\"submit\" value=\"Read Terms of Service\" >
 		</form>

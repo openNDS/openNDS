@@ -1,6 +1,6 @@
 #!/bin/sh
-#Copyright (C) The openNDS Contributors 2004-2020
-#Copyright (C) BlueWave Projects and Services 2015-2020
+#Copyright (C) The openNDS Contributors 2004-2021
+#Copyright (C) BlueWave Projects and Services 2015-2021
 #This software is released under the GNU GPL license.
 #
 clientip=$1
@@ -89,20 +89,20 @@ header() {
 
 footer() {
 	# Define a common footer html for every page served
-	year="$(date | awk -F ' ' '{print $(6)}')"
-	footer="
-		<img style=\"height:30px; width:60px; float:left;\" src=\"/images/splash.jpg\" alt=\"Splash Page: For access to the Internet.\">
-
-		<copy-right>
+	year=$(date +'%Y')
+	echo "
+		<hr>
+		<div style=\"font-size:0.5em;\">
+			<img style=\"height:30px; width:60px; float:left;\" src=\"/images/splash.jpg\" alt=\"Splash Page: For access to the Internet.\">
+			&copy; The openNDS Project 2015 - $year<br>
+			openNDS $version
 			<br><br>
-			openNDS $version.
-		</copy-right>
+		</div>
 		</div>
 		</div>
 		</body>
 		</html>
 	"
-	echo "$footer"
 }
 
 body() {

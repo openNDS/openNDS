@@ -615,12 +615,13 @@ setup_from_config(void)
 		debug(LOG_NOTICE, "FAS URL is %s\n", config->fas_url);
 		free(fasurl);
 
+		// Check if authmon is running and if it is, kill it
+		safe_asprintf(&fasssl, "kill $(pgrep -f \"usr/lib/opennds/authmon.sh\") > /dev/null 2>&1");
+		system(fasssl);
+		free(fasssl);
+
 		// Start the authmon daemon if configured for Level 3
 		if (config->fas_key && config->fas_secure_enabled == 3) {
-			// Check if authmon is already running and if it is, kill it
-			safe_asprintf(&fasssl, "kill $(pgrep -f \"usr/lib/opennds/authmon.sh\") > /dev/null 2>&1");
-			system(fasssl);
-			free(fasssl);
 
 			// Get the sha256 digest of gatewayname
 			safe_asprintf(&fasssl,

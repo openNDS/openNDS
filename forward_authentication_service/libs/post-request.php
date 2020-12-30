@@ -27,14 +27,15 @@ function SendPostData($_p, $remote_url, $user_agent) {
 
 	//open the stream and get the response
 	$fp = @fopen($remote_url, 'r', false, $context);
-
 	$response = "";
 
 	if ($fp == TRUE) {
 		$response = trim(stream_get_contents($fp));
+	} else {
+		return "ERROR: Failed_to_open_stream_to: [$remote_url]";
 	}
-
 	return $response;
+
 }
 
 ?>

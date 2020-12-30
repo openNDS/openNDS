@@ -1127,7 +1127,7 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 		get_client_interface(clientif, sizeof(clientif), client->mac);
 		debug(LOG_INFO, "clientif: [%s]", clientif);
 		snprintf(querystr, QUERYMAXLEN,
-			"clientip=%s%sclientmac=%s%sgatewayname=%s%sversion=%s%shid=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s%s",
+			"clientip=%s%sclientmac=%s%sgatewayname=%s%sversion=%s%shid=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s%s%s",
 			client->ip, QUERYSEPARATOR,
 			client->mac, QUERYSEPARATOR,
 			config->url_encoded_gw_name, QUERYSEPARATOR,
@@ -1137,7 +1137,7 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 			config->gw_mac, QUERYSEPARATOR,
 			config->authdir, QUERYSEPARATOR,
 			originurl, QUERYSEPARATOR,
-			clientif,
+			clientif, QUERYSEPARATOR,
 			config->custom_params
 		);
 

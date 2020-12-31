@@ -321,6 +321,7 @@ ndsctl_auth(FILE *fp, char *arg)
 	unsigned long long int uploadquota = config->upload_quota;
 	unsigned long long int downloadquota = config->download_quota;
 	char customdata[256] = {0};
+	char client_state[24] = {0};
 	char *argcopy;
 	char *arg2;
 	char *arg3;
@@ -394,21 +395,25 @@ ndsctl_auth(FILE *fp, char *arg)
 	id = client ? client->id : 0;
 
 	if (id) {
-		// set client values
-		client->session_start = now;
-		client->session_end = now + seconds;
-		client->upload_rate = uploadrate;
-		client->download_rate = downloadrate;
-		client->upload_quota = uploadquota;
-		client->download_quota = downloadquota;
 
-		debug(LOG_DEBUG, "ndsctl_thread: client session start time [ %lu ], end time [ %lu ]", now, client->session_end);
+		if (strcmp(fw_connection_state_as_string(client->fw_connection_state), "Preauthenticated") == 0) {
+			// set client values
+			client->session_start = now;
+			client->session_end = now + seconds;
+			client->upload_rate = uploadrate;
+			client->download_rate = downloadrate;
+			client->upload_quota = uploadquota;
+			client->download_quota = downloadquota;
 
-		rc = auth_client_auth_nolock(id, "ndsctl_auth", customdata);
+			debug(LOG_DEBUG, "ndsctl_thread: client session start time [ %lu ], end time [ %lu ]", now, client->session_end);
+
+			rc = auth_client_auth_nolock(id, "ndsctl_auth", customdata);
+		}
 	} else {
 		debug(LOG_DEBUG, "Client not found.");
 		rc = -1;
 	}
+
 	UNLOCK_CLIENT_LIST();
 
 	if (rc == 0) {

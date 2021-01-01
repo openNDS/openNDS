@@ -441,9 +441,17 @@ function write_log() {
 	$clientif=$GLOBALS["clientif"];
 	$originurl=$GLOBALS["originurl"];
 	$redir=rawurldecode($originurl);
-	$fullname=$_GET["fullname"];
-	$email=$_GET["email"];
+	if (isset($_GET["fullname"])) {
+		$fullname=$_GET["fullname"];
+	} else {
+		$fullname="na";
+	}
 
+	if (isset($_GET["email"])) {
+		$email=$_GET["email"];
+	} else {
+		$email="na";
+	}
 
 	$log=date('Y-m-d H:i:s', $_SERVER['REQUEST_TIME']).
 		", $script, $gatewayname, $fullname, $email, $clientip, $clientmac, $clientif, $user_agent, $redir\n";
@@ -639,10 +647,10 @@ function footer() {
 	echo "
 		<hr>
 		<div style=\"font-size:0.5em;\">
-			<img style=\"height:30px; width:60px; float:left;\" src=\"$imagepath\" alt=\"Splash Page: For access to the Internet.\">
+			<img style=\"height:60px; width:60px; float:left;\" src=\"$imagepath\" alt=\"Splash Page: For access to the Internet.\">
 			&copy; The openNDS Project 2015 - $year<br>
 			openNDS $version
-			<br><br>
+			<br><br><br><br>
 		</div>
 		</div>
 		</div>
@@ -688,6 +696,7 @@ function display_terms () {
 			In return, we grant you FREE Internet access.
 		</b><hr>
 	";
+	flush();
 
 	# Terms of Service
 	echo "
@@ -701,6 +710,7 @@ function display_terms () {
 			<input type=\"button\" VALUE=\"Continue\" onClick=\"history.go(-1);return true;\">
 		</form>
 	";
+	flush();
 
 	# Proper Use
 	echo "
@@ -770,6 +780,7 @@ function display_terms () {
 				</li>
 			</ol>
 	";
+	flush();
 
 	# Content Disclaimer
 	echo "
@@ -791,6 +802,7 @@ function display_terms () {
 		Login details and device identities may be stored and be used as evidence in a Court of Law against such users.
 		<br>
 	";
+	flush();
 
 	# Limitation of Liability
 	echo "
@@ -816,6 +828,7 @@ function display_terms () {
 			Upon any such termination, any and all rights granted to you by this Hotspot Owner shall terminate.
 		</p>
 	";
+	flush();
 
 	# Inemnity
 	echo "

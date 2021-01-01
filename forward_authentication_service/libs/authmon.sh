@@ -3,7 +3,7 @@
 url=$1
 gatewayhash=$2
 phpcli=$3
-loopinterval=15
+loopinterval=10
 postrequest="/usr/lib/opennds/post-request.php"
 
 #action can be "list" (list and delete from FAS auth log) or "view" (view and leave in FAS auth log)
@@ -17,10 +17,10 @@ version=$(ndsctl status 2>/dev/null | grep Version | awk '{printf $2}')
 user_agent="openNDS(authmon;NDS:$version;)"
 
 do_ndsctl () {
-	local timeout=2
-	ndsstatus="ready"
+	local timeout=4
 
 	for tic in $(seq $timeout); do
+		ndsstatus="ready"
 		ndsctlout=$(ndsctl $ndsctlcmd)
 
 		for keyword in $ndsctlout; do
@@ -28,12 +28,12 @@ do_ndsctl () {
 			if [ $keyword = "locked" ]; then
 				ndsstatus="busy"
 				sleep 1
-				continue
+				break
 			fi
 		done
 
-		if [ $tic = $timeout ] ; then
-			ndsstatus="timeout"
+		if [ "$ndsstatus" = "ready" ]; then
+			break
 		fi
 	done
 }
@@ -54,8 +54,8 @@ while true; do
 				ndsctlcmd="auth $authparams 2>/dev/null"
 				do_ndsctl
 
-				if [ "$ndsstatus" = "timeout" ]; then
-				 logger -s -p daemon.err -t "authmon" "ERROR: ndsctl timeout"
+				if [ "$ndsstatus" = "busy" ]; then
+				 logger -s -p daemon.err -t "authmon" "ERROR: ndsctl is in use by another process"
 				fi
 			done
 		fi

@@ -4,6 +4,28 @@
 #
 clientip=$1
 
+do_ndsctl () {
+	local timeout=4
+
+	for tic in $(seq $timeout); do
+		ndsstatus="ready"
+		ndsctlout=$(ndsctl $ndsctlcmd)
+
+		for keyword in $ndsctlout; do
+
+			if [ $keyword = "locked" ]; then
+				ndsstatus="busy"
+				sleep 1
+				break
+			fi
+		done
+
+		if [ "$ndsstatus" = "ready" ]; then
+			break
+		fi
+	done
+}
+
 get_client_zone () {
 	# Gets the client zone, (if we don't already have it) ie the connection the client is using, such as:
 	# local interface (br-lan, wlan0, wlan0-1 etc.,
@@ -36,28 +58,33 @@ htmlentityencode() {
 }
 
 parse_parameters() {
-	param_str=$(ndsctl json $clientip)
+	ndsctlcmd="json $clientip"
+	do_ndsctl
 
-	for param in gatewayname mac version ip clientif session_start session_end last_active token state upload_rate_limit \
-		download_rate_limit upload_quota download_quota upload_this_session download_this_session  \
-		upload_session_avg  download_session_avg
-	do
-		val=$(echo "$param_str" | grep "$param" | awk -F'"' '{printf "%s", $4}')
-		eval $param=$(echo "\"$val\"")
-	done
+	if [ "$ndsstatus" = "ready" ]; then
+		param_str=$ndsctlout
 
-	# url decode and html entity encode gatewayname
-	gatewayname_dec=$(printf "${gatewayname//%/\\x}")
-	htmlentityencode "$gatewayname_dec"
-	gatewaynamehtml=$entityencoded
+		for param in gatewayname mac version ip clientif session_start session_end last_active token state upload_rate_limit \
+			download_rate_limit upload_quota download_quota upload_this_session download_this_session  \
+			upload_session_avg  download_session_avg
+		do
+			val=$(echo "$param_str" | grep "$param" | awk -F'"' '{printf "%s", $4}')
+			eval $param=$(echo "\"$val\"")
+		done
 
-	# Get client_zone from clientif
-	get_client_zone
+		# url decode and html entity encode gatewayname
+		gatewayname_dec=$(printf "${gatewayname//%/\\x}")
+		htmlentityencode "$gatewayname_dec"
+		gatewaynamehtml=$entityencoded
 
-	# Get human readable times:
-	sessionstart=$(date -d @$session_start)
-	sessionend=$(date -d @$session_end)
-	lastactive=$(date -d @$last_active)
+		# Get client_zone from clientif
+		get_client_zone
+
+		# Get human readable times:
+		sessionstart=$(date -d @$session_start)
+		sessionend=$(date -d @$session_end)
+		lastactive=$(date -d @$last_active)
+	fi
 }
 
 header() {
@@ -105,31 +132,41 @@ footer() {
 }
 
 body() {
-	echo "
-		<b>IP address:</b> $ip<br>
-		<b>MAC address:</b> $mac<br>
-		<b>Interfaces being used by this client:</b> $clientif<br>
-		<b>Session Start:</b> $sessionstart<br>
-		<b>Session End:</b> $sessionend<br>
-		<b>Last Active:</b> $lastactive<br>
-		<b>Upload Rate Limit:</b> $upload_rate_limit Kb/s<br>
-		<b>Download Rate Limit:</b> $download_rate_limit Kb/s<br>
-		<b>Upload Quota:</b> $upload_quota KBytes<br>
-		<b>Download Quota:</b> $download_quota KBytes<br>
-		<b>Uploaded This Session:</b> $upload_this_session KBytes<br>
-		<b>Downloaded This Session:</b> $download_this_session KBytes<br>
-		<b>Average Upload Rate This Session:</b> $upload_session_avg Kb/s<br>
-		<b>Average Download Rate This Session:</b> $download_session_avg Kb/s<br>
-		<hr>
-		<form>
-			<input type=\"button\" VALUE=\"Refresh\" onClick=\"history.go(0);return true;\">
-		</form>
-		<hr>
-		<form action=\"/opennds_deny/\" method=\"get\">
-			<input type=\"submit\" value=\"Logout\" >
-		</form>
-		<hr>
-	"
+	if [ "$ndsstatus" = "busy" ]; then
+		pagebody="
+			<hr>
+			<b>The Portal is busy, please click or tap \"Refresh\"<br><br></b>
+			<form>
+				<input type=\"button\" VALUE=\"Refresh\" onClick=\"history.go(0);return true;\">
+			</form>
+		"
+	else
+		pagebody="
+			<b>IP address:</b> $ip<br>
+			<b>MAC address:</b> $mac<br>
+			<b>Interfaces being used by this client:</b> $clientif<br>
+			<b>Session Start:</b> $sessionstart<br>
+			<b>Session End:</b> $sessionend<br>
+			<b>Last Active:</b> $lastactive<br>
+			<b>Upload Rate Limit:</b> $upload_rate_limit Kb/s<br>
+			<b>Download Rate Limit:</b> $download_rate_limit Kb/s<br>
+			<b>Upload Quota:</b> $upload_quota KBytes<br>
+			<b>Download Quota:</b> $download_quota KBytes<br>
+			<b>Uploaded This Session:</b> $upload_this_session KBytes<br>
+			<b>Downloaded This Session:</b> $download_this_session KBytes<br>
+			<b>Average Upload Rate This Session:</b> $upload_session_avg Kb/s<br>
+			<b>Average Download Rate This Session:</b> $download_session_avg Kb/s<br>
+			<hr>
+			<form>
+				<input type=\"button\" VALUE=\"Refresh\" onClick=\"history.go(0);return true;\">
+			</form>
+			<hr>
+			<form action=\"/opennds_deny/\" method=\"get\">
+				<input type=\"submit\" value=\"Logout\" >
+			</form>
+		"
+	fi
+	echo "$pagebody"
 }
 
 # Start generating the html:

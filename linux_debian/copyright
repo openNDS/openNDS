@@ -3,7 +3,7 @@ Upstream-Name: opennds
 Source: http://github.com/opennds
 
 Files: *
-Copyright: (C) 2013-20 BlueWave Projects and Services <dot@blue-wave.net>
+Copyright: (C) 2013-21 BlueWave Projects and Services <dot@blue-wave.net>
            (C) 2013-20 Moritz Warning <moritzwarning@web.de>
            (C) 2013 Shiao-An Yuan <shiao.an.yuan@gmail.com>
            (C) 2010 Fred Moyer <fred@slwifi.com>

@@ -1,4 +1,6 @@
 #!/bin/sh
+#Copyright (C) BlueWave Projects and Services 2015-2021
+#This software is released under the GNU GPL license.
 
 url=$1
 gatewayhash=$2

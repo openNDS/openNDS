@@ -24,12 +24,12 @@
     @author Copyright (C) 2007 Paul Kube <nodogsplash@kokoro.ucsd.edu>
 */
 
-#define COPYRIGHT "openNDS, Copyright (C) 2020, The openNDS Contributors"
+#define COPYRIGHT "openNDS, Copyright (C) 2021, The openNDS Contributors"
 
 #ifndef _CONF_H_
 #define _CONF_H_
 
-#define VERSION "7.0.2beta"
+#define VERSION "8.0.0beta"
 
 /*
  * Defines how many times should we try detecting the interface with the default route (in seconds).

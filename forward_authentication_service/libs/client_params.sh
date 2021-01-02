@@ -1,5 +1,4 @@
 #!/bin/sh
-#Copyright (C) The openNDS Contributors 2004-2021
 #Copyright (C) BlueWave Projects and Services 2015-2021
 #This software is released under the GNU GPL license.
 #

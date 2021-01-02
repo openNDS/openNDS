@@ -99,11 +99,11 @@ $key="1234567890";
 # In addition, choice of the values of these variables can be determined, based on the interface used by the client
 # (as identified by the clientif parsed variable). For example, a system with two wireless interfaces such as "members" and "guests". 
 
-$sessionlength=1440; // minutes (1440 minutes = 24 hours)
-$uploadrate=500; // kbits/sec (500 kilobits/sec = 0.5 Megabits/sec)
-$downloadrate=1000; // kbits/sec (1000 kilobits/sec = 1.0 Megabits/sec)
-$uploadquota=500000; // kBytes (500000 kiloBytes = 500 MegaBytes)
-$downloadquota=1000000; // kBytes (1000000 kiloBytes = 1 GigaByte)
+$sessionlength=0; // minutes (1440 minutes = 24 hours)
+$uploadrate=0; // kbits/sec (500 kilobits/sec = 0.5 Megabits/sec)
+$downloadrate=0; // kbits/sec (1000 kilobits/sec = 1.0 Megabits/sec)
+$uploadquota=0; // kBytes (500000 kiloBytes = 500 MegaBytes)
+$downloadquota=0; // kBytes (1000000 kiloBytes = 1 GigaByte)
 
 #############################################################################################################
 #

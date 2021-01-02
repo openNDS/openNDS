@@ -69,6 +69,11 @@ parse_parameters() {
 			upload_session_avg  download_session_avg
 		do
 			val=$(echo "$param_str" | grep "$param" | awk -F'"' '{printf "%s", $4}')
+
+			if [ "$val" = "null" ]; then
+				val="Unlimited"
+			fi
+
 			eval $param=$(echo "\"$val\"")
 		done
 

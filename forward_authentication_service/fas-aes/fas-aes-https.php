@@ -624,9 +624,9 @@ function splash_header() {
 		<title>$gatewayname</title>
 		<style>
 	";
-
+	flush();
 	insert_css();
-
+	flush();
 	echo "
 		</style>
 		</head>

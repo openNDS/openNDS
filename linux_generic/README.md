@@ -4,7 +4,17 @@ How to Compile openNDS
 Linux/Unix - Compile in Place on Target Hardware
 ************************************************
 
-Make sure the development suite for your Linux distribution is installed.
+Make sure the development suite for your Linux distribution is installed:
+
+**Debian/Ubuntu**
+```
+sudo apt-get install git subversion g++ libncurses5-dev gawk zlib1g-dev build-essential
+```
+**OpenSuse**
+```
+sudo zypper install -t pattern devel_basis
+```
+**Dependency**
 
 The libmicrohttpd library (MHD) is a dependency of openNDS so compiling and installing this is a prerequisite.
 

@@ -29,6 +29,7 @@ Contents:
    :maxdepth: 2
 
    overview
+   changelog
    install
    howitworks
    splash

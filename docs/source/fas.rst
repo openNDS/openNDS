@@ -74,7 +74,7 @@ Example FAS Query strings
 
    `http://fasremoteip:fasport/faspath?authaction=http://gatewayaddress:gatewayport/opennds_auth/?clientip=[clientip]&gatewayname=[gatewayname]&tok=[token]&redir=[requested_url]`
 
-   Although the simplest to set up, a knowledgeable user could bypass FAS, so running fas_secure_enabled at level 1, 2 or 3 is recommended.
+   Note: a knowledgeable user could bypass FAS, so running fas_secure_enabled at level 1, 2 or 3 is recommended.
 
 
   **Level 1** (fas_secure_enabled = 1)

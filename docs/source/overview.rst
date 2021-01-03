@@ -12,9 +12,9 @@ Provide simple and immediate public Internet access
  NDS provides two pre-installed methods.
 
  * **Click to Continue**. A simple static web page with template variables (*default*). This provides basic notification and a simple click/tap to continue button.
- * **username/email-address login**. A simple dynamic set of web pages that provide username/email-address login, a welcome page and logs access by client users. (*Installed by default and enabled by un-commenting a line in the configuration file*)
+ * **username/email-address login**. A simple dynamic set of web pages that provide username/email-address login, a welcome page and logs access by client users. (*Installed by default and enabled in the configuration file*)
 
-  Customising the page seen by users is a simple matter of editing the respective html or script files.
+  Customising the page seen by users is a simple matter of editing the script file.
 
 Write Your Own Captive Portal.
 ******************************

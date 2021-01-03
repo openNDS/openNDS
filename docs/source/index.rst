@@ -33,6 +33,7 @@ Contents:
    install
    howitworks
    splash
+   clientstatus
    fas
    preauth
    binauth

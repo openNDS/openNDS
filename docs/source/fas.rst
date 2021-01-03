@@ -35,19 +35,19 @@ The FAS can be on the same device as openNDS, on the same local area network as 
 Security
 ********
 
-**If FAS Secure is enabled** (Levels 1 (default), 2 and 3), the client authentication token is kept secret until FAS verification is complete.
+**If FAS Secure is enabled** (Levels 1 (default), 2 and 3), the client authentication token is kept secret at all times. Instead, faskey is used to generate a hashed id value (hid) and this is sent by openNDS to the FAS. The FAS must then in turn generate a new return hash id (rhid) to return to openNDS in its authentication request.
 
    **If set to "0"** The FAS is enforced by NDS to use **http** protocol.
-   The client token is sent to the FAS in clear text in the query string of the redirect along with authaction and redir.
+   The client token is sent to the FAS in clear text in the query string of the redirect along with authaction and redir. This method is easy to bypass and useful only for the simplest systems where security does not matter.
 
    **If set to "1"** The FAS is enforced by NDS to use **http** protocol.
-   When the sha256sum command is available AND faskey is set, the client token will be hashed and sent to the FAS identified as "hid" in the query string. The gatewayaddress is also sent on the query string, allowing the FAS to construct the authaction parameter. FAS must return the sha256sum of the concatenation of the original hid and faskey to be used by openNDS for client authentication. This is returned in the normal way in the query string identified as "tok". openNDS will automatically detect whether hid mode is active or the raw token is being returned.
+   A base64 encoded query string containing the hid is sent to the FAS, along with the clientip, clientmac, gatewayname, client_hid, gatewayaddress, authdir, originurl, clientif and custom parameters and variables.
 
-   Should sha256sum not be available or faskey is not set, then it is the responsibility of the FAS to request the token from ndsctl.
+   Should sha256sum not be available, then openNDS will terminate with an error message on startup.
 
    **If set to "2"** The FAS is enforced by NDS to use **http** protocol.
 
-   clientip, clientmac, gatewayname, client token, gatewayaddress, authdir, originurl and clientif are encrypted using faskey and passed to FAS in the query string.
+   clientip, clientmac, gatewayname, client_hid, gatewayaddress, authdir, originurl and clientif are encrypted using faskey and passed to FAS in the query string.
 
    The query string will also contain a randomly generated initialization vector to be used by the FAS for decryption.
 
@@ -57,56 +57,47 @@ Security
 
    openNDS does not depend on this package and module, but will exit gracefully if this package and module are not installed when this level is set.
 
-   The FAS must use the query string passed initialisation vector and the pre shared fas_key to decrypt the query string. An example FAS level 2 php script (fas-aes.php) is preinstalled in the /etc/opennds directory and also supplied in the source code.
+   The FAS must use the query string passed initialisation vector and the pre shared fas_key to decrypt the query string. An example FAS level 2 php script (fas-aes.php) is stored in the /etc/opennds directory and also supplied in the source code. This should be copied the the web root of a suitable web server for use.
 
    **If set to "3"** The FAS is enforced by openNDS to use **https** protocol.
-   Level 3 is the same as level 2 except the use of https protocol is enforced for FAS. In addition, the "authmon" daemon is loaded. This allows the external FAS, after client verification, to effectively traverse inbound firewalls and address translation to achieve NDS authentication without generating browser security warnings or errors. An example FAS level 3 php script (fas-aes-https.php) is preinstalled in the /etc/opennds directory and also supplied in the source code.
+   Level 3 is the same as level 2 except the use of https protocol is enforced for FAS. In addition, the "authmon" daemon is loaded. This allows the external FAS, after client verification, to effectively traverse inbound firewalls and address translation to achieve NDS authentication without generating browser security warnings or errors. An example FAS level 3 php script (fas-aes-https.php) is pre-installed in the /etc/opennds directory and also supplied in the source code. This should be copied the the web root of a suitable web server for use.
 
-**Option faskey must be set** if fas secure is set to levels 2 and 3 but is optional for level 1.
-
-  Option faskey is used to encrypt the data sent by NDS to FAS.
-  It can be any combination of A-Z, a-z and 0-9, up to 16 characters with no white space.
-
-  This is used to create a sha256 digest that is in turn used to encrypt the data using the aes-256-cbc cypher.
-
-  A random initialisation vector is generated for every encryption and sent to FAS with the encrypted data.
-
-  Option faskey must be pre-shared with FAS.
+   **Option faskey has a default value.** It is recommended that this is set to some secret value in the config file and the FAS script set to use a matching value, ie faskey must be pre-shared with FAS.
 
 
 Example FAS Query strings
 *************************
 
-  **Level 0** (fas_secure_enabled = 0), NDS sends the token and other information to FAS as clear text.
+  **Level 0** (fas_secure_enabled = 0)
 
-  `http://fasremoteip:fasport/faspath?authaction=http://gatewayaddress:gatewayport/opennds_auth/?clientip=[clientip]&gatewayname=[gatewayname]&tok=[token]&redir=[requested_url]`
+   NDS sends the token and other information to FAS as clear text.
+
+   `http://fasremoteip:fasport/faspath?authaction=http://gatewayaddress:gatewayport/opennds_auth/?clientip=[clientip]&gatewayname=[gatewayname]&tok=[token]&redir=[requested_url]`
 
    Although the simplest to set up, a knowledgeable user could bypass FAS, so running fas_secure_enabled at level 1, 2 or 3 is recommended.
 
 
-  **Level 1** (fas_secure_enabled = 1), NDS sends only information required to identify, the instance of NDS, the client and the client's originally requested URL. The client token is never exposed.
+  **Level 1** (fas_secure_enabled = 1)
 
-  **If faskey is set**, NDS sends a digest of the random client token:
+   NDS sends a query string containing a base64 encoded string containing required parameters and variables, plus any FAS variables generated in the client dialogue, such as username and email address. The client token is never exposed.
 
-  `http://fasremotefqdn:fasport/faspath?hid=[hash_id]&gatewayname=[gatewayname]&clientip=[clientip]&redir=[requested-url]`
+   Example Level 1 query string:
 
-   The FAS must return the hash of the concatenated hid value and the value of faskey identified in the query string as "tok". NDS will automatically detect this.
+    `http://fasremotefqdn:fasport/faspath?fas=[b64encodedstring]&username=[client_username]&emailaddr=[client_email]`
 
-  **If faskey is not set** the following is sent:
+   The b64encoded string will contain a comma space separated list of parameters.
 
-  `http://fasremotefqdn:fasport/faspath?gatewayname=[gatewayname]&clientip=[clientip]&redir=[requested-url]`
+   The decoded string received by FAS will be of the form:
 
-   It is the responsibility of FAS to obtain the unique client token allocated by NDS as well as constructing the return URL to NDS.
+   `[varname1]=[var1], [varname2]=[var2], ..... etc` (the separator being comma-space).
 
-   The return url will be constructed by FAS from predetermined knowledge of the configuration of NDS using gatewayname as an identifier.
+  For example:
 
-   The client's unique access token will be obtained from NDS by the FAS making a call to the get_client_token library utility:
+   `clientip=[clientipaddress], clientmac=[clientmacaddress], gatewayname=[gatewayname], client token, gatewayaddress, authdir, originurl`
 
-   ``/usr/lib/opennds/./get_client_token $clientip``
+  The FAS must return the hash of the concatenated hid value and the value of faskey identified in the query string as "tok". NDS will automatically detect this.
 
-   A json parser could be used to extract all the client variables supplied by ndsctl, an example can be found in the default PreAuth Login script in /usr/lib/nogogsplash/login.sh.
-
-  **Levels 2 and 3** (fas_secure_enabled = 2 and fas_secure_enabled = 3), NDS sends encrypted information to FAS.
+  **Levels 2 and 3** (fas_secure_enabled = 2 and fas_secure_enabled = 3), openNDS sends encrypted information to FAS.
 
   `http://fasremotefqdn:fasport/faspath?fas=[aes-256-cbc data]&iv=[random initialisation vector]` (level 2)
 
@@ -117,23 +108,16 @@ Example FAS Query strings
   The decrypted string received by FAS will be of the form:
   [varname1]=[var1], [varname2]=[var2], ..... etc. (the separator being comma-space).
 
-  eg `clientip=192.168.8.23, clientmac=04:15:52:6a:e4:ad, tok=770bfe05, originurl=.....`
+  For example:
 
-  Variables sent by NDS in the encrypted string in NDS v4.0.0 and above are as follows:
-
-  **clientip clientmac gatewayname tok gatewayaddress authdir originurl clientif**
-
-  Where:
-   **tok** is the client token
-
-   **gatewayaddress** is authentication address of NDS ie [nds_ip]:[nds_port]
-
-   **authdir** is the NDS virtual authentication directory
-
-   **clientif** is the interface string identifying the interface the client is connected to in the form of:
-    [local interface] [meshnode mac] [local mesh interface]
+    `clientip=[clientipaddress], clientmac=[clientmacaddress], gatewayname=[gatewayname], client token, gatewayaddress, authdir, originurl`
 
   It is the responsibility of FAS to parse the decrypted string for the variables it requires.
+
+Example scripts
+---------------
+
+Full details of how to use FAS query strings can be seen in the example scripts, login.sh, fas-hid.php, fas-aes.php and fas-aes-https.php
 
 Custom Parameters
 *****************
@@ -145,9 +129,9 @@ Once a custom parameter is defined in the configuration, its value will be fixed
 
 Parameters must be of the form param_name=param_value and may not contain white space or single quote characters.
 
-Custom parameters are added to the query string when FAS level 1 and faskey are both set.
+Custom parameters are added to the base64 encoded query string when FAS level 1 is set or the basic login option is used. Note the basic login option is a special case of FAS level 1 running the login.sh script.
 
-Custom parameters are added to the encrypted query string when FAS levels 2 and 3 are set.
+Custom parameters are added to the encrypted query string when FAS levels 1, 2 and 3 are set.
 
 The fas_custom_parameters_list option in the configuration file is used to set custom parameters. This is detailed in the default configuration file.
 
@@ -185,7 +169,7 @@ For details of the clientif variable and how to use get_client_interface, see th
 After Successful Verification by FAS
 ************************************
 
-If the client is successfully verified by the FAS, FAS will return the unique token, or its hashed equivalent to NDS to finally allow the client access to the Internet.
+If the client is successfully verified by the FAS, FAS will send the return hash id (rhid) to openNDS to finally allow the client access to the Internet.
 
 Post FAS processing
 *******************
@@ -206,7 +190,10 @@ Authentication Method for fas_secure_enabled levels 0,1 and 2
  This is most commonly achieved using an html form of method GET.
  The parameter redir can be the client's originally requested URL sent by NDS, or more usefully, the URL of a suitable landing page.
 
- Be aware that many client CPD processes will **automatically close** the landing page as soon as Internet access is detected.
+The "login_option" special case
++++++++++++++++++++++++++++++++
+
+The default "login_option" script, login.sh, must always be a local script so has access to ndsctl auth method of authentication without needing the authmon daemon so uses this rather than use the authdir GET method detailed above. This means login.sh can directly set client quotas without requiring BinAuth.
 
 Authentication Method for fas_secure_enabled level 3 (Authmon Daemon)
 ---------------------------------------------------------------------
@@ -226,6 +213,8 @@ Authentication Method for fas_secure_enabled level 3 (Authmon Daemon)
  * custom: A custom data string that will be sent to BinAuth
 
  Details can be found in the example script fas-aes-https.php
+
+Be aware that many client CPD processes will **automatically close** the landing page as soon as Internet access is detected.
 
 BinAuth Post FAS Processing
 ***************************

@@ -95,28 +95,22 @@ config opennds
 	###########################################################################################
 
 	# statuspage
+	# Deprecated
 	# Default: status.html
 	#
-	# The page the client is shown if the client is already authenticated but navigates to the captive portal.
+	# This is the legacy page that the client is shown if they are already authenticated but navigate to the captive portal.
 	#
-	# option statuspage 'status.html'
 	###########################################################################################
 
 
 	# splashpage
-	# Default: /etc/opennds/splash.html
+	# Deprecated
+	# Default: splash.html
 	#
-	# The legacy html page used for templated splash page generation (if FAS/PreAuth is not enabled)
+	# The legacy html page used for templated splash page generation.
 	#
 	# splash.html displays a simplistic click to continue button.
 	#
-	# splash_sitewide.html displays a client login page asking for username and password.
-	#
-	# The BinAuth script binauth_sitewide.sh must be enabled for splash_sitewide to verify the
-	# entered credentials from the userlist.dat database file.
-	# The following two lines enable splash_sitewide templated authentication:
-	#option splashpage 'splash_sitewide.html'
-	#option binauth '/usr/lib/opennds/binauth_sitewide.sh'
 	###########################################################################################
 
 	# Interface to use
@@ -156,6 +150,16 @@ config opennds
 	option gatewayname 'OpenWrt openNDS'
 	###########################################################################################
 
+	# GatewayFQDN
+	# Default: not set
+	# This is the simulated FQDN used by a client to access the Client Status Page
+	# If not set, the Status page can be accessed at: http://gatewayaddress:gatewayport/
+	#
+	# Warning - if set, services on port 80 of the gateway will no longer be accessible (eg Luci AdminUI)
+	#
+	option gatewayfqdn 'status.client'
+	###########################################################################################
+
 	# MaxClients
 	# Default 20
 	# The maximum number of clients allowed to connect
@@ -185,10 +189,12 @@ config opennds
 	# If set to 0, there is no limit
 	#
 	# Quotas and rates can also be set by FAS via Authmon Daemon, by BinAuth, and by ndsctl auth.
-	# Values set by these methods, will be override values set in this config file.
+	# Values set by these methods, will override values set in this config file.
 	#
+	# Rates:
 	option uploadrate '0'
 	option downloadrate '0'
+	#
 	###########################################################################################
 	# The client data rate is calculated using a moving average.
 	# This allows clients to burst at maximum possible rate, only blocking if the moving average
@@ -197,6 +203,8 @@ config opennds
 	# Default 2
 	option ratecheckwindow '2'
 	###########################################################################################
+	#
+	# Volume Quotas:
 	# If the client data quota exceeds the value set here, the client will be forced out
 	# Values are in kB
 	# If set to 0, there is no limit
@@ -258,7 +266,9 @@ config opennds
 	# The protocol must NOT be prepended to the FQDN (ie http:// or https://)
 	# To prevent CPD or browser security errors NDS prepends the required http:// or https://
 	# before redirection, depending upon the fas_secure_enabled option.
+	#
 	# If set, DNS MUST resolve fasremotefqdn to be the same ip address as fasremoteip.
+	#
 	# Typical Remote Shared Hosting Example:
 	#option fasremotefqdn 'onboard-wifi.net'
 	###########################################################################################
@@ -277,19 +287,19 @@ config opennds
 	# (not the file system root).
 	#
 	# Typical Remote Shared Hosting Example (if fasremotefqdn is not specified):
-	#option faspath '/onboard-wifi.net/nodog/fas.php'
+	#option faspath '/remote_host_fqdn/fas/fas-hid.php'
 	#
 	# Typical Remote Shared Hosting Example (ie BOTH fasremoteip AND fasremotefqdn set):
-	#option faspath '/nodog/fas.php'
+	#option faspath '/fas/fas-hid.php'
 	#
 	# Typical Locally Hosted Example (ie fasremoteip not set):
-	#option faspath '/nodog/fas.php'
+	#option faspath '/fas/fas-hid.php'
 	###########################################################################################
 
 	# Option: faskey
-	# Default: not set
+	# Default: 1234567890
 	# A key phrase for NDS to encrypt the query string sent to FAS
-	# Can be any combination of A-Z, a-z and 0-9, up to 32 characters with no white space
+	# Can be up to 64 characters with no white space
 	#
 	# Option faskey must be pre-shared with FAS.
 	#
@@ -302,22 +312,20 @@ config opennds
 	# ****If set to "0"****
 	# The FAS is enforced by NDS to use http protocol.
 	# The client token is sent to the FAS in clear text in the query string of the redirect along with authaction and redir.
+	# Note: This level is insecure and can easily be bypassed
 
 	# ****If set to "1"****
 	# The FAS is enforced by NDS to use http protocol.
-	# When the sha256sum command is available AND faskey is set, the client token will be hashed and sent to the FAS,
-	# identified as "hid" in the query string.
-	# The gatewayaddress is also sent on the query string, allowing the FAS to construct the authaction parameter.
-	# FAS must return the sha256sum of the concatenation of the original hid and faskey to be used by NDS for client authentication.
-	# This is returned in the normal way in the query string identified as “tok”.
-	# NDS will automatically detect whether hid mode is active or the raw token is being returned.
+	# The client token will be hashed and sent to the FAS along with other relevent information in a base 64 encoded string
 	#
-	# Should sha256sum not be available or faskey is not set, then it is the responsibility of the FAS to request the token from NDSCTL.
+	# FAS must return the sha256sum of the concatenation of hid(the hashed original token), and faskey to be used by NDS for client authentication.
+	# This is returned in the normal way in the query string identified as "tok".
+	#
 
 	# ****If set to "2"****
 	# The FAS is enforced by NDS to use http protocol.
 	#
-	# The parameters clientip, clientmac, gatewayname, client token, gatewayaddress, authdir, originurl and clientif
+	# The parameters clientip, clientmac, gatewayname, hid(the hashed original token), gatewayaddress, authdir, originurl and clientif
 	# are encrypted using faskey and passed to FAS in the query string.
 	#
 	# The query string will also contain a randomly generated initialization vector to be used by the FAS for decryption.

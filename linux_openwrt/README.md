@@ -1,13 +1,27 @@
+Stable release packages for openNDS on OpenWrt can be found at:
+
+https://downloads.openwrt.org/snapshots/packages/
+
+Here you can select the platform for the SoC/Hardware of your router and download the required openNDS package for installation.
+
+Alternatively, you can compile openNDS yourself, or include into a custom OpenWrt image for your router using a combination of the OpenWrt development tools such as the Imagebuilder or SDK. You can also compile the entirety of OpenWrt if you wish.
+
 To include openNDS into your OpenWRT image or to create an .ipk
 package (similar to Debians .deb files), you have to build an OpenWRT image.
 To build the firmware you need a Unix console to enter commands into.
 
-Install the dependencies of the build environment (Debian/Ubuntu):
+Install the dependencies of the build environment:
+
+**Debian/Ubuntu**
 ```
 sudo apt-get install git subversion g++ libncurses5-dev gawk zlib1g-dev build-essential
 ```
+**OpenSuse**
+```
+sudo zypper install -t pattern devel_basis
+```
 
-Build Commands:
+Compile everything yourself - Build Commands:
 ```
 git clone https://git.openwrt.org/openwrt/openwrt.git
 cd openwrt
@@ -43,7 +57,7 @@ For details please check the OpenWRT documentation.
 
 ## Build Notes
 
-You might want to use your own source location and not the remote respository.
+You might want to use your own source location and not the remote repository.
 To do this you need to checkout the repository yourself and commit your changes locally:
 
 ```

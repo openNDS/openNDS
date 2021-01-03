@@ -1,3 +1,6 @@
+What's New? - ChangeLog
+#######################
+
 openNDS (8.0.0)
 
   * This version introduces major new functionality and some major changes

@@ -38,7 +38,7 @@
 #include <errno.h>
 
 #include "ndsctl.h"
-
+#include "common.h"
 
 struct argument {
 	const char *cmd;
@@ -100,7 +100,9 @@ usage(void)
 		"  untrust mac\n"
 		"	Untrust the given MAC address\n\n"
 		"  debuglevel n\n"
-		"	Set debug level to n (0=silent, 1=Normal, 2=Info, 3=debug)\n"
+		"	Set debug level to n (0=silent, 1=Normal, 2=Info, 3=debug)\n\n"
+		"  b64decode \"string_to_decode\"\n"
+		"	Base 64 decode the given string\n"
 		"\n"
 	);
 }
@@ -119,6 +121,7 @@ static struct argument arguments[] = {
 	{"unallow", "MAC %s unallowed.\n", "Failed to unallow MAC %s.\n"},
 	{"trust", "MAC %s trusted.\n", "Failed to trust MAC %s.\n"},
 	{"untrust", "MAC %s untrusted.\n", "Failed to untrust MAC %s.\n"},
+	{"b64decode", NULL, NULL},
 	{NULL, NULL, NULL}
 };
 
@@ -184,8 +187,8 @@ static int
 ndsctl_do(const char *socket, const struct argument *arg, const char *param)
 {
 	int sock;
-	char buffer[4096] = {0};
-	char request[1024] = {0};
+	char buffer[MAX_BUF] = {0};
+	char request[MAX_BUF *4 /3] = {0};
 	int len, rlen;
 	int ret;
 
@@ -246,8 +249,8 @@ main(int argc, char **argv)
 	int i = 1;
 	int counter;
 	char lockfile[] = "/tmp/ndsctl.lock";
-	char args[512] = {0};
-	char argi[64] = {0};
+	char args[1024] = {0};
+	char argi[512] = {0};
 	FILE *fd;
 
 	if ((fd = fopen(lockfile, "r")) != NULL) {

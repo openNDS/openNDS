@@ -47,26 +47,23 @@ install:
 	mkdir -p $(DESTDIR)/usr/lib/opennds
 	cp forward_authentication_service/binauth/binauth_log.sh $(DESTDIR)/usr/lib/opennds/
 	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/opennds/binauth_log.sh
-	cp forward_authentication_service/binauth/binauth_sitewide.sh $(DESTDIR)/usr/lib/opennds/
-	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/opennds/binauth_sitewide.sh
-	cp forward_authentication_service/binauth/userlist.dat $(DESTDIR)/etc/opennds/
-	cp forward_authentication_service/binauth/splash_sitewide.html $(DESTDIR)/etc/opennds/htdocs/
 	cp forward_authentication_service/PreAuth/login.sh $(DESTDIR)/usr/lib/opennds/
 	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/opennds/login.sh
-	cp forward_authentication_service/PreAuth/login-remote-image.sh $(DESTDIR)/usr/lib/opennds/
-	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/opennds/login-remote-image.sh
 	cp forward_authentication_service/libs/get_client_interface.sh $(DESTDIR)/usr/lib/opennds/
 	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/opennds/get_client_interface.sh
 	cp forward_authentication_service/libs/get_client_token.sh $(DESTDIR)/usr/lib/opennds/
 	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/opennds/get_client_token.sh
+	cp forward_authentication_service/libs/client_params.sh $(DESTDIR)/usr/lib/opennds/
+	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/opennds/client_params.sh
 	cp forward_authentication_service/libs/unescape.sh $(DESTDIR)/usr/lib/opennds/
 	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/opennds/unescape.sh
 	cp forward_authentication_service/libs/authmon.sh $(DESTDIR)/usr/lib/opennds/
 	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/opennds/authmon.sh
-	cp forward_authentication_service/libs/ipsetconfig.sh $(DESTDIR)/usr/lib/opennds/
-	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/opennds/ipsetconfig.sh
+	cp forward_authentication_service/libs/dnsconfig.sh $(DESTDIR)/usr/lib/opennds/
+	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/opennds/dnsconfig.sh
 	cp forward_authentication_service/libs/post-request.php $(DESTDIR)/usr/lib/opennds/
 	cp forward_authentication_service/fas-aes/fas-aes.php $(DESTDIR)/etc/opennds/
+	cp forward_authentication_service/fas-hid/fas-hid.php $(DESTDIR)/etc/opennds/
 	cp forward_authentication_service/fas-aes/fas-aes-https.php $(DESTDIR)/etc/opennds/
 
 

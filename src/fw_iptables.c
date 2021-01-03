@@ -522,6 +522,13 @@ iptables_fw_init(void)
 		rc |= iptables_do_command("-t nat -A " CHAIN_OUTGOING " -p tcp --dport 80 -j DNAT --to-destination %s", gw_address);
 		// CHAIN_OUTGOING, other packets ACCEPT
 		rc |= iptables_do_command("-t nat -A " CHAIN_OUTGOING " -j ACCEPT");
+
+		if (config->gw_fqdn) {
+			rc |= iptables_do_command("-t nat -I " CHAIN_OUTGOING " -p tcp --destination %s --dport 80 -j REDIRECT --to-port %d",
+				config->gw_ip,
+				config->gw_port
+			);
+		}
 	}
 	/*
 	 * End of nat table chains and rules (ip4 only)

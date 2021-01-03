@@ -1,5 +1,6 @@
 <?php
-//Copyright (C) BlueWave Projects and Services 2016-2020
+#Copyright (C) BlueWave Projects and Services 2016-2021
+#This software is released under the GNU GPL license.
 
 if (isset($argv[1])) {$remote_url=$argv[1];} else {echo "missing argument\n"; exit(1);}
 if (isset($argv[2])) {$action=$argv[2];} else {echo "missing argument\n"; exit(1);}
@@ -27,14 +28,15 @@ function SendPostData($_p, $remote_url, $user_agent) {
 
 	//open the stream and get the response
 	$fp = @fopen($remote_url, 'r', false, $context);
-
 	$response = "";
 
 	if ($fp == TRUE) {
 		$response = trim(stream_get_contents($fp));
+	} else {
+		return "ERROR: Failed_to_open_stream_to: [$remote_url]";
 	}
-
 	return $response;
+
 }
 
 ?>

@@ -71,6 +71,7 @@ static void ndsctl_untrust(FILE *fp, char *arg);
 static void ndsctl_auth(FILE *fp, char *arg);
 static void ndsctl_deauth(FILE *fp, char *arg);
 static void ndsctl_debuglevel(FILE *fp, char *arg);
+static void ndsctl_b64decode(FILE *fp, char *arg);
 
 static int socket_set_non_blocking(int sockfd);
 
@@ -222,7 +223,8 @@ ndsctl_handler(int fd)
 {
 	int done, i, ret = 0;
 	char request[MAX_BUF];
-	ssize_t read_bytes, len;
+	//ssize_t read_bytes, len;
+	int read_bytes, len;
 	FILE* fp;
 
 	debug(LOG_DEBUG, "Entering thread_ndsctl_handler....");
@@ -279,6 +281,8 @@ ndsctl_handler(int fd)
 		ndsctl_deauth(fp, (request + 7));
 	} else if (strncmp(request, "debuglevel", 10) == 0) {
 		ndsctl_debuglevel(fp, (request + 11));
+	} else if (strncmp(request, "b64decode", 9) == 0) {
+		ndsctl_b64decode(fp, (request + 10));
 	}
 
 	if (!done) {
@@ -294,6 +298,17 @@ ndsctl_handler(int fd)
 }
 
 static void
+ndsctl_b64decode(FILE *fp, char *arg)
+{
+	char str_b64[QUERYMAXLEN] = {0};
+
+	debug(LOG_DEBUG, "Entering ndsctl_b64decode [%s]", arg);
+	uh_b64decode(str_b64, sizeof(str_b64), arg, strlen(arg));
+	fprintf(fp, "%s", str_b64);
+	debug(LOG_DEBUG, "Exiting ndsctl_b64decode [%s]", str_b64);
+}
+
+static void
 ndsctl_auth(FILE *fp, char *arg)
 {
 	s_config *config = config_get_config();
@@ -306,6 +321,7 @@ ndsctl_auth(FILE *fp, char *arg)
 	unsigned long long int uploadquota = config->upload_quota;
 	unsigned long long int downloadquota = config->download_quota;
 	char customdata[256] = {0};
+	char client_state[24] = {0};
 	char *argcopy;
 	char *arg2;
 	char *arg3;
@@ -329,7 +345,7 @@ ndsctl_auth(FILE *fp, char *arg)
 	arg3 = strsep(&argcopy, ",");
 	debug(LOG_DEBUG, "arg3 [%s]", arg3);
 
-	if (arg3 != NULL) {
+	if (strtol(arg3, &ptr, 10) > 0) {
 		seconds = 60 * strtol(arg3, &ptr, 10);
 	}
 
@@ -379,25 +395,25 @@ ndsctl_auth(FILE *fp, char *arg)
 	id = client ? client->id : 0;
 
 	if (id) {
-		// set client values
-		client->session_start = now;
-		client->upload_rate = uploadrate;
-		client->download_rate = downloadrate;
-		client->upload_quota = uploadquota;
-		client->download_quota = downloadquota;
-		if (seconds) {
+
+		if (strcmp(fw_connection_state_as_string(client->fw_connection_state), "Preauthenticated") == 0) {
+			// set client values
+			client->session_start = now;
 			client->session_end = now + seconds;
-		} else {
-			client->session_end = 0;
+			client->upload_rate = uploadrate;
+			client->download_rate = downloadrate;
+			client->upload_quota = uploadquota;
+			client->download_quota = downloadquota;
+
+			debug(LOG_DEBUG, "ndsctl_thread: client session start time [ %lu ], end time [ %lu ]", now, client->session_end);
+
+			rc = auth_client_auth_nolock(id, "ndsctl_auth", customdata);
 		}
-
-		debug(LOG_DEBUG, "ndsctl_thread: client session end time [ %lu ]", client->session_end);
-
-		rc = auth_client_auth_nolock(id, "ndsctl_auth", customdata);
 	} else {
 		debug(LOG_DEBUG, "Client not found.");
 		rc = -1;
 	}
+
 	UNLOCK_CLIENT_LIST();
 
 	if (rc == 0) {

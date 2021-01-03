@@ -66,7 +66,6 @@
 #include "debug.h"
 #include "fw_iptables.h"
 
-
 // Defined in main.c
 extern time_t started_time;
 
@@ -461,8 +460,8 @@ ndsctl_status(FILE *fp)
 
 	fprintf(fp, "Client Check Interval: %ds\n", config->checkinterval);
 	fprintf(fp, "Rate Check Window: %d check intervals (%ds)\n", config->rate_check_window, (config->rate_check_window * config->checkinterval));
-	fprintf(fp, "Preauth Idle Timeout: %dm\n", config->preauth_idle_timeout);
-	fprintf(fp, "Auth Idle Timeout: %dm\n", config->auth_idle_timeout);
+	fprintf(fp, "Preauthenticated Client Idle Timeout: %dm\n", config->preauth_idle_timeout);
+	fprintf(fp, "Authenticated Client Idle Timeout: %dm\n", config->auth_idle_timeout);
 
 	if (config->redirectURL) {
 		fprintf(fp, "Redirect URL: %s\n", config->redirectURL);
@@ -716,17 +715,20 @@ ndsctl_json_client(FILE *fp, const t_client *client, time_t now, char *indent)
 {
 	unsigned long int durationsecs;
 	unsigned long long int download_bytes, upload_bytes;
+	char clientif[64] = {0};
+	s_config *config;
 
+	config = config_get_config();
+	get_client_interface(clientif, sizeof(clientif), client->mac);
+
+	fprintf(fp, "  %s\"gatewayname\":\"%s\",\n", indent, config->url_encoded_gw_name);
+	fprintf(fp, "  %s\"version\":\"%s\",\n", indent, VERSION);
 	fprintf(fp, "  %s\"mac\":\"%s\",\n", indent, client->mac);
 	fprintf(fp, "  %s\"ip\":\"%s\",\n", indent, client->ip);
-	fprintf(fp, "  %s\"added\":\"%lld\",\n", indent, (long long) client->session_start);
-	fprintf(fp, "  %s\"active\":\"%lld\",\n", indent, (long long) client->counters.last_updated);
-
-	if (client->session_start) {
-		fprintf(fp, "  %s\"duration\":\"%lu\",\n", indent, now - client->session_start);
-	} else {
-		fprintf(fp, "  %s\"duration\":\"%lu\",\n", indent, 0ul);
-	}
+	fprintf(fp, "  %s\"clientif\":\"%s\",\n", indent, clientif);
+	fprintf(fp, "  %s\"session_start\":\"%lld\",\n", indent, (long long) client->session_start);
+	fprintf(fp, "  %s\"session_end\":\"%lld\",\n", indent, (long long) client->session_end);
+	fprintf(fp, "  %s\"last_active\":\"%lld\",\n", indent, (long long) client->counters.last_updated);
 	fprintf(fp, "  %s\"token\":\"%s\",\n", indent, client->token ? client->token : "none");
 	fprintf(fp, "  %s\"state\":\"%s\",\n", indent, fw_connection_state_as_string(client->fw_connection_state));
 

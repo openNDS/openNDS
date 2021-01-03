@@ -1,3 +1,46 @@
+openNDS (8.0.0-1) stable; urgency=medium
+
+  * This version introduces major new functionality and some major changes
+  * Rationalisation of support for multiple Linux distributions [bluewavenet]
+  * Refactor login.sh script introducing base64 encoding and hashed token (hid) support [bluewavenet]
+  * Refactor fas-hid script introducing base64 encoding and simplifying customisation of the script [bluewavenet]
+  * Refactor binauth_log.sh and log BinAuth custom data as url encoded [bluewavenet]
+  * Refactor fas-aes, simplifying customisation of the script [bluewavenet]
+  * Refactor fas-aes-https, simplifying customisation of the script [bluewavenet]
+  * Change - Use hid instead of tok when fas_secure_enabled >= 1 [bluewavenet]
+  * Add - base64 encoding to fas_secure_enabled level 1 [bluewavenet]
+  * Add - gatewyname, clientif, session_start, session_end and last_active to ndsctl json [bluewavenet]
+  * Add - support for RFC6585 Status Code 511 - Network Authentication Required [bluewavenet]
+  * Add - Client Status Page UI with Logout [bluewavenet]
+  * Add - GatewayFQDN option [bluewavenet]
+  * Add - client interface to status page query string [bluewavenet]
+  * Add - support using base 64 encoded custom string for BinAuth and replace tok with hid [bluewavenet]
+  * Add - base 64 decode option to ndsctl [bluewavenet]
+  * Add - b64 encoding of querystring for level 1 [bluewavenet]
+  * Add - Improved performance/user-experience on congested/slow systems using php FAS scripts [bluewavenet]
+  * Add - support for ndsctl auth by hid in client_list [bluewavenet]
+  * Add - Ensure faskey is set to default value (always enabled) [bluewavenet]
+  * Add - Display error page on login failure in login.sh [bluewavenet]
+  * Add - splash.html, add deprecation notice [bluewavenet]
+  * Add - authmon, improved lock checking and introduce smaller loopinterval [bluewavenet]
+  * Add - client_params, wait for ndsctl if it is busy [bluewavenet]
+  * Add - fas-aes-https, allow progressive output to improve user experience on slow links [bluewavenet]
+  * Fix - Block access to /opennds_preauth/ if PreAuth not enabled [bluewavenet]
+  * Fix - On startup, call iptables_fw_destroy before doing any other setup [bluewavenet]
+  * Fix - missing final redirect to originurl in fas-hid [bluewavenet]
+  * Fix - ensure gatewayname is always urlencoded [bluewavenet]
+  * Fix - client session end not set by binauth [bluewavenet]
+  * Fix - Session timeout, if client setting is 0, default to global value [bluewavenet]
+  * Fix - missing trailing separator on query and fix some compiler errors [bluewavenet]
+  * Fix - ensure authmon daemon is killed if left running from previous crash [bluewavenet]
+  * Fix - add missing query separator for custom FAS parameters [bluewavenet]
+  * Fix - ndsctl auth, do not set quotas if client is already authenticated [bluewavenet]
+  * Fix - client_params, show "Unlimited" when "null" is received from ndsctl json [bluewavenet]
+  * Update configuration files [bluewavenet]
+  * update documentation [bluewavenet]
+
+ -- Rob White <dot@blue-wave.net>  Sat, 2 Nov 2021 16:38:14 +0000
+
 openNDS (7.0.1-1) stable; urgency=medium
 
   * This version contains fixes and some minor updates

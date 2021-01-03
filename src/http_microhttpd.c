@@ -98,6 +98,7 @@ static int do_binauth(
 {
 	char username_enc[64] = {0};
 	char password_enc[64] = {0};
+	char custom_dec_b64[384 *4 / 3] = {0};
 	char custom_enc[384] = {0};
 	char lockfile[] = "/tmp/ndsctl.lock";
 	FILE *fd;
@@ -115,6 +116,9 @@ static int do_binauth(
 	unsigned long long int upload_quota;
 	unsigned long long int download_quota;
 	int rc;
+	s_config *config;
+
+	config = config_get_config();
 
 	// Get the client user agent
 	MHD_get_connection_values(connection, MHD_HEADER_KIND, get_user_agent_callback, &user_agent);
@@ -134,14 +138,21 @@ static int do_binauth(
 		password="na";
 	}
 
-	if (!custom || strlen(custom) == 0) {
-		custom="na";
+	if (config->preauth) {
+		uh_urlencode(custom_enc, sizeof(custom_enc), custom, strlen(custom));
+	} else {
+
+		if (!custom || strlen(custom) == 0) {
+			custom="bmE";
+		}
+		uh_b64decode(custom_dec_b64, sizeof(custom_dec_b64), custom, strlen(custom));
+		uh_urlencode(custom_enc, sizeof(custom_enc), custom_dec_b64, strlen(custom_dec_b64));
 	}
-	debug(LOG_DEBUG, "BinAuth: custom data [ %s ]", custom);
+
+	debug(LOG_DEBUG, "BinAuth: custom data [ %s ]", custom_enc);
 
 	uh_urlencode(username_enc, sizeof(username_enc), username, strlen(username));
 	uh_urlencode(password_enc, sizeof(password_enc), password, strlen(password));
-	uh_urlencode(custom_enc, sizeof(custom_enc), custom, strlen(custom));
 	uh_urlencode(redirect_url_enc_buf, sizeof(redirect_url_enc_buf), redirect_url, strlen(redirect_url));
 	uh_urlencode(enc_user_agent, sizeof(enc_user_agent), user_agent, strlen(user_agent));
 
@@ -157,6 +168,7 @@ static int do_binauth(
 
 	// execute the script
 	rc = execute_ret_url_encoded(msg, sizeof(msg) - 1, argv);
+	debug(LOG_DEBUG, "BinAuth returned arguments: %s", msg);
 	free(argv);
 
 	// unlock ndsctl
@@ -168,6 +180,7 @@ static int do_binauth(
 	}
 
 	rc = sscanf(msg, "%d %llu %llu %llu %llu", &seconds, &upload_rate, &download_rate, &upload_quota, &download_quota);
+	debug(LOG_DEBUG, "BinAuth returned session length: %d", seconds);
 
 	// store assigned parameters
 	switch (rc) {
@@ -219,6 +232,8 @@ static int is_foreign_hosts(struct MHD_Connection *connection, const char *host)
 	char our_host[MAX_HOSTPORTLEN];
 	s_config *config = config_get_config();
 	snprintf(our_host, MAX_HOSTPORTLEN, "%s", config->gw_address);
+	debug(LOG_INFO, "Our host: %s Requested host: %s", our_host, host);
+
 
 	// we serve all request without a host entry as well we serve all request going to our gw_address
 	if (host == NULL)
@@ -226,6 +241,14 @@ static int is_foreign_hosts(struct MHD_Connection *connection, const char *host)
 
 	if (!strcmp(host, our_host))
 		return 0;
+
+	if (!strcmp(host, config->gw_ip))
+		return 0;
+
+	if (config->gw_fqdn) {
+		if (!strcmp(host, config->gw_fqdn))
+			return 0;
+	}
 
 	// port 80 is special, because the hostname doesn't need a port
 	if (config->gw_port == 80 && !strcmp(host, config->gw_ip))
@@ -422,7 +445,7 @@ enum MHD_Result libmicrohttpd_cb(
 
 	if (client && (client->fw_connection_state == FW_MARK_AUTHENTICATED ||
 			client->fw_connection_state == FW_MARK_TRUSTED)) {
-		// client already authed - dangerous!!! This should never happen
+		// client is already authenticated, maybe they clicked/tapped "back" on the CPD browser or maybe they want the info page.
 		return authenticated(connection, url, client);
 	}
 
@@ -577,6 +600,17 @@ static int authenticate_client(struct MHD_Connection *connection,
 	}
 
 	// override remaining client values that might have been set by binauth
+
+	if (seconds == 0) {
+		seconds = (60 * config->session_timeout);
+	}
+
+	debug(LOG_DEBUG, "timout seconds: %d", seconds);
+
+	if (seconds != (60 * config->session_timeout)) {
+		client->session_end = (client->session_start + seconds);
+	}
+
 	if (downloadrate > 0) {
 		client->download_rate = downloadrate;
 	}
@@ -629,13 +663,21 @@ static int authenticated(struct MHD_Connection *connection,
 	const char *host = NULL;
 	char redirect_to_us[128];
 	char *fasurl = NULL;
+	char query_str[QUERYMAXLEN] = {0};
+	char *query = query_str;
+	char msg[HTMLMAXSIZE] = {0};
+	char clientif[64] = {0};
+	int rc;
 	int ret;
+	struct MHD_Response *response;
 
 	ret = MHD_get_connection_values(connection, MHD_HEADER_KIND, get_host_value_callback, &host);
 
 	if (ret < 1) {
 		debug(LOG_ERR, "authenticated: Error getting host");
 		return ret;
+	} else {
+		debug(LOG_INFO, "An authenticated client is requesting: host [%s] url [%s]", host, url);
 	}
 
 	/* check if this is a late request, meaning the user tries to get the internet, but ended up here,
@@ -643,7 +685,7 @@ static int authenticated(struct MHD_Connection *connection,
 	 */
 	if (is_foreign_hosts(connection, host)) {
 		// might happen if the firewall rule isn't yet installed
-		return send_refresh(connection);
+			return send_error(connection, 511);
 	}
 
 	if (check_authdir_match(url, config->denydir)) {
@@ -653,16 +695,31 @@ static int authenticated(struct MHD_Connection *connection,
 	}
 
 	if (check_authdir_match(url, config->authdir)) {
+		get_client_interface(clientif, sizeof(clientif), client->mac);
+
 		if (config->fas_port && !config->preauth) {
-			safe_asprintf(&fasurl, "%s?clientip=%s&gatewayname=%s&gatewayaddress=%s&status=authenticated",
-				config->fas_url, client->ip, config->url_encoded_gw_name, config->gw_address);
-			debug(LOG_DEBUG, "fasurl %s", fasurl);
+			get_query(connection, &query, HTMLQUERYSEPARATOR);
+			safe_asprintf(&fasurl, "%s%s%sstatus=authenticated",
+				config->fas_url,
+				query,
+				HTMLQUERYSEPARATOR
+			);
+			debug(LOG_DEBUG, "fasurl [%s]", fasurl);
+			debug(LOG_DEBUG, "query [%s]", query);
 			ret = send_redirect_temp(connection, client, fasurl);
 			free(fasurl);
 			return ret;
 		} else if (config->fas_port && config->preauth) {
-			safe_asprintf(&fasurl, "?clientip=%s%sgatewayname=%s%sgatewayaddress=%s%sstatus=authenticated",
-				client->ip, QUERYSEPARATOR, config->url_encoded_gw_name, QUERYSEPARATOR,  config->gw_address, QUERYSEPARATOR);
+			safe_asprintf(&fasurl, "?clientip=%s%sgatewayname=%s%sgatewayaddress=%s%sclientif=%s%sstatus=authenticated",
+				client->ip,
+				QUERYSEPARATOR,
+				config->url_encoded_gw_name,
+				QUERYSEPARATOR,
+				config->gw_address,
+				QUERYSEPARATOR,
+				clientif,
+				QUERYSEPARATOR
+			);
 			debug(LOG_DEBUG, "fasurl %s", fasurl);
 			ret = show_preauthpage(connection, fasurl);
 			free(fasurl);
@@ -673,10 +730,16 @@ static int authenticated(struct MHD_Connection *connection,
 	}
 
 	if (check_authdir_match(url, config->preauthdir)) {
+
 		if (config->fas_port) {
-			safe_asprintf(&fasurl, "?clientip=%s&gatewayname=%s&gatewayaddress=%s&status=authenticated",
-				client->ip, config->url_encoded_gw_name, config->gw_address);
-			debug(LOG_DEBUG, "fasurl %s", fasurl);
+
+			get_query(connection, &query, QUERYSEPARATOR);
+			safe_asprintf(&fasurl, "%s%sstatus=authenticated",
+				query,
+				QUERYSEPARATOR
+			);
+
+			debug(LOG_DEBUG, "preauthdir: fasurl %s", fasurl);
 			ret = show_preauthpage(connection, fasurl);
 			free(fasurl);
 			return ret;
@@ -685,7 +748,29 @@ static int authenticated(struct MHD_Connection *connection,
 		}
 	}
 
-	// user doesn't want the splashpage or tried to auth itself
+	// User just entered gatewayaddress:gatewayport so give them the info page
+	if (strcmp(url, "/") == 0) {
+		rc = execute_ret(msg, HTMLMAXSIZE - 1, "/usr/lib/opennds/client_params.sh '%s'", client->ip);
+
+		if (rc != 0) {
+			debug(LOG_WARNING, "Script: /usr/lib/opennds/client_params.sh - failed to execute");
+			return -1;
+		}
+
+		// serve the script output (in msg)
+		response = MHD_create_response_from_buffer(strlen(msg), (char *)msg, MHD_RESPMEM_MUST_COPY);
+
+		if (!response) {
+			return send_error(connection, 503);
+		}
+
+		MHD_add_response_header(response, "Content-Type", "text/html; charset=utf-8");
+		ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
+		MHD_destroy_response(response);
+		return ret;
+	}
+
+	// Client wants a specific file eg /images/splash.jpg etc.:
 	return serve_file(connection, client, url);
 }
 
@@ -698,6 +783,8 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 	char msg[HTMLMAXSIZE] = {0};
 	const char *user_agent = NULL;
 	char enc_user_agent[256] = {0};
+	char *preauthpath = NULL;
+	char *cmd = NULL;
 
 	// Encoded querystring could be bigger than the unencoded version
 	char enc_query[QUERYMAXLEN + QUERYMAXLEN/2] = {0};
@@ -706,35 +793,41 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 	int ret;
 	struct MHD_Response *response;
 
-	MHD_get_connection_values(connection, MHD_HEADER_KIND, get_user_agent_callback, &user_agent);
+	safe_asprintf(&preauthpath, "/%s/", config->preauthdir);
 
-	debug(LOG_DEBUG, "PreAuth: User Agent is [ %s ]", user_agent);
+	if (strcmp(preauthpath, config->fas_path) == 0) {
+		free (preauthpath);
+		MHD_get_connection_values(connection, MHD_HEADER_KIND, get_user_agent_callback, &user_agent);
+		uh_urlencode(enc_user_agent, sizeof(enc_user_agent), user_agent, strlen(user_agent));
+		debug(LOG_DEBUG, "PreAuth: Encoded User Agent is [ %s ]", enc_user_agent);
 
-	uh_urlencode(enc_user_agent, sizeof(enc_user_agent), user_agent, strlen(user_agent));
-
-	if (query) {
 		uh_urlencode(enc_query, sizeof(enc_query), query, strlen(query));
-		debug(LOG_DEBUG, "PreAuth: query: %s", query);
+		debug(LOG_DEBUG, "PreAuth: Encoded query: %s", enc_query);
+
+		safe_asprintf(&cmd, "%s '%s' '%s' '%d'", config->preauth, enc_query, enc_user_agent, config->login_option_enabled);
+		rc = execute_ret_url_encoded(msg, HTMLMAXSIZE - 1, cmd);
+		free(cmd);
+
+		if (rc != 0) {
+			debug(LOG_WARNING, "Preauth script: %s '%s' - failed to execute", config->preauth, query);
+			return -1;
+		}
+
+		// serve the script output (in msg)
+		response = MHD_create_response_from_buffer(strlen(msg), (char *)msg, MHD_RESPMEM_MUST_COPY);
+
+		if (!response) {
+			return send_error(connection, 503);
+		}
+
+		MHD_add_response_header(response, "Content-Type", "text/html; charset=utf-8");
+		ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
+		MHD_destroy_response(response);
+		return ret;
+	} else {
+		free (preauthpath);
+		return send_error(connection, 404);
 	}
-
-	rc = execute_ret(msg, HTMLMAXSIZE - 1, "%s '%s' '%s' '%d'", config->preauth, enc_query, enc_user_agent, config->login_option_enabled);
-
-	if (rc != 0) {
-		debug(LOG_WARNING, "Preauth script: %s '%s' - failed to execute", config->preauth, query);
-		return -1;
-	}
-
-	// serve the script output (in msg)
-	response = MHD_create_response_from_buffer(strlen(msg), (char *)msg, MHD_RESPMEM_MUST_COPY);
-
-	if (!response) {
-		return send_error(connection, 503);
-	}
-
-	MHD_add_response_header(response, "Content-Type", "text/html; charset=utf-8");
-	ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
-	MHD_destroy_response(response);
-	return ret;
 }
 
 /**
@@ -759,7 +852,21 @@ static int preauthenticated(struct MHD_Connection *connection,
 	int ret;
 	s_config *config = config_get_config();
 
-	debug(LOG_DEBUG, "url: %s", url);
+	ret = MHD_get_connection_values(connection, MHD_HEADER_KIND, get_host_value_callback, &host);
+
+	if (ret < 1) {
+		debug(LOG_ERR, "preauthenticated: Error getting host");
+		return ret;
+	}
+
+	debug(LOG_DEBUG, "preauthenticated: host [%s] url [%s]", host, url);
+
+	// User just accessed gatewayaddress:gatewayport either directly or by redirect
+	if (strcmp(url, "/") == 0) {
+		if (strcmp(host, config->gw_address) == 0 || strcmp(host, config->gw_ip) == 0 || strcmp(host, config->gw_fqdn) == 0) {
+			return send_error(connection, 511);
+		}
+	}
 
 	// Check for preauthdir
 	if (check_authdir_match(url, config->preauthdir)) {
@@ -769,13 +876,6 @@ static int preauthenticated(struct MHD_Connection *connection,
 		get_query(connection, &query, QUERYSEPARATOR);
 
 		ret = show_preauthpage(connection, query);
-		return ret;
-	}
-
-	ret = MHD_get_connection_values(connection, MHD_HEADER_KIND, get_host_value_callback, &host);
-
-	if (ret < 1) {
-		debug(LOG_ERR, "preauthenticated: Error getting host");
 		return ret;
 	}
 
@@ -805,6 +905,7 @@ static int preauthenticated(struct MHD_Connection *connection,
 
 	// check if this is a redirect query with a foreign host as target
 	if (is_foreign_hosts(connection, host)) {
+		debug(LOG_DEBUG, "preauthenticated: foreign host [%s] detected", host);
 		return redirect_to_splashpage(connection, client, host, url);
 	}
 
@@ -872,11 +973,11 @@ static int encode_and_redirect_to_splashpage(struct MHD_Connection *connection, 
 		// Generate secure query string or authaction url
 		// Note: config->fas_path contains a leading / as it is the path from the FAS web root.
 		if (config->fas_secure_enabled == 0) {
-			safe_asprintf(&splashpageurl, "%s?authaction=http://%s/%s/%s&redir=%s",
-				config->fas_url, config->gw_address, config->authdir, querystr, originurl);
+			safe_asprintf(&splashpageurl, "%s?authaction=http://%s/%s/%s",
+				config->fas_url, config->gw_address, config->authdir, querystr);
 		} else if (config->fas_secure_enabled == 1) {
-				safe_asprintf(&splashpageurl, "%s%s&redir=%s",
-					config->fas_url, querystr, originurl);
+				safe_asprintf(&splashpageurl, "%s%s",
+					config->fas_url, querystr);
 		} else if (config->fas_secure_enabled == 2 || config->fas_secure_enabled == 3) {
 			safe_asprintf(&phpcmd,
 				"echo '<?php \n"
@@ -907,8 +1008,8 @@ static int encode_and_redirect_to_splashpage(struct MHD_Connection *connection, 
 			}
 			free(phpcmd);
 		} else {
-			safe_asprintf(&splashpageurl, "%s?%s&redir=%s",
-				config->fas_url, querystr, originurl);
+			safe_asprintf(&splashpageurl, "%s?%s",
+				config->fas_url, querystr);
 		}
 	} else {
 		safe_asprintf(&splashpageurl, "http://%s/%s?redir=%s",
@@ -950,7 +1051,6 @@ static int redirect_to_splashpage(struct MHD_Connection *connection, t_client *c
 	debug(LOG_DEBUG, "Query string is [ %s ]", query);
 	safe_asprintf(&originurl_raw, "http://%s%s%s", host, url, query);
 	uh_urlencode(originurl, sizeof(originurl), originurl_raw, strlen(originurl_raw));
-
 	debug(LOG_DEBUG, "originurl: %s", originurl);
 
 	querystr=construct_querystring(client, originurl, querystr);
@@ -968,73 +1068,76 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 
 	char hash[128] = {0};
 	char clientif[64] = {0};
-	char *cmd = NULL;
-	char msg[128] = {0};
-	char param_urlencoded[256] = {0};
+	char query_str[QUERYMAXLEN] = {0};
+	char query_str_b64[QUERYMAXLEN] = {0};
 
 	s_config *config = config_get_config();
 
 	if (config->fas_secure_enabled == 0) {
-		snprintf(querystr, QUERYMAXLEN, "?clientip=%s&gatewayname=%s&tok=%s", client->ip, config->url_encoded_gw_name, client->token);
+		snprintf(querystr, QUERYMAXLEN, "?clientip=%s&gatewayname=%s&tok=%s&redir=%s",
+			client->ip,
+			config->url_encoded_gw_name,
+			client->token,
+			originurl
+		);
 
 	} else if (config->fas_secure_enabled == 1) {
 
 			if (config->fas_hid) {
-
-				// URL encode custom parameters
-				if (config->custom_params) {
-					uh_urlencode(param_urlencoded, sizeof(param_urlencoded), config->custom_params, strlen(config->custom_params));
-					debug(LOG_DEBUG, "[%s] is the urlencoded Custom FAS Parameter string", param_urlencoded);
-
-					safe_asprintf(&cmd,
-						"printf \"%s\" \"%s\" | sed  's/%s/\\&/g;s/%s/=/g'",
-						FORMAT_SPECIFIER,
-						param_urlencoded,
-						URL_COMMASPACE,
-						CUSTOM_SEPARATOR
-					);
-
-					debug(LOG_DEBUG, "Translation command [%s]", cmd);
-					execute_ret_url_encoded(msg, sizeof(msg) - 1, cmd);
-					free(cmd);
-				}
-
 				hash_str(hash, sizeof(hash), client->token);
 				debug(LOG_DEBUG, "hid=%s", hash);
+
 				get_client_interface(clientif, sizeof(clientif), client->mac);
-				debug(LOG_INFO, "clientif: [%s]", clientif);
-				snprintf(querystr, QUERYMAXLEN,
-					"?clientip=%s&gatewayname=%s&hid=%s&gatewayaddress=%s&gatewaymac=%s&clientif=%s%s",
-					client->ip,
-					config->url_encoded_gw_name,
-					hash,
-					config->gw_address,
-					config->gw_mac,
+				debug(LOG_INFO, "clientif: [%s] url_encoded_gw_name: [%s]", clientif, config->url_encoded_gw_name);
+
+				snprintf(query_str, QUERYMAXLEN,
+					"clientip=%s%sclientmac=%s%sgatewayname=%s%sversion=%s%shid=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s%s%s",
+					client->ip, QUERYSEPARATOR,
+					client->mac, QUERYSEPARATOR,
+					config->url_encoded_gw_name, QUERYSEPARATOR,
+					VERSION, QUERYSEPARATOR,
+					hash, QUERYSEPARATOR,
+					config->gw_address, QUERYSEPARATOR,
+					config->gw_mac, QUERYSEPARATOR,
+					config->authdir, QUERYSEPARATOR,
+					originurl, QUERYSEPARATOR,
 					clientif,
-					msg
+					QUERYSEPARATOR,
+					config->custom_params
+				);
+
+				b64_encode(query_str_b64, sizeof(query_str_b64), query_str, strlen(query_str));
+				snprintf(querystr, QUERYMAXLEN,
+					"?fas=%s",
+					query_str_b64
 				);
 			} else {
 				snprintf(querystr, QUERYMAXLEN,
-					"?clientip=%s&gatewayname=%s",
+					"?clientip=%s&gatewayname=%s&redir=%s",
 					client->ip,
-					config->url_encoded_gw_name
+					config->url_encoded_gw_name,
+					originurl
 				);
 			}
 
 	} else if (config->fas_secure_enabled == 2 || config->fas_secure_enabled == 3) {
+		hash_str(hash, sizeof(hash), client->token);
+		debug(LOG_DEBUG, "hid=%s", hash);
+
 		get_client_interface(clientif, sizeof(clientif), client->mac);
 		debug(LOG_INFO, "clientif: [%s]", clientif);
 		snprintf(querystr, QUERYMAXLEN,
-			"clientip=%s%sclientmac=%s%sgatewayname=%s%stok=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s%s",
+			"clientip=%s%sclientmac=%s%sgatewayname=%s%sversion=%s%shid=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s%s%s",
 			client->ip, QUERYSEPARATOR,
 			client->mac, QUERYSEPARATOR,
-			config->gw_name, QUERYSEPARATOR,
-			client->token, QUERYSEPARATOR,
+			config->url_encoded_gw_name, QUERYSEPARATOR,
+			VERSION, QUERYSEPARATOR,
+			hash, QUERYSEPARATOR,
 			config->gw_address, QUERYSEPARATOR,
 			config->gw_mac, QUERYSEPARATOR,
 			config->authdir, QUERYSEPARATOR,
 			originurl, QUERYSEPARATOR,
-			clientif,
+			clientif, QUERYSEPARATOR,
 			config->custom_params
 		);
 
@@ -1042,10 +1145,9 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 		snprintf(querystr, QUERYMAXLEN, "?clientip=%s&gatewayname=%s", client->ip, config->url_encoded_gw_name);
 	}
 
+	debug(LOG_DEBUG, "Constructed Query String [%s]", querystr);
 	return querystr;
 }
-
-/////
 
 /**
  *	Add client making a request to client list.
@@ -1076,7 +1178,7 @@ int send_redirect_temp(struct MHD_Connection *connection, t_client *client, cons
 
 	safe_asprintf(&redirect, redirect_body, url, url);
 
-	debug(LOG_DEBUG, "send_redirect_temp: MHD_create_response_from_buffer");
+	debug(LOG_DEBUG, "send_redirect_temp: MHD_create_response_from_buffer. url [%s]", url);
 
 	response = MHD_create_response_from_buffer(strlen(redirect), redirect, MHD_RESPMEM_MUST_FREE);
 
@@ -1219,6 +1321,7 @@ static int send_refresh(struct MHD_Connection *connection)
 static int send_error(struct MHD_Connection *connection, int error)
 {
 	struct MHD_Response *response = NULL;
+
 	/* cannot automate since cannot translate automagically between error number and MHD's status codes
 	 * -- and cannot rely on MHD_HTTP_ values to provide an upper bound for an array
 	 */
@@ -1226,13 +1329,15 @@ static int send_error(struct MHD_Connection *connection, int error)
 	const char *page_400 = "<html><head><title>Error 400</title></head><body><h1>Error 400 - Bad Request</h1></body></html>";
 	const char *page_403 = "<html><head><title>Error 403</title></head><body><h1>Error 403 - Forbidden</h1></body></html>";
 	const char *page_404 = "<html><head><title>Error 404</title></head><body><h1>Error 404 - Not Found</h1></body></html>";
-	const char *page_500 = "<html><head><title>Error 500</title></head><body><h1>Error 500 - Internal Server Error. Oh no!</body></html>";
+	const char *page_500 = "<html><head><title>Error 500</title></head><body><h1>Error 500 - Internal Server Error. Oh no!</h1></body></html>";
 	const char *page_501 = "<html><head><title>Error 501</title></head><body><h1>Error 501 - Not Implemented</h1></body></html>";
 	const char *page_503 = "<html><head><title>Error 503</title></head><body><h1>Error 503 - Internal Server Error</h1></body></html>";
-
+	char *page_511 = NULL;
+	char *status_url = NULL;
 	const char *mimetype = lookup_mimetype("foo.html");
 
 	int ret = MHD_NO;
+	s_config *config = config_get_config();
 
 	switch (error) {
 	case 200:
@@ -1274,6 +1379,43 @@ static int send_error(struct MHD_Connection *connection, int error)
 		response = MHD_create_response_from_buffer(strlen(page_503), (char *)page_503, MHD_RESPMEM_PERSISTENT);
 		MHD_add_response_header(response, "Content-Type", mimetype);
 		ret = MHD_queue_response(connection, MHD_HTTP_INTERNAL_SERVER_ERROR, response);
+		break;
+	case 511:
+		if (config->gw_fqdn) {
+			safe_asprintf(&status_url, "http://%s/", config->gw_fqdn);
+		} else {
+			safe_asprintf(&status_url, "http://%s/", config->gw_ip);
+		}
+		safe_asprintf(&page_511,
+			"<!DOCTYPE html>\n\
+			<html>\n\
+			<head>\n\
+			<meta http-equiv=\"Cache-Control\" content=\"no-cache, no-store, must-revalidate\">\n\
+			<meta http-equiv=\"Pragma\" content=\"no-cache\">\n\
+			<meta http-equiv=\"Expires\" content=\"0\">\n\
+			<meta charset=\"utf-8\">\n\
+			<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n\
+			<link rel=\"shortcut icon\" href=\"/images/splash.jpg\" type=\"image/x-icon\">\n\
+			<link rel=\"stylesheet\" type=\"text/css\" href=\"/splash.css\">\n\
+			<title>Error 511 Network Authentication Required</title></head>\n\
+			<body>\n\
+			<h1>Network Authentication Required</h1>\n\
+			<form action=\"%s\" method=\"get\">\n\
+			<input type=\"submit\" value=\"Refresh\">\n\
+			</form>\n\
+			<br>\n\
+			<form action=\"http://detectportal.firefox.com/success.txt\" method=\"get\" target=\"_blank\">\n\
+			<input type=\"submit\" value=\"Portal Login\" >\n\
+			</form>\n\
+			</body></html>\n",
+			status_url
+		);
+		debug(LOG_DEBUG, " page_511 html: [ %s ]", page_511);
+		response = MHD_create_response_from_buffer(strlen(page_511), (char *)page_511, MHD_RESPMEM_MUST_COPY);
+		MHD_add_response_header(response, "Content-Type", mimetype);
+		ret = MHD_queue_response(connection, MHD_HTTP_NETWORK_AUTHENTICATION_REQUIRED, response);
+		free(page_511);
+		free(status_url);
 		break;
 	}
 

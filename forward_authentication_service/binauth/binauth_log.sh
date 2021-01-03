@@ -1,6 +1,6 @@
 #!/bin/sh
-#Copyright (C) The openNDS Contributors 2004-2020
-#Copyright (C) BlueWave Projects and Services 2015-2020
+#Copyright (C) The openNDS Contributors 2004-2021
+#Copyright (C) BlueWave Projects and Services 2015-2021
 #This software is released under the GNU GPL license.
 
 # This is an example script for BinAuth
@@ -19,38 +19,32 @@
 # 3. FAS
 #
 
-
-
-# Customise the Logfile location:
-#
-# mountpoint is the mount point for the storage the log is to be kept on
-#
-# /tmp on OpenWrt is tmpfs (ram disk) and does not survive a reboot.
-#
-# /run on Raspbian is also tmpfs and also does not survive a reboot.
-#
-# These choices for OpenWrt and Raspbian are a good default for testing purposes
-# as long term use on internal flash could cause memory wear
-# In a production system, use the mount point of a usb drive for example
-#
-#
-# logdir is the directory path for the log file
-#
-#
-# logname is the name of the log file
-#
-
-#For Openwrt:
-mountpoint="/tmp"
-logdir="/tmp/ndslog/"
-logname="binauthlog.log"
-
-#For Raspbian:
-#mountpoint="/run"
-#logdir="/run/ndslog/"
-#logname="binauthlog.log"
-
+##################
 # functions:
+
+configure_log_location() {
+	# Generate the Logfile location; use the tmpfs "temporary" directory to prevent flash wear.
+	# Alternately you may choose to manually override the settings generated here.
+	# For example mount a USB storage device and manually set logdir and logname instead of this code
+	#
+	# DEFAULT Location depends upon OS distro in use:
+	tempdir="/tmp /run /var"
+	mountpoint=""
+	logdir="/tmp/ndslog/"
+	logname="binauthlog.log"
+
+	for var in $tempdir; do
+		_mountpoint=$(df | awk -F ' ' '$1=="tmpfs" && $6=="'$var'" {print $6}')
+		if [ "$_mountpoint" = "$var" ]; then
+			mountpoint="$var"
+			logdir="$mountpoint/ndslog/"
+			break
+		fi
+	done
+
+	#For syslog
+	ndspid=$(pgrep '/usr/bin/opennds')
+}
 
 write_log () {
 
@@ -78,6 +72,11 @@ write_log () {
 		echo "BinAuth - log file too big, please archive contents" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 	fi
 }
+# END of functions
+##################
+
+#Configure log location
+configure_log_location
 
 #
 # Get the action method from NDS ie the first command line argument.
@@ -131,7 +130,7 @@ elif [ $action = "ndsctl_auth" ]; then
 	# in the case of authmon (FAS level 3) or ndsctl authentication
 	customdata_enc=$8
 	customdata=$(printf "${customdata_enc//%/\\x}")
-	log_entry="method=$1, clientmac=$2, bytes_incoming=$3, bytes_outgoing=$4, session_start=$5, session_end=$6, token=$7, custom=$customdata"
+	log_entry="method=$1, clientmac=$2, bytes_incoming=$3, bytes_outgoing=$4, session_start=$5, session_end=$6, token=$7, custom=$customdata_enc"
 
 else
 	log_entry="method=$1, clientmac=$2, bytes_incoming=$3, bytes_outgoing=$4, session_start=$5, session_end=$6, token=$7"

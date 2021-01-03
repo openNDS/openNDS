@@ -164,6 +164,48 @@ int uh_urlencode(char *buf, int blen, const char *src, int slen)
 	return (i == slen) ? len : -1;
 }
 
+
+int b64_encode(char *buf, int blen, const char *src, int slen)
+{
+	int  i;
+	int  j;
+	int  v;
+	int len = 0;
+	const char b64chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+	debug(LOG_DEBUG, "string to b64 encode: %s length %d", src, slen);
+
+	for (i=0, len=0; i<slen; i+=3, len+=4) {
+		if ((len+4) <= blen) {
+			v = src[i];
+			v = i+1 < slen ? v << 8 | src[i+1] : v << 8;
+			v = i+2 < slen ? v << 8 | src[i+2] : v << 8;
+
+			buf[len]   = b64chars[(v >> 18) & 0x3F];
+			buf[len+1] = b64chars[(v >> 12) & 0x3F];
+
+			if (i+1 < slen) {
+				buf[len+2] = b64chars[(v >> 6) & 0x3F];
+			} else {
+				buf[len+2] = '=';
+			}
+
+			if (i+2 < slen) {
+				buf[len+3] = b64chars[v & 0x3F];
+			} else {
+				buf[len+3] = '=';
+			}
+		} else {
+			debug(LOG_ERR, "Buffer overflow in b64_encode");
+			break;
+		}
+	}
+
+	debug(LOG_DEBUG, "b64 encoded string: %s, encoded length: %d", buf, len);
+
+	return (i == slen) ? (len + 4) : -1;
+}
+
 int uh_b64decode(char *buf, int blen, const void *src, int slen)
 {
 	const unsigned char *str = src;
@@ -203,6 +245,7 @@ int uh_b64decode(char *buf, int blen, const void *src, int slen)
 		buf[len++] = (char)(cout);
 	}
 
+	debug(LOG_DEBUG, "b64 decoded string: %s, decoded length: %d", buf, len);
 	buf[len++] = 0;
 	return len;
 }

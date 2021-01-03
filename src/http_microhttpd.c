@@ -65,7 +65,7 @@ static int encode_and_redirect_to_splashpage(struct MHD_Connection *connection, 
 static int redirect_to_splashpage(struct MHD_Connection *connection, t_client *client, const char *host, const char *url);
 static int send_error(struct MHD_Connection *connection, int error);
 static int send_redirect_temp(struct MHD_Connection *connection, t_client *client, const char *url);
-static int send_refresh(struct MHD_Connection *connection);
+//static int send_refresh(struct MHD_Connection *connection);
 static int is_foreign_hosts(struct MHD_Connection *connection, const char *host);
 static int is_splashpage(const char *host, const char *url);
 static int get_query(struct MHD_Connection *connection, char **collect_query, const char *separator);
@@ -1107,7 +1107,7 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 				);
 
 				b64_encode(query_str_b64, sizeof(query_str_b64), query_str, strlen(query_str));
-				snprintf(querystr, QUERYMAXLEN,
+				snprintf(querystr, QUERYMAXLEN*4/3,
 					"?fas=%s",
 					query_str_b64
 				);
@@ -1302,21 +1302,21 @@ static int get_query(struct MHD_Connection *connection, char **query, const char
 	return 0;
 }
 
-static int send_refresh(struct MHD_Connection *connection)
-{
-	struct MHD_Response *response = NULL;
+//static int send_refresh(struct MHD_Connection *connection)
+//{
+//	struct MHD_Response *response = NULL;
 
-	const char *refresh = "<html><meta http-equiv=\"refresh\" content=\"1\"><head/></html>";
-	const char *mimetype = lookup_mimetype("foo.html");
-	int ret;
+//	const char *refresh = "<html><meta http-equiv=\"refresh\" content=\"1\"><head/></html>";
+//	const char *mimetype = lookup_mimetype("foo.html");
+//	int ret;
 
-	response = MHD_create_response_from_buffer(strlen(refresh), (char *)refresh, MHD_RESPMEM_PERSISTENT);
-	MHD_add_response_header(response, "Content-Type", mimetype);
-	MHD_add_response_header (response, MHD_HTTP_HEADER_CONNECTION, "close");
-	ret = MHD_queue_response(connection, 200, response);
+//	response = MHD_create_response_from_buffer(strlen(refresh), (char *)refresh, MHD_RESPMEM_PERSISTENT);
+//	MHD_add_response_header(response, "Content-Type", mimetype);
+//	MHD_add_response_header (response, MHD_HTTP_HEADER_CONNECTION, "close");
+//	ret = MHD_queue_response(connection, 200, response);
 
-	return ret;
-}
+//	return ret;
+//}
 
 static int send_error(struct MHD_Connection *connection, int error)
 {

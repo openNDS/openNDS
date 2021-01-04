@@ -18,10 +18,10 @@
 
 # functions:
 do_ndsctl () {
-	local timeout=2
-	ndsstatus="ready"
+	local timeout=4
 
 	for tic in $(seq $timeout); do
+		ndsstatus="ready"
 		ndsctlout=$(ndsctl $ndsctlcmd)
 
 		for keyword in $ndsctlout; do

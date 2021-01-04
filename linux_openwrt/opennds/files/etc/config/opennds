@@ -1,6 +1,5 @@
 
-# The options available here are an adaptation of the settings used in opennds.conf.
-# See https://github.com/opennds/opennds/blob/master/resources/opennds.conf
+# The options available here are an adaptation of the settings used in the legacy opennds.conf.
 
 config opennds
 	# Set to 0 to disable opennds
@@ -30,20 +29,21 @@ config opennds
 	# Default: 0
 	# Integer value sent to PreAuth script as login mode
 	#
-	# opennds comes preconfigured for two basic modes of operation
+	# opennds comes preconfigured for three basic modes of operation
+	#
+	# 0.If FAS is not enabled AND legacy templated splash is not enabled, then this functions as mode 1
 	#
 	# 1.Default Dynamic Click to Continue
-	# The pre-installed dynamic login page is enabled by setting option login_option_enabled = “0”.
-	# This is the default assuming allow_legacy_splash = ‘0’, the default value.
+	# The pre-installed dynamic login page is enabled by setting option login_option_enabled = '1'.
 	# It generates a Click to Continue page followed by a info/advertising page.
 	# User clicks on “Continue” are recorded in the log file /[tmpfs_dir]/ndslog/ndslog.log
 	#
 	# 2.Username/Emailaddress Dynamic Login
-	# The pre-installed dynamic login page is enabled by setting option login_option_enabled = “1”.
+	# The pre-installed dynamic login page is enabled by setting option login_option_enabled = '2'.
 	# It generates a login page asking for username and email address followed by a info/advertising page.
 	# User logins are recorded in the log file /[tmpfs_dir]/ndslog/ndslog.log
 	#
-	option login_option_enabled '0'
+	#option login_option_enabled '0'
 	###########################################################################################
 
 	# Define Custom Parameters
@@ -60,13 +60,14 @@ config opennds
 	###########################################################################################
 
 	# Use outdated libmicrohttpd (MHD)
+	# Warning, this may be unstable or fail entirely - it would be better to upgrade MHD.
 	# Older versions of MHD convert & and + characters to spaces when present in form data
 	# This can make a PreAuth or BinAuth impossible to use for a client if form data contains either of these characters
 	# eg. in username or password
 	# MHD versions earlier than 0.9.71 are detected.
 	# If this option is set to 0 (default), NDS will terminate if MHD is earlier than 0.9.71
 	# If this option is set to 1, NDS will attempt to start and log an error.
-	option use_outdated_mhd '0'
+	#option use_outdated_mhd '0'
 	###########################################################################################
 
 	# MHD Unescape callback
@@ -76,13 +77,13 @@ config opennds
 	# A standard unescape.sh script is installed by default
 	# Set to 1 to enable this option, 0 to disable
 	# default is disabled
-	option unescape_callback_enabled '0'
+	#option unescape_callback_enabled '0'
 	###########################################################################################
 
 	# Allow use of legacy html splash page
 	# Default '0'
 	# If set to '0' use of legacy html splash page is not allowed
-	# If set to '1' the legacy html splash page is allowed if FAS is not configured
+	# If set to '1' the legacy html splash page is allowed if FAS is not configured and login_option is set to 0
 	#option allow_legacy_splash '0'
 	###########################################################################################
 
@@ -117,6 +118,7 @@ config opennds
 	# Use this option to set the device opennds will bind to.
 	# The value may be an interface section in /etc/config/network or a device name such as br-lan.
 	# The selected interface must be allocated an IPv4 address.
+	# In OpenWrt this is normally br-lan, in generic Linux it might be wlan0
 	option gatewayinterface 'br-lan'
 	###########################################################################################
 

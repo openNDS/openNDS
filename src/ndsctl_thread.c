@@ -314,14 +314,13 @@ ndsctl_auth(FILE *fp, char *arg)
 	s_config *config = config_get_config();
 	t_client *client;
 	unsigned id;
-	int rc;
+	int rc = -1;
 	int seconds = 60 * config->session_timeout;
 	int uploadrate = config->upload_rate;
 	int downloadrate = config->download_rate;
 	unsigned long long int uploadquota = config->upload_quota;
 	unsigned long long int downloadquota = config->download_quota;
 	char customdata[256] = {0};
-	char client_state[24] = {0};
 	char *argcopy;
 	char *arg2;
 	char *arg3;
@@ -399,7 +398,13 @@ ndsctl_auth(FILE *fp, char *arg)
 		if (strcmp(fw_connection_state_as_string(client->fw_connection_state), "Preauthenticated") == 0) {
 			// set client values
 			client->session_start = now;
-			client->session_end = now + seconds;
+
+			if (seconds > 0) {
+				client->session_end = now + seconds;
+			} else {
+				client->session_end = 0;
+			}
+
 			client->upload_rate = uploadrate;
 			client->download_rate = downloadrate;
 			client->upload_quota = uploadquota;

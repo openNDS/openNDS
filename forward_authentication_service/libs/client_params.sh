@@ -87,7 +87,13 @@ parse_parameters() {
 
 		# Get human readable times:
 		sessionstart=$(date -d @$session_start)
-		sessionend=$(date -d @$session_end)
+
+		if [ "$session_end" = "Unlimited" ]; then
+			sessionend=$session_end
+		else
+			sessionend=$(date -d @$session_end)
+		fi
+
 		lastactive=$(date -d @$last_active)
 	fi
 }

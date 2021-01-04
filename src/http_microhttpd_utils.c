@@ -168,7 +168,6 @@ int uh_urlencode(char *buf, int blen, const char *src, int slen)
 int b64_encode(char *buf, int blen, const char *src, int slen)
 {
 	int  i;
-	int  j;
 	int  v;
 	int len = 0;
 	const char b64chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";

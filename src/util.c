@@ -727,7 +727,13 @@ ndsctl_json_client(FILE *fp, const t_client *client, time_t now, char *indent)
 	fprintf(fp, "  %s\"ip\":\"%s\",\n", indent, client->ip);
 	fprintf(fp, "  %s\"clientif\":\"%s\",\n", indent, clientif);
 	fprintf(fp, "  %s\"session_start\":\"%lld\",\n", indent, (long long) client->session_start);
-	fprintf(fp, "  %s\"session_end\":\"%lld\",\n", indent, (long long) client->session_end);
+
+	if (client->session_end == 0) {
+		fprintf(fp, "  %s\"session_end\":\"null\",\n", indent);
+	} else {
+		fprintf(fp, "  %s\"session_end\":\"%lld\",\n", indent, (long long) client->session_end);
+	}
+
 	fprintf(fp, "  %s\"last_active\":\"%lld\",\n", indent, (long long) client->counters.last_updated);
 	fprintf(fp, "  %s\"token\":\"%s\",\n", indent, client->token ? client->token : "none");
 	fprintf(fp, "  %s\"state\":\"%s\",\n", indent, fw_connection_state_as_string(client->fw_connection_state));

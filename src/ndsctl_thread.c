@@ -398,7 +398,13 @@ ndsctl_auth(FILE *fp, char *arg)
 		if (strcmp(fw_connection_state_as_string(client->fw_connection_state), "Preauthenticated") == 0) {
 			// set client values
 			client->session_start = now;
-			client->session_end = now + seconds;
+
+			if (seconds > 0) {
+				client->session_end = now + seconds;
+			} else {
+				client->session_end = 0;
+			}
+
 			client->upload_rate = uploadrate;
 			client->download_rate = downloadrate;
 			client->upload_quota = uploadquota;

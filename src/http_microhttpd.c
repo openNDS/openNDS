@@ -558,7 +558,7 @@ static int authenticate_client(struct MHD_Connection *connection,
 
 	client->session_start = now;
 
-	if (seconds) {
+	if (seconds > 0) {
 		client->session_end = now + seconds;
 	} else {
 		client->session_end = 0;
@@ -878,6 +878,13 @@ static int preauthenticated(struct MHD_Connection *connection,
 		ret = show_preauthpage(connection, query);
 		return ret;
 	}
+
+	// Check for denydir
+	if (check_authdir_match(url, config->denydir)) {
+		debug(LOG_DEBUG, "denydir url detected: %s", url);
+		return send_error(connection, 511);
+	}
+
 
 	debug(LOG_DEBUG, "preauthenticated: Requested Host is [ %s ]", host);
 	debug(LOG_DEBUG, "preauthenticated: Requested url is [ %s ]", url);

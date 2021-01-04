@@ -12,9 +12,10 @@
 #
 # Splash page modes are selected in the openNDS config using the login_option_enabled parameter.
 #
-# Mode 0. login_option_enabled set to 0 - generate a simple "click to continue" splash page (with Terms of Service).
-# Mode 1. login_option_enabled set to 1 - generate a "username/email_address splash page (with Terms of Service).
-# Mode > 1. Reserved for customisation and future enhancement.
+# Mode 0. login_option_enabled set to 0 - Default if FAS Disabled.
+# Mode 1. login_option_enabled set to 1 - generate a simple "click to continue" splash page (with Terms of Service).
+# Mode 2. login_option_enabled set to 2 - generate a "username/email_address splash page (with Terms of Service).
+# Mode > 2. Reserved for customisation and future enhancement.
 
 # functions:
 do_ndsctl () {
@@ -823,11 +824,14 @@ fi
 # Make this a friendly message explaining they are good to go
 check_authenticated
 
-# Check login mode and serve appropriate form
+# Check login mode and serve appropriate form, mode 0 is the default if FAS is disabled
 if [ $mode -eq 0 ]; then
 	click_to_continue
 
 elif [ $mode -eq 1 ]; then
+	click_to_continue
+
+elif [ $mode -eq 2 ]; then
 	name_email_login
 
 else

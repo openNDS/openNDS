@@ -2,6 +2,10 @@
 #Copyright (C) BlueWave Projects and Services 2015-2021
 #This software is released under the GNU GPL license.
 
+#wait a while for openNDS to get started
+sleep 5
+
+#get arguments and set variables
 url=$1
 gatewayhash=$2
 phpcli=$3
@@ -14,9 +18,6 @@ postrequest="/usr/lib/opennds/post-request.php"
 #action="view"
 # For normal running, action will be set to "list"
 action="list"
-
-version=$(ndsctl status 2>/dev/null | grep Version | awk '{printf $2}')
-user_agent="openNDS(authmon;NDS:$version;)"
 
 do_ndsctl () {
 	local timeout=4
@@ -39,6 +40,12 @@ do_ndsctl () {
 		fi
 	done
 }
+
+ndsctlcmd="status 2>/dev/null"
+do_ndsctl
+
+version=$(echo "$ndsctlout" | grep Version | awk '{printf $2}')
+user_agent="openNDS(authmon;NDS:$version;)"
 
 while true; do
 	authlist=$($phpcli -f "$postrequest" "$url" "$action" "$gatewayhash" "$user_agent")

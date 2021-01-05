@@ -215,7 +215,7 @@ if (isset($_GET['fas']) and isset($_GET['iv']))  {
 
 	foreach ($ndsparamlist as $ndsparm) {
 		foreach ($dec_r as $dec) {
-			list($name,$value)=explode("=",$dec);
+			@list($name,$value)=explode("=",$dec);
 			if ($name == $ndsparm) {
 				$$name = $value;
 				break;

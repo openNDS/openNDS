@@ -84,23 +84,36 @@ if (isset($_GET['status'])) {
 	exit(0);
 }
 
-if (isset($fas) and isset($iv))  {
-	$decrypted=openssl_decrypt( base64_decode($fas), $cipher, $key, 0, $iv );
+####################################################################################################################################
+#
+#	Decrypt and Parse the querystring
+#
+#	Note: $ndsparamlist is an array of parameter names to parse for.
+#		Add your own custom parameters to this array as well as to the config file.
+#		"admin_email" and "location" are examples of custom parameters.
+#
+####################################################################################################################################
+
+$ndsparamlist=explode(" ", "clientip clientmac gatewayname version hid gatewayaddress gatewaymac authdir originurl clientif admin_email location");
+
+if (isset($_GET['fas']) and isset($_GET['iv']))  {
+	$string=$_GET['fas'];
+	$iv=$_GET['iv'];
+	$decrypted=openssl_decrypt( base64_decode( $string ), $cipher, $key, 0, $iv );
 	$dec_r=explode(", ",$decrypted);
 
-	foreach ($dec_r as $dec) {
-		list($name,$value)=explode("=",$dec);
-		if ($name == "clientip") {$clientip=$value;}
-		if ($name == "clientmac") {$clientmac=$value;}
-		if ($name == "gatewayname") {$gatewayname=$value;}
-		if ($name == "hid") {$hid=$value;}
-		if ($name == "gatewayaddress") {$gatewayaddress=$value;}
-		if ($name == "gatewaymac") {$gatewaymac=$value;}
-		if ($name == "authdir") {$authdir=$value;}
-		if ($name == "originurl") {$originurl=$value;}
-		if ($name == "clientif") {$clientif=$value;}
+	foreach ($ndsparamlist as $ndsparm) {
+		foreach ($dec_r as $dec) {
+			@list($name,$value)=explode("=",$dec);
+			if ($name == $ndsparm) {
+				$$name = $value;
+				break;
+			}
+		}
 	}
 }
+####################################################################################################################################
+####################################################################################################################################
 
 // Work out the client zone:
 $client_zone_r=explode(" ",trim($clientif));

@@ -1,6 +1,6 @@
 .\" Man page generated from reStructuredText.
 .
-.TH "OPENNDS" "1" "Nov 07, 2020" "7.0.1" "openNDS"
+.TH "OPENNDS" "1" "Jan 06, 2021" "8.0.0" "openNDS"
 .SH NAME
 opennds \- opennds Documentation
 .
@@ -73,11 +73,11 @@ NDS provides two pre\-installed methods.
 .IP \(bu 2
 \fBClick to Continue\fP\&. A simple static web page with template variables (\fIdefault\fP). This provides basic notification and a simple click/tap to continue button.
 .IP \(bu 2
-\fBusername/email\-address login\fP\&. A simple dynamic set of web pages that provide username/email\-address login, a welcome page and logs access by client users. (\fIInstalled by default and enabled by un\-commenting a line in the configuration file\fP)
+\fBusername/email\-address login\fP\&. A simple dynamic set of web pages that provide username/email\-address login, a welcome page and logs access by client users. (\fIInstalled by default and enabled in the configuration file\fP)
 .UNINDENT
 .INDENT 0.0
 .INDENT 3.5
-Customising the page seen by users is a simple matter of editing the respective html or script files.
+Customising the page seen by users is a simple matter of editing the script file.
 .UNINDENT
 .UNINDENT
 .UNINDENT
@@ -94,6 +94,379 @@ NDS can be used as the "Engine" behind the most sophisticated Captive Portal sys
 .IP \(bu 2
 \fBBinAuth\fP\&. A method of running a post authentication script or extension program.
 .UNINDENT
+.UNINDENT
+.UNINDENT
+.SH WHAT'S NEW? - CHANGELOG
+.sp
+openNDS (8.0.0)
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+This version introduces major new functionality and some major changes
+.IP \(bu 2
+Rationalisation of support for multiple Linux distributions [bluewavenet]
+.IP \(bu 2
+Refactor login.sh script introducing base64 encoding and hashed token (hid) support [bluewavenet]
+.IP \(bu 2
+Refactor fas\-hid script introducing base64 encoding and simplifying customisation of the script [bluewavenet]
+.IP \(bu 2
+Refactor binauth_log.sh and log BinAuth custom data as url encoded [bluewavenet]
+.IP \(bu 2
+Refactor fas\-aes, simplifying customisation of the script [bluewavenet]
+.IP \(bu 2
+Refactor fas\-aes\-https, simplifying customisation of the script [bluewavenet]
+.IP \(bu 2
+Change \- Use hid instead of tok when fas_secure_enabled >= 1 [bluewavenet]
+.IP \(bu 2
+Add \- base64 encoding to fas_secure_enabled level 1 [bluewavenet]
+.IP \(bu 2
+Add \- gatewyname, clientif, session_start, session_end and last_active to ndsctl json [bluewavenet]
+.IP \(bu 2
+Add \- support for RFC6585 Status Code 511 \- Network Authentication Required [bluewavenet]
+.IP \(bu 2
+Add \- Client Status Page UI with Logout [bluewavenet]
+.IP \(bu 2
+Add \- GatewayFQDN option [bluewavenet]
+.IP \(bu 2
+Add \- client interface to status page query string [bluewavenet]
+.IP \(bu 2
+Add \- support using base 64 encoded custom string for BinAuth and replace tok with hid [bluewavenet]
+.IP \(bu 2
+Add \- base 64 decode option to ndsctl [bluewavenet]
+.IP \(bu 2
+Add \- b64 encoding of querystring for level 1 [bluewavenet]
+.IP \(bu 2
+Add \- Improved performance/user\-experience on congested/slow systems using php FAS scripts [bluewavenet]
+.IP \(bu 2
+Add \- support for ndsctl auth by hid in client_list [bluewavenet]
+.IP \(bu 2
+Add \- Ensure faskey is set to default value (always enabled) [bluewavenet]
+.IP \(bu 2
+Add \- Display error page on login failure in login.sh [bluewavenet]
+.IP \(bu 2
+Add \- splash.html, add deprecation notice [bluewavenet]
+.IP \(bu 2
+Add \- authmon, improved lock checking and introduce smaller loopinterval [bluewavenet]
+.IP \(bu 2
+Add \- client_params, wait for ndsctl if it is busy [bluewavenet]
+.IP \(bu 2
+Add \- fas\-aes\-https, allow progressive output to improve user experience on slow links [bluewavenet]
+.IP \(bu 2
+Fix \- Block access to /opennds_preauth/ if PreAuth not enabled [bluewavenet]
+.IP \(bu 2
+Fix \- On startup, call iptables_fw_destroy before doing any other setup [bluewavenet]
+.IP \(bu 2
+Fix \- missing final redirect to originurl in fas\-hid [bluewavenet]
+.IP \(bu 2
+Fix \- ensure gatewayname is always urlencoded [bluewavenet]
+.IP \(bu 2
+Fix \- client session end not set by binauth [bluewavenet]
+.IP \(bu 2
+Fix \- Session timeout, if client setting is 0, default to global value [bluewavenet]
+.IP \(bu 2
+Fix \- missing trailing separator on query and fix some compiler errors [bluewavenet]
+.IP \(bu 2
+Fix \- ensure authmon daemon is killed if left running from previous crash [bluewavenet]
+.IP \(bu 2
+Fix \- add missing query separator for custom FAS parameters [bluewavenet]
+.IP \(bu 2
+Fix \- ndsctl auth, do not set quotas if client is already authenticated [bluewavenet]
+.IP \(bu 2
+Fix \- client_params, show "Unlimited" when "null" is received from ndsctl json [bluewavenet]
+.IP \(bu 2
+Update configuration files [bluewavenet]
+.IP \(bu 2
+update documentation [bluewavenet]
+.UNINDENT
+.UNINDENT
+.UNINDENT
+\(em Rob White <\fI\%dot@blue\-wave.net\fP> Sat, 2 Nov 2021 16:38:14 +0000
+.UNINDENT
+.UNINDENT
+.sp
+openNDS (7.0.1)
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+This version contains fixes and some minor updates
+.IP \(bu 2
+Fix \- Failure of Default Dynamic Splash page on some operating systems [bluewavenet]
+.IP \(bu 2
+Fix \- A compiler warning \- some compiler configurations were aborting compilation [bluewavenet]
+.IP \(bu 2
+Update \- Added helpful comments in configuration files [bluewavenet]
+.IP \(bu 2
+Remove \- references to deprecated RedirectURL in opennde.conf [bluewavenet]
+.IP \(bu 2
+Update \- Documentation updates and corrections [bluewavenet]
+.UNINDENT
+.UNINDENT
+.UNINDENT
+\(em Rob White <\fI\%dot@blue\-wave.net\fP> Wed, 7 Nov 2020 12:40:33 +0000
+.UNINDENT
+.UNINDENT
+.sp
+openNDS (7.0.0)
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+This version introduces major new enhancements and the disabling or removal of deprecated functionality
+.IP \(bu 2
+Fix \- get_iface_ip in case of interface is vif or multihomed [bluewavenet]
+.IP \(bu 2
+Fix \- Add missing client identifier argument in ndsctl help text [bluewavenet]
+.IP \(bu 2
+Deprecate \- ndsctl clients option [bluewavenet]
+.IP \(bu 2
+Add \- global quotas to output of ndsctl status [bluewavenet]
+.IP \(bu 2
+Fix \- fix missing delimiter in fas\-hid [bluewavenet]
+.IP \(bu 2
+Add \- Report Rate Check Window in ndsctl status and show client quotas [bluewavenet]
+.IP \(bu 2
+Add \- Quota and rate reporting to ndsctl json. Format output and fix json syntax errors [bluewavenet]
+.IP \(bu 2
+Fix \- get_client_interface for case of iw utility not available [bluewavenet]
+.IP \(bu 2
+Fix \- php notice for pedantic php servers in post\-request [bluewavenet]
+.IP \(bu 2
+Add \- built in autonomous Walled Garden operation [bluewavenet]
+.IP \(bu 2
+Remove \- support for deprecated RedirectURL [bluewavenet]
+.IP \(bu 2
+Add \- gatewaymac to the encrypted query string [bluewavenet]
+.IP \(bu 2
+Deprecate \- legacy splash.html and disable it [bluewavenet]
+.IP \(bu 2
+Add \- support for login mode in PreAuth  [bluewavenet]
+.IP \(bu 2
+Add \- Support for Custom Parameters [bluewavenet]
+.UNINDENT
+.UNINDENT
+.UNINDENT
+\(em Rob White <\fI\%dot@blue\-wave.net\fP> Wed, 5 Nov 2020 18:22:32 +0000
+.UNINDENT
+.UNINDENT
+.sp
+openNDS (6.0.0)
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+This version \- for Openwrt after 19.07 \- for compatibility with new MHD API
+.IP \(bu 2
+Set \- minimum version of MHD to 0.9.71 for new MHD API [bluewavenet]
+.IP \(bu 2
+Set \- use_outdated_mhd to 0 (disabled) as default [bluewavenet]
+.IP \(bu 2
+Add \- Multifield PreAuth login script with css update [bluewavenet]
+.IP \(bu 2
+Add \- Documentation and config option descriptions for configuring Walled Garden IP Sets
+.UNINDENT
+.UNINDENT
+.UNINDENT
+\(em Rob White <\fI\%dot@blue\-wave.net\fP> Wed, 21 Aug 2020 15:43:47 +0000
+.UNINDENT
+.UNINDENT
+.sp
+openNDS (5.2.0)
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+This version \- for backport to Openwrt 19.07 \- for compatibility with old MHD API
+.IP \(bu 2
+Fix \- Failure of MHD with some operating systems eg Debian [bluewavenet]
+.IP \(bu 2
+Fix \- potential buffer truncation in ndsctl
+.IP \(bu 2
+Set \- use_outdated_mhd to 1 (enabled) as default [bluewavenet]
+.IP \(bu 2
+Set \- maximum permissible version of MHD to 0.9.70 to ensure old MHD API is used [bluewavenet]
+.UNINDENT
+.UNINDENT
+.UNINDENT
+\(em Rob White <\fI\%dot@blue\-wave.net\fP> Wed, 12 Aug 2020 17:43:57 +0000
+.UNINDENT
+.UNINDENT
+.sp
+openNDS (5.1.0)
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+Add \- Generic Linux \- install opennds.service [bluewavenet]
+.IP \(bu 2
+Add \- Documentation updates [bluewavenet]
+.IP \(bu 2
+Add \- config file updates [bluewavenet]
+.IP \(bu 2
+Add \- Install sitewide username/password splash support files [bluewavenet]
+.IP \(bu 2
+Add \- quotas to binauth_sitewide [bluewavenet]
+.IP \(bu 2
+Add \- Splash page updates [bluewavenet]
+.IP \(bu 2
+Add \- Implement Rate Quotas [bluewavenet]
+.IP \(bu 2
+Fix \- check if idle preauthenticated [bluewavenet]
+.IP \(bu 2
+Add \- support for rate quotas [bluewavenet]
+.IP \(bu 2
+Fix \- Correctly compare client counters and clean up debuglevel messages [bluewavenet]
+.IP \(bu 2
+Add \- Implement upload/download quotas Update fas\-aes\-https to support quotas [bluewavenet]
+.IP \(bu 2
+Add \- Rename demo\-preauth scripts and install all scripts [bluewavenet]
+.IP \(bu 2
+Add \- fas\-aes\-https layout update [bluewavenet]
+.IP \(bu 2
+Add \- Set some defaults in fas\-aes\-https [bluewavenet]
+.IP \(bu 2
+Add \- custom data string to ndsctl auth [bluewavenet]
+.IP \(bu 2
+Add \- custom data string to fas\-hid.php [bluewavenet]
+.IP \(bu 2
+Add \- Send custom data field to BinAuth via auth_client method [bluewavenet]
+.IP \(bu 2
+Fix \- missing token value in auth_client [bluewavenet]
+.IP \(bu 2
+Add \- upload/download quota and rate configuration values [bluewavenet]
+.IP \(bu 2
+Add \- Send client token to binauth [bluewavenet]
+.IP \(bu 2
+Add \- Rename upload_limit and download_limit to upload_rate and download_rate [bluewavenet]
+.IP \(bu 2
+Fix \- Pass correct session end time to binauth [bluewavenet]
+.IP \(bu 2
+Add \- some debuglevel 3 messages [bluewavenet]
+.IP \(bu 2
+Add \- description of the favicon and page footer images [bluewavenet]
+.IP \(bu 2
+Add \- Authmon collect authentication parameters from fas\-aes\-https [bluewavenet]
+.IP \(bu 2
+Add \- sessionlength to ndsctl auth [bluewavenet]
+.IP \(bu 2
+Fix \- Page fault when ndsctl auth is called and client not found [bluewavenet]
+.IP \(bu 2
+Add \- Enable BinAuth / fas_secure_enabled level 3 compatibility [bluewavenet]
+.IP \(bu 2
+Fix \- Correctly set BinAuth session_end [bluewavenet]
+.IP \(bu 2
+Add \- Updates to Templated Splash pages [bluewavenet]
+.IP \(bu 2
+Add \- Community Testing files [bluewavenet]
+.IP \(bu 2
+Fix \- BinAuth error passing client session times [bluewavenet]
+.IP \(bu 2
+Fix \- PHP notice \- undefined constant [bluewavenet]
+.IP \(bu 2
+Fix \- OpenWrt CONFLICTS variable in Makefile [bluewavenet]
+.UNINDENT
+.UNINDENT
+.UNINDENT
+\(em Rob White <\fI\%dot@blue\-wave.net\fP> Wed, 24 Jun 2020 20:55:18 +0000
+.UNINDENT
+.UNINDENT
+.sp
+openNDS (5.0.1)
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+Fix \- Path Traversal Attack vulnerability allowed by libmicrohttpd\(aqs built in unescape functionality [bluewavenet] [lynxis]
+.UNINDENT
+.UNINDENT
+.UNINDENT
+\(em Rob White <\fI\%dot@blue\-wave.net\fP> Wed, 06 May 2020 19:56:27 +0000
+.UNINDENT
+.UNINDENT
+.sp
+openNDS (5.0.0)
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+Import \- from NoDogSplash 4.5.0 allowing development without compromising NoDogSplash optimisation for minimum resource utilisation [bluewavenet]
+.IP \(bu 2
+Rename \- from NoDogSplash to openNDS [bluewavenet]
+.IP \(bu 2
+Create \- openNDS avatar and splash image [bluewavenet]
+.IP \(bu 2
+Move \- wait_for_interface to opennds C code ensuring consistent start at boot time for all hardware, OpenWrt and Debian [bluewavenet]
+.IP \(bu 2
+Add \- Enable https protocol for remote FAS [bluewavenet]
+.IP \(bu 2
+Add \- trusted devices list to ndsctl json output [bluewavenet]
+.IP \(bu 2
+Add \- option unescape_callback_enabled [bluewavenet]
+.IP \(bu 2
+Add \- get_client_token library utility [bluewavenet]
+.IP \(bu 2
+Add \- utf\-8 to PreAuth header [bluewavenet]
+.IP \(bu 2
+Add \- PreAuth Support for hashed id (hid) if sent by NDS [bluewavenet]
+.IP \(bu 2
+Add \- library script shebang warning for systems not running Busybox [bluewavenet]
+.IP \(bu 2
+Add \- htmlentityencode function, encode gatewayname in templated splash page [bluewavenet]
+.IP \(bu 2
+Add \- htmlentity encode gatewayname on login page (PreAuth) [bluewavenet]
+.IP \(bu 2
+Add \- Simple customisation of log file location for PreAuth and BinAuth [bluewavenet]
+.IP \(bu 2
+Add \- option use_outdated_mhd [bluewavenet]
+.IP \(bu 2
+Add \- url\-encode and htmlentity\-encode gatewayname on startup [bluewavenet]
+.IP \(bu 2
+Add \- Allow special characters in username (PreAuth) [bluewavenet]
+.IP \(bu 2
+Add \- Documentation updates [bluewavenet]
+.IP \(bu 2
+Add \- Various style and cosmetic updates  [bluewavenet]
+.IP \(bu 2
+Fix \- Change library script shebang to bash in Debian [bluewavenet]
+.IP \(bu 2
+Fix \- Remove unnecessary characters causing script execution failure in Debian [bluewavenet]
+.IP \(bu 2
+Fix \- Add missing NULL parameter in MHD_OPTION_UNESCAPE_CALLBACK [skra72] [bluewavenet]
+.IP \(bu 2
+Fix \- Script failures running on Openwrt 19.07.0 [bluewavenet]
+.IP \(bu 2
+Fix \- Preauth, status=authenticated [bluewavenet]
+.IP \(bu 2
+Fix \- Prevent ndsctl from running if called from a Binauth script. [bluewavenet]
+.IP \(bu 2
+Fix \- Minor changes in Library scripts for better portability [bluewavenet]
+.IP \(bu 2
+Fix \- Prevent php notices on pedantic php servers [bluewavenet]
+.IP \(bu 2
+Fix \- broken remote image retrieval (PreAuth) [bluewavenet]
+.IP \(bu 2
+Fix \- Allow use of "#" in gatewayname [bluewavenet]
+.UNINDENT
+.UNINDENT
+.UNINDENT
+\(em Rob White <\fI\%dot@blue\-wave.net\fP> Sat, 03 Apr 2020 13:23:36 +0000
 .UNINDENT
 .UNINDENT
 .SH INSTALLING OPENNDS
@@ -472,6 +845,49 @@ Sophisticated remote content can be served, with access controlled by the openND
 For details see the Walled Garden Section.
 .UNINDENT
 .UNINDENT
+.SH THE CLIENT STATUS PAGE
+.sp
+From version 8.0.0 onwards, openNDS has a Client Status Page.
+.sp
+This page is accessible by any connected client by accessing the default url:
+.sp
+\fI\%http://status.client\fP
+.sp
+If the client has been authenticated in the normal way by the client CPD process, a page displaying the Gatewayname and the Network Zone the client device is currently using. A list of allowed quotas and current usage is displayed along with "Refresh" and "Logout" buttons.
+.sp
+If the client has not been authenticated, or has been deauthenticated due to timeout or quota usage, then a "Network Authentication Required" page is displayed with "Refresh" and "Portal Login"
+.sp
+The "Portal Login" button allows the client to immediately attempt to login without waiting for the client CPD to trigger.
+.sp
+The URL used to access this page can be changed by setting the config option gatewayfqdn
+.sp
+For best results it is recommended that gatewayfqdn is set to two words separated by a single period eg in OpenWrt:
+.INDENT 0.0
+.INDENT 3.5
+\fIoption gatewayfqdn \(aqmy.status\(aq\fP
+.UNINDENT
+.UNINDENT
+.SH CUSTOM PARAMETERS
+.sp
+Custom Parameters were first introduced in openNDS version 7.
+.sp
+Custom parameters are defined in the config file and are sent as fixed values to FAS in the encoded/encrypted query string where they can be parsed and used by the FAS.
+.sp
+This is particularly useful in a remote or centralised FAS that is serving numerous instances of openNDS at different locations/venues.
+.INDENT 0.0
+.IP \(bu 2
+Custom Parameters are listed in configuration file in the form of "param_name=param_value"
+.IP \(bu 2
+param_name and param_value must be htmlentity encoded if containing white space or single quotes.
+.UNINDENT
+.sp
+For example in the OpenWrt UCI config file:
+.sp
+\fBlist fas_custom_parameters_list \(aq<param_name1=param_value1> <param_name2=param_value2> [.....] <param_nameN=param_valueN>\(aq\fP
+.sp
+A real example might be:
+.sp
+\fBlist fas_custom_parameters_list \(aqlocation=main_building admin_email=norman@bates\-motel.com>\(aq\fP
 .SH FORWARDING AUTHENTICATION SERVICE (FAS)
 .SS Overview
 .sp
@@ -517,20 +933,20 @@ FAS can then provide an action form for the client, typically requesting login, 
 The FAS can be on the same device as openNDS, on the same local area network as NDS, or on an Internet hosted web server.
 .SS Security
 .sp
-\fBIf FAS Secure is enabled\fP (Levels 1 (default), 2 and 3), the client authentication token is kept secret until FAS verification is complete.
+\fBIf FAS Secure is enabled\fP (Levels 1 (default), 2 and 3), the client authentication token is kept secret at all times. Instead, faskey is used to generate a hashed id value (hid) and this is sent by openNDS to the FAS. The FAS must then in turn generate a new return hash id (rhid) to return to openNDS in its authentication request.
 .INDENT 0.0
 .INDENT 3.5
 \fBIf set to "0"\fP The FAS is enforced by NDS to use \fBhttp\fP protocol.
-The client token is sent to the FAS in clear text in the query string of the redirect along with authaction and redir.
+The client token is sent to the FAS in clear text in the query string of the redirect along with authaction and redir. This method is easy to bypass and useful only for the simplest systems where security does not matter.
 .sp
 \fBIf set to "1"\fP The FAS is enforced by NDS to use \fBhttp\fP protocol.
-When the sha256sum command is available AND faskey is set, the client token will be hashed and sent to the FAS identified as "hid" in the query string. The gatewayaddress is also sent on the query string, allowing the FAS to construct the authaction parameter. FAS must return the sha256sum of the concatenation of the original hid and faskey to be used by openNDS for client authentication. This is returned in the normal way in the query string identified as "tok". openNDS will automatically detect whether hid mode is active or the raw token is being returned.
+A base64 encoded query string containing the hid is sent to the FAS, along with the clientip, clientmac, gatewayname, client_hid, gatewayaddress, authdir, originurl, clientif and custom parameters and variables.
 .sp
-Should sha256sum not be available or faskey is not set, then it is the responsibility of the FAS to request the token from ndsctl.
+Should sha256sum not be available, then openNDS will terminate with an error message on startup.
 .sp
 \fBIf set to "2"\fP The FAS is enforced by NDS to use \fBhttp\fP protocol.
 .sp
-clientip, clientmac, gatewayname, client token, gatewayaddress, authdir, originurl and clientif are encrypted using faskey and passed to FAS in the query string.
+clientip, clientmac, gatewayname, client_hid, gatewayaddress, authdir, originurl and clientif are encrypted using faskey and passed to FAS in the query string.
 .sp
 The query string will also contain a randomly generated initialization vector to be used by the FAS for decryption.
 .sp
@@ -540,67 +956,58 @@ The "php\-cli" package and the "php\-openssl" module must both be installed for 
 .sp
 openNDS does not depend on this package and module, but will exit gracefully if this package and module are not installed when this level is set.
 .sp
-The FAS must use the query string passed initialisation vector and the pre shared fas_key to decrypt the query string. An example FAS level 2 php script (fas\-aes.php) is preinstalled in the /etc/opennds directory and also supplied in the source code.
+The FAS must use the query string passed initialisation vector and the pre shared fas_key to decrypt the query string. An example FAS level 2 php script (fas\-aes.php) is stored in the /etc/opennds directory and also supplied in the source code. This should be copied the the web root of a suitable web server for use.
 .sp
 \fBIf set to "3"\fP The FAS is enforced by openNDS to use \fBhttps\fP protocol.
-Level 3 is the same as level 2 except the use of https protocol is enforced for FAS. In addition, the "authmon" daemon is loaded. This allows the external FAS, after client verification, to effectively traverse inbound firewalls and address translation to achieve NDS authentication without generating browser security warnings or errors. An example FAS level 3 php script (fas\-aes\-https.php) is preinstalled in the /etc/opennds directory and also supplied in the source code.
-.UNINDENT
-.UNINDENT
+Level 3 is the same as level 2 except the use of https protocol is enforced for FAS. In addition, the "authmon" daemon is loaded. This allows the external FAS, after client verification, to effectively traverse inbound firewalls and address translation to achieve NDS authentication without generating browser security warnings or errors. An example FAS level 3 php script (fas\-aes\-https.php) is pre\-installed in the /etc/opennds directory and also supplied in the source code. This should be copied the the web root of a suitable web server for use.
 .sp
-\fBOption faskey must be set\fP if fas secure is set to levels 2 and 3 but is optional for level 1.
-.INDENT 0.0
-.INDENT 3.5
-Option faskey is used to encrypt the data sent by NDS to FAS.
-It can be any combination of A\-Z, a\-z and 0\-9, up to 16 characters with no white space.
-.sp
-This is used to create a sha256 digest that is in turn used to encrypt the data using the aes\-256\-cbc cypher.
-.sp
-A random initialisation vector is generated for every encryption and sent to FAS with the encrypted data.
-.sp
-Option faskey must be pre\-shared with FAS.
+\fBOption faskey has a default value.\fP It is recommended that this is set to some secret value in the config file and the FAS script set to use a matching value, ie faskey must be pre\-shared with FAS.
 .UNINDENT
 .UNINDENT
 .SS Example FAS Query strings
 .INDENT 0.0
 .INDENT 3.5
-\fBLevel 0\fP (fas_secure_enabled = 0), NDS sends the token and other information to FAS as clear text.
+\fBLevel 0\fP (fas_secure_enabled = 0)
+.INDENT 0.0
+.INDENT 3.5
+NDS sends the token and other information to FAS as clear text.
 .sp
 \fIhttp://fasremoteip:fasport/faspath?authaction=http://gatewayaddress:gatewayport/opennds_auth/?clientip=[clientip]&gatewayname=[gatewayname]&tok=[token]&redir=[requested_url]\fP
-.INDENT 0.0
-.INDENT 3.5
-Although the simplest to set up, a knowledgeable user could bypass FAS, so running fas_secure_enabled at level 1, 2 or 3 is recommended.
+.sp
+Note: a knowledgeable user could bypass FAS, so running fas_secure_enabled at level 1, 2 or 3 is recommended.
 .UNINDENT
 .UNINDENT
 .sp
-\fBLevel 1\fP (fas_secure_enabled = 1), NDS sends only information required to identify, the instance of NDS, the client and the client\(aqs originally requested URL. The client token is never exposed.
-.sp
-\fBIf faskey is set\fP, NDS sends a digest of the random client token:
-.sp
-\fIhttp://fasremotefqdn:fasport/faspath?hid=[hash_id]&gatewayname=[gatewayname]&clientip=[clientip]&redir=[requested\-url]\fP
+\fBLevel 1\fP (fas_secure_enabled = 1)
 .INDENT 0.0
 .INDENT 3.5
+NDS sends a query string containing a base64 encoded string containing required parameters and variables, plus any FAS variables generated in the client dialogue, such as username and email address. The client token is never exposed.
+.sp
+Example Level 1 query string:
+.INDENT 0.0
+.INDENT 3.5
+\fIhttp://fasremotefqdn:fasport/faspath?fas=[b64encodedstring]&username=[client_username]&emailaddr=[client_email]\fP
+.UNINDENT
+.UNINDENT
+.sp
+The b64encoded string will contain a comma space separated list of parameters.
+.sp
+The decoded string received by FAS will be of the form:
+.sp
+\fI[varname1]=[var1], [varname2]=[var2], ..... etc\fP (the separator being comma\-space).
+.UNINDENT
+.UNINDENT
+.sp
+For example:
+.INDENT 0.0
+.INDENT 3.5
+\fIclientip=[clientipaddress], clientmac=[clientmacaddress], gatewayname=[gatewayname], client token, gatewayaddress, authdir, originurl\fP
+.UNINDENT
+.UNINDENT
+.sp
 The FAS must return the hash of the concatenated hid value and the value of faskey identified in the query string as "tok". NDS will automatically detect this.
-.UNINDENT
-.UNINDENT
 .sp
-\fBIf faskey is not set\fP the following is sent:
-.sp
-\fIhttp://fasremotefqdn:fasport/faspath?gatewayname=[gatewayname]&clientip=[clientip]&redir=[requested\-url]\fP
-.INDENT 0.0
-.INDENT 3.5
-It is the responsibility of FAS to obtain the unique client token allocated by NDS as well as constructing the return URL to NDS.
-.sp
-The return url will be constructed by FAS from predetermined knowledge of the configuration of NDS using gatewayname as an identifier.
-.sp
-The client\(aqs unique access token will be obtained from NDS by the FAS making a call to the get_client_token library utility:
-.sp
-\fB/usr/lib/opennds/./get_client_token $clientip\fP
-.sp
-A json parser could be used to extract all the client variables supplied by ndsctl, an example can be found in the default PreAuth Login script in /usr/lib/nogogsplash/login.sh.
-.UNINDENT
-.UNINDENT
-.sp
-\fBLevels 2 and 3\fP (fas_secure_enabled = 2 and fas_secure_enabled = 3), NDS sends encrypted information to FAS.
+\fBLevels 2 and 3\fP (fas_secure_enabled = 2 and fas_secure_enabled = 3), openNDS sends encrypted information to FAS.
 .sp
 \fIhttp://fasremotefqdn:fasport/faspath?fas=[aes\-256\-cbc data]&iv=[random initialisation vector]\fP (level 2)
 .sp
@@ -614,29 +1021,19 @@ It is the responsibility of FAS to decrypt the aes\-256\-cbc data it receives, u
 The decrypted string received by FAS will be of the form:
 [varname1]=[var1], [varname2]=[var2], ..... etc. (the separator being comma\-space).
 .sp
-eg \fIclientip=192.168.8.23, clientmac=04:15:52:6a:e4:ad, tok=770bfe05, originurl=.....\fP
-.sp
-Variables sent by NDS in the encrypted string in NDS v4.0.0 and above are as follows:
-.sp
-\fBclientip clientmac gatewayname tok gatewayaddress authdir originurl clientif\fP
+For example:
 .INDENT 0.0
-.TP
-.B Where:
-\fBtok\fP is the client token
-.sp
-\fBgatewayaddress\fP is authentication address of NDS ie [nds_ip]:[nds_port]
-.sp
-\fBauthdir\fP is the NDS virtual authentication directory
-.INDENT 7.0
-.TP
-\fBclientif\fP is the interface string identifying the interface the client is connected to in the form of:
-[local interface] [meshnode mac] [local mesh interface]
+.INDENT 3.5
+\fIclientip=[clientipaddress], clientmac=[clientmacaddress], gatewayname=[gatewayname], client token, gatewayaddress, authdir, originurl\fP
 .UNINDENT
 .UNINDENT
 .sp
 It is the responsibility of FAS to parse the decrypted string for the variables it requires.
 .UNINDENT
 .UNINDENT
+.SS Example scripts
+.sp
+Full details of how to use FAS query strings can be seen in the example scripts, login.sh, fas\-hid.php, fas\-aes.php and fas\-aes\-https.php
 .SS Custom Parameters
 .sp
 Custom Parameters are primarily intended to be used by remote configuration tools and are generally useful for passing static information to a remote FAS.
@@ -646,9 +1043,9 @@ Once a custom parameter is defined in the configuration, its value will be fixed
 .sp
 Parameters must be of the form param_name=param_value and may not contain white space or single quote characters.
 .sp
-Custom parameters are added to the query string when FAS level 1 and faskey are both set.
+Custom parameters are added to the base64 encoded query string when FAS level 1 is set or the basic login option is used. Note the basic login option is a special case of FAS level 1 running the login.sh script.
 .sp
-Custom parameters are added to the encrypted query string when FAS levels 2 and 3 are set.
+Custom parameters are added to the encrypted query string when FAS levels 1, 2 and 3 are set.
 .sp
 The fas_custom_parameters_list option in the configuration file is used to set custom parameters. This is detailed in the default configuration file.
 .sp
@@ -699,7 +1096,7 @@ demo\-preauth\-remote\-image.sh
 For details of the clientif variable and how to use get_client_interface, see the section \fBLibrary Utilities\fP\&.
 .SS After Successful Verification by FAS
 .sp
-If the client is successfully verified by the FAS, FAS will return the unique token, or its hashed equivalent to NDS to finally allow the client access to the Internet.
+If the client is successfully verified by the FAS, FAS will send the return hash id (rhid) to openNDS to finally allow the client access to the Internet.
 .SS Post FAS processing
 .sp
 Once the client has been authenticated by the FAS, NDS must then be informed to allow the client to have access to the Internet.
@@ -716,10 +1113,11 @@ This virtual URL is of the form:
 .sp
 This is most commonly achieved using an html form of method GET.
 The parameter redir can be the client\(aqs originally requested URL sent by NDS, or more usefully, the URL of a suitable landing page.
+.UNINDENT
+.UNINDENT
+.SS The "login_option" special case
 .sp
-Be aware that many client CPD processes will \fBautomatically close\fP the landing page as soon as Internet access is detected.
-.UNINDENT
-.UNINDENT
+The default "login_option" script, login.sh, must always be a local script so has access to ndsctl auth method of authentication without needing the authmon daemon so uses this rather than use the authdir GET method detailed above. This means login.sh can directly set client quotas without requiring BinAuth.
 .SS Authentication Method for fas_secure_enabled level 3 (Authmon Daemon)
 .INDENT 0.0
 .INDENT 3.5
@@ -748,6 +1146,8 @@ custom: A custom data string that will be sent to BinAuth
 Details can be found in the example script fas\-aes\-https.php
 .UNINDENT
 .UNINDENT
+.sp
+Be aware that many client CPD processes will \fBautomatically close\fP the landing page as soon as Internet access is detected.
 .SS BinAuth Post FAS Processing
 .sp
 As BinAuth can be enabled at the same time as FAS, a BinAuth script may be used for custom post FAS processing. (see BinAuth).
@@ -2308,11 +2708,13 @@ Custom designed dynamically generated splash pages are supported using FAS and P
 .sp
 For details see the FAS and PreAuth chapters.
 .SH FREQUENTLY ASKED QUESTIONS
-.SS What\(aqs the difference between NoDogSplash (all versions), openNDS v5, v6,v7?
+.SS What\(aqs the difference between versions?
 .sp
-\fBNoDogSplash\fP and openNDS are derived from the same code base. You cannot upgrade from NoDogSplash to openNDS, instead you must first uninstall NodogSplash before installing openNDS.
+\fBNoDogSplash and openNDS\fP are derived from the same code base.
 .sp
-NoDogSplash is optimised for running on devices with very limited resources and supports only a single \fIstatic\fP templated html splash page.
+You cannot upgrade from NoDogSplash to openNDS, instead you must first uninstall NodogSplash before installing openNDS.
+.sp
+\fBNoDogSplash\fP is optimised for running on devices with very limited resources and supports only a single \fIstatic\fP templated html splash page.
 .sp
 \fBopenNDS\fP supports dynamic html splash page generation (at default, still with minimal resource utilisation) and an API to support the coding of sophisticated Captive Portal solutions.
 .sp
@@ -2348,7 +2750,15 @@ Numerous library scripts are introduced to simplify development of applications.
 .UNINDENT
 .UNINDENT
 .sp
-\fBopenNDS v6\fP This is the first version of openNDS to use the updated libmicrohttpd API introduced with v0.9.71
+\fBopenNDS v6\fP This is the first version of openNDS to use the updated libmicrohttpd (MHD) API introduced with v0.9.71.
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+openNDS \fBREQUIRES\fP MHD v0.9.71 or higher.
+.UNINDENT
+.UNINDENT
+.UNINDENT
 .sp
 \fBopenNDS v7\fP This version contains several major enhancements, including:
 .INDENT 0.0
@@ -2366,17 +2776,47 @@ A list of static Custom Parameters can be set as a configuration option. Once se
 This functionality was added specifically to support remote configuration tools such as Opensync, but can be generally useful for passing local fixed information to a remote FAS.
 .sp
 It is important that this is NOT confused with the dynamic Custom Variables that can be defined as a part of a FAS/Client dialogue.
+.IP \(bu 2
+\fBLegacy Templated splash.html Deprecated and Disabled\fP
+.sp
+The legacy splash.html page and its templated variables is deprecated and disabled. This is replaced by an enhanced login option script capable of generating a dynamic html dialogue. The default is a simple click to continue page, similar to the old splash.html.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+\fBopenNDS v8\fP This version contains several major enhancements, including:
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+\fBBase 64 encoding of the Query string\fP
+.sp
+The introduction of Base 64 encoding of the query string into the FAS API, enables easier customisation of FAS scripts.
+.IP \(bu 2
+\fBGlobal use of Hashed ID (hid)\fP
+.sp
+Hashed ID (hid), carried in the base64 encoded query string for levels 1, 2 and 3, including the default click to continue page, provides a uniform level of security against portal bypass. The option "faskey" is now enabled at all times with a simple default value and settable in the config files and FAS scripts.
+.IP \(bu 2
+\fBClient User Status Page\fP
+.sp
+A client user status page is now available at a configurable Gateway FQDN. This page includes a listing of the client\(aqs quota allocation and usage, as well as a "Logout" button. A client that is connected butnot logged in for any reason will be redirected to an RFC6585 Status Code 511 "Network Authentication Required" page with a "Login" button. the default url for a client to access their status page is \fI\%http://status.client\fP
 .UNINDENT
 .UNINDENT
 .UNINDENT
 .SS Can I upgrade from NoDogSplash to openNDS?
 .sp
 No.
-.sp
+.INDENT 0.0
+.IP \(bu 2
 You must first uninstall NoDogSplash before installing openNDS.
+.UNINDENT
 .SS Can I upgrade from v5 to v6
 .sp
-Yes, but you will also need to upgrade libmicrohttpd to version v0.9.71 or higher.
+Yes.
+.INDENT 0.0
+.IP \(bu 2
+But you must upgrade libmicrohttpd to version v0.9.71 or higher.
+.UNINDENT
 .SS Can I upgrade from v6 to v7?
 .sp
 You can, if:
@@ -2386,14 +2826,37 @@ You don\(aqt use RedirectURL (this has been deprecated for some time as it mostl
 .IP \(bu 2
 You don\(aqt use the Templated html splash page (splash.html). Templated splash is now deprecated and disabled. It can be re\-enabled by setting the allow_legacy_splash option to allow time for migration. Support will be removed entirely in a later version.
 .UNINDENT
+.SS Can I upgrade from v7 to v8?
+.sp
+You can, if:
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+You modify your FAS scripts to use the openNDS v8 API. The FAS query string is now either base64 encoded, or encrypted.
+.IP \(bu 2
+In addition Hashed ID (hid) is used for authentication, removing the need for a FAS script to somehow obtain the client Token.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS How can I add custom parameters, such as site specific information?
+.sp
+Custom parameters were introduced in openNDS version 7 and are defined simply in the config file. These parameters are passed to the FAS in the query string. Version 8 embeds any custom parameters in the encoded/encrypted query string, macing it much simpler to parse for them in the FAS script.
 .SS How do I manage client data usage?
 .sp
 openNDS (NDS) has built in \fIData Volume\fP and \fIData Rate\fP quota support.
 .INDENT 0.0
 .INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
 Data volume and data rate quotas can be set globally in the config file.
-.sp
-The global values can be overridden on a client by client basis as required.
+.IP \(bu 2
+The global values can be overridden on a client by client basis as required, either by FAS or BinAuth.
+.IP \(bu 2
+If a client exceeds their volume quota they will be deauthenticated.
+.IP \(bu 2
+If a client exceeds their rate quota, they will be temporarily blocked to ensure their average rate stays below the rate quota value. This allows clients to burst at a higher rate for shot intervals, improving performance, but prevents them from hogging bandwidth.
+.UNINDENT
 .UNINDENT
 .UNINDENT
 .SS Can I use Traffic Shaping with openNDS?
@@ -2408,20 +2871,21 @@ For other distributions of Linux it is available at:
 \fBYes\fP\&. FAS Secure Level 3 enforces https protocol for the splash login page on an external FAS server.
 .SS Is \fIhttps capture\fP supported?
 .sp
-\fBNo\fP\&. Because all connections would have a critical certificate failure.
+\fBNo\fP\&.
 .INDENT 0.0
-.INDENT 3.5
+.IP \(bu 2
+If it was supported, all connections would have a \fBcritical certificate failure\fP\&.
+.IP \(bu 2
 HTTPS web sites are now more or less a standard and to maintain security and user confidence it is essential that captive portals \fBDO NOT\fP attempt to capture port 443.
-.sp
-All modern client devices have the built in, industry standard, \fICaptive Portal Detection (CPD) service\fP\&. This is responsible for triggering the captive portal splash/login page and is specifically intended to make attempted https capture unnecessary.
-.UNINDENT
+.IP \(bu 2
+All modern client devices have the built in, industry standard, \fICaptive Portal Detection (CPD) service\fP\&. This is responsible for triggering the captive portal splash/login page and is \fBspecifically intended to make https capture unnecessary\fP\&.
 .UNINDENT
 .SS What is CPD / Captive Portal Detection?
 .sp
-CPD (Captive Portal Detection) has evolved as an enhancement to the network manager component included with major Operating Systems (Linux, Android, iOS/macOS, Windows).
+CPD (Captive Portal Detection) has evolved as an enhancement to the network manager component included with major Operating Systems (Linux, Android, iOS/MacOS, Windows).
 .INDENT 0.0
 .INDENT 3.5
-Using a pre\-defined port 80 web page (which one gets used depends on the vendor) the network manager will detect the presence of a captive portal hotspot and notify the user. In addition, most major browsers now support CPD.
+Using a pre\-defined port 80 web page (the one that gets used depends on the vendor) the network manager will detect the presence of a captive portal hotspot and notify the user. In addition, most major browsers now support CPD.
 .UNINDENT
 .UNINDENT
 .SH HOW TO COMPILE OPENNDS
@@ -2767,6 +3231,6 @@ search
 .SH AUTHOR
 The openNDS Contributors
 .SH COPYRIGHT
-2016 - 2020, The NoDogSplash and openNDS Contributors
+2016 - 2021, The NoDogSplash and openNDS Contributors
 .\" Generated by docutils manpage writer.
 .

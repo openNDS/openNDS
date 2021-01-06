@@ -34,6 +34,7 @@ Contents:
    howitworks
    splash
    clientstatus
+   customparams
    fas
    preauth
    binauth

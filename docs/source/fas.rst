@@ -10,7 +10,7 @@ These options are:
  2. **fasremoteip**. If set, this is the remote ip address of the FAS, if not set it will take the value of the NDS gateway address.
  3. **fasremotefqdn** If set, this is the remote fully qualified domain name (FQDN) of the FAS
  4. **faspath**. This is the path from the FAS Web Root (not the file system root) to the FAS login page.
- 5. **fas_secure_enable**. This can have four values, "0", "1", "2" or "3" providing different levels of security.
+ 5. **fas_secure_enabled**. This can have four values, "0", "1", "2" or "3" providing different levels of security.
  6. **faskey** Used in combination with fas_secure_enable level 1, 2 and 3, this is a key phrase for NDS to encrypt data sent to FAS.
 
 .. note::

@@ -462,6 +462,8 @@ enum MHD_Result libmicrohttpd_cb(
  */
 static int check_authdir_match(const char *url, const char *authdir)
 {
+	debug(LOG_DEBUG, "url is [ %s ], checking for [ %s ]", url, authdir);
+
 	if (strlen(url) != (2 + strlen(authdir)))
 		return 0;
 
@@ -860,6 +862,8 @@ static int preauthenticated(struct MHD_Connection *connection,
 	}
 
 	debug(LOG_DEBUG, "preauthenticated: host [%s] url [%s]", host, url);
+	debug(LOG_DEBUG, "config->preauthdir: [ %s ], config->gw_fqdn: [ %s ] ", config->preauthdir, config->gw_fqdn);
+	debug(LOG_DEBUG, "config->gw_address: [ %s ], config->gw_ip: [ %s ] ", config->gw_address, config->gw_ip);
 
 	// User just accessed gatewayaddress:gatewayport either directly or by redirect
 	if (strcmp(url, "/") == 0) {

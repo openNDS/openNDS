@@ -200,6 +200,7 @@ iptables_do_command(const char *format, ...)
 		}
 	}
 
+	debug(LOG_DEBUG,"iptables command [ %s ], return code [ %d ]", fmt_cmd, rc);
 	free(fmt_cmd);
 
 	return rc;
@@ -604,6 +605,10 @@ iptables_fw_init(void)
 	} else {
 		// CHAIN_TO_ROUTER, append the "users-to-router" ruleset
 		rc |= _iptables_append_ruleset("filter", "users-to-router", CHAIN_TO_ROUTER);
+
+		// CHAIN_TO_ROUTER packets marked AUTHENTICATED RETURN
+		rc |= iptables_do_command("-t filter -A " CHAIN_TO_ROUTER " -m mark --mark 0x%x%s -j RETURN", FW_MARK_AUTHENTICATED, markmask);
+
 		// everything else, REJECT
 		rc |= iptables_do_command("-t filter -A " CHAIN_TO_ROUTER " -j REJECT --reject-with %s-port-unreachable", ICMP_TYPE);
 

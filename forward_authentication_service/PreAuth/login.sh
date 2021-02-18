@@ -55,7 +55,7 @@ get_arguments() {
 	mode="$3"
 
 	# The base64 encoded query string can be very long and exceed the maximum length for a script argument
-	# This is true in OpenWrt and is likely many other operating systems, particularly those that use Busybox ASH shell
+	# This is true in OpenWrt and is likely to be the case in many other operating systems, particularly those that use Busybox ASH shell
 	# To be safe we will fragment the querystring for b64 decoding
 
 	# The b64encoded data begins at the 10th character, ie character number 9 (numbering starts at zero).
@@ -65,6 +65,11 @@ get_arguments() {
 	query=""
 	i=9
 	query_enc_type=${query_enc:0:9}
+
+	if [ "$query_enc_type" != "%3ffas%3d" ]; then
+		exit 1
+	fi
+
 	fas=${query_enc:9:1024}
 
 	#fas is urlencoded, so we must urldecode
@@ -76,7 +81,6 @@ get_arguments() {
 
 	# strip off any fas variables this script might have added, ie username and email
 	fas="${fas%%,*}"
-
 
 	# Fragment and decode:
 	while true; do
@@ -130,19 +134,6 @@ get_arguments() {
 
 	#Check if we parsed the client zone, if not, get it
 	get_client_zone
-
-	# URL decode and htmlentity encode vars that need it:
-	gatewayname=$(printf "${gatewayname//%/\\x}")
-
-	htmlentityencode "$gatewayname"
-	gatewaynamehtml=$entityencoded
-
-	username=$(printf "${username//%/\\x}")
-	htmlentityencode "$username"
-	usernamehtml=$entityencoded
-
-	emailaddress=$(printf "${emailaddress//%/\\x}")
-
 }
 
 parse_variables() {
@@ -150,6 +141,11 @@ parse_variables() {
 
 	for var in $queryvarlist; do
 		evalstr=$(echo "$query" | awk -F"$var=" '{print $2}' | awk -F', ' '{print $1}')
+		evalstr=$(printf "${evalstr//%/\\x}")
+
+		# sanitise $evalstr to prevent code injection
+		htmlentityencode "$evalstr"
+		evalstr=$entityencoded
 
 		if [ -z "$evalstr" ]; then
 			continue
@@ -301,12 +297,12 @@ header() {
 		<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
 		<link rel=\"shortcut icon\" href=\"/images/splash.jpg\" type=\"image/x-icon\">
 		<link rel=\"stylesheet\" type=\"text/css\" href=\"/splash.css\">
-		<title>$gatewaynamehtml</title>
+		<title>$gatewayname</title>
 		</head>
 		<body>
 		<div class=\"offset\">
 		<med-blue>
-			$gatewaynamehtml <br>
+			$gatewayname <br>
 		</med-blue>
 		<div class=\"insert\" style=\"max-width:100%;\">
 	"
@@ -343,7 +339,7 @@ login_form() {
 		<hr>
 		<form action=\"/opennds_preauth/\" method=\"get\">
 			<input type=\"hidden\" name=\"fas\" value=\"$fas\">
-			<input type=\"text\" name=\"username\" value=\"$usernamehtml\" autocomplete=\"on\" ><br>Name<br><br>
+			<input type=\"text\" name=\"username\" value=\"$username\" autocomplete=\"on\" ><br>Name<br><br>
 			<input type=\"email\" name=\"emailaddress\" value=\"$emailaddress\" autocomplete=\"on\" ><br>Email<br><br>
 			<input type=\"submit\" value=\"Accept Terms of Service\" >
 		</form>
@@ -393,7 +389,7 @@ thankyou_page () {
 			Thankyou for using this service
 		</big-red>
 		<br>
-		<b>Welcome $usernamehtml</b>
+		<b>Welcome $username</b>
 		<br>
 		<med-blue>You are connected to $client_zone</med-blue><br>
 	"
@@ -423,7 +419,7 @@ thankyou_page () {
 	echo "
 		<form action=\"/opennds_preauth/\" method=\"get\">
 			<input type=\"hidden\" name=\"fas\" value=\"$fas\">
-			<input type=\"hidden\" name=\"username\" value=\"$usernamehtml\">
+			<input type=\"hidden\" name=\"username\" value=\"$username\">
 			<input type=\"hidden\" name=\"emailaddress\" value=\"$emailaddress\">
 			$customhtml
 			<input type=\"hidden\" name=\"landing\" value=\"yes\">
@@ -666,7 +662,10 @@ htmlentityencode() {
 		entityencoded=$(echo "$buffer" | sed "$entity")
 		buffer=$entityencoded
 	done
+
+	entityencoded=$(echo "$buffer" | awk '{ gsub(/\$/, "\\&#36;"); print }')
 }
+
 
 htmlentitydecode() {
 	entitylist="
@@ -683,6 +682,8 @@ htmlentitydecode() {
 		entitydecoded=$(echo "$buffer" | sed "$entity")
 		buffer=$entitydecoded
 	done
+
+	entitydecoded=$(echo "$buffer" | awk '{ gsub(/\\&#36;/, "\$"); print }')
 }
 
 get_client_zone () {

@@ -812,7 +812,7 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 
 		if (rc != 0) {
 			debug(LOG_WARNING, "Preauth script: %s '%s' - failed to execute", config->preauth, query);
-			return -1;
+			return send_error(connection, 511);
 		}
 
 		// serve the script output (in msg)

@@ -1,3 +1,14 @@
+openNDS (8.1.0)
+
+  * This version introduces some new functionality and some fixes/enhancements
+  * Fix - Add default values for gatewayfqdn. If not set in config could result in crash on conection of first client [bluewavenet]
+  * Add - Authenticated users are now granted access to the router by entry in "list authenticated_users" [bluewavenet]
+  * Fix - option preauth was being ignored [bluewavenet]
+  * Add - query string validity check and entity encode "$" character. Generate error 511 if query string is corrupted [bluewavenet]
+  * Add - a "Try Again" button to the login.sh script, to be displayed if the client token has expired before login. [bluewavenet]
+
+ -- Rob White <dot@blue-wave.net> Thu, 18 Feb 2021 17:03:23 +0000
+
 openNDS (8.0.0)
 
   * This version introduces major new functionality and some major changes

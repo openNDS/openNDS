@@ -242,9 +242,12 @@ login_failed() {
 		<hr>
 		<p>
 			<italic-black>
-				Invalid Authentication Key
+				Your connection has timed out
 			</italic-black>
 		</p>
+		<form action=\"http://detectportal.firefox.com/success.txt\" method=\"get\">
+		<input type=\"submit\" value=\"Try Again\" >
+		</form>
 	"
 
 	footer

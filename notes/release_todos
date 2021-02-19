@@ -2,7 +2,7 @@ When ready to do a release, do the following:
 
 1. Ensure all makefiles are updated as required (remember update of opennds/openwrt makefile for its release PR)
 2. conf.h - update version number and copyright eg current year
-3. Changelog - list changes
+3. Changelog - list changes and add to docs/changelog.rst
 4. debian/changelog - list changes
 5. debian/copyright - update copyright dates as required eg current year
 6. docs/source/conf.py - update copyright notice eg current year, version and release numbers, files to copy etc as applicable
@@ -19,4 +19,4 @@ When ready to do a release, do the following:
 16. In your local repository, make a new branch called "stable"
 17. Push branch "stable" to origin, overwriting the existing "stable".
 	Note:Branch stable is the source for the readthedocs stable documentation at https://openndsdocs.readthedocs.io/en/stable/
-18. In Master, set version to -beta eg 8.0.1-beta in conf.h, conf.py, openwrt/Makefile
+18. In Master, set version to -beta eg 8.1.1-beta in conf.h, conf.py, openwrt/Makefile

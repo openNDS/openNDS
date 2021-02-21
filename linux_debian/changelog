@@ -1,3 +1,9 @@
+openNDS (8.1.1-1) stable; urgency=medium
+
+  * Fix - remove legacy code where option preauthenticated_users containing the keyword "block" would cause openNDS to fail to start [bluewavenet]
+
+ -- Rob White <dot@blue-wave.net>  Thu, 21 Feb 2021 16:33:34 +0000
+
 openNDS (8.1.0-1) stable; urgency=medium
 
   * This version introduces some new functionality and some fixes/enhancements

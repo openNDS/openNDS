@@ -19,4 +19,4 @@ When ready to do a release, do the following:
 16. In your local repository, make a new branch called "stable"
 17. Push branch "stable" to origin, overwriting the existing "stable".
 	Note:Branch stable is the source for the readthedocs stable documentation at https://openndsdocs.readthedocs.io/en/stable/
-18. In Master, set version to -beta eg 8.1.1-beta in conf.h, conf.py, openwrt/Makefile
+18. In Master, set version to eg -beta eg 8.1.2-beta in conf.h, conf.py, openwrt/Makefile

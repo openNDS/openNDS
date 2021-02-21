@@ -37,7 +37,6 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <arpa/inet.h>
 
 #include "common.h"
 
@@ -265,6 +264,8 @@ _iptables_compile(const char table[], const char chain[], t_firewall_rule *rule)
 	snprintf((command + strlen(command)),
 			 (sizeof(command) - strlen(command)),
 			 "-j %s", mode);
+
+	debug(LOG_DEBUG, "Compiled Command for IPtables: [ %s ]", command);
 
 	/* XXX The buffer command, an automatic variable, will get cleaned
 	 * off of the stack when we return, so we strdup() it. */
@@ -511,8 +512,6 @@ iptables_fw_init(void)
 		rc |= iptables_do_command("-t nat -A " CHAIN_OUTGOING " -m mark --mark 0x%x%s -j RETURN", FW_MARK_TRUSTED, markmask);
 		// CHAIN_OUTGOING, packets marked AUTHENTICATED  ACCEPT
 		rc |= iptables_do_command("-t nat -A " CHAIN_OUTGOING " -m mark --mark 0x%x%s -j RETURN", FW_MARK_AUTHENTICATED, markmask);
-		// CHAIN_OUTGOING, append the "preauthenticated-users" ruleset
-		rc |= _iptables_append_ruleset("nat", "preauthenticated-users", CHAIN_OUTGOING);
 
 		// Allow access to remote FAS - CHAIN_OUTGOING and CHAIN_TO_INTERNET packets for remote FAS, ACCEPT
 		if (fas_port && strcmp(fas_remoteip, gw_ip)) {

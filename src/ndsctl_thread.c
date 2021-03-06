@@ -322,13 +322,13 @@ ndsctl_auth(FILE *fp, char *arg)
 	unsigned long long int downloadquota = config->download_quota;
 	char customdata[256] = {0};
 	char *argcopy;
-	char *arg2;
-	char *arg3;
-	char *arg4;
-	char *arg5;
-	char *arg6;
-	char *arg7;
-	char *arg8;
+	const char *arg2;
+	const char *arg3;
+	const char *arg4;
+	const char *arg5;
+	const char *arg6;
+	const char *arg7;
+	const char *arg8;
 	char *ptr;
 	time_t now = time(NULL);
 
@@ -344,7 +344,7 @@ ndsctl_auth(FILE *fp, char *arg)
 	arg3 = strsep(&argcopy, ",");
 	debug(LOG_DEBUG, "arg3 [%s]", arg3);
 
-	if (strtol(arg3, &ptr, 10) > 0) {
+	if (arg3 != NULL) {
 		seconds = 60 * strtol(arg3, &ptr, 10);
 	}
 
@@ -390,8 +390,10 @@ ndsctl_auth(FILE *fp, char *arg)
 	}
 
 	LOCK_CLIENT_LIST();
+	debug(LOG_DEBUG, "find in client list - arg2: [%d]", arg2);
 	client = client_list_find_by_any(arg2, arg2, arg2);
 	id = client ? client->id : 0;
+	debug(LOG_DEBUG, "client id: [%d]", id);
 
 	if (id) {
 

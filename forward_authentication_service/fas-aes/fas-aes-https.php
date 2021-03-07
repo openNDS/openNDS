@@ -71,6 +71,14 @@ $client_zone=$fullname=$email=$invalid="";
 $cipher="AES-256-CBC";
 $me=$_SERVER['SCRIPT_NAME'];
 
+if (file_exists("/etc/config/opennds")) {
+	$logpath="/tmp/";
+} elseif (file_exists("/etc/opennds/opennds.conf")) {
+	$logpath="/run/";
+} else {
+	$logpath="";
+}
+
 ###############################################################################
 #
 # Set the pre-shared key. This MUST be the same as faskey in the openNDS config
@@ -99,6 +107,7 @@ $key="1234567890";
 # In addition, choice of the values of these variables can be determined, based on the interface used by the client
 # (as identified by the clientif parsed variable). For example, a system with two wireless interfaces such as "members" and "guests". 
 
+# A value of 0 means no limit
 $sessionlength=0; // minutes (1440 minutes = 24 hours)
 $uploadrate=0; // kbits/sec (500 kilobits/sec = 0.5 Megabits/sec)
 $downloadrate=0; // kbits/sec (1000 kilobits/sec = 1.0 Megabits/sec)
@@ -134,31 +143,31 @@ if (isset($_POST["auth_get"])) {
 		exit(0);
 	}
 
-	if (! file_exists("$gatewayhash")) {
+	if (! file_exists("$logpath"."$gatewayhash")) {
 		exit(0);
 	}
 
 	$authlist="*";
 
 	if ($_POST["auth_get"] == "list") {
-		$auth_list=scandir("$gatewayhash");
+		$auth_list=scandir("$logpath"."$gatewayhash");
 		array_shift($auth_list);
 		array_shift($auth_list);
 
 		foreach ($auth_list as $client) {
-			$clientauth=file("$gatewayhash/$client");
+			$clientauth=file("$logpath"."$gatewayhash/$client");
 			$authlist=$authlist." ".rawurlencode(trim($clientauth[0]));
-			unlink("$gatewayhash/$client");
+			unlink("$logpath"."$gatewayhash/$client");
 		}
 		echo trim("$authlist");
 
 	} else if ($_POST["auth_get"] == "view") {
-		$auth_list=scandir("$gatewayhash");
+		$auth_list=scandir("$logpath"."$gatewayhash");
 		array_shift($auth_list);
 		array_shift($auth_list);
 
 		foreach ($auth_list as $client) {
-			$clientauth=file("$gatewayhash/$client");
+			$clientauth=file("$logpath"."$gatewayhash/$client");
 			$authlist=$authlist." ".rawurlencode(trim($clientauth[0]));
 		}
 		echo trim("$authlist");
@@ -242,18 +251,9 @@ if ( ! isset($client_zone_r[1])) {
 
 $gwname=hash('sha256', trim($gatewayname));
 
-if (file_exists("/etc/config/opennds")) {
-	$logpath="/tmp/";
-} elseif (file_exists("/etc/opennds/opennds.conf")) {
-	$logpath="/run/";
-} else {
-	$logpath="";
-}
-
 if (!file_exists("$logpath"."$gwname")) {
 	mkdir("$logpath"."$gwname", 0700);
 }
-
 
 #######################################################
 //Start Outputting the requested responsive page:

@@ -14,11 +14,10 @@ postrequest="/usr/lib/opennds/post-request.php"
 
 #action can be "list" (list and delete from FAS auth log) or "view" (view and leave in FAS auth log)
 #
-# For debugging purposes, action can be set to "view"
-#action="view"
-# For normal running, action will be set to "list"
-action="list"
+# Default set to "view" to facilitate upstream auth_ack processing
+action="view"
 
+# Function to send commands to openNDS:
 do_ndsctl () {
 	local timeout=4
 
@@ -33,7 +32,26 @@ do_ndsctl () {
 				sleep 1
 				break
 			fi
+
+			if [ $keyword = "Failed" ]; then
+				ndsstatus="failed"
+				break
+			fi
+
+			if [ $keyword = "authenticated." ]; then
+				ndsstatus="authenticated"
+				break
+			fi
+
 		done
+
+		if [ "$ndsstatus" = "authenticated" ]; then
+			break
+		fi
+
+		if [ "$ndsstatus" = "failed" ]; then
+			break
+		fi
 
 		if [ "$ndsstatus" = "ready" ]; then
 			break
@@ -41,14 +59,17 @@ do_ndsctl () {
 	done
 }
 
+# Construct our user agent string:
 ndsctlcmd="status 2>/dev/null"
 do_ndsctl
-
 version=$(echo "$ndsctlout" | grep Version | awk '{printf $2}')
 user_agent="openNDS(authmon;NDS:$version;)"
 
+# Main loop:
 while true; do
-	authlist=$($phpcli -f "$postrequest" "$url" "$action" "$gatewayhash" "$user_agent")
+	# Get remote authlist from the FAS:
+	$payload="none";
+	authlist=$($phpcli -f "$postrequest" "$url" "$action" "$gatewayhash" "$user_agent" "$payload")
 	validator=${authlist:0:1}
 
 	if [ "$validator" = "*" ]; then
@@ -64,7 +85,7 @@ while true; do
 				do_ndsctl
 
 				if [ "$ndsstatus" = "busy" ]; then
-				 logger -s -p daemon.err -t "authmon" "ERROR: ndsctl is in use by another process"
+					logger -s -p daemon.err -t "authmon" "ERROR: ndsctl is in use by another process"
 				fi
 			done
 		fi
@@ -78,6 +99,9 @@ while true; do
 		done
 	fi
 
+	# Send auth_ack list to the FAS:
+
+	# Sleep for a while:
 	sleep $loopinterval
 done
 

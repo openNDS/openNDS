@@ -8,6 +8,8 @@ if (isset($argv[3])) {$gatewayhash=$argv[3];} else {echo "missing argument\n"; e
 if (isset($argv[4])) {$user_agent=$argv[4];} else {echo "missing argument\n"; exit(1);}
 if (isset($argv[5])) {$payload=$argv[5];} else {$payload="none";}
 
+$payload=base64_encode($payload);
+
 $_p = array (
 	"auth_get"=>$action,
 	"gatewayhash"=>$gatewayhash,

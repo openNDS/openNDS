@@ -127,26 +127,45 @@ $custom="Optional Custom data for BinAuth";
 # Send The Auth List when requested by openNDS
 #
 # When a client was verified, their parameters were added to the "auth list"
-# The auth list is sent to NDS when it requests it.
+# The auth list is sent to NDS when it authmon requests it.
 #
 # auth_get:
+#
 # value "list" sends the list and deletes each client entry that it finds
-# value "view" just sends the list (useful only for debugging)
+#
+# value "view" just sends the list, this is the default value for authmon and allows upstream processing here
 #
 #############################################################################################################
 
 if (isset($_POST["auth_get"])) {
 
+	$acklist=base64_decode($_POST["payload"]);
+
 	if (isset($_POST["gatewayhash"])) {
 		$gatewayhash=$_POST["gatewayhash"];
 	} else {
+		# invalid call, so:
 		exit(0);
 	}
 
 	if (! file_exists("$logpath"."$gatewayhash")) {
+		# no clients waiting, so:
 		exit(0);
 	}
 
+	if ($_POST["auth_get"] == "clear") {
+		$auth_list=scandir("$logpath"."$gatewayhash");
+		array_shift($auth_list);
+		array_shift($auth_list);
+
+		foreach ($auth_list as $client) {
+			unlink("$logpath"."$gatewayhash/$client");
+		}
+		# Stale entries cleared, so:
+		exit(0);
+	}
+
+	# Set default empty authlist:
 	$authlist="*";
 
 	if ($_POST["auth_get"] == "list") {
@@ -162,15 +181,31 @@ if (isset($_POST["auth_get"])) {
 		echo trim("$authlist");
 
 	} else if ($_POST["auth_get"] == "view") {
-		$auth_list=scandir("$logpath"."$gatewayhash");
-		array_shift($auth_list);
-		array_shift($auth_list);
 
-		foreach ($auth_list as $client) {
-			$clientauth=file("$logpath"."$gatewayhash/$client");
-			$authlist=$authlist." ".rawurlencode(trim($clientauth[0]));
-		}
+		if ($acklist != "none") {
+			$acklist_r=explode("\n",$acklist);
+
+			foreach ($acklist_r as $client) {
+				$client=ltrim($client, "* ");
+
+				if ($client != "") {
+					if (file_exists("$logpath"."$gatewayhash/$client")) {
+						unlink("$logpath"."$gatewayhash/$client");
+					}
+				}
+			}
+			echo "ack";
+		} else {
+			$auth_list=scandir("$logpath"."$gatewayhash");
+			array_shift($auth_list);
+			array_shift($auth_list);
+
+			foreach ($auth_list as $client) {
+				$clientauth=file("$logpath"."$gatewayhash/$client");
+				$authlist=$authlist." ".rawurlencode(trim($clientauth[0]));
+			}
 		echo trim("$authlist");
+		}
 	}
 	exit(0);
 }
@@ -303,6 +338,7 @@ function authenticate_page() {
 	$key=$GLOBALS["key"];
 	$clientif=$GLOBALS["clientif"];
 	$originurl=$GLOBALS["originurl"];
+	$redir=rawurldecode($originurl);
 	$sessionlength=$GLOBALS["sessionlength"];
 	$uploadrate=$GLOBALS["uploadrate"];
 	$downloadrate=$GLOBALS["downloadrate"];
@@ -317,7 +353,8 @@ function authenticate_page() {
 	# Construct the client authentication string or "log"
 	# Note: override values set earlier if required, for example by testing clientif 
 	$log="$rhid $sessionlength $uploadrate $downloadrate $uploadquota $downloadquota ".rawurlencode($custom)."\n";
-	$logfile="$logpath"."$gwname/$clientip";
+
+	$logfile="$logpath"."$gwname/$rhid";
 
 	if (!file_exists($logfile)) {
 		file_put_contents("$logfile", "$log");
@@ -354,7 +391,16 @@ function authenticate_page() {
 	}
 
 	if ($i > $maxcount) {
-		echo "<br>The Portal has timed out<br>Try turning your WiFi off and on to reconnect.";
+		unlink("$logfile");
+		echo "
+			<br>The Portal has timed out<br>You may have to turn your WiFi off and on to reconnect.<br>
+			<p>
+			Click or tap Continue to try again.
+			</p>
+			<form>
+				<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='".$redir."'\" >
+			</form>
+		";
 	}
 }
 

@@ -6,8 +6,16 @@ if (isset($argv[1])) {$remote_url=$argv[1];} else {echo "missing argument\n"; ex
 if (isset($argv[2])) {$action=$argv[2];} else {echo "missing argument\n"; exit(1);}
 if (isset($argv[3])) {$gatewayhash=$argv[3];} else {echo "missing argument\n"; exit(1);}
 if (isset($argv[4])) {$user_agent=$argv[4];} else {echo "missing argument\n"; exit(1);}
+if (isset($argv[5])) {$payload=$argv[5];} else {$payload="none";}
 
-$_p = array("auth_get"=>$action,"gatewayhash"=>$gatewayhash);
+$payload=base64_encode($payload);
+
+$_p = array (
+	"auth_get"=>$action,
+	"gatewayhash"=>$gatewayhash,
+	"payload"=>$payload
+);
+
 $response=SendPostData($_p, $remote_url, $user_agent);
 echo "$response";
 

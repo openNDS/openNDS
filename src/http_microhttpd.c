@@ -642,20 +642,10 @@ static int authenticate_client(struct MHD_Connection *connection,
 		client->session_end = (client->session_start + seconds);
 	}
 
-	if (downloadrate > 0) {
-		client->download_rate = downloadrate;
-	}
-	if (uploadrate > 0) {
-		client->upload_rate = uploadrate;
-	}
-
-	if (downloadquota > 0) {
-		client->download_quota = downloadquota;
-	}
-	if (uploadquota > 0) {
-		client->upload_quota = uploadquota;
-	}
-
+	client->download_rate = downloadrate;
+	client->upload_rate = uploadrate;
+	client->download_quota = downloadquota;
+	client->upload_quota = uploadquota;
 
 	// error checking
 	if (rc != 0) {

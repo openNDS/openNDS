@@ -6,14 +6,15 @@
  *									*
  * This program is distributed in the hope that it will be useful,	*
  * but WITHOUT ANY WARRANTY; without even the implied warranty of	*
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the		*
- * GNU General Public License for more details.				*
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.		*
+ * See the GNU General Public License for more details.		*
 \************************************************************************/
 
 /** @internal
  * @file http_microhttpd.c
  * @brief a httpd implementation using libmicrohttpd
  * @author Copyright (C) 2015 Alexander Couzens <lynxis@fe80.eu>
+ * @author Copyright (C) 2015-2021 The openNDS contributors <opennds@blue-wave.net>
  */
 
 

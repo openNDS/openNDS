@@ -853,7 +853,11 @@ ndsctl_json_all(FILE *fp, char *indent)
 		}
 	}
 
-	fprintf(fp, "  }\n");
+	if (config->trustedmaclist != NULL) {
+		fprintf(fp, "  },\n");
+	} else {
+		fprintf(fp, "  }\n");
+	}
 
 	UNLOCK_CLIENT_LIST();
 

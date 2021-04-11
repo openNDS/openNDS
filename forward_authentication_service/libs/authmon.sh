@@ -63,7 +63,7 @@ do_ndsctl
 version=$(echo "$ndsctlout" | grep Version | awk '{printf $2}')
 user_agent="openNDS(authmon;NDS:$version;)"
 
-# Initialise by clearing and stale FAS auth log entries
+# Initialise by clearing stale FAS auth log entries
 action="clear"
 payload="none"
 ret=$($phpcli -f "$postrequest" "$url" "$action" "$gatewayhash" "$user_agent" "$payload")

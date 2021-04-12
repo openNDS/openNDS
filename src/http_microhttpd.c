@@ -1103,7 +1103,7 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 				debug(LOG_INFO, "clientif: [%s] url_encoded_gw_name: [%s]", clientif, config->url_encoded_gw_name);
 
 				snprintf(query_str, QUERYMAXLEN,
-					"clientip=%s%sclientmac=%s%sgatewayname=%s%sversion=%s%shid=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s%s%s",
+					"clientip=%s%sclientmac=%s%sgatewayname=%s%sversion=%s%shid=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s%sthemespec=%s%s%s%s%s",
 					client->ip, QUERYSEPARATOR,
 					client->mac, QUERYSEPARATOR,
 					config->url_encoded_gw_name, QUERYSEPARATOR,
@@ -1113,9 +1113,11 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 					config->gw_mac, QUERYSEPARATOR,
 					config->authdir, QUERYSEPARATOR,
 					originurl, QUERYSEPARATOR,
-					clientif,
-					QUERYSEPARATOR,
-					config->custom_params
+					clientif, QUERYSEPARATOR,
+					config->themespec_path, QUERYSEPARATOR,
+					config->custom_params,
+					config->custom_vars,
+					config->custom_images
 				);
 
 				b64_encode(query_str_b64, sizeof(query_str_b64), query_str, strlen(query_str));
@@ -1139,7 +1141,7 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 		get_client_interface(clientif, sizeof(clientif), client->mac);
 		debug(LOG_INFO, "clientif: [%s]", clientif);
 		snprintf(querystr, QUERYMAXLEN,
-			"clientip=%s%sclientmac=%s%sgatewayname=%s%sversion=%s%shid=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s%s%s",
+			"clientip=%s%sclientmac=%s%sgatewayname=%s%sversion=%s%shid=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s%sthemespec=%s%s%s%s%s",
 			client->ip, QUERYSEPARATOR,
 			client->mac, QUERYSEPARATOR,
 			config->url_encoded_gw_name, QUERYSEPARATOR,
@@ -1150,7 +1152,10 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 			config->authdir, QUERYSEPARATOR,
 			originurl, QUERYSEPARATOR,
 			clientif, QUERYSEPARATOR,
-			config->custom_params
+			config->themespec_path, QUERYSEPARATOR,
+			config->custom_params,
+			config->custom_vars,
+			config->custom_images
 		);
 
 	} else {

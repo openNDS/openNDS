@@ -153,74 +153,92 @@ typedef struct _FASPARAM_t {
 	struct _FASPARAM_t *next;
 } t_FASPARAM;
 
+// Custom FAS Variables
+typedef struct _FASVAR_t {
+	char *fasvar;
+	struct _FASVAR_t *next;
+} t_FASVAR;
+
+// Custom FAS Images
+typedef struct _FASIMG_t {
+	char *fasimg;
+	struct _FASIMG_t *next;
+} t_FASIMG;
+
+
 // Configuration structure
 typedef struct {
-	char configfile[255];			//@brief name of the config file
-	char *ndsctl_sock;			//@brief ndsctl path to socket
-	char *internal_sock;			//@brief internal path to socket
-	int daemon;				//@brief if daemon > 0, use daemon mode
+	char configfile[255];				//@brief name of the config file
+	char *ndsctl_sock;				//@brief ndsctl path to socket
+	char *internal_sock;				//@brief internal path to socket
+	int daemon;					//@brief if daemon > 0, use daemon mode
 	int debuglevel;				//@brief Debug information verbosity
 	int maxclients;				//@brief Maximum number of clients allowed
-	char *gw_name;				//@brief Name of the gateway; e.g. its SSID or a unique identifier for use in a remote FAS
-	char *http_encoded_gw_name;		//@brief http encoded name of the gateway, used as a templated variable in splash.htm
-	char *url_encoded_gw_name;		//@brief url encoded name of the gateway used as variable in Preauth
-	char *gw_interface;			//@brief Interface we will manage
-	char *gw_iprange;			//@brief IP range on gw_interface we will manage
-	char *gw_ip;				//@brief Internal IP (v4 or v6) for our web server
-	char *gw_address;			//@brief Internal IP with port for our web server
-	char *gw_mac;				//@brief MAC address of the interface we manage
-	char *gw_fqdn;				//@brief FQDN of the client status page
-	unsigned int gw_port;			//@brief Port the webserver will run on
-	unsigned int fas_port;			//@brief Port the fas server will run on
-	int login_option_enabled;		//@brief Use default PreAuth Login script
-	int allow_legacy_splash;		//@brief Allow use of legacy html splash page
-	int use_outdated_mhd;			//@brief Use outdated libmicrohttpd
-	int unescape_callback_enabled;		//@brief Enable external MHD unescape callback script
+	char *gw_name;					//@brief Name of the gateway; e.g. its SSID or a unique identifier for use in a remote FAS
+	char *http_encoded_gw_name;			//@brief http encoded name of the gateway, used as a templated variable in splash.htm
+	char *url_encoded_gw_name;			//@brief url encoded name of the gateway used as variable in Preauth
+	char *gw_interface;				//@brief Interface we will manage
+	char *gw_iprange;				//@brief IP range on gw_interface we will manage
+	char *gw_ip;					//@brief Internal IP (v4 or v6) for our web server
+	char *gw_address;				//@brief Internal IP with port for our web server
+	char *gw_mac;					//@brief MAC address of the interface we manage
+	char *gw_fqdn;					//@brief FQDN of the client status page
+	unsigned int gw_port;				//@brief Port the webserver will run on
+	unsigned int fas_port;				//@brief Port the fas server will run on
+	int login_option_enabled;			//@brief Use default PreAuth Login script
+	int allow_legacy_splash;			//@brief Allow use of legacy html splash page
+	int use_outdated_mhd;				//@brief Use outdated libmicrohttpd
+	int unescape_callback_enabled;			//@brief Enable external MHD unescape callback script
 	int fas_secure_enabled;			//@brief Enable Secure FAS
 	char *fas_path;				//@brief Path to forward authentication page of FAS
-	char *fas_key;				//@brief AES key for FAS
-	char *fas_remoteip;			//@brief IP addess of a remote FAS
-	char *fas_remotefqdn;			//@brief FQDN of a remote FAS
-	char *fas_url;				//@brief URL of a remote FAS
-	char *fas_ssl;				//@brief SSL provider for FAS
-	char *fas_hid;				//@brief Hash provider for FAS
-	char *webroot;				//@brief Directory containing splash pages, etc.
-	char *splashpage;			//@brief Name of main splash page
-	char *statuspage;			//@brief Name of info status page
-	char *redirectURL;			//@brief URL to direct client to after authentication
-	char *authdir;				//@brief Notional relative dir for authentication URL
-	char *denydir;				//@brief Notional relative dir for denial URL
-	char *preauthdir;			//@brief Notional relative dir for preauth URL
-	int session_timeout;			//@brief Minutes of the default session length
-	int preauth_idle_timeout;		//@brief Minutes a preauthenticated client will be kept in the system
-	int auth_idle_timeout;			//@brief Minutes an authenticated client will be kept in the system
-	int checkinterval;			//@brief Period the the client timeout check thread will run, in seconds
-	int set_mss;				//@brief boolean, whether to set mss
-	int mss_value;				//@brief int, mss value; <= 0 clamp to pmtu
-	int traffic_control;			//@brief boolean, whether to do tc
-	int rate_check_window;			//@brief window size in multiples of checkinterval for rate check moving average
-	unsigned long long int download_rate;	//@brief Download rate, kb/s
-	unsigned long long int upload_rate;	//@brief Upload rate, kb/s
-	unsigned long long int download_quota;	//@brief Download quota, kB
-	unsigned long long int upload_quota;	//@brief Upload quota, kB
+	char *fas_key;					//@brief AES key for FAS
+	char *fas_remoteip;				//@brief IP addess of a remote FAS
+	char *fas_remotefqdn;				//@brief FQDN of a remote FAS
+	char *fas_url;					//@brief URL of a remote FAS
+	char *fas_ssl;					//@brief SSL provider for FAS
+	char *fas_hid;					//@brief Hash provider for FAS
+	char *themespec_path;				//@brief Path to the ThemeSpec file to use for login_option_enabled = 3
+	char *webroot;					//@brief Directory containing splash pages, etc.
+	char *splashpage;				//@brief Name of main splash page
+	char *statuspage;				//@brief Name of info status page
+	char *redirectURL;				//@brief URL to direct client to after authentication
+	char *authdir;					//@brief Notional relative dir for authentication URL
+	char *denydir;					//@brief Notional relative dir for denial URL
+	char *preauthdir;				//@brief Notional relative dir for preauth URL
+	int session_timeout;				//@brief Minutes of the default session length
+	int preauth_idle_timeout;			//@brief Minutes a preauthenticated client will be kept in the system
+	int auth_idle_timeout;				//@brief Minutes an authenticated client will be kept in the system
+	int checkinterval;				//@brief Period the the client timeout check thread will run, in seconds
+	int set_mss;					//@brief boolean, whether to set mss
+	int mss_value;					//@brief int, mss value; <= 0 clamp to pmtu
+	int traffic_control;				//@brief boolean, whether to do tc
+	int rate_check_window;				//@brief window size in multiples of checkinterval for rate check moving average
+	unsigned long long int download_rate;		//@brief Download rate, kb/s
+	unsigned long long int upload_rate;		//@brief Upload rate, kb/s
+	unsigned long long int download_quota;		//@brief Download quota, kB
+	unsigned long long int upload_quota;		//@brief Upload quota, kB
 	int upload_ifb;				//@brief Number of IFB handling upload
 	int log_syslog;				//@brief boolean, whether to log to syslog
-	int syslog_facility;			//@brief facility to use when using syslog for logging
-	int macmechanism; 			//@brief mechanism wrt MAC addrs
-	t_firewall_ruleset *rulesets;		//@brief firewall rules
-	t_MAC *trustedmaclist;			//@brief list of trusted macs
-	t_MAC *blockedmaclist;			//@brief list of blocked macs
-	t_MAC *allowedmaclist;			//@brief list of allowed macs
-	t_WGP *walledgarden_port_list;		//@brief list of Walled Garden Ports
-	t_WGFQDN *walledgarden_fqdn_list;	//@brief list of Walled Garden FQDNs
+	int syslog_facility;				//@brief facility to use when using syslog for logging
+	int macmechanism; 				//@brief mechanism wrt MAC addrs
+	t_firewall_ruleset *rulesets;			//@brief firewall rules
+	t_MAC *trustedmaclist;				//@brief list of trusted macs
+	t_MAC *blockedmaclist;				//@brief list of blocked macs
+	t_MAC *allowedmaclist;				//@brief list of allowed macs
+	t_WGP *walledgarden_port_list;			//@brief list of Walled Garden Ports
+	t_WGFQDN *walledgarden_fqdn_list;		//@brief list of Walled Garden FQDNs
 	t_FASPARAM *fas_custom_parameters_list;	//@brief list of Custom FAS parameters
-	char *custom_params;			//@brief FAS custom parameter string
-	unsigned int fw_mark_authenticated;	//@brief iptables mark for authenticated packets
-	unsigned int fw_mark_blocked;		//@brief iptables mark for blocked packets
-	unsigned int fw_mark_trusted;		//@brief iptables mark for trusted packets
-	int ip6;				//@brief enable IPv6
-	char *binauth;				//@brief external authentication program
-	char *preauth;				//@brief external preauthentication program
+	t_FASVAR *fas_custom_variables_list;		//@brief list of Custom FAS variables
+	t_FASIMG *fas_custom_images_list;		//@brief list of Custom FAS images
+	char *custom_params;				//@brief FAS custom parameter string
+	char *custom_vars;				//@brief FAS custom variable string
+	char *custom_images;				//@brief FAS custom image string
+	unsigned int fw_mark_authenticated;		//@brief iptables mark for authenticated packets
+	unsigned int fw_mark_blocked;			//@brief iptables mark for blocked packets
+	unsigned int fw_mark_trusted;			//@brief iptables mark for trusted packets
+	int ip6;					//@brief enable IPv6
+	char *binauth;					//@brief external authentication program
+	char *preauth;					//@brief external preauthentication program
 } s_config;
 
 // @brief Get the current gateway configuration
@@ -259,6 +277,8 @@ void parse_allowed_mac_list(const char[]);
 void parse_walledgarden_fqdn_list(const char[]);
 void parse_walledgarden_port_list(const char[]);
 void parse_fas_custom_parameters_list(const char[]);
+void parse_fas_custom_variables_list(const char[]);
+void parse_fas_custom_images_list(const char[]);
 
 int is_blocked_mac(const char *mac);
 int is_allowed_mac(const char *mac);

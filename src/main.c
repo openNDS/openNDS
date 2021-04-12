@@ -347,6 +347,43 @@ setup_from_config(void)
 		debug(LOG_DEBUG, "Custom FAS parameter string [%s]", config->custom_params);
 	}
 
+	// Setup custom FAS variables if configured
+	char fasvar[512] = {0};
+	t_FASVAR *fas_fasvar;
+	if (config->fas_custom_parameters_list) {
+		for (fas_fasvar = config->fas_custom_variables_list; fas_fasvar != NULL; fas_fasvar = fas_fasvar->next) {
+
+			// Make sure we don't have a buffer overflow
+			if ((sizeof(fasvar) - strlen(fasvar)) > (strlen(fas_fasvar->fasvar) + 4)) {
+				strcat(fasvar, fas_fasvar->fasvar);
+				strcat(fasvar, QUERYSEPARATOR);
+			} else {
+				break;
+			}
+		}
+		config->custom_vars = safe_strdup(fasvar);
+		debug(LOG_DEBUG, "Custom FAS variables string [%s]", config->custom_vars);
+	}
+
+	// Setup custom FAS images if configured
+	char fasimage[512] = {0};
+	t_FASIMG *fas_fasimage;
+	if (config->fas_custom_images_list) {
+		for (fas_fasimage = config->fas_custom_images_list; fas_fasimage != NULL; fas_fasimage = fas_fasimage->next) {
+
+			// Make sure we don't have a buffer overflow
+			if ((sizeof(fasimage) - strlen(fasimage)) > (strlen(fas_fasimage->fasimg) + 4)) {
+				strcat(fasimage, fas_fasimage->fasimg);
+				strcat(fasimage, QUERYSEPARATOR);
+			} else {
+				break;
+			}
+		}
+		config->custom_images = safe_strdup(fasimage);
+		debug(LOG_DEBUG, "Custom FAS images string [%s]", config->custom_images);
+	}
+
+
 	if (config->gw_fqdn || config->walledgarden_fqdn_list) {
 		// For Client status Page - configure the hosts file
 		if (config->gw_fqdn) {

@@ -46,22 +46,23 @@ config opennds
 	#option login_option_enabled '0'
 	###########################################################################################
 
-	# ThemeSpec File
+	# ThemeSpec Path
 	# Default: None
 	# Required when when login_option_enabled is set to '3'
 	#
 	# Note: /usr/lib/opennds/theme_click-to-continue.sh is used for login_option_enabled '1'
 	# and:  /usr/lib/opennds/theme_user_email_login.sh is used for login_option_enabled '2'
 	#
-	# Sets the ThemeSpec file to be used when login_option_enabled '3'
+	# Sets the ThemeSpec file path to be used when login_option_enabled '3'
 	#
-	# The ThemeSpec File contains:
+	# The ThemeSpec Path contains:
 	# 1. lists of custom parameters, variables and image urls
 	# 2. html to be used in the generation of the dynamic splash page sequence
 	#
-	# ThemeSpec files must reside in /usr/lib/opennds/ and be flagged as executable.
+	# ThemeSpec file will normally reside in /usr/lib/opennds/ but can be anywhere accessible to openNDS.
+	# File must be flagged as executable.
 	#
-	#option themespecfile '<filename>.sh'
+	#option themespec_path '/usr/lib/opennds/<filename>'
 	###########################################################################################
 
 	# Define Custom Parameters
@@ -94,14 +95,17 @@ config opennds
 	# Custom Images are served by FAS where required in dynamic portal pages
 	# Default None
 	#
-	# Custom Images are listed in the form of image_name=image_url
+	# Custom Images are listed in the form of image_name_type=image_url
 	# image_name and image_url must be htmlentity encoded if containing white space or single quotes
 	# The image url must begin with http:// https:// or file://
 	#
-	#list fas_custom_images_list '<image_name1=image_url1> <image_name2=image_url2> [.....] <image_nameN=image_urlN>'
+	#list fas_custom_images_list '<image_name1_[type]=image_url1> <image_name2_[type]=image_url2> [.....] <image_nameN_[type]=image_urlN>'
+	# "type" can be any recognised image file extension eg jpg, png, ico, etc.
 	#
 	# Example:
-	#list fas_custom_images_list 'favicon=https://mycompanywebsite.com/images/favicon.ico logo=file://data/images/logo.jpg'
+	#list fas_custom_images_list 'logo_png=https://openwrt.org/_media/logo.png'
+	#list fas_custom_images_list 'favicon_ico=https://openwrt.org/_media/favicon.ico'
+	#list fas_custom_images_list 'main_jpg=file://etc/opennds/htdocs/images/splash.jpg'
 	###########################################################################################
 
 	# Use outdated libmicrohttpd (MHD)

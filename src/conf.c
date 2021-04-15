@@ -1698,9 +1698,9 @@ void parse_fas_custom_variables_list(const char ptr[])
 {
 	char *ptrcopy = NULL;
 	char *possiblevar = NULL;
-	char msg[128] = {0};
+	char msg[512] = {0};
 	char *cmd = NULL;
-	char possiblevar_urlencoded[256] = {0};
+	char possiblevar_urlencoded[512] = {0};
 
 	debug(LOG_INFO, "Parsing list [%s] for Custom FAS Variables", ptr);
 
@@ -1742,9 +1742,9 @@ void parse_fas_custom_images_list(const char ptr[])
 {
 	char *ptrcopy = NULL;
 	char *possibleimage = NULL;
-	char msg[128] = {0};
+	char msg[512] = {0};
 	char *cmd = NULL;
-	char possibleimage_urlencoded[256] = {0};
+	char possibleimage_urlencoded[512] = {0};
 
 	debug(LOG_INFO, "Parsing list [%s] for Custom FAS Images", ptr);
 

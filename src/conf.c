@@ -1193,7 +1193,7 @@ int add_to_fas_custom_parameters_list(const char possibleparam[])
 
 int add_to_fas_custom_variables_list(const char possiblevar[])
 {
-	char var[128];
+	char var[512];
 	t_FASVAR *p = NULL;
 
 	sscanf(possiblevar, "%s", var);
@@ -1210,7 +1210,7 @@ int add_to_fas_custom_variables_list(const char possiblevar[])
 
 int add_to_fas_custom_images_list(const char possibleimage[])
 {
-	char image[128];
+	char image[512];
 	t_FASIMG *p = NULL;
 
 	sscanf(possibleimage, "%s", image);

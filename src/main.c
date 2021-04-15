@@ -348,7 +348,7 @@ setup_from_config(void)
 	}
 
 	// Setup custom FAS variables if configured
-	char fasvar[1024] = {0};
+	char fasvar[2048] = {0};
 	t_FASVAR *fas_fasvar;
 	if (config->fas_custom_parameters_list) {
 		for (fas_fasvar = config->fas_custom_variables_list; fas_fasvar != NULL; fas_fasvar = fas_fasvar->next) {
@@ -366,7 +366,7 @@ setup_from_config(void)
 	}
 
 	// Setup custom FAS images if configured
-	char fasimage[1024] = {0};
+	char fasimage[2048] = {0};
 	t_FASIMG *fas_fasimage;
 	if (config->fas_custom_images_list) {
 		for (fas_fasimage = config->fas_custom_images_list; fas_fasimage != NULL; fas_fasimage = fas_fasimage->next) {

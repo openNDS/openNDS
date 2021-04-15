@@ -840,7 +840,7 @@ config_read(const char *filename)
 				debug(LOG_ERR, "Exiting...");
 				exit(1);
 			}
-			debug(LOG_NOTICE, "Added ThemeSpec [%s]", p1);
+			debug(LOG_INFO, "Added ThemeSpec [%s]", p1);
 			break;
 		case oAllowLegacySplash:
 			if (sscanf(p1, "%d", &config.allow_legacy_splash) < 1) {
@@ -1176,7 +1176,7 @@ int add_to_walledgarden_port_list(const char possibleport[])
 
 int add_to_fas_custom_parameters_list(const char possibleparam[])
 {
-	char param[128];
+	char param[512];
 	t_FASPARAM *p = NULL;
 
 	sscanf(possibleparam, "%s", param);
@@ -1187,7 +1187,7 @@ int add_to_fas_custom_parameters_list(const char possibleparam[])
 	p->next = config.fas_custom_parameters_list;
 
 	config.fas_custom_parameters_list = p;
-	debug(LOG_NOTICE, "Added Custom Parameter [%s]", possibleparam);
+	debug(LOG_INFO, "Added Custom Parameter [%s]", possibleparam);
 	return 0;
 }
 
@@ -1204,7 +1204,7 @@ int add_to_fas_custom_variables_list(const char possiblevar[])
 	p->next = config.fas_custom_variables_list;
 
 	config.fas_custom_variables_list = p;
-	debug(LOG_NOTICE, "Added Custom Variable [%s]", possiblevar);
+	debug(LOG_INFO, "Added Custom Variable [%s]", possiblevar);
 	return 0;
 }
 
@@ -1221,7 +1221,7 @@ int add_to_fas_custom_images_list(const char possibleimage[])
 	p->next = config.fas_custom_images_list;
 
 	config.fas_custom_images_list = p;
-	debug(LOG_NOTICE, "Added Custom Image [%s]", possibleimage);
+	debug(LOG_INFO, "Added Custom Image [%s]", possibleimage);
 	return 0;
 }
 
@@ -1268,7 +1268,7 @@ int remove_from_trusted_mac_list(const char possiblemac[])
 
 	// check for valid format
 	if (!check_mac_format(possiblemac)) {
-		debug(LOG_NOTICE, "[%s] not a valid MAC address", possiblemac);
+		debug(LOG_ERR, "[%s] not a valid MAC address", possiblemac);
 		return -1;
 	}
 
@@ -1385,13 +1385,13 @@ int add_to_blocked_mac_list(const char possiblemac[])
 
 	// check for valid format
 	if (!check_mac_format(possiblemac)) {
-		debug(LOG_NOTICE, "[%s] not a valid MAC address to block", possiblemac);
+		debug(LOG_ERR, "[%s] not a valid MAC address to block", possiblemac);
 		return -1;
 	}
 
 	// abort if not using BLOCK mechanism
 	if (MAC_BLOCK != config.macmechanism) {
-		debug(LOG_NOTICE, "Attempt to access blocked MAC list but control mechanism != block");
+		debug(LOG_ERR, "Attempt to access blocked MAC list but control mechanism != block");
 		return -1;
 	}
 
@@ -1426,13 +1426,13 @@ int remove_from_blocked_mac_list(const char possiblemac[])
 
 	// check for valid format
 	if (!check_mac_format(possiblemac)) {
-		debug(LOG_NOTICE, "[%s] not a valid MAC address", possiblemac);
+		debug(LOG_ERR, "[%s] not a valid MAC address", possiblemac);
 		return -1;
 	}
 
 	// abort if not using BLOCK mechanism
 	if (MAC_BLOCK != config.macmechanism) {
-		debug(LOG_NOTICE, "Attempt to access blocked MAC list but control mechanism != block");
+		debug(LOG_ERR, "Attempt to access blocked MAC list but control mechanism != block");
 		return -1;
 	}
 
@@ -1496,13 +1496,13 @@ int add_to_allowed_mac_list(const char possiblemac[])
 
 	// check for valid format
 	if (!check_mac_format(possiblemac)) {
-		debug(LOG_NOTICE, "[%s] not a valid MAC address to allow", possiblemac);
+		debug(LOG_ERR, "[%s] not a valid MAC address to allow", possiblemac);
 		return -1;
 	}
 
 	// abort if not using ALLOW mechanism
 	if (MAC_ALLOW != config.macmechanism) {
-		debug(LOG_NOTICE, "Attempt to access allowed MAC list but control mechanism != allow");
+		debug(LOG_ERR, "Attempt to access allowed MAC list but control mechanism != allow");
 		return -1;
 	}
 
@@ -1537,13 +1537,13 @@ int remove_from_allowed_mac_list(const char possiblemac[])
 
 	// check for valid format
 	if (!check_mac_format(possiblemac)) {
-		debug(LOG_NOTICE, "[%s] not a valid MAC address", possiblemac);
+		debug(LOG_ERR, "[%s] not a valid MAC address", possiblemac);
 		return -1;
 	}
 
 	// abort if not using ALLOW mechanism
 	if (MAC_ALLOW != config.macmechanism) {
-		debug(LOG_NOTICE, "Attempt to access allowed MAC list but control mechanism != allow");
+		debug(LOG_ERR, "Attempt to access allowed MAC list but control mechanism != allow");
 		return -1;
 	}
 
@@ -1654,9 +1654,9 @@ void parse_fas_custom_parameters_list(const char ptr[])
 {
 	char *ptrcopy = NULL;
 	char *possibleparam = NULL;
-	char msg[128] = {0};
+	char msg[512] = {0};
 	char *cmd = NULL;
-	char possibleparam_urlencoded[256] = {0};
+	char possibleparam_urlencoded[512] = {0};
 
 	debug(LOG_INFO, "Parsing list [%s] for Custom FAS Parameters", ptr);
 

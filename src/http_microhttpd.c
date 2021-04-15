@@ -807,7 +807,7 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 		uh_urlencode(enc_query, sizeof(enc_query), query, strlen(query));
 		debug(LOG_DEBUG, "PreAuth: Encoded query: %s", enc_query);
 
-		safe_asprintf(&cmd, "%s '%s' '%s' '%d'", config->preauth, enc_query, enc_user_agent, config->login_option_enabled);
+		safe_asprintf(&cmd, "%s '%s' '%s' '%d' '%s'", config->preauth, enc_query, enc_user_agent, config->login_option_enabled, config->themespec_path);
 		rc = execute_ret_url_encoded(msg, HTMLMAXSIZE - 1, cmd);
 		free(cmd);
 
@@ -1308,7 +1308,7 @@ static int get_query(struct MHD_Connection *connection, char **query, const char
 		if (QUERYMAXLEN - strlen(query_str) > length - j) {
 			strncat(query_str, *query, QUERYMAXLEN - strlen(query_str));
 		} else {
-			debug(LOG_WARNING, " Query string exceeds the maximum of %d bytes so has been truncated.", QUERYMAXLEN);
+			debug(LOG_WARNING, " Query string exceeds the maximum of %d bytes so has been truncated.", QUERYMAXLEN/2);
 		}
 
 		free(elements[i]);

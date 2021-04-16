@@ -853,16 +853,12 @@ ndsctl_json_all(FILE *fp, char *indent)
 		}
 	}
 
-	if (config->trustedmaclist != NULL) {
-		fprintf(fp, "  },\n");
-	} else {
-		fprintf(fp, "  }\n");
-	}
-
 	UNLOCK_CLIENT_LIST();
 
 	// Trusted mac list
 	if (config->trustedmaclist != NULL) {
+		// coma separation after client list 
+		fprintf(fp, "  },\n");
 
 		// count the number of trusted mac addresses
 		for (trust_mac = config->trustedmaclist; trust_mac != NULL; trust_mac = trust_mac->next) {
@@ -884,6 +880,9 @@ ndsctl_json_all(FILE *fp, char *indent)
 		}
 
 		fprintf(fp, "  ]\n");
+	} else {
+		// end client list
+		fprintf(fp, "  }\n");
 	}
 	fprintf(fp, "}\n");
 }

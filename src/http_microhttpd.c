@@ -1103,12 +1103,12 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 				debug(LOG_INFO, "clientif: [%s] url_encoded_gw_name: [%s]", clientif, config->url_encoded_gw_name);
 
 				snprintf(query_str, QUERYMAXLEN,
-					"clientip=%s%sclientmac=%s%sgatewayname=%s%sversion=%s%shid=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s%sthemespec=%s%s%s%s%s",
+					"hid=%s%sclientip=%s%sclientmac=%s%sgatewayname=%s%sversion=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s%sthemespec=%s%s%s%s%s",
+					hash, QUERYSEPARATOR,
 					client->ip, QUERYSEPARATOR,
 					client->mac, QUERYSEPARATOR,
 					config->url_encoded_gw_name, QUERYSEPARATOR,
 					VERSION, QUERYSEPARATOR,
-					hash, QUERYSEPARATOR,
 					config->gw_address, QUERYSEPARATOR,
 					config->gw_mac, QUERYSEPARATOR,
 					config->authdir, QUERYSEPARATOR,
@@ -1141,12 +1141,12 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 		get_client_interface(clientif, sizeof(clientif), client->mac);
 		debug(LOG_INFO, "clientif: [%s]", clientif);
 		snprintf(querystr, QUERYMAXLEN,
-			"clientip=%s%sclientmac=%s%sgatewayname=%s%sversion=%s%shid=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s%sthemespec=%s%s%s%s%s",
+			"hid=%s%sclientip=%s%sclientmac=%s%sgatewayname=%s%sversion=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s%sthemespec=%s%s%s%s%s",
+			hash, QUERYSEPARATOR,
 			client->ip, QUERYSEPARATOR,
 			client->mac, QUERYSEPARATOR,
 			config->url_encoded_gw_name, QUERYSEPARATOR,
 			VERSION, QUERYSEPARATOR,
-			hash, QUERYSEPARATOR,
 			config->gw_address, QUERYSEPARATOR,
 			config->gw_mac, QUERYSEPARATOR,
 			config->authdir, QUERYSEPARATOR,

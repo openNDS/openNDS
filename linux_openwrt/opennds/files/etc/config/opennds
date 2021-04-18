@@ -40,10 +40,29 @@ config opennds
 	#
 	# 2.Username/Emailaddress Dynamic Login
 	# The pre-installed dynamic login page is enabled by setting option login_option_enabled = '2'.
-	# It generates a login page asking for username and email address followed by a info/advertising page.
+	# It generates a login page asking for username and email address followed by an info/advertising page.
 	# User logins are recorded in the log file /[tmpfs_dir]/ndslog/ndslog.log
 	#
 	#option login_option_enabled '0'
+	###########################################################################################
+
+	# ThemeSpec Path
+	# Default: None
+	# Required when when login_option_enabled is set to '3'
+	#
+	# Note: /usr/lib/opennds/theme_click-to-continue.sh is used for login_option_enabled '1'
+	# and:  /usr/lib/opennds/theme_user_email_login.sh is used for login_option_enabled '2'
+	#
+	# Sets the ThemeSpec file path to be used when login_option_enabled '3'
+	#
+	# The ThemeSpec Path contains:
+	# 1. lists of custom parameters, variables and image urls
+	# 2. html to be used in the generation of the dynamic splash page sequence
+	#
+	# ThemeSpec file will normally reside in /usr/lib/opennds/ but can be anywhere accessible to openNDS.
+	# File must be flagged as executable.
+	#
+	#option themespec_path '/usr/lib/opennds/<filename>'
 	###########################################################################################
 
 	# Define Custom Parameters
@@ -56,7 +75,37 @@ config opennds
 	#list fas_custom_parameters_list '<param_name1=param_value1> <param_name2=param_value2> [.....] <param_nameN=param_valueN>'
 	#
 	# Example:
-	#list fas_custom_parameters_list 'location=main_building admin_email=norman@bates-motel.com>'
+	#list fas_custom_parameters_list 'location=main_building admin_email=norman@bates-motel.com'
+	###########################################################################################
+
+	# Define Custom Variables
+	# Custom Variables are used by FAS to dynamically collect information from clients
+	# Default None
+	#
+	# Custom Variables are listed in the form of var_name=var_type
+	# var_name and var_type must be htmlentity encoded if containing white space or single quotes
+	#
+	#list fas_custom_variables_list '<var_name1=var_type1> <var_name2=var_type2> [.....] <var_nameN=var_typeN>'
+	#
+	# Example:
+	#list fas_custom_variables_list 'address_line1=text membership_number=number access_code=password'
+	###########################################################################################
+
+	# Define Custom Images
+	# Custom Images are served by FAS where required in dynamic portal pages
+	# Default None
+	#
+	# Custom Images are listed in the form of image_name_type=image_url
+	# image_name and image_url must be htmlentity encoded if containing white space or single quotes
+	# The image url must begin with http:// https:// or file://
+	#
+	#list fas_custom_images_list '<image_name1_[type]=image_url1> <image_name2_[type]=image_url2> [.....] <image_nameN_[type]=image_urlN>'
+	# "type" can be any recognised image file extension eg jpg, png, ico, etc.
+	#
+	# Example:
+	#list fas_custom_images_list 'logo_png=https://openwrt.org/_media/logo.png'
+	#list fas_custom_images_list 'favicon_ico=https://openwrt.org/_media/favicon.ico'
+	#list fas_custom_images_list 'main_jpg=file://etc/opennds/htdocs/images/splash.jpg'
 	###########################################################################################
 
 	# Use outdated libmicrohttpd (MHD)

@@ -84,6 +84,7 @@ typedef enum {
 	oFasURL,
 	oFasSSL,
 	oLoginOptionEnabled,
+	oThemeSpecPath,
 	oAllowLegacySplash,
 	oUseOutdatedMHD,
 	oUnescapeCallbackEnabled,
@@ -121,7 +122,9 @@ typedef enum {
 	oPreAuth,
 	oWalledGardenFqdnList,
 	oWalledGardenPortList,
-	oFasCustomParametersList
+	oFasCustomParametersList,
+	oFasCustomVariablesList,
+	oFasCustomImagesList
 } OpCodes;
 
 /** @internal
@@ -150,6 +153,7 @@ static const struct {
 	{ "fasurl", oFasURL },
 	{ "fasssl", oFasSSL },
 	{ "login_option_enabled", oLoginOptionEnabled },
+	{ "themespec_path", oThemeSpecPath },
 	{ "allow_legacy_splash", oAllowLegacySplash },
 	{ "use_outdated_mhd", oUseOutdatedMHD },
 	{ "unescape_callback_enabled", oUnescapeCallbackEnabled },
@@ -188,6 +192,8 @@ static const struct {
 	{ "walledgarden_fqdn_list", oWalledGardenFqdnList },
 	{ "walledgarden_port_list", oWalledGardenPortList },
 	{ "fas_custom_parameters_list", oFasCustomParametersList },
+	{ "fas_custom_variables_list", oFasCustomVariablesList },
+	{ "fas_custom_images_list", oFasCustomImagesList },
 	{ NULL, oBadOption },
 };
 
@@ -236,6 +242,7 @@ config_init(void)
 	config.fas_port = DEFAULT_FASPORT;
 	config.fas_key = safe_strdup(DEFAULT_FASKEY);
 	config.login_option_enabled = DEFAULT_LOGIN_OPTION_ENABLED;
+	config.themespec_path = NULL;
 	config.allow_legacy_splash = DEFAULT_ALLOW_LEGACY_SPLASH;
 	config.use_outdated_mhd = DEFAULT_USE_OUTDATED_MHD;
 	config.unescape_callback_enabled = DEFAULT_UNESCAPE_CALLBACK_ENABLED;
@@ -246,6 +253,8 @@ config_init(void)
 	config.fas_ssl = NULL;
 	config.fas_hid = NULL;
 	config.custom_params = NULL;
+	config.custom_vars = NULL;
+	config.custom_images = NULL;
 	config.fas_path = DEFAULT_FASPATH;
 	config.webroot = safe_strdup(DEFAULT_WEBROOT);
 	config.splashpage = safe_strdup(DEFAULT_SPLASHPAGE);
@@ -824,6 +833,15 @@ config_read(const char *filename)
 				exit(1);
 			}
 			break;
+		case oThemeSpecPath:
+			config.themespec_path = safe_strdup(p1);
+			if (!((stat(p1, &sb) == 0) && S_ISREG(sb.st_mode) && (sb.st_mode & S_IXUSR))) {
+				debug(LOG_ERR, "ThemeSpec program does not exist or is not executeable: %s", p1);
+				debug(LOG_ERR, "Exiting...");
+				exit(1);
+			}
+			debug(LOG_INFO, "Added ThemeSpec [%s]", p1);
+			break;
 		case oAllowLegacySplash:
 			if (sscanf(p1, "%d", &config.allow_legacy_splash) < 1) {
 				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
@@ -903,6 +921,12 @@ config_read(const char *filename)
 			break;
 		case oFasCustomParametersList:
 			parse_fas_custom_parameters_list(p1);
+			break;
+		case oFasCustomVariablesList:
+			parse_fas_custom_variables_list(p1);
+			break;
+		case oFasCustomImagesList:
+			parse_fas_custom_images_list(p1);
 			break;
 		case oMACmechanism:
 			if (!strcasecmp("allow", p1)) {
@@ -1152,7 +1176,7 @@ int add_to_walledgarden_port_list(const char possibleport[])
 
 int add_to_fas_custom_parameters_list(const char possibleparam[])
 {
-	char param[128];
+	char param[512];
 	t_FASPARAM *p = NULL;
 
 	sscanf(possibleparam, "%s", param);
@@ -1163,7 +1187,41 @@ int add_to_fas_custom_parameters_list(const char possibleparam[])
 	p->next = config.fas_custom_parameters_list;
 
 	config.fas_custom_parameters_list = p;
-	debug(LOG_NOTICE, "Added Custom Parameter [%s]", possibleparam);
+	debug(LOG_INFO, "Added Custom Parameter [%s]", possibleparam);
+	return 0;
+}
+
+int add_to_fas_custom_variables_list(const char possiblevar[])
+{
+	char var[512];
+	t_FASVAR *p = NULL;
+
+	sscanf(possiblevar, "%s", var);
+
+	// Add Variable to head of list
+	p = safe_malloc(sizeof(t_FASVAR));
+	p->fasvar = safe_strdup(var);
+	p->next = config.fas_custom_variables_list;
+
+	config.fas_custom_variables_list = p;
+	debug(LOG_INFO, "Added Custom Variable [%s]", possiblevar);
+	return 0;
+}
+
+int add_to_fas_custom_images_list(const char possibleimage[])
+{
+	char image[512];
+	t_FASIMG *p = NULL;
+
+	sscanf(possibleimage, "%s", image);
+
+	// Add Image to head of list
+	p = safe_malloc(sizeof(t_FASIMG));
+	p->fasimg = safe_strdup(image);
+	p->next = config.fas_custom_images_list;
+
+	config.fas_custom_images_list = p;
+	debug(LOG_INFO, "Added Custom Image [%s]", possibleimage);
 	return 0;
 }
 
@@ -1210,7 +1268,7 @@ int remove_from_trusted_mac_list(const char possiblemac[])
 
 	// check for valid format
 	if (!check_mac_format(possiblemac)) {
-		debug(LOG_NOTICE, "[%s] not a valid MAC address", possiblemac);
+		debug(LOG_ERR, "[%s] not a valid MAC address", possiblemac);
 		return -1;
 	}
 
@@ -1327,13 +1385,13 @@ int add_to_blocked_mac_list(const char possiblemac[])
 
 	// check for valid format
 	if (!check_mac_format(possiblemac)) {
-		debug(LOG_NOTICE, "[%s] not a valid MAC address to block", possiblemac);
+		debug(LOG_ERR, "[%s] not a valid MAC address to block", possiblemac);
 		return -1;
 	}
 
 	// abort if not using BLOCK mechanism
 	if (MAC_BLOCK != config.macmechanism) {
-		debug(LOG_NOTICE, "Attempt to access blocked MAC list but control mechanism != block");
+		debug(LOG_ERR, "Attempt to access blocked MAC list but control mechanism != block");
 		return -1;
 	}
 
@@ -1368,13 +1426,13 @@ int remove_from_blocked_mac_list(const char possiblemac[])
 
 	// check for valid format
 	if (!check_mac_format(possiblemac)) {
-		debug(LOG_NOTICE, "[%s] not a valid MAC address", possiblemac);
+		debug(LOG_ERR, "[%s] not a valid MAC address", possiblemac);
 		return -1;
 	}
 
 	// abort if not using BLOCK mechanism
 	if (MAC_BLOCK != config.macmechanism) {
-		debug(LOG_NOTICE, "Attempt to access blocked MAC list but control mechanism != block");
+		debug(LOG_ERR, "Attempt to access blocked MAC list but control mechanism != block");
 		return -1;
 	}
 
@@ -1438,13 +1496,13 @@ int add_to_allowed_mac_list(const char possiblemac[])
 
 	// check for valid format
 	if (!check_mac_format(possiblemac)) {
-		debug(LOG_NOTICE, "[%s] not a valid MAC address to allow", possiblemac);
+		debug(LOG_ERR, "[%s] not a valid MAC address to allow", possiblemac);
 		return -1;
 	}
 
 	// abort if not using ALLOW mechanism
 	if (MAC_ALLOW != config.macmechanism) {
-		debug(LOG_NOTICE, "Attempt to access allowed MAC list but control mechanism != allow");
+		debug(LOG_ERR, "Attempt to access allowed MAC list but control mechanism != allow");
 		return -1;
 	}
 
@@ -1479,13 +1537,13 @@ int remove_from_allowed_mac_list(const char possiblemac[])
 
 	// check for valid format
 	if (!check_mac_format(possiblemac)) {
-		debug(LOG_NOTICE, "[%s] not a valid MAC address", possiblemac);
+		debug(LOG_ERR, "[%s] not a valid MAC address", possiblemac);
 		return -1;
 	}
 
 	// abort if not using ALLOW mechanism
 	if (MAC_ALLOW != config.macmechanism) {
-		debug(LOG_NOTICE, "Attempt to access allowed MAC list but control mechanism != allow");
+		debug(LOG_ERR, "Attempt to access allowed MAC list but control mechanism != allow");
 		return -1;
 	}
 
@@ -1596,9 +1654,9 @@ void parse_fas_custom_parameters_list(const char ptr[])
 {
 	char *ptrcopy = NULL;
 	char *possibleparam = NULL;
-	char msg[128] = {0};
+	char msg[512] = {0};
 	char *cmd = NULL;
-	char possibleparam_urlencoded[256] = {0};
+	char possibleparam_urlencoded[512] = {0};
 
 	debug(LOG_INFO, "Parsing list [%s] for Custom FAS Parameters", ptr);
 
@@ -1614,7 +1672,7 @@ void parse_fas_custom_parameters_list(const char ptr[])
 			debug(LOG_DEBUG, "[%s] is the urlencoded Custom FAS Parameter", possibleparam_urlencoded);
 
 			safe_asprintf(&cmd,
-				"echo \"%s\" | awk -F'%s' 'NF==2 && $1!=\"\" && $2!=\"\" {printf \"%s\",$0}'",
+				"echo \"%s\" | awk -F'%s' 'NF>1 && $1!=\"\" && $2!=\"\" {printf \"%s\",$0}'",
 				possibleparam_urlencoded,
 				CUSTOM_SEPARATOR,
 				FORMAT_SPECIFIER
@@ -1628,6 +1686,94 @@ void parse_fas_custom_parameters_list(const char ptr[])
 				add_to_fas_custom_parameters_list(possibleparam);
 			} else {
 				debug(LOG_WARNING, "Invalid Custom Parameter [%s] [%s] - skipping", possibleparam, msg);
+			}
+		}
+	}
+}
+
+/* Given a pointer to a comma or whitespace delimited sequence of
+ * Custom FAS Variables, add each parameter to config.fas_custom_variables_list
+ */
+void parse_fas_custom_variables_list(const char ptr[])
+{
+	char *ptrcopy = NULL;
+	char *possiblevar = NULL;
+	char msg[512] = {0};
+	char *cmd = NULL;
+	char possiblevar_urlencoded[512] = {0};
+
+	debug(LOG_INFO, "Parsing list [%s] for Custom FAS Variables", ptr);
+
+	// strsep modifies original, so let's make a copy
+	ptrcopy = safe_strdup(ptr);
+
+	while ((possiblevar = strsep(&ptrcopy, ", \t"))) {
+		if (strlen(possiblevar) > 0) {
+
+			// URL encode Variable before parsing
+			memset(possiblevar_urlencoded, 0, sizeof(possiblevar_urlencoded));
+			uh_urlencode(possiblevar_urlencoded, sizeof(possiblevar_urlencoded), possiblevar, strlen(possiblevar));
+			debug(LOG_DEBUG, "[%s] is the urlencoded Custom FAS Variable", possiblevar_urlencoded);
+
+			safe_asprintf(&cmd,
+				"echo \"%s\" | awk -F'%s' 'NF>1 && $1!=\"\" && $2!=\"\" {printf \"%s\",$0}'",
+				possiblevar_urlencoded,
+				CUSTOM_SEPARATOR,
+				FORMAT_SPECIFIER
+			);
+			debug(LOG_DEBUG, "Parse command [%s]", cmd);
+			memset(msg, 0, sizeof(msg));
+			execute_ret_url_encoded(msg, sizeof(msg) - 1, cmd);
+			free(cmd);
+			if (strcmp(msg, possiblevar_urlencoded) == 0) {
+				debug(LOG_INFO, "Adding variable [%s] [%s]", possiblevar, msg);
+				add_to_fas_custom_variables_list(possiblevar);
+			} else {
+				debug(LOG_WARNING, "Invalid Custom Variable [%s] [%s] - skipping", possiblevar, msg);
+			}
+		}
+	}
+}
+
+/* Given a pointer to a comma or whitespace delimited sequence of
+ * Custom FAS Images, add each image to config.fas_custom_images_list
+ */
+void parse_fas_custom_images_list(const char ptr[])
+{
+	char *ptrcopy = NULL;
+	char *possibleimage = NULL;
+	char msg[512] = {0};
+	char *cmd = NULL;
+	char possibleimage_urlencoded[512] = {0};
+
+	debug(LOG_INFO, "Parsing list [%s] for Custom FAS Images", ptr);
+
+	// strsep modifies original, so let's make a copy
+	ptrcopy = safe_strdup(ptr);
+
+	while ((possibleimage = strsep(&ptrcopy, ", \t"))) {
+		if (strlen(possibleimage) > 0) {
+
+			// URL encode Image before parsing
+			memset(possibleimage_urlencoded, 0, sizeof(possibleimage_urlencoded));
+			uh_urlencode(possibleimage_urlencoded, sizeof(possibleimage_urlencoded), possibleimage, strlen(possibleimage));
+			debug(LOG_DEBUG, "[%s] is the urlencoded Custom FAS Image", possibleimage_urlencoded);
+
+			safe_asprintf(&cmd,
+				"echo \"%s\" | awk -F'%s' 'NF>1 && $1!=\"\" && $2!=\"\" {printf \"%s\",$0}'",
+				possibleimage_urlencoded,
+				CUSTOM_SEPARATOR,
+				FORMAT_SPECIFIER
+			);
+			debug(LOG_DEBUG, "Parse command [%s]", cmd);
+			memset(msg, 0, sizeof(msg));
+			execute_ret_url_encoded(msg, sizeof(msg) - 1, cmd);
+			free(cmd);
+			if (strcmp(msg, possibleimage_urlencoded) == 0) {
+				debug(LOG_INFO, "Adding image [%s] [%s]", possibleimage, msg);
+				add_to_fas_custom_images_list(possibleimage);
+			} else {
+				debug(LOG_WARNING, "Invalid Custom Image [%s] [%s] - skipping", possibleimage, msg);
 			}
 		}
 	}

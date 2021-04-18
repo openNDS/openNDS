@@ -6,14 +6,15 @@
  *									*
  * This program is distributed in the hope that it will be useful,	*
  * but WITHOUT ANY WARRANTY; without even the implied warranty of	*
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the		*
- * GNU General Public License for more details.				*
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.		*
+ * See the GNU General Public License for more details.		*
 \************************************************************************/
 
 /** @internal
  * @file http_microhttpd.c
  * @brief a httpd implementation using libmicrohttpd
  * @author Copyright (C) 2015 Alexander Couzens <lynxis@fe80.eu>
+ * @author Copyright (C) 2015-2021 The openNDS contributors <opennds@blue-wave.net>
  */
 
 
@@ -806,12 +807,12 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 		uh_urlencode(enc_query, sizeof(enc_query), query, strlen(query));
 		debug(LOG_DEBUG, "PreAuth: Encoded query: %s", enc_query);
 
-		safe_asprintf(&cmd, "%s '%s' '%s' '%d'", config->preauth, enc_query, enc_user_agent, config->login_option_enabled);
+		safe_asprintf(&cmd, "%s '%s' '%s' '%d' '%s'", config->preauth, enc_query, enc_user_agent, config->login_option_enabled, config->themespec_path);
 		rc = execute_ret_url_encoded(msg, HTMLMAXSIZE - 1, cmd);
 		free(cmd);
 
 		if (rc != 0) {
-			debug(LOG_WARNING, "Preauth script: %s '%s' - failed to execute", config->preauth, query);
+			debug(LOG_WARNING, "Preauth script - failed to execute: %s, Query[%s]", config->preauth, query);
 			return send_error(connection, 511);
 		}
 
@@ -1102,19 +1103,21 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 				debug(LOG_INFO, "clientif: [%s] url_encoded_gw_name: [%s]", clientif, config->url_encoded_gw_name);
 
 				snprintf(query_str, QUERYMAXLEN,
-					"clientip=%s%sclientmac=%s%sgatewayname=%s%sversion=%s%shid=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s%s%s",
+					"hid=%s%sclientip=%s%sclientmac=%s%sgatewayname=%s%sversion=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s%sthemespec=%s%s%s%s%s",
+					hash, QUERYSEPARATOR,
 					client->ip, QUERYSEPARATOR,
 					client->mac, QUERYSEPARATOR,
 					config->url_encoded_gw_name, QUERYSEPARATOR,
 					VERSION, QUERYSEPARATOR,
-					hash, QUERYSEPARATOR,
 					config->gw_address, QUERYSEPARATOR,
 					config->gw_mac, QUERYSEPARATOR,
 					config->authdir, QUERYSEPARATOR,
 					originurl, QUERYSEPARATOR,
-					clientif,
-					QUERYSEPARATOR,
-					config->custom_params
+					clientif, QUERYSEPARATOR,
+					config->themespec_path, QUERYSEPARATOR,
+					config->custom_params,
+					config->custom_vars,
+					config->custom_images
 				);
 
 				b64_encode(query_str_b64, sizeof(query_str_b64), query_str, strlen(query_str));
@@ -1138,18 +1141,21 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 		get_client_interface(clientif, sizeof(clientif), client->mac);
 		debug(LOG_INFO, "clientif: [%s]", clientif);
 		snprintf(querystr, QUERYMAXLEN,
-			"clientip=%s%sclientmac=%s%sgatewayname=%s%sversion=%s%shid=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s%s%s",
+			"hid=%s%sclientip=%s%sclientmac=%s%sgatewayname=%s%sversion=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s%sthemespec=%s%s%s%s%s",
+			hash, QUERYSEPARATOR,
 			client->ip, QUERYSEPARATOR,
 			client->mac, QUERYSEPARATOR,
 			config->url_encoded_gw_name, QUERYSEPARATOR,
 			VERSION, QUERYSEPARATOR,
-			hash, QUERYSEPARATOR,
 			config->gw_address, QUERYSEPARATOR,
 			config->gw_mac, QUERYSEPARATOR,
 			config->authdir, QUERYSEPARATOR,
 			originurl, QUERYSEPARATOR,
 			clientif, QUERYSEPARATOR,
-			config->custom_params
+			config->themespec_path, QUERYSEPARATOR,
+			config->custom_params,
+			config->custom_vars,
+			config->custom_images
 		);
 
 	} else {
@@ -1302,7 +1308,7 @@ static int get_query(struct MHD_Connection *connection, char **query, const char
 		if (QUERYMAXLEN - strlen(query_str) > length - j) {
 			strncat(query_str, *query, QUERYMAXLEN - strlen(query_str));
 		} else {
-			debug(LOG_WARNING, " Query string exceeds the maximum of %d bytes so has been truncated.", QUERYMAXLEN);
+			debug(LOG_WARNING, " Query string exceeds the maximum of %d bytes so has been truncated.", QUERYMAXLEN/2);
 		}
 
 		free(elements[i]);

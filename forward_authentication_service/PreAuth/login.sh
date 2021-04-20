@@ -554,7 +554,7 @@ config_input_fields () {
 
 				custom_inputs="
 					$custom_inputs
-					<input type=\"$type\" name=\"$name\" value=\"$namevalue\" autocomplete=\"on\" ><br><b>$description</b><br><br>
+					<input type=\"$type\" name=\"$name\" value=\"$namevalue\" required autocomplete=\"on\" ><br><b>$description</b><br><br>
 				"
 
 				if [ "$inputtail" = "$inputremainder" ]; then

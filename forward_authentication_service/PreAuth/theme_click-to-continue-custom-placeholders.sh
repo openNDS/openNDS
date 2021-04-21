@@ -88,9 +88,8 @@ continue_form() {
 
 	echo "
 		<big-red>Welcome!</big-red><br>
-		<img style=\"width:100%; max-width: 100%;\" src=\"$banner\" alt=\"Placeholder: Banner.\"><br>
-		<b>$banner_message</b><br>
-		<img style=\"width:100%; max-width: 100%;\" src=\"$local\" alt=\"Placeholder: Banner.\"><br>
+		<img style=\"width:100%; max-width: 100%;\" src=\"$banner1\" alt=\"Placeholder: Banner1.\"><br>
+		<b>$banner1_message</b><hr>
 		<med-blue>You are connected to $client_zone</med-blue><br>
 		<italic-black>
 			To access the Internet you must Accept the Terms of Service.
@@ -138,6 +137,8 @@ thankyou_page () {
 	echo "
 		<br>
 		<italic-black>
+			<img style=\"width:100%; max-width: 100%;\" src=\"$banner2\" alt=\"Placeholder: Banner2.\"><br>
+			<b>$banner2_message</b><hr>
 			Your News or Advertising could be here, contact the owners of this Hotspot to find out how!
 			<br>
 		</italic-black>
@@ -183,6 +184,9 @@ landing_page() {
 			<big-red>
 				You are now logged in and have been granted access to the Internet.
 			</big-red>
+			<hr>
+			<img style=\"width:100%; max-width: 100%;\" src=\"$banner3\" alt=\"Placeholder: Banner1.\"><br>
+			<b>$banner3_message</b><br>
 		</p>
 		<hr>
 		<p>
@@ -430,8 +434,8 @@ quotas="$session_length $upload_rate $download_rate $upload_quota $download_quot
 # Note you can add custom parameters to the config file and to read them you must also add them here.
 # Custom parameters are "Portal" information and are the same for all clients eg "admin_email" and "location" 
 ndsbasicparams="clientip clientmac gatewayname version hid gatewayaddress gatewaymac authdir originurl clientif"
-ndscustomparams="input logo_message banner_message"
-ndscustomimages="logo_png banner_jpg local_jpg"
+ndscustomparams="input logo_message banner1_message banner2_message banner3_message"
+ndscustomimages="logo_png banner1_jpg banner2_jpg banner3_jpg"
 
 
 ndsparamlist="$ndsbasicparams $ndscustomparams $ndscustomimages"

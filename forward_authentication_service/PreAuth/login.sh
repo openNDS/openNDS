@@ -28,38 +28,57 @@
 # Get custom image files
 get_image_file() {
 	imagename=$1
-	imageurl=$2
-	customimageroot="/images/remote/"
+
+	shelldetect=$(set | grep "SHELL='/bin/ash'")
+
+	if [ "$shelldetect" = "SHELL='/bin/ash'" ]; then
+		setsep="'"
+	else
+		set -o posix
+		setsep=""
+	fi
+
+	setcontents=$(set)
+
+
+	imageurl=$(echo "$setcontents" | grep "$imagename=$setsep" | awk -F"'" '{print $2}')
+	setcontents=""
+
+	customimageroot="/ndsremote"
 	customimagepath="/etc/opennds/htdocs$customimageroot"
 
-	if [ ! -d "$customimagepath" ]; then
-		mkdir -p "$mountpoint/remote"
-		ln -s $mountpoint/remote /etc/opennds/htdocs/images/remote
+	if [ ! -d "$mountpoint/ndsremote" ]; then
+		mkdir -p "$mountpoint/ndsremote"
+		ln -s "$mountpoint/ndsremote" "$customimagepath"
 	fi
 
 	# get image filename
 	filename="${imagename%_*}.${imagename##*_}"
+	forename="${imagename%_*}"
+	evalimg=$(echo "$customimageroot/""$filename")
+	eval $forename=$evalimg
 
-	if [ ! -f "$customimagepath/$filename" ]; then
+	if [ ! -f "$mountpoint/ndsremote/$filename" ]; then
 		# get protocol
 		protocol=$(echo "$imageurl" | awk -F'://' '{printf("%s" $1)}')
 
 		if [ "$protocol" = "http" ]; then
-			wget -q -P $customimagepath -O $filename $imageurl
+			wget -T 2 -q -P "$mountpoint/ndsremote" -O "$filename" "$imageurl"
 		elif [ "$protocol" = "https" ]; then
 			#test for https support
 			result=$(wget -q -O - "https://detectportal.firefox.com/success.txt")
 			if [ "$result" = "success" ];then
-				wget -q -P $customimagepath -O $filename $imageurl
+				wget -q -P "$mountpoint/ndsremote" -O "$filename" "$imageurl"
 			else
 				echo "wget - https support not installed - skipping image download" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 			fi
 		elif [ "$protocol" = "file" ]; then
 			sourcefile=$(echo "$imageurl" | awk -F'://' '{printf("%s" $2)}')
-			destinationfile="$customimagepath/$filename"
+			destinationfile="$mountpoint/ndsremote/$filename"
 			cp "$sourcefile" "$destinationfile"
 		else
-			echo "unsupported protocol - skipping image download" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
+			unsupported="Unsupported protocol [$protocol] for [$filename]in url [$imageurl] - skipping image download"
+			echo "$unsupported" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 		fi
 	fi
 }
@@ -554,7 +573,7 @@ config_input_fields () {
 
 				custom_inputs="
 					$custom_inputs
-					<input type=\"$type\" name=\"$name\" value=\"$namevalue\" autocomplete=\"on\" ><br><b>$description</b><br><br>
+					<input type=\"$type\" name=\"$name\" value=\"$namevalue\" required autocomplete=\"on\" ><br><b>$description</b><br><br>
 				"
 
 				if [ "$inputtail" = "$inputremainder" ]; then

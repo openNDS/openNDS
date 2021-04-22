@@ -28,20 +28,16 @@
 # Get custom image files
 get_image_file() {
 	imagename=$1
+	setcontents=$(set)
+	shelldetect=$(head -1 "/usr/lib/opennds/login.sh")
 
-	shelldetect=$(set | grep "SHELL='/bin/ash'")
-
-	if [ "$shelldetect" = "SHELL='/bin/ash'" ]; then
-		setsep="'"
+	if [ "$shelldetect" = "#!/bin/sh" ]; then
+		imageurl=$(echo "$setcontents" | grep "$imagename='" | awk -F"'" '{print $2}')
 	else
 		set -o posix
-		setsep=""
+		imageurl=$(echo "$setcontents" | grep "$imagename=")
 	fi
 
-	setcontents=$(set)
-
-
-	imageurl=$(echo "$setcontents" | grep "$imagename=$setsep" | awk -F"'" '{print $2}')
 	setcontents=""
 
 	customimageroot="/ndsremote"

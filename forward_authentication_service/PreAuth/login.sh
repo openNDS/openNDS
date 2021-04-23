@@ -28,13 +28,15 @@
 # Get custom image files
 get_image_file() {
 	imagename=$1
-	setcontents=$(set)
 	shelldetect=$(head -1 "/usr/lib/opennds/login.sh")
 
 	if [ "$shelldetect" = "#!/bin/sh" ]; then
+		setcontents=$(set)
 		imageurl=$(echo "$setcontents" | grep "$imagename='" | awk -F"'" '{print $2}')
 	else
 		set -o posix
+		setcontents=$(set)
+		set +o posix
 		imageurl=$(echo "$setcontents" | grep "$imagename=")
 	fi
 

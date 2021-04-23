@@ -36,6 +36,7 @@
 #include <unistd.h>
 #include <syslog.h>
 #include <errno.h>
+#include <ctype.h>
 
 #include "ndsctl.h"
 #include "common.h"
@@ -45,6 +46,50 @@ struct argument {
 	const char *ifyes;
 	const char *ifno;
 };
+
+int uh_b64decode(char *buf, int blen, const void *src, int slen)
+{
+	const unsigned char *str = src;
+	unsigned int cout = 0;
+	unsigned int cin = 0;
+	int len = 0;
+	int i = 0;
+
+	for (i = 0; (i <= slen) && (str[i] != 0); i++) {
+		cin = str[i];
+
+		if ((cin >= '0') && (cin <= '9'))
+			cin = cin - '0' + 52;
+		else if ((cin >= 'A') && (cin <= 'Z'))
+			cin = cin - 'A';
+		else if ((cin >= 'a') && (cin <= 'z'))
+			cin = cin - 'a' + 26;
+		else if (cin == '+')
+			cin = 62;
+		else if (cin == '/')
+			cin = 63;
+		else if (cin == '=')
+			cin = 0;
+		else
+			continue;
+
+		cout = (cout << 6) | cin;
+
+		if ((i % 4) != 3)
+			continue;
+
+		if ((len + 3) >= blen)
+			break;
+
+		buf[len++] = (char)(cout >> 16);
+		buf[len++] = (char)(cout >> 8);
+		buf[len++] = (char)(cout);
+	}
+
+	//debug(LOG_DEBUG, "b64 decoded string: %s, decoded length: %d", buf, len);
+	buf[len++] = 0;
+	return len;
+}
 
 /** @internal
  * @brief Print usage
@@ -251,7 +296,37 @@ main(int argc, char **argv)
 	char lockfile[] = "/tmp/ndsctl.lock";
 	char args[1024] = {0};
 	char argi[512] = {0};
+	char str_b64[QUERYMAXLEN] = {0};
 	FILE *fd;
+
+	socket = strdup(DEFAULT_SOCK);
+
+	if (argc <= i) {
+		usage();
+		return 0;
+	}
+
+	if (strcmp(argv[1], "-h") == 0) {
+		usage();
+		return 1;
+	}
+
+	if (strcmp(argv[1], "-s") == 0) {
+		if (argc >= 2) {
+			socket = strdup(argv[2]);
+			i = 3;
+		} else {
+			usage();
+			return 1;
+		}
+	}
+
+
+	if (strcmp(argv[1], "b64decode") == 0) {
+		uh_b64decode(str_b64, sizeof(str_b64), argv[i+1], strlen(argv[i+1]));
+		printf("%s", str_b64);
+		return 0;
+	}
 
 	if ((fd = fopen(lockfile, "r")) != NULL) {
 		openlog ("ndsctl", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
@@ -265,34 +340,6 @@ main(int argc, char **argv)
 		fd = fopen(lockfile, "w");
 	}
 
-
-	socket = strdup(DEFAULT_SOCK);
-
-	if (argc <= i) {
-		usage();
-		fclose(fd);
-		remove(lockfile);
-		return 0;
-	}
-
-	if (strcmp(argv[1], "-h") == 0) {
-		usage();
-		fclose(fd);
-		remove(lockfile);
-		return 1;
-	}
-
-	if (strcmp(argv[1], "-s") == 0) {
-		if (argc >= 2) {
-			socket = strdup(argv[2]);
-			i = 3;
-		} else {
-			usage();
-			fclose(fd);
-			remove(lockfile);
-			return 1;
-		}
-	}
 
 	arg = find_argument(argv[i]);
 
@@ -313,8 +360,11 @@ main(int argc, char **argv)
 		}
 	}
 
+
 	ndsctl_do(socket, arg, args);
 	fclose(fd);
 	remove(lockfile);
 	return 0;
 }
+
+

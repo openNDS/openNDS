@@ -71,7 +71,6 @@ static void ndsctl_untrust(FILE *fp, char *arg);
 static void ndsctl_auth(FILE *fp, char *arg);
 static void ndsctl_deauth(FILE *fp, char *arg);
 static void ndsctl_debuglevel(FILE *fp, char *arg);
-static void ndsctl_b64decode(FILE *fp, char *arg);
 
 static int socket_set_non_blocking(int sockfd);
 
@@ -281,8 +280,6 @@ ndsctl_handler(int fd)
 		ndsctl_deauth(fp, (request + 7));
 	} else if (strncmp(request, "debuglevel", 10) == 0) {
 		ndsctl_debuglevel(fp, (request + 11));
-	} else if (strncmp(request, "b64decode", 9) == 0) {
-		ndsctl_b64decode(fp, (request + 10));
 	}
 
 	if (!done) {
@@ -295,17 +292,6 @@ ndsctl_handler(int fd)
 	// Close and flush fp, also closes underlying fd
 	fclose(fp);
 	return ret;
-}
-
-static void
-ndsctl_b64decode(FILE *fp, char *arg)
-{
-	char str_b64[QUERYMAXLEN] = {0};
-
-	debug(LOG_DEBUG, "Entering ndsctl_b64decode [%s]", arg);
-	uh_b64decode(str_b64, sizeof(str_b64), arg, strlen(arg));
-	fprintf(fp, "%s", str_b64);
-	debug(LOG_DEBUG, "Exiting ndsctl_b64decode [%s]", str_b64);
 }
 
 static void

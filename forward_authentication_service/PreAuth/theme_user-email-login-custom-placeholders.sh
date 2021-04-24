@@ -186,12 +186,12 @@ landing_page() {
 	# Add the user credentials to $userinfo for the log
 	userinfo="$userinfo, user=$username, email=$emailaddress"
 
-	# authenticate and write to the log
+	# authenticate and write to the log - returns with $ndsstatus set
 	auth_log
 
 	# output the landing page - note many CPD implementations will close as soon as Internet access is detected
 	# The client may not see this page, or only see it briefly
-	echo "
+	auth_success="
 		<p>
 			<big-red>
 				You are now logged in and have been granted access to the Internet.
@@ -216,6 +216,36 @@ landing_page() {
 		</form>
 		<hr>
 	"
+	auth_fail="
+		<p>
+			<big-red>
+				Something went wrong and you have failed to log in.
+			</big-red>
+			<hr>
+			<img style=\"width:100%; max-width: 100%;\" src=\"$banner3\" alt=\"Placeholder: Banner1.\"><br>
+			<b>$banner3_message</b><br>
+		</p>
+		<hr>
+		<p>
+			<italic-black>
+				Your login attempt probably timed out.
+			</italic-black>
+		</p>
+		<p>
+			<br>
+			Click or tap Continue to try again.
+		</p>
+		<form>
+			<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='$originurl'\" >
+		</form>
+		<hr>
+	"
+
+	if [ "$ndsstatus" = "authenticated" ]; then
+		echo "$auth_success"
+	else
+		echo "$auth_fail"
+	fi
 
 	read_terms
 	footer

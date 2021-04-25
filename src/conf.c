@@ -124,7 +124,8 @@ typedef enum {
 	oWalledGardenPortList,
 	oFasCustomParametersList,
 	oFasCustomVariablesList,
-	oFasCustomImagesList
+	oFasCustomImagesList,
+	oFasCustomFilesList
 } OpCodes;
 
 /** @internal
@@ -194,6 +195,7 @@ static const struct {
 	{ "fas_custom_parameters_list", oFasCustomParametersList },
 	{ "fas_custom_variables_list", oFasCustomVariablesList },
 	{ "fas_custom_images_list", oFasCustomImagesList },
+	{ "fas_custom_files_list", oFasCustomFilesList },
 	{ NULL, oBadOption },
 };
 
@@ -255,6 +257,8 @@ config_init(void)
 	config.custom_params = NULL;
 	config.custom_vars = NULL;
 	config.custom_images = NULL;
+	config.custom_files = NULL;
+	config.tmpfsmountpoint = NULL;
 	config.fas_path = DEFAULT_FASPATH;
 	config.webroot = safe_strdup(DEFAULT_WEBROOT);
 	config.splashpage = safe_strdup(DEFAULT_SPLASHPAGE);
@@ -717,13 +721,30 @@ config_read(const char *filename)
 	char line[MAX_BUF], *s, *p1, *p2;
 	int linenum = 0, opcode, value;
 	struct stat sb;
-	char lockfile[] = "/tmp/ndsctl.lock";
+	char msg[128] = {0};
+	char *cmd = NULL;
+	char *lockfile;
+
+	safe_asprintf(&cmd, "/usr/lib/opennds/libopennds.sh clean");
+
+	execute_ret_url_encoded(msg, sizeof(msg) - 1, cmd);
+	free(cmd);
+
+	if (strlen(msg) == 0) {
+		config.tmpfsmountpoint = safe_strdup("/tmp");
+	} else {
+		config.tmpfsmountpoint = safe_strdup(msg);
+	}
+
+	safe_asprintf(&lockfile, "%s/ndsctl.lock", config.tmpfsmountpoint);
 
 	//Remove ndsctl lock file if it exists
 	if ((fd = fopen(lockfile, "r")) != NULL) {
 		fclose(fd);
 		remove(lockfile);
 	}
+
+	free (lockfile);
 
 	debug(LOG_INFO, "Reading configuration file '%s'", filename);
 
@@ -927,6 +948,9 @@ config_read(const char *filename)
 			break;
 		case oFasCustomImagesList:
 			parse_fas_custom_images_list(p1);
+			break;
+		case oFasCustomFilesList:
+			parse_fas_custom_files_list(p1);
 			break;
 		case oMACmechanism:
 			if (!strcasecmp("allow", p1)) {
@@ -1224,6 +1248,24 @@ int add_to_fas_custom_images_list(const char possibleimage[])
 	debug(LOG_INFO, "Added Custom Image [%s]", possibleimage);
 	return 0;
 }
+
+int add_to_fas_custom_files_list(const char possiblefile[])
+{
+	char file[512];
+	t_FASFILE *p = NULL;
+
+	sscanf(possiblefile, "%s", file);
+
+	// Add File to head of list
+	p = safe_malloc(sizeof(t_FASFILE));
+	p->fasfile = safe_strdup(file);
+	p->next = config.fas_custom_files_list;
+
+	config.fas_custom_files_list = p;
+	debug(LOG_INFO, "Added Custom File [%s]", possiblefile);
+	return 0;
+}
+
 
 int add_to_trusted_mac_list(const char possiblemac[])
 {
@@ -1779,6 +1821,49 @@ void parse_fas_custom_images_list(const char ptr[])
 	}
 }
 
+/* Given a pointer to a comma or whitespace delimited sequence of
+ * Custom FAS Files, add each image to config.fas_custom_files_list
+ */
+void parse_fas_custom_files_list(const char ptr[])
+{
+	char *ptrcopy = NULL;
+	char *possiblefile = NULL;
+	char msg[512] = {0};
+	char *cmd = NULL;
+	char possiblefile_urlencoded[512] = {0};
+
+	debug(LOG_INFO, "Parsing list [%s] for Custom FAS Files", ptr);
+
+	// strsep modifies original, so let's make a copy
+	ptrcopy = safe_strdup(ptr);
+
+	while ((possiblefile = strsep(&ptrcopy, ", \t"))) {
+		if (strlen(possiblefile) > 0) {
+
+			// URL encode Image before parsing
+			memset(possiblefile_urlencoded, 0, sizeof(possiblefile_urlencoded));
+			uh_urlencode(possiblefile_urlencoded, sizeof(possiblefile_urlencoded), possiblefile, strlen(possiblefile));
+			debug(LOG_DEBUG, "[%s] is the urlencoded Custom FAS Image", possiblefile_urlencoded);
+
+			safe_asprintf(&cmd,
+				"echo \"%s\" | awk -F'%s' 'NF>1 && $1!=\"\" && $2!=\"\" {printf \"%s\",$0}'",
+				possiblefile_urlencoded,
+				CUSTOM_SEPARATOR,
+				FORMAT_SPECIFIER
+			);
+			debug(LOG_DEBUG, "Parse command [%s]", cmd);
+			memset(msg, 0, sizeof(msg));
+			execute_ret_url_encoded(msg, sizeof(msg) - 1, cmd);
+			free(cmd);
+			if (strcmp(msg, possiblefile_urlencoded) == 0) {
+				debug(LOG_INFO, "Adding file [%s] [%s]", possiblefile, msg);
+				add_to_fas_custom_files_list(possiblefile);
+			} else {
+				debug(LOG_WARNING, "Invalid Custom File [%s] [%s] - skipping", possiblefile, msg);
+			}
+		}
+	}
+}
 
 /** Set the debug log level.  See syslog.h
  *  Return 0 on success.

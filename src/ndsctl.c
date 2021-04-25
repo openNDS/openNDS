@@ -139,8 +139,6 @@ usage(void)
 		"commands:\n"
 		"  status\n"
 		"	View the status of opennds\n\n"
-		"  clients\n"
-		"	Display machine-readable client list\n\n"
 		"  json	mac|ip|token(optional)\n"
 		"	Display client list in json format\n"
 		"	mac|ip|token is optional, if not specified, all clients are listed\n\n"
@@ -183,7 +181,6 @@ usage(void)
 }
 
 static struct argument arguments[] = {
-	{"clients", NULL, NULL},
 	{"json", NULL, NULL},
 	{"status", NULL, NULL},
 	{"stop", NULL, NULL},

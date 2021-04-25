@@ -650,62 +650,6 @@ ndsctl_status(FILE *fp)
 	fprintf(fp, "========\n");
 }
 
-// TODO Deprecated ndsctl clients, remove at future date
-void
-ndsctl_clients(FILE *fp)
-{
-	t_client *client;
-	int indx;
-	unsigned long int now, durationsecs = 0;
-	unsigned long long int download_bytes, upload_bytes;
-
-	now = time(NULL);
-
-	// Update the client's counters so info is current
-	iptables_fw_counters_update();
-
-	LOCK_CLIENT_LIST();
-
-	fprintf(fp, "%d\n", get_client_list_length());
-
-	client = client_get_first_client();
-	if (client) {
-		fprintf(fp, "\n");
-	}
-
-	indx = 0;
-	while (client != NULL) {
-		fprintf(fp, "client_id=%d\n", indx);
-		fprintf(fp, "ip=%s\nmac=%s\n", client->ip, client->mac);
-		fprintf(fp, "added=%lld\n", (long long) client->session_start);
-		fprintf(fp, "active=%lld\n", (long long) client->counters.last_updated);
-		if (client->session_start) {
-			fprintf(fp, "duration=%lu\n", now - client->session_start);
-		} else {
-			fprintf(fp, "duration=%lu\n", 0ul);
-		}
-		fprintf(fp, "token=%s\n", client->token ? client->token : "none");
-		fprintf(fp, "state=%s\n", fw_connection_state_as_string(client->fw_connection_state));
-
-		durationsecs = now - client->session_start;
-		download_bytes = client->counters.incoming;
-		upload_bytes = client->counters.outgoing;
-
-		fprintf(fp, "downloaded=%llu\n", download_bytes/1000);
-		fprintf(fp, "avg_down_speed=%.2f\n", ((double)download_bytes) / 125 / durationsecs);
-		fprintf(fp, "uploaded=%llu\n", upload_bytes/1000);
-		fprintf(fp, "avg_up_speed=%.2f\n\n", ((double)upload_bytes) / 125 / durationsecs);
-
-		fprintf(fp, "Warning - ndsctl clients is deprecated and will be removed in future versions.\n");
-		fprintf(fp, "Please use status or json options instead.\n\n");
-
-		indx++;
-		client = client->next;
-	}
-
-	UNLOCK_CLIENT_LIST();
-}
-
 static void
 ndsctl_json_client(FILE *fp, const t_client *client, time_t now, char *indent)
 {

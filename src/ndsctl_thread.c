@@ -255,8 +255,6 @@ ndsctl_handler(int fd)
 
 	if (strncmp(request, "status", 6) == 0) {
 		ndsctl_status(fp);
-	} else if (strncmp(request, "clients", 7) == 0) {
-		ndsctl_clients(fp);
 	} else if (strncmp(request, "json", 4) == 0) {
 		ndsctl_json(fp, (request + 5));
 	} else if (strncmp(request, "stop", 4) == 0) {

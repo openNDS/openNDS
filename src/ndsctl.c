@@ -28,6 +28,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <pthread.h>
 #include <string.h>
 #include <sys/types.h>
@@ -41,11 +42,40 @@
 #include "ndsctl.h"
 #include "common.h"
 
+int safe_asprintf(char **strp, const char *fmt, ...);
+int safe_vasprintf(char **strp, const char *fmt, va_list ap);
+
 struct argument {
 	const char *cmd;
 	const char *ifyes;
 	const char *ifno;
 };
+
+int safe_asprintf(char **strp, const char *fmt, ...)
+{
+	va_list ap;
+	int retval;
+
+	va_start(ap, fmt);
+	retval = safe_vasprintf(strp, fmt, ap);
+	va_end(ap);
+
+	return (retval);
+}
+
+int safe_vasprintf(char **strp, const char *fmt, va_list ap)
+{
+	int retval;
+
+	retval = vasprintf(strp, fmt, ap);
+
+	if (retval == -1) {
+		printf("Failed: Memory allocation error");
+		exit (1);
+	}
+
+	return (retval);
+}
 
 int uh_b64decode(char *buf, int blen, const void *src, int slen)
 {
@@ -293,10 +323,12 @@ main(int argc, char **argv)
 	const char *socket;
 	int i = 1;
 	int counter;
-	char lockfile[] = "/tmp/ndsctl.lock";
 	char args[1024] = {0};
 	char argi[512] = {0};
 	char str_b64[QUERYMAXLEN] = {0};
+	char msg[128] = {0};
+	char *lockfile;
+	char *cmd;
 	FILE *fd;
 
 	socket = strdup(DEFAULT_SOCK);
@@ -328,6 +360,20 @@ main(int argc, char **argv)
 		return 0;
 	}
 
+	// Get the tempfs mountpoint
+	safe_asprintf(&cmd, "/usr/lib/opennds/libopennds.sh tmpfs");
+	fd = popen(cmd, "r");
+	if (fd == NULL) {
+		printf("Unable to open library - Terminating");
+		exit(1);
+	}
+
+	free(cmd);
+	fgets(msg, sizeof(msg), fd);
+	pclose(fd);
+
+	safe_asprintf(&lockfile, "%s/ndsctl.lock", msg);
+
 	if ((fd = fopen(lockfile, "r")) != NULL) {
 		openlog ("ndsctl", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
 		syslog (LOG_NOTICE, "ndsctl is locked by another process");
@@ -339,7 +385,6 @@ main(int argc, char **argv)
 		//Create lock
 		fd = fopen(lockfile, "w");
 	}
-
 
 	arg = find_argument(argv[i]);
 
@@ -364,6 +409,7 @@ main(int argc, char **argv)
 	ndsctl_do(socket, arg, args);
 	fclose(fd);
 	remove(lockfile);
+	free(lockfile);
 	return 0;
 }
 

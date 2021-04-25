@@ -165,6 +165,11 @@ typedef struct _FASIMG_t {
 	struct _FASIMG_t *next;
 } t_FASIMG;
 
+// Custom FAS Files
+typedef struct _FASFILE_t {
+	char *fasfile;
+	struct _FASFILE_t *next;
+} t_FASFILE;
 
 // Configuration structure
 typedef struct {
@@ -198,6 +203,7 @@ typedef struct {
 	char *fas_ssl;					//@brief SSL provider for FAS
 	char *fas_hid;					//@brief Hash provider for FAS
 	char *themespec_path;				//@brief Path to the ThemeSpec file to use for login_option_enabled = 3
+	char *tmpfsmountpoint;				//@brief Mountpoint of the tmpfs drive eg /tmp etc.
 	char *webroot;					//@brief Directory containing splash pages, etc.
 	char *splashpage;				//@brief Name of main splash page
 	char *statuspage;				//@brief Name of info status page
@@ -230,9 +236,11 @@ typedef struct {
 	t_FASPARAM *fas_custom_parameters_list;	//@brief list of Custom FAS parameters
 	t_FASVAR *fas_custom_variables_list;		//@brief list of Custom FAS variables
 	t_FASIMG *fas_custom_images_list;		//@brief list of Custom FAS images
+	t_FASFILE *fas_custom_files_list;		//@brief list of Custom FAS files
 	char *custom_params;				//@brief FAS custom parameter string
 	char *custom_vars;				//@brief FAS custom variable string
 	char *custom_images;				//@brief FAS custom image string
+	char *custom_files;				//@brief FAS custom file string
 	unsigned int fw_mark_authenticated;		//@brief iptables mark for authenticated packets
 	unsigned int fw_mark_blocked;			//@brief iptables mark for blocked packets
 	unsigned int fw_mark_trusted;			//@brief iptables mark for trusted packets
@@ -279,6 +287,7 @@ void parse_walledgarden_port_list(const char[]);
 void parse_fas_custom_parameters_list(const char[]);
 void parse_fas_custom_variables_list(const char[]);
 void parse_fas_custom_images_list(const char[]);
+void parse_fas_custom_files_list(const char[]);
 
 int is_blocked_mac(const char *mac);
 int is_allowed_mac(const char *mac);

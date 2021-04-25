@@ -249,7 +249,7 @@ setup_from_config(void)
 	char *fashid = NULL;
 	char *phpcmd = NULL;
 	char *preauth_dir = NULL;
-	char loginscript[] = "/usr/lib/opennds/login.sh";
+	char loginscript[] = "/usr/lib/opennds/libopennds.sh";
 	char gw_name_entityencoded[QUERYMAXLEN] = {0};
 	char gw_name_urlencoded[QUERYMAXLEN] = {0};
 	struct stat sb;
@@ -262,6 +262,7 @@ setup_from_config(void)
 
 	config = config_get_config();
 
+	debug(LOG_INFO, "tmpfs mountpoint is [%s]", config->tmpfsmountpoint);
 	// Before we do anything else, reset the firewall (cleans it, in case we are restarting after opennds crash)
 	iptables_fw_destroy();
 
@@ -383,6 +384,23 @@ setup_from_config(void)
 		debug(LOG_DEBUG, "Custom FAS images string [%s]", config->custom_images);
 	}
 
+	// Setup custom FAS images if configured
+	char fasfile[MAX_BUF] = {0};
+	t_FASFILE *fas_fasfile;
+	if (config->fas_custom_files_list) {
+		for (fas_fasfile = config->fas_custom_files_list; fas_fasfile != NULL; fas_fasfile = fas_fasfile->next) {
+
+			// Make sure we don't have a buffer overflow
+			if ((sizeof(fasfile) - strlen(fasfile)) > (strlen(fas_fasfile->fasfile) + 4)) {
+				strcat(fasfile, fas_fasfile->fasfile);
+				strcat(fasfile, QUERYSEPARATOR);
+			} else {
+				break;
+			}
+		}
+		config->custom_files = safe_strdup(fasfile);
+		debug(LOG_DEBUG, "Custom FAS files string [%s]", config->custom_files);
+	}
 
 	if (config->gw_fqdn || config->walledgarden_fqdn_list) {
 		// For Client status Page - configure the hosts file

@@ -47,8 +47,16 @@ install:
 	mkdir -p $(DESTDIR)/usr/lib/opennds
 	cp forward_authentication_service/binauth/binauth_log.sh $(DESTDIR)/usr/lib/opennds/
 	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/opennds/binauth_log.sh
-	cp forward_authentication_service/PreAuth/login.sh $(DESTDIR)/usr/lib/opennds/
-	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/opennds/login.sh
+	cp forward_authentication_service/PreAuth/libopennds.sh $(DESTDIR)/usr/lib/opennds/
+	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/opennds/libopennds.sh
+	cp forward_authentication_service/PreAuth/theme_click-to-continue-basic.sh $(DESTDIR)/usr/lib/opennds/
+	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/opennds/theme_click-to-continue-basic.sh
+	cp forward_authentication_service/PreAuth/theme_click-to-continue-custom-placeholders.sh $(DESTDIR)/usr/lib/opennds/
+	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/opennds/theme_click-to-continue-custom-placeholders.sh
+	cp forward_authentication_service/PreAuth/theme_user-email-login-basic.sh $(DESTDIR)/usr/lib/opennds/
+	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/opennds/theme_user-email-login-basic.sh
+	cp forward_authentication_service/PreAuth/theme_user-email-login-custom-placeholders.sh $(DESTDIR)/usr/lib/opennds/
+	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/opennds/theme_user-email-login-custom-placeholders.sh
 	cp forward_authentication_service/libs/get_client_interface.sh $(DESTDIR)/usr/lib/opennds/
 	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/opennds/get_client_interface.sh
 	cp forward_authentication_service/libs/get_client_token.sh $(DESTDIR)/usr/lib/opennds/

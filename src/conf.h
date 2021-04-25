@@ -57,13 +57,11 @@
 #define DEFAULT_GATEWAYFQDN "status.client"
 #define DEFAULT_FASPORT 0
 #define DEFAULT_LOGIN_OPTION_ENABLED 0
-#define DEFAULT_ALLOW_LEGACY_SPLASH 0
 #define DEFAULT_USE_OUTDATED_MHD 0
 #define DEFAULT_UNESCAPE_CALLBACK_ENABLED 0
 #define DEFAULT_FAS_SECURE_ENABLED 1
 #define DEFAULT_FASPATH "/"
 #define DEFAULT_FASKEY "1234567890"
-#define DEFAULT_REMOTE_AUTH_PORT 80
 #define DEFAULT_CHECKINTERVAL 30
 #define DEFAULT_SESSION_TIMEOUT 0
 #define DEFAULT_PREAUTH_IDLE_TIMEOUT 10
@@ -75,14 +73,14 @@
 #define DEFAULT_DENYDIR "opennds_deny"
 #define DEFAULT_PREAUTHDIR "opennds_preauth"
 #define DEFAULT_MACMECHANISM MAC_BLOCK
-#define DEFAULT_SET_MSS 1
-#define DEFAULT_MSS_VALUE 0
-#define DEFAULT_TRAFFIC_CONTROL 0
-#define DEFAULT_RATE_CHECK_WINDOW 2
-#define DEFAULT_UPLOAD_RATE 0
-#define DEFAULT_DOWNLOAD_RATE 0
-#define DEFAULT_UPLOAD_QUOTA 0
-#define DEFAULT_DOWNLOAD_QUOTA 0
+#define DEFAULT_SET_MSS 1 //allow setting the TCP Maximum Segment Size
+#define DEFAULT_MSS_VALUE 0 // value to set the MSS. 0 means use max possible ie clamp-mss-to-pmtu
+#define DEFAULT_TRAFFIC_CONTROL 0 // Defunct. TODO could fix
+#define DEFAULT_RATE_CHECK_WINDOW 2 // The data rate check moving average window size multiply this by CHECKINTERVAL to give window size in seconds
+#define DEFAULT_UPLOAD_RATE 0 // 0 means no limit
+#define DEFAULT_DOWNLOAD_RATE 0 // 0 means no limit
+#define DEFAULT_UPLOAD_QUOTA 0 // 0 means no limit
+#define DEFAULT_DOWNLOAD_QUOTA 0 // 0 means no limit
 #define DEFAULT_UPLOAD_IFB 0
 #define DEFAULT_LOG_SYSLOG 0
 #define DEFAULT_SYSLOG_FACILITY LOG_DAEMON
@@ -191,7 +189,6 @@ typedef struct {
 	unsigned int gw_port;				//@brief Port the webserver will run on
 	unsigned int fas_port;				//@brief Port the fas server will run on
 	int login_option_enabled;			//@brief Use default PreAuth Login script
-	int allow_legacy_splash;			//@brief Allow use of legacy html splash page
 	int use_outdated_mhd;				//@brief Use outdated libmicrohttpd
 	int unescape_callback_enabled;			//@brief Enable external MHD unescape callback script
 	int fas_secure_enabled;			//@brief Enable Secure FAS
@@ -207,7 +204,6 @@ typedef struct {
 	char *webroot;					//@brief Directory containing splash pages, etc.
 	char *splashpage;				//@brief Name of main splash page
 	char *statuspage;				//@brief Name of info status page
-	char *redirectURL;				//@brief URL to direct client to after authentication
 	char *authdir;					//@brief Notional relative dir for authentication URL
 	char *denydir;					//@brief Notional relative dir for denial URL
 	char *preauthdir;				//@brief Notional relative dir for preauth URL

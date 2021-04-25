@@ -39,13 +39,9 @@
 #include "fw_iptables.h"
 #include "mimetypes.h"
 #include "safe.h"
-#include "template.h"
 #include "util.h"
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
-
-// how much memory we reserve for extending template variables
-#define TMPLVAR_SIZE 4096
 
 // Max length of a query string QUERYMAXLEN in bytes defined in common.h
 
@@ -59,16 +55,12 @@ static int authenticate_client(struct MHD_Connection *connection, const char *re
 static enum MHD_Result get_host_value_callback(void *cls, enum MHD_ValueKind kind, const char *key, const char *value);
 static enum MHD_Result get_user_agent_callback(void *cls, enum MHD_ValueKind kind, const char *key, const char *value);
 static int serve_file(struct MHD_Connection *connection, t_client *client, const char *url);
-static int show_splashpage(struct MHD_Connection *connection, t_client *client);
-static int show_statuspage(struct MHD_Connection *connection, t_client *client);
 static int show_preauthpage(struct MHD_Connection *connection, const char *query);
 static int encode_and_redirect_to_splashpage(struct MHD_Connection *connection, t_client *client, const char *originurl, const char *querystr);
 static int redirect_to_splashpage(struct MHD_Connection *connection, t_client *client, const char *host, const char *url);
 static int send_error(struct MHD_Connection *connection, int error);
 static int send_redirect_temp(struct MHD_Connection *connection, t_client *client, const char *url);
-//static int send_refresh(struct MHD_Connection *connection);
 static int is_foreign_hosts(struct MHD_Connection *connection, const char *host);
-static int is_splashpage(const char *host, const char *url);
 static int get_query(struct MHD_Connection *connection, char **collect_query, const char *separator);
 static char *construct_querystring(t_client *client, char *originurl, char *querystr);
 static const char *get_redirect_url(struct MHD_Connection *connection);
@@ -257,47 +249,6 @@ static int is_foreign_hosts(struct MHD_Connection *connection, const char *host)
 
 	return 1;
 }
-
-static int is_splashpage(const char *host, const char *url)
-{
-	char our_host[MAX_HOSTPORTLEN];
-	s_config *config = config_get_config();
-	snprintf(our_host, MAX_HOSTPORTLEN, "%s", config->gw_address);
-
-	if (host == NULL) {
-		/* no hostname given
-		 * '/' -> splash
-		 * '' -> splash [is this even possible with MHD?
-		 */
-		if (strlen(url) == 0 ||
-				!strcmp("/", url)) {
-			return 1;
-		}
-	} else {
-		// hostname give - check if it's our hostname
-
-		if (strcmp(host, our_host)) {
-			// hostname isn't ours
-			return 0;
-		}
-
-		/* '/' -> splash
-		 * '' -> splash
-		 */
-		if (strlen(url) == 0 ||
-				!strcmp("/", url)) {
-			return 1;
-		}
-
-		if (strlen(url) > 0 &&
-				!strcmp(config->splashpage, url+1)) {
-			return 1;
-		}
-	}
-	// doesnt hit one of our rules - this isn't the splashpage
-	return 0;
-}
-
 
 // @brief Get client mac by ip address from neighbor cache
 int
@@ -727,8 +678,6 @@ static int authenticated(struct MHD_Connection *connection,
 			ret = show_preauthpage(connection, fasurl);
 			free(fasurl);
 			return ret;	
-		} else {
-			return show_statuspage(connection, client);
 		}
 	}
 
@@ -746,8 +695,6 @@ static int authenticated(struct MHD_Connection *connection,
 			ret = show_preauthpage(connection, fasurl);
 			free(fasurl);
 			return ret;
-		} else {
-			return show_statuspage(connection, client);
 		}
 	}
 
@@ -863,8 +810,6 @@ static int preauthenticated(struct MHD_Connection *connection,
 	}
 
 	debug(LOG_DEBUG, "preauthenticated: host [%s] url [%s]", host, url);
-	debug(LOG_DEBUG, "config->preauthdir: [ %s ], config->gw_fqdn: [ %s ] ", config->preauthdir, config->gw_fqdn);
-	debug(LOG_DEBUG, "config->gw_address: [ %s ], config->gw_ip: [ %s ] ", config->gw_address, config->gw_ip);
 
 	// User just accessed gatewayaddress:gatewayport either directly or by redirect
 	if (strcmp(url, "/") == 0) {
@@ -893,16 +838,12 @@ static int preauthenticated(struct MHD_Connection *connection,
 
 	debug(LOG_DEBUG, "preauthenticated: Requested Host is [ %s ]", host);
 	debug(LOG_DEBUG, "preauthenticated: Requested url is [ %s ]", url);
-	debug(LOG_DEBUG, "preauthenticated: Gateway Address is [ %s ]", config->gw_address);
-	debug(LOG_DEBUG, "preauthenticated: Gateway Port is [ %u ]", config->gw_port);
 
 	// check if this is an attempt to directly access the basic splash page when FAS is enabled
 	if (config->fas_port) {
 		snprintf(portstr, MAX_HOSTPORTLEN, ":%u", config->gw_port);
 
 		debug(LOG_DEBUG, "preauthenticated: FAS is enabled");
-		debug(LOG_DEBUG, "preauthenticated: NDS port ID is [ %s ]", portstr);
-		debug(LOG_DEBUG, "preauthenticated: NDS port ID search result is [ %s ]", strstr(host, portstr));
 
 		if (check_authdir_match(url, config->authdir) || strstr(host, "/splash.css") == NULL) {
 			debug(LOG_DEBUG, "preauthenticated: splash.css or authdir detected");
@@ -925,26 +866,8 @@ static int preauthenticated(struct MHD_Connection *connection,
 	 * check if client wants to be authenticated
 	 */
 	if (check_authdir_match(url, config->authdir)) {
-
-		/* Only the first request will redirected to config->redirectURL.
-		 * TODO: Deprecate redirectURL
-
-			redirectURL is now redundant as most CPD implementations immediately close the "splash" page
-			as soon as NDS authenticates, thus redirectURL will not be shown.
-
-			This functionality, ie displaying a particular web page as a final "Landing Page"
-			can be achieved reliably using FAS, with NDS calling the previous "redirectURL" as the FAS page.
-
-		 * When the client reloads a page when it's authenticated, it should be redirected
-		 * to their origin url
-		 */
 		debug(LOG_DEBUG, "authdir url detected: %s", url);
-
-		if (config->redirectURL) {
-			redirect_url = config->redirectURL;
-		} else {
-			redirect_url = get_redirect_url(connection);
-		}
+		redirect_url = get_redirect_url(connection);
 
 		if (!try_to_authenticate(connection, client, host, url)) {
 			// user used an invalid token, redirect to splashpage but hold query "redir" intact
@@ -954,10 +877,6 @@ static int preauthenticated(struct MHD_Connection *connection,
 		}
 
 		return authenticate_client(connection, redirect_url, client);
-	}
-
-	if (is_splashpage(host, url)) {
-		return show_splashpage(connection, client);
 	}
 
 	// no special handling left - try to serve static content to the user
@@ -1488,158 +1407,6 @@ static enum MHD_Result get_user_agent_callback(void *cls, enum MHD_ValueKind kin
 	}
 
 	return MHD_YES;
-}
-
-/**
- * Replace variables in src and copy result to dst
- */
-static void replace_variables(
-	struct MHD_Connection *connection, t_client *client,
-	char *dst, size_t dst_len, const char *src, size_t src_len)
-{
-	s_config *config = config_get_config();
-
-	char nclients[12];
-	char maxclients[12];
-	char clientupload[20];
-	char clientdownload[20];
-	char uptime[64];
-
-	const char *redirect_url = NULL;
-	char *denyaction = NULL;
-	char *authaction = NULL;
-	char *authtarget = NULL;
-
-	sprintf(clientupload, "%llu", client->counters.outgoing);
-	sprintf(clientdownload, "%llu", client->counters.incoming);
-
-	get_uptime_string(uptime);
-	redirect_url = get_redirect_url(connection);
-
-	sprintf(nclients, "%d", get_client_list_length());
-	sprintf(maxclients, "%d", config->maxclients);
-	safe_asprintf(&denyaction, "http://%s/%s/", config->gw_address, config->denydir);
-	safe_asprintf(&authaction, "http://%s/%s/", config->gw_address, config->authdir);
-	safe_asprintf(&authtarget, "http://%s/%s/?tok=%s&amp;redir=%s",
-		config->gw_address, config->authdir, client->token, redirect_url);
-
-	struct template vars[] = {
-		{"authaction", authaction},
-		{"denyaction", denyaction},
-		{"authtarget", authtarget},
-		{"clientip", client->ip},
-		{"clientmac", client->mac},
-		{"clientupload", clientupload},
-		{"clientdownload", clientdownload},
-		{"gatewaymac", config->gw_mac},
-		{"gatewayname", config->http_encoded_gw_name},
-		{"maxclients", maxclients},
-		{"nclients", nclients},
-		{"redir", redirect_url},
-		{"tok", client->token},
-		{"token", client->token},
-		{"uptime", uptime},
-		{"version", VERSION},
-		{NULL, NULL}
-	};
-
-	tmpl_parse(vars, dst, dst_len, src, src_len);
-
-	free(denyaction);
-	free(authaction);
-	free(authtarget);
-}
-
-static int show_templated_page(struct MHD_Connection *connection, t_client *client, const char *page)
-{
-	struct MHD_Response *response;
-	s_config *config = config_get_config();
-	int ret = -1;
-	char filename[PATH_MAX];
-	const char *mimetype;
-	int size = 0, bytes = 0;
-	int page_fd;
-	char *page_result;
-	char *page_tmpl;
-
-	snprintf(filename, PATH_MAX, "%s/%s", config->webroot, page);
-
-	page_fd = open(filename, O_RDONLY);
-	if (page_fd < 0) {
-		return send_error(connection, 404);
-	}
-
-	mimetype = lookup_mimetype(filename);
-
-	// input size
-	size = lseek(page_fd, 0, SEEK_END);
-	lseek(page_fd, 0, SEEK_SET);
-
-	// we TMPLVAR_SIZE for template variables
-	page_tmpl = calloc(size, 1);
-	if (page_tmpl == NULL) {
-		close(page_fd);
-		return send_error(connection, 503);
-	}
-
-	page_result = calloc(size + TMPLVAR_SIZE, 1);
-	if (page_result == NULL) {
-		close(page_fd);
-		free(page_tmpl);
-		return send_error(connection, 503);
-	}
-
-	while (bytes < size) {
-		ret = read(page_fd, page_tmpl + bytes, size - bytes);
-		if (ret < 0) {
-			free(page_result);
-			free(page_tmpl);
-			close(page_fd);
-			return send_error(connection, 503);
-		}
-		bytes += ret;
-	}
-
-	replace_variables(connection, client, page_result, size + TMPLVAR_SIZE, page_tmpl, size);
-
-	response = MHD_create_response_from_buffer(strlen(page_result), (void *)page_result, MHD_RESPMEM_MUST_FREE);
-	if (!response) {
-		close(page_fd);
-		return send_error(connection, 503);
-	}
-
-	MHD_add_response_header(response, "Content-Type", mimetype);
-	ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
-	MHD_destroy_response(response);
-
-	free(page_tmpl);
-	close(page_fd);
-
-	return ret;
-}
-
-/**
- * @brief show_splashpage is called when the client clicked on Ok as well when the client doesn't know us yet.
- * @param connection
- * @param client
- * @return
- */
-static int show_splashpage(struct MHD_Connection *connection, t_client *client)
-{
-	s_config *config = config_get_config();
-	return show_templated_page(connection, client, config->splashpage);
-}
-
-/**
- * @brief show_statuspage is called when the client is already authenticated but still accesses the captive portal
- * @param connection
- * @param client
- * @return
- */
-static int show_statuspage(struct MHD_Connection *connection, t_client *client)
-{
-	s_config *config = config_get_config();
-	return show_templated_page(connection, client, config->statuspage);
 }
 
 /**

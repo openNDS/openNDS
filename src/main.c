@@ -535,19 +535,16 @@ setup_from_config(void)
 	debug(LOG_NOTICE, "Created web server on %s", config->gw_address);
 	debug(LOG_INFO, "Handle [%i]", webserver);
 
-	// Check if login script, custom preauth script or legacy splash is enabled
+	// Check if login script or custom preauth script is enabled
 	if (config->login_option_enabled >= 1) {
 		debug(LOG_NOTICE, "Login option is Enabled using mode %d.\n", config->login_option_enabled);
 		config->preauth = safe_strdup(loginscript);
-	} else if (config->login_option_enabled == 0 && config->fas_port == 0 && config->allow_legacy_splash == 0 && config->preauth == NULL) {
+	} else if (config->login_option_enabled == 0 && config->fas_port == 0 && config->preauth == NULL) {
 		debug(LOG_NOTICE, "Click to Continue option is Enabled.\n");
 		config->preauth = safe_strdup(loginscript);
-	} else if (config->login_option_enabled == 0 && config->allow_legacy_splash == 1) {
-		debug(LOG_NOTICE, "Legacy html Splash Page is Enabled.\n");
-		config->preauth = NULL;
-	} else if (config->login_option_enabled == 0 && config->fas_port == 0 && config->allow_legacy_splash == 0 && config->preauth != NULL) {
+	} else if (config->login_option_enabled == 0 && config->fas_port == 0 && config->preauth != NULL) {
 		debug(LOG_NOTICE, "Custom PreAuth Script Enabled.\n");
-	} else if (config->login_option_enabled == 0 && config->fas_port >= 1 && config->allow_legacy_splash == 0 ) {
+	} else if (config->login_option_enabled == 0 && config->fas_port >= 1 ) {
 		debug(LOG_NOTICE, "FAS Enabled.\n");
 		config->preauth = NULL;
 	}

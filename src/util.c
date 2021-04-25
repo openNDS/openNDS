@@ -463,10 +463,6 @@ ndsctl_status(FILE *fp)
 	fprintf(fp, "Preauthenticated Client Idle Timeout: %dm\n", config->preauth_idle_timeout);
 	fprintf(fp, "Authenticated Client Idle Timeout: %dm\n", config->auth_idle_timeout);
 
-	if (config->redirectURL) {
-		fprintf(fp, "Redirect URL: %s\n", config->redirectURL);
-	}
-
 	if (config->download_rate > 0) {
 		fprintf(fp, "Download rate limit (default per client): %llu kbit/s\n", config->download_rate);
 	} else {

@@ -478,8 +478,6 @@ auth_log () {
 
 	do_ndsctl
 	authstat=$ndsctlout
-	# TODO: We can do additional error checking here - do we need to?
-	# busy and failure are already checked by do_ndsctl
 	# $authstat contains the response from do_ndsctl
 
 	mountcheck=$(df | grep "$mountpoint")

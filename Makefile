@@ -10,7 +10,7 @@ STRIP=yes
 
 NDS_OBJS=src/auth.o src/client_list.o src/commandline.o src/conf.o \
 	src/debug.o src/fw_iptables.o src/main.o src/http_microhttpd.o src/http_microhttpd_utils.o \
-	src/ndsctl_thread.o src/safe.o src/tc.o src/util.o src/template.o
+	src/ndsctl_thread.o src/safe.o src/tc.o src/util.o
 
 .PHONY: all clean install
 
@@ -39,9 +39,7 @@ install:
 	cp opennds $(DESTDIR)/usr/bin/
 	mkdir -p $(DESTDIR)/etc/opennds/htdocs/images
 	cp resources/opennds.conf $(DESTDIR)/etc/opennds/
-	cp resources/splash.html $(DESTDIR)/etc/opennds/htdocs/
 	cp resources/splash.css $(DESTDIR)/etc/opennds/htdocs/
-	cp resources/status.html $(DESTDIR)/etc/opennds/htdocs/
 	cp resources/splash.jpg $(DESTDIR)/etc/opennds/htdocs/images/
 	cp resources/opennds.service $(DESTDIR)/etc/systemd/system/
 	mkdir -p $(DESTDIR)/usr/lib/opennds

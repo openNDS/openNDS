@@ -243,6 +243,7 @@ setup_from_config(void)
 	char msg[255] = {0};
 	char gwhash[255] = {0};
 	char authmonpid[255] = {0};
+	char *socket;
 	char *fasurl = NULL;
 	char *fasssl = NULL;
 	char *gatewayhash = NULL;
@@ -530,10 +531,17 @@ setup_from_config(void)
 		}
 	}
 
-	// TODO: set listening socket - do we need it?
-
 	debug(LOG_NOTICE, "Created web server on %s", config->gw_address);
 	debug(LOG_INFO, "Handle [%i]", webserver);
+
+	// Get the ndsctl socket path/filename
+	if (strcmp(config->ndsctl_sock, DEFAULT_NDSCTL_SOCK) == 0) {
+		safe_asprintf(&socket, "%s/%s", config->tmpfsmountpoint, DEFAULT_NDSCTL_SOCK);
+		config->ndsctl_sock = safe_strdup(socket);
+		free(socket);
+	}
+
+	debug(LOG_NOTICE, "Socket access at %s", config->ndsctl_sock);
 
 	// Check if login script or custom preauth script is enabled
 	if (config->login_option_enabled >= 1) {

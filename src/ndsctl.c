@@ -317,7 +317,7 @@ int
 main(int argc, char **argv)
 {
 	const struct argument* arg;
-	const char *socket;
+	char *socket;
 	int i = 1;
 	int counter;
 	char args[256] = {0};
@@ -328,7 +328,7 @@ main(int argc, char **argv)
 	char *cmd;
 	FILE *fd;
 
-	socket = strdup(DEFAULT_SOCK);
+	socket = strdup(DEFAULT_SOCKET_FILENAME);
 
 	// check arguments and take action:
 
@@ -384,6 +384,12 @@ main(int argc, char **argv)
 		fd = fopen(lockfile, "w");
 	}
 
+	// Get the socket path/filename
+	if (strcmp(socket, DEFAULT_SOCKET_FILENAME) == 0) {
+		free(socket);
+		safe_asprintf(&socket, "%s/%s", mountpoint, DEFAULT_SOCKET_FILENAME);
+	}
+
 	// check arguments that need socket access and take action:
 	arg = find_argument(argv[i]);
 
@@ -400,7 +406,7 @@ main(int argc, char **argv)
 	if (argc > i) {
 		for (counter=i; counter < argc-i; counter++) {
 			snprintf(argi, sizeof(argi), ",%s", argv[counter]);
-			strncat(args, argi, sizeof(args)-1);
+			strncat(socket, argi, sizeof(args)-1);
 		}
 	}
 
@@ -408,6 +414,7 @@ main(int argc, char **argv)
 	fclose(fd);
 	remove(lockfile);
 	free(lockfile);
+	free(socket);
 	return 0;
 }
 

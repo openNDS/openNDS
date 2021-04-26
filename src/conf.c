@@ -278,7 +278,6 @@ config_init(void)
 	config.syslog_facility = DEFAULT_SYSLOG_FACILITY;
 	config.log_syslog = DEFAULT_LOG_SYSLOG;
 	config.ndsctl_sock = safe_strdup(DEFAULT_NDSCTL_SOCK);
-	config.internal_sock = safe_strdup(DEFAULT_INTERNAL_SOCK);
 	config.rulesets = NULL;
 	config.trustedmaclist = NULL;
 	config.blockedmaclist = NULL;

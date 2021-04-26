@@ -320,22 +320,19 @@ main(int argc, char **argv)
 	const char *socket;
 	int i = 1;
 	int counter;
-	char args[1024] = {0};
-	char argi[512] = {0};
+	char args[256] = {0};
+	char argi[128] = {0};
 	char str_b64[QUERYMAXLEN] = {0};
-	char msg[128] = {0};
+	char mountpoint[128] = {0};
 	char *lockfile;
 	char *cmd;
 	FILE *fd;
 
 	socket = strdup(DEFAULT_SOCK);
 
-	if (argc <= i) {
-		usage();
-		return 0;
-	}
+	// check arguments and take action:
 
-	if (strcmp(argv[1], "-h") == 0) {
+	if (argc <= i) {
 		usage();
 		return 1;
 	}
@@ -350,10 +347,14 @@ main(int argc, char **argv)
 		}
 	}
 
-
-	if (strcmp(argv[1], "b64decode") == 0) {
+	if (strcmp(argv[i], "b64decode") == 0) {
 		uh_b64decode(str_b64, sizeof(str_b64), argv[i+1], strlen(argv[i+1]));
 		printf("%s", str_b64);
+		return 0;
+	}
+
+	if (strcmp(argv[1], "-h") == 0) {
+		usage();
 		return 0;
 	}
 
@@ -364,12 +365,12 @@ main(int argc, char **argv)
 		printf("Unable to open library - Terminating");
 		exit(1);
 	}
-
 	free(cmd);
-	fgets(msg, sizeof(msg), fd);
+	fgets(mountpoint, sizeof(mountpoint), fd);
 	pclose(fd);
 
-	safe_asprintf(&lockfile, "%s/ndsctl.lock", msg);
+	// Create the lock file
+	safe_asprintf(&lockfile, "%s/ndsctl.lock", mountpoint);
 
 	if ((fd = fopen(lockfile, "r")) != NULL) {
 		openlog ("ndsctl", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
@@ -383,6 +384,7 @@ main(int argc, char **argv)
 		fd = fopen(lockfile, "w");
 	}
 
+	// check arguments that need socket access and take action:
 	arg = find_argument(argv[i]);
 
 	if (arg == NULL) {
@@ -396,12 +398,11 @@ main(int argc, char **argv)
 	snprintf(args, sizeof(args), "%s", argv[i+1]);
 
 	if (argc > i) {
-		for (counter=2; counter < argc-1; counter++) {
-			snprintf(argi, sizeof(argi), ",%s", argv[i+counter]);
+		for (counter=i; counter < argc-i; counter++) {
+			snprintf(argi, sizeof(argi), ",%s", argv[counter]);
 			strncat(args, argi, sizeof(args)-1);
 		}
 	}
-
 
 	ndsctl_do(socket, arg, args);
 	fclose(fd);

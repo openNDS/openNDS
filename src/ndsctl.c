@@ -404,9 +404,9 @@ main(int argc, char **argv)
 	snprintf(args, sizeof(args), "%s", argv[i+1]);
 
 	if (argc > i) {
-		for (counter=i; counter < argc-i; counter++) {
+		for (counter=i+2; counter < argc; counter++) {
 			snprintf(argi, sizeof(argi), ",%s", argv[counter]);
-			strncat(socket, argi, sizeof(args)-1);
+			strncat(args, argi, sizeof(args)-1);
 		}
 	}
 

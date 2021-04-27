@@ -67,8 +67,6 @@
 #define DEFAULT_PREAUTH_IDLE_TIMEOUT 10
 #define DEFAULT_AUTH_IDLE_TIMEOUT 120
 #define DEFAULT_WEBROOT "/etc/opennds/htdocs"
-#define DEFAULT_SPLASHPAGE "splash.html"
-#define DEFAULT_STATUSPAGE "status.html"
 #define DEFAULT_AUTHDIR "opennds_auth"
 #define DEFAULT_DENYDIR "opennds_deny"
 #define DEFAULT_PREAUTHDIR "opennds_preauth"
@@ -201,8 +199,6 @@ typedef struct {
 	char *themespec_path;				//@brief Path to the ThemeSpec file to use for login_option_enabled = 3
 	char *tmpfsmountpoint;				//@brief Mountpoint of the tmpfs drive eg /tmp etc.
 	char *webroot;					//@brief Directory containing splash pages, etc.
-	char *splashpage;				//@brief Name of main splash page
-	char *statuspage;				//@brief Name of info status page
 	char *authdir;					//@brief Notional relative dir for authentication URL
 	char *denydir;					//@brief Notional relative dir for denial URL
 	char *preauthdir;				//@brief Notional relative dir for preauth URL

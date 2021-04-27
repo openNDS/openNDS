@@ -85,14 +85,11 @@ typedef enum {
 	oFasSSL,
 	oLoginOptionEnabled,
 	oThemeSpecPath,
-	oAllowLegacySplash,
 	oUseOutdatedMHD,
 	oUnescapeCallbackEnabled,
 	oFasSecureEnabled,
 	oHTTPDMaxConn,
 	oWebRoot,
-	oSplashPage,
-	oStatusPage,
 	oPreauthIdleTimeout,
 	oAuthIdleTimeout,
 	oCheckInterval,
@@ -159,8 +156,6 @@ static const struct {
 	{ "fas_secure_enabled", oFasSecureEnabled },
 	{ "faspath", oFasPath },
 	{ "webroot", oWebRoot },
-	{ "splashpage", oSplashPage },
-	{ "statuspage", oStatusPage },
 	{ "preauthidletimeout", oPreauthIdleTimeout },
 	{ "authidletimeout", oAuthIdleTimeout },
 	{ "checkinterval", oCheckInterval },
@@ -257,8 +252,6 @@ config_init(void)
 	config.tmpfsmountpoint = NULL;
 	config.fas_path = DEFAULT_FASPATH;
 	config.webroot = safe_strdup(DEFAULT_WEBROOT);
-	config.splashpage = safe_strdup(DEFAULT_SPLASHPAGE);
-	config.statuspage = safe_strdup(DEFAULT_STATUSPAGE);
 	config.authdir = safe_strdup(DEFAULT_AUTHDIR);
 	config.denydir = safe_strdup(DEFAULT_DENYDIR);
 	config.preauthdir = safe_strdup(DEFAULT_PREAUTHDIR);
@@ -954,12 +947,6 @@ config_read(const char *filename)
 			// remove any trailing slashes from webroot path
 			while((p2 = strrchr(p1,'/')) == (p1 + strlen(p1) - 1)) *p2 = '\0';
 			config.webroot = safe_strdup(p1);
-			break;
-		case oSplashPage:
-			config.splashpage = safe_strdup(p1);
-			break;
-		case oStatusPage:
-			config.statuspage = safe_strdup(p1);
 			break;
 		case oAuthIdleTimeout:
 			if (sscanf(p1, "%d", &config.auth_idle_timeout) < 1 || config.auth_idle_timeout < 0) {

@@ -942,9 +942,6 @@ static int encode_and_redirect_to_splashpage(struct MHD_Connection *connection, 
 			safe_asprintf(&splashpageurl, "%s?%s",
 				config->fas_url, querystr);
 		}
-	} else {
-		safe_asprintf(&splashpageurl, "http://%s/%s?redir=%s",
-			config->gw_address, config->splashpage, originurl);
 	}
 
 	debug(LOG_DEBUG, "splashpageurl: %s", splashpageurl);

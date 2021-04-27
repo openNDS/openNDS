@@ -139,7 +139,7 @@ termination_handler(int s)
 	static pthread_mutex_t sigterm_mutex = PTHREAD_MUTEX_INITIALIZER;
 	char *fasssl = NULL;
 
-	debug(LOG_NOTICE, "Handler for termination caught signal %d", s);
+	debug(LOG_INFO, "Handler for termination caught signal %d", s);
 
 	// Makes sure we only call iptables_fw_destroy() once.
 	if (pthread_mutex_trylock(&sigterm_mutex)) {
@@ -815,7 +815,7 @@ int main(int argc, char **argv)
 	parse_commandline(argc, argv);
 
 	// Initialize the config
-	debug(LOG_NOTICE, "openNDS Version %s \n", VERSION);
+	debug(LOG_NOTICE, "openNDS Version %s is in startup\n", VERSION);
 	debug(LOG_INFO, "Reading and validating configuration file %s", config->configfile);
 	config_read(config->configfile);
 	config_validate();

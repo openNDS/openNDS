@@ -119,12 +119,12 @@ thread_ndsctl(void *arg)
 
 	// Which to use, AF_UNIX, PF_UNIX, AF_LOCAL, PF_LOCAL?
 	if (bind(sock, (struct sockaddr *)&sa_un, strlen(sock_name) + sizeof(sa_un.sun_family))) {
-		debug(LOG_ERR, "Could not bind control socket: %s", strerror(errno));
+		debug(LOG_ERR, "Could not bind control socket: [%s] Terminating...", strerror(errno));
 		pthread_exit(NULL);
 	}
 
 	if (listen(sock, 5)) {
-		debug(LOG_ERR, "Could not listen on control socket: %s", strerror(errno));
+		debug(LOG_ERR, "Could not listen on control socket: [%s] Terminating...", strerror(errno));
 		pthread_exit(NULL);
 	}
 
@@ -135,7 +135,7 @@ thread_ndsctl(void *arg)
 	ev.data.fd = sock;
 
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, sock, &ev) < 0) {
-		debug(LOG_ERR, "Could not insert socket fd to epoll set: %s", strerror(errno));
+		debug(LOG_ERR, "Could not insert socket fd to epoll set: [%s] Terminating...", strerror(errno));
 		pthread_exit(NULL);
 	}
 

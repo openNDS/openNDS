@@ -183,7 +183,7 @@ config opennds
 	# and
 	# theme_user-email-login-custom-placeholders
 	#
-	#list fas_custom_files_list 'advert1_htm=https://raw.githubusercontent.com/openNDS/openNDS/9.0.0/resources/pickle.htm'
+	#list fas_custom_files_list 'advert1_htm=https://raw.githubusercontent.com/openNDS/openNDS/9.0.0/resources/bannerpickle.htm'
 	#
 	###########################################################################################
 

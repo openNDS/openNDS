@@ -228,7 +228,7 @@ config_init(void)
 	config.http_encoded_gw_name = NULL;
 	config.url_encoded_gw_name = NULL;
 	config.gw_fqdn = safe_strdup(DEFAULT_GATEWAYFQDN);
-	config.gw_interface = NULL;
+	config.gw_interface = safe_strdup(DEFAULT_GATEWAYINTERFACE);;
 	config.gw_iprange = safe_strdup(DEFAULT_GATEWAY_IPRANGE);
 	config.gw_address = NULL;
 	config.gw_ip = NULL;

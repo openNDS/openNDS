@@ -109,17 +109,9 @@ generate_uci_config() {
 
   config_get ifname "$cfg" gatewayinterface
 
-  # Get device name if interface name is a section name in /etc/config/network
-  if network_get_device tmp "$ifname"; then
-    ifname="$tmp"
+  if [ ! -z "$ifname" ]; then
+     addline "GatewayInterface $ifname"
   fi
-
-  if [ -z "$ifname" ]; then
-    echo "Option network or gatewayinterface missing." >&2
-    return 1
-  fi
-
-  addline "GatewayInterface $ifname"
 
   for option in preauth binauth fasport faskey fasremotefqdn fasremoteip faspath fas_secure_enabled \
     walledgarden_fqdn_list walledgarden_port_list fas_custom_parameters_list fas_custom_variables_list \

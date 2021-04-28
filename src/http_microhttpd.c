@@ -244,7 +244,7 @@ static int is_foreign_hosts(struct MHD_Connection *connection, const char *host)
 	char our_host[MAX_HOSTPORTLEN];
 	s_config *config = config_get_config();
 	snprintf(our_host, MAX_HOSTPORTLEN, "%s", config->gw_address);
-	debug(LOG_INFO, "Our host: %s Requested host: %s", our_host, host);
+	debug(LOG_DEBUG, "Our host: %s Requested host: %s", our_host, host);
 
 
 	// we serve all request without a host entry as well we serve all request going to our gw_address
@@ -610,7 +610,7 @@ static int authenticate_client(struct MHD_Connection *connection,
 		return send_error(connection, 200);
 	}
 
-	debug(LOG_INFO, "authenticate: Session Start - %lu Session End - %lu", client->session_start, client->session_end);
+	debug(LOG_DEBUG, "authenticate: Session Start - %lu Session End - %lu", client->session_start, client->session_end);
 }
 
 /**
@@ -650,7 +650,7 @@ static int authenticated(struct MHD_Connection *connection,
 		debug(LOG_ERR, "authenticated: Error getting host");
 		return ret;
 	} else {
-		debug(LOG_INFO, "An authenticated client is requesting: host [%s] url [%s]", host, url);
+		debug(LOG_DEBUG, "An authenticated client is requesting: host [%s] url [%s]", host, url);
 	}
 
 	/* check if this is a late request, meaning the user tries to get the internet, but ended up here,
@@ -1035,7 +1035,7 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 				debug(LOG_DEBUG, "hid=%s", hash);
 
 				get_client_interface(clientif, sizeof(clientif), client->mac);
-				debug(LOG_INFO, "clientif: [%s] url_encoded_gw_name: [%s]", clientif, config->url_encoded_gw_name);
+				debug(LOG_DEBUG, "clientif: [%s] url_encoded_gw_name: [%s]", clientif, config->url_encoded_gw_name);
 
 				snprintf(query_str, QUERYMAXLEN,
 					"hid=%s%sclientip=%s%sclientmac=%s%sgatewayname=%s%sversion=%s%sgatewayaddress=%s%sgatewaymac=%s%soriginurl=%s%sclientif=%s%sthemespec=%s%s%s%s%s%s",
@@ -1074,7 +1074,7 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 		debug(LOG_DEBUG, "hid=%s", hash);
 
 		get_client_interface(clientif, sizeof(clientif), client->mac);
-		debug(LOG_INFO, "clientif: [%s]", clientif);
+		debug(LOG_DEBUG, "clientif: [%s]", clientif);
 		snprintf(querystr, QUERYMAXLEN,
 			"hid=%s%sclientip=%s%sclientmac=%s%sgatewayname=%s%sversion=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s%sthemespec=%s%s%s%s%s%s",
 			hash, QUERYSEPARATOR,

@@ -1,10 +1,10 @@
-openNDS (8.1.1-1) stable; urgency=medium
+opennds (8.1.1-1) stable; urgency=medium
 
   * Fix - remove legacy code where option preauthenticated_users containing the keyword "block" would cause openNDS to fail to start [bluewavenet]
 
  -- Rob White <dot@blue-wave.net>  Thu, 21 Feb 2021 16:33:34 +0000
 
-openNDS (8.1.0-1) stable; urgency=medium
+opennds (8.1.0-1) stable; urgency=medium
 
   * This version introduces some new functionality and some fixes/enhancements
   * Fix - Add default values for gatewayfqdn. If not set in config could result in crash on conection of first client [bluewavenet]
@@ -15,7 +15,7 @@ openNDS (8.1.0-1) stable; urgency=medium
 
  -- Rob White <dot@blue-wave.net>  Thu, 18 Feb 2021 17:03:23 +0000
 
-openNDS (8.0.0-1) stable; urgency=medium
+opennds (8.0.0-1) stable; urgency=medium
 
   * This version introduces major new functionality and some major changes
   * Rationalisation of support for multiple Linux distributions [bluewavenet]
@@ -58,7 +58,7 @@ openNDS (8.0.0-1) stable; urgency=medium
 
  -- Rob White <dot@blue-wave.net>  Sat, 2 Jan 2021 16:38:14 +0000
 
-openNDS (7.0.1-1) stable; urgency=medium
+opennds (7.0.1-1) stable; urgency=medium
 
   * This version contains fixes and some minor updates
   * Fix - Failure of Default Dynamic Splash page on some operating systems [bluewavenet]
@@ -69,7 +69,7 @@ openNDS (7.0.1-1) stable; urgency=medium
 
  -- Rob White <dot@blue-wave.net>  Wed, 7 Nov 2020 12:40:33 +0000
 
-openNDS (7.0.0-1) stable; urgency=medium
+opennds (7.0.0-1) stable; urgency=medium
 
   * This version introduces major new enhancements and the disabling or removal of deprecated functionality
   * Fix - get_iface_ip in case of interface is vif or multihomed [bluewavenet]
@@ -90,7 +90,7 @@ openNDS (7.0.0-1) stable; urgency=medium
 
  -- Rob White <dot@blue-wave.net>  Wed, 5 Nov 2020 18:22:32 +0000
 
-openNDS (6.0.0-1) stable; urgency=medium
+opennds (6.0.0-1) stable; urgency=medium
 
   * This version - for Openwrt after 19.07 - for compatibility with new MHD API
   * Set - minimum version of MHD to 0.9.71 for new MHD API [bluewavenet]
@@ -100,7 +100,7 @@ openNDS (6.0.0-1) stable; urgency=medium
 
  -- Rob White <dot@blue-wave.net>  Wed, 21 Aug 2020 15:43:47 +0000
 
-openNDS (5.2.0-1) stable; urgency=medium
+opennds (5.2.0-1) stable; urgency=medium
 
   * This version - for backport to Openwrt 19.07 - for compatibility with old MHD API
   * Fix - Failure of MHD with some operating systems eg Debian [bluewavenet]
@@ -110,7 +110,7 @@ openNDS (5.2.0-1) stable; urgency=medium
 
  -- Rob White <dot@blue-wave.net>  Wed, 12 Aug 2020 17:43:57 +0000
 
-openNDS (5.1.0-1) stable; urgency=medium
+opennds (5.1.0-1) stable; urgency=medium
 
   * Add - Generic Linux - install opennds.service [bluewavenet]
   * Add - Documentation updates [bluewavenet]
@@ -149,13 +149,13 @@ openNDS (5.1.0-1) stable; urgency=medium
 
  -- Rob White <dot@blue-wave.net>  Wed, 24 Jun 2020 20:55:18 +0000
 
-openNDS (5.0.1-1) stable; urgency=medium
+opennds (5.0.1-1) stable; urgency=medium
 
   * Fix - Path Traversal Attack vulnerability allowed by libmicrohttpd's built in unescape functionality [bluewavenet] [lynxis]
 
  -- Rob White <dot@blue-wave.net>  Wed, 06 May 2020 19:56:27 +0000
 
-openNDS (5.0.0-1) stable; urgency=medium
+opennds (5.0.0-1) stable; urgency=medium
 
   * Import - from NoDogSplash 4.5.0 allowing development without compromising NoDogSplash optimisation for minimum resource utilisation [bluewavenet]
   * Rename - from NoDogSplash to openNDS [bluewavenet]

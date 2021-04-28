@@ -164,7 +164,8 @@ static int do_binauth(
 
 	debug(LOG_DEBUG, "BinAuth argv: %s", argv);
 
-	// ndsctl will deadlock if run within the BinAuth script  lock it
+	// ndsctl will deadlock if run within the BinAuth script so lock it
+
 	safe_asprintf(&lockfile, "%s/ndsctl.lock", config->tmpfsmountpoint);
 
 	if ((fd = fopen(lockfile, "r")) == NULL) {

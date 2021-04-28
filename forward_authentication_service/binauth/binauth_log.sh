@@ -72,8 +72,6 @@ write_log () {
 		echo "BinAuth - log file too big, please archive contents" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 	fi
 }
-# END of functions
-##################
 
 #Configure log location
 configure_log_location
@@ -154,6 +152,6 @@ download_quota=0
 
 echo "$session_length $upload_rate $download_rate $upload_quota $download_quota"
 
-# exit 0 tells NDS is is ok to allow the client to have access.
+# exit 0 tells NDS it is ok to allow the client to have access.
 # exit 1 would tell NDS to deny access.
 exit 0

@@ -93,7 +93,7 @@ static int do_binauth(
 	char password_enc[64] = {0};
 	char custom_dec_b64[384 *4 / 3] = {0};
 	char custom_enc[384] = {0};
-	char lockfile[] = "/tmp/ndsctl.lock";
+	char *lockfile;
 	FILE *fd;
 	char redirect_url_enc_buf[QUERYMAXLEN] = {0};
 	const char *username;
@@ -151,13 +151,27 @@ static int do_binauth(
 
 	// Note: username, password and user_agent may contain spaces so argument should be quoted
 	safe_asprintf(&argv,"%s auth_client %s '%s' '%s' '%s' '%s' '%s' '%s' '%s'",
-		binauth, client->mac, username_enc, password_enc, redirect_url_enc_buf, enc_user_agent, client->ip, client->token, custom_enc);
+		binauth,
+		client->mac,
+		username_enc,
+		password_enc,
+		redirect_url_enc_buf,
+		enc_user_agent,
+		client->ip,
+		client->token,
+		custom_enc
+	);
 
 	debug(LOG_DEBUG, "BinAuth argv: %s", argv);
 
-	/* ndsctl will deadlock if run within the BinAuth script so we must lock it
-	 *Create lock */
-	fd = fopen(lockfile, "w");
+	// ndsctl will deadlock if run within the BinAuth script  lock it
+	safe_asprintf(&lockfile, "%s/ndsctl.lock", config->tmpfsmountpoint);
+
+	if ((fd = fopen(lockfile, "r")) == NULL) {
+		//No lockfile, so create one
+		fd = fopen(lockfile, "w");
+	}
+
 
 	// execute the script
 	rc = execute_ret_url_encoded(msg, sizeof(msg) - 1, argv);
@@ -165,8 +179,12 @@ static int do_binauth(
 	free(argv);
 
 	// unlock ndsctl
-	fclose(fd);
-	remove(lockfile);
+	if (fd) {
+		fclose(fd);
+		remove(lockfile);
+	}
+
+	free(lockfile);
 
 	if (rc != 0) {
 		return -1;

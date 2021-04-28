@@ -55,7 +55,7 @@ unsigned int authenticated_since_start = 0;
 static void binauth_action(t_client *client, const char *reason, char *customdata)
 {
 	s_config *config = config_get_config();
-	char lockfile[] = "/tmp/ndsctl.lock";
+	char *lockfile;
 	FILE *fd;
 	time_t now = time(NULL);
 	int seconds = 60 * config->session_timeout;
@@ -71,57 +71,57 @@ static void binauth_action(t_client *client, const char *reason, char *customdat
 	}
 
 	if (config->binauth) {
+		// ndsctl will deadlock if run within the BinAuth script so lock it
+		safe_asprintf(&lockfile, "%s/ndsctl.lock", config->tmpfsmountpoint);
 
 		if ((fd = fopen(lockfile, "r")) == NULL) {
-			uh_urlencode(customdata_enc, sizeof(customdata_enc), customdata, strlen(customdata));
-			debug(LOG_DEBUG, "binauth_action: customdata_enc [%s]", customdata_enc);
-			// ndsctl will deadlock if run within the BinAuth script so we must lock it
-			//Create lock
+			//No lockfile, so create one
 			fd = fopen(lockfile, "w");
+		}
 
-			// get client's current session start and end
-			sessionstart = client->session_start;
-			sessionend = client->session_end;
-			debug(LOG_DEBUG, "binauth_action client: seconds=%lu, sessionstart=%lu, sessionend=%lu", seconds, sessionstart, sessionend);
+		uh_urlencode(customdata_enc, sizeof(customdata_enc), customdata, strlen(customdata));
+		debug(LOG_DEBUG, "binauth_action: customdata_enc [%s]", customdata_enc);
 
-			// Check for a deauth reason
-			if (strstr(reason, deauth) != NULL) {
-				sessionend = now;
-			}
+		// get client's current session start and end
+		sessionstart = client->session_start;
+		sessionend = client->session_end;
+		debug(LOG_DEBUG, "binauth_action client: seconds=%lu, sessionstart=%lu, sessionend=%lu", seconds, sessionstart, sessionend);
 
-			// Check for client_auth reason
-			if (strstr(reason, client_auth) != NULL) {
-				sessionstart = now;
-			}
+		// Check for a deauth reason
+		if (strstr(reason, deauth) != NULL) {
+			sessionend = now;
+		}
 
-			// Check for ndsctl_auth reason
-			if (strstr(reason, ndsctl_auth) != NULL) {
-				sessionstart = now;
-			}
+		// Check for client_auth reason
+		if (strstr(reason, client_auth) != NULL) {
+			sessionstart = now;
+		}
 
-			debug(LOG_NOTICE, "BinAuth %s - client session end time: [ %lu ]", reason, sessionend);
+		// Check for ndsctl_auth reason
+		if (strstr(reason, ndsctl_auth) != NULL) {
+			sessionstart = now;
+		}
 
-			execute("%s %s %s %llu %llu %lu %lu %s %s",
-				config->binauth,
-				reason ? reason : "unknown",
-				client->mac,
-				client->counters.incoming,
-				client->counters.outgoing,
-				sessionstart,
-				sessionend,
-				client->token,
-				customdata_enc
-			);
+		debug(LOG_NOTICE, "BinAuth %s - client session end time: [ %lu ]", reason, sessionend);
 
-			// unlock ndsctl
+		execute("%s %s %s %llu %llu %lu %lu %s %s",
+			config->binauth,
+			reason ? reason : "unknown",
+			client->mac,
+			client->counters.incoming,
+			client->counters.outgoing,
+			sessionstart,
+			sessionend,
+			client->token,
+			customdata_enc
+		);
+
+		// unlock ndsctl
+		if (fd) {
 			fclose(fd);
 			remove(lockfile);
-		} else {
-			openlog ("auth", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
-			syslog (LOG_NOTICE, "ndsctl is locked by another process");
-			closelog ();
-			fclose(fd);
 		}
+		free(lockfile);
 	}
 }
 

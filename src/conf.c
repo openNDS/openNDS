@@ -95,7 +95,6 @@ typedef enum {
 	oCheckInterval,
 	oSetMSS,
 	oMSSValue,
-	oTrafficControl,
 	oRateCheckWindow,
 	oDownloadRate,
 	oUploadRate,
@@ -161,7 +160,6 @@ static const struct {
 	{ "checkinterval", oCheckInterval },
 	{ "setmss", oSetMSS },
 	{ "mssvalue", oMSSValue },
-	{ "trafficcontrol", oTrafficControl },
 	{ "ratecheckwindow", oRateCheckWindow },
 	{ "downloadrate", oDownloadRate },
 	{ "uploadrate", oUploadRate },
@@ -261,7 +259,6 @@ config_init(void)
 	config.daemon = -1;
 	config.set_mss = DEFAULT_SET_MSS;
 	config.mss_value = DEFAULT_MSS_VALUE;
-	config.traffic_control = DEFAULT_TRAFFIC_CONTROL;
 	config.rate_check_window = DEFAULT_RATE_CHECK_WINDOW;
 	config.upload_rate =  DEFAULT_UPLOAD_RATE;
 	config.download_rate = DEFAULT_DOWNLOAD_RATE;
@@ -977,15 +974,6 @@ config_read(const char *filename)
 			break;
 		case oMSSValue:
 			if (sscanf(p1, "%d", &config.mss_value) < 1) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
-		case oTrafficControl:
-			if ((value = parse_boolean(p1)) != -1) {
-				config.traffic_control = value;
-			} else {
 				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
 				debug(LOG_ERR, "Exiting...");
 				exit(1);

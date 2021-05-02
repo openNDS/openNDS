@@ -47,7 +47,6 @@
 #include "fw_iptables.h"
 #include "debug.h"
 #include "util.h"
-#include "tc.h"
 
 // iptables v1.4.17
 #define MIN_IPTABLES_VERSION (1 * 10000 + 4 * 100 + 17)
@@ -365,7 +364,6 @@ iptables_fw_init(void)
 	int gw_port = 0;
 	char *fas_remoteip = NULL;
 	int fas_port = 0;
-	int traffic_control;
 	int set_mss, mss_value;
 	t_MAC *pt;
 	t_MAC *pb;
@@ -405,7 +403,6 @@ iptables_fw_init(void)
 	macmechanism = config->macmechanism;
 	set_mss = config->set_mss;
 	mss_value = config->mss_value;
-	traffic_control = config->traffic_control;
 	FW_MARK_BLOCKED = config->fw_mark_blocked;
 	FW_MARK_TRUSTED = config->fw_mark_trusted;
 	FW_MARK_AUTHENTICATED = config->fw_mark_authenticated;
@@ -480,11 +477,6 @@ iptables_fw_init(void)
 	} else {
 		debug(LOG_ERR, "Unknown MAC mechanism: %d", macmechanism);
 		rc = -1;
-	}
-
-	// Set up for traffic control
-	if (traffic_control) {
-		rc |= tc_init_tc();
 	}
 
 	/*
@@ -748,17 +740,10 @@ iptables_fw_destroy(void)
 {
 	fw_quiet = 1;
 	s_config *config;
-	int traffic_control;
 
 	LOCK_CONFIG();
 	config = config_get_config();
-	traffic_control = config->traffic_control;
 	UNLOCK_CONFIG();
-
-	if (traffic_control) {
-		debug(LOG_DEBUG, "Destroying our tc hooks");
-		tc_destroy_tc();
-	}
 
 	debug(LOG_DEBUG, "Destroying our iptables entries");
 
@@ -976,7 +961,7 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 int
 iptables_fw_authenticate(t_client *client)
 {
-	int rc = 0, download_rate, upload_rate, traffic_control;
+	int rc = 0, download_rate, upload_rate;
 	s_config *config;
 	char upload_ifbname[16];
 
@@ -984,7 +969,6 @@ iptables_fw_authenticate(t_client *client)
 	sprintf(upload_ifbname, "ifb%d", config->upload_ifb);
 
 	LOCK_CONFIG();
-	traffic_control = config->traffic_control;
 	download_rate = config->download_rate;
 	upload_rate = config->upload_rate;
 	UNLOCK_CONFIG();
@@ -1008,10 +992,6 @@ iptables_fw_authenticate(t_client *client)
 	rc |= iptables_do_command("-t mangle -A " CHAIN_INCOMING " -d %s -j MARK %s 0x%x", client->ip, markop, FW_MARK_AUTHENTICATED);
 
 	rc |= iptables_do_command("-t mangle -A " CHAIN_INCOMING " -d %s -j ACCEPT", client->ip);
-
-	if (traffic_control) {
-		rc |= tc_attach_client(config->gw_interface, download_rate, upload_ifbname, upload_rate, client->id, client->ip);
-	}
 
 	return rc;
 }

@@ -266,17 +266,25 @@ config opennds
 	# Instead use:
 	# option gatewayname 'Bill&#39;s WiFi'
 	#
-	option gatewayname 'OpenWrt openNDS'
+	#option gatewayname 'OpenWrt openNDS'
 	###########################################################################################
 
 	# GatewayFQDN
-	# Default: not set
+	# Default: status.client
 	# This is the simulated FQDN used by a client to access the Client Status Page
 	# If not set, the Status page can be accessed at: http://gatewayaddress:gatewayport/
 	#
 	# Warning - if set, services on port 80 of the gateway will no longer be accessible (eg Luci AdminUI)
 	#
-	option gatewayfqdn 'status.client'
+	# By default, the Error511/Status page will be found at http://status.client/ by a redirection
+	# of port 80 to http://gatewayaddress:gatewayport/
+	#
+	# Disable GatewayFQDN by setting the option to 'disable'
+	# ie:
+	#option gatewayfqdn 'disable'
+	#
+	# Alternate Useful Example:
+	#option gatewayfqdn 'login.page'
 	###########################################################################################
 
 	# MaxClients
@@ -292,22 +300,22 @@ config opennds
 	# preauthidletimeout is the time in minutes after which a client is disconnected if not authenticated
 	# ie the client has not attempted to authenticate for this period
 	# Default 30 minutes
-	option preauthidletimeout '30'
+	#option preauthidletimeout '30'
 
 	# authidletimeout is the time in minutes after which an idle client is disconnected
 	# ie the client has not used the network access for this period
 	# Default 120 minutes
-	option authidletimeout '120'
+	#option authidletimeout '120'
 
 	# Session Timeout is the interval after which clients are forced out (a value of 0 means never)
 	# Clients will be deauthenticated at the end of this period
 	# Default 1200 minutes (20 hours)
-	option sessiontimeout '1200'
+	#option sessiontimeout '1200'
 	###########################################################################################
 
 	# The interval in seconds at which opennds checks client timeout and quota status
 	# Default 60 seconds (1 minute)
-	option checkinterval '60'
+	#option checkinterval '60'
 	###########################################################################################
 
 	# Rate Quotas
@@ -319,24 +327,33 @@ config opennds
 	# Values are in kb/s
 	# If set to 0, there is no limit
 	#
-	# Quotas and rates can also be set by FAS via Authmon Daemon, by BinAuth, and by ndsctl auth.
+	# Quotas and rates can also be set by FAS via Authmon Daemon, ThemeSpec scripts, BinAuth, and ndsctl auth.
 	# Values set by these methods, will override values set in this config file.
 	#
 	# Rates:
-	option uploadrate '0'
-	option downloadrate '0'
+	#option uploadrate '0'
+	#option downloadrate '0'
 	#
 	###########################################################################################
 
 	# RateCheckWindow
+	# Default 2
+	#
 	# The client data rate is calculated using a moving average.
 	#
 	# This allows clients to burst at maximum possible rate, only blocking if the moving average
 	# exceeds the specified upload or download rate.
 	#
 	# The moving average window size is equal to ratecheckwindow times checkinterval (seconds)
-	# Default 2
-	option ratecheckwindow '2'
+	#
+	# All rate limits can be globally disabled by setting this option to 0 (zero)
+	#
+	# Disable all rate quotas fo all clients, overriding settings made in FAS via Authmon Daemon,
+	#	ThemeSpec scripts, BinAuth, and ndsctl auth:
+	#option ratecheckwindow '0'
+	#
+	# Set to 3 checkinterval periods:
+	#option ratecheckwindow '3'
 	###########################################################################################
 
 	# Volume Quotas:
@@ -347,8 +364,8 @@ config opennds
 	# Values are in kB
 	# If set to 0, there is no limit
 	#
-	option uploadquota '0'
-	option downloadquota '0'
+	#option uploadquota '0'
+	#option downloadquota '0'
 	###########################################################################################
 
 	# Enable BinAuth Support. BinAuth enables POST AUTHENTICATION PROCESSING

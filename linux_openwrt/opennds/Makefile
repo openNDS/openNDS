@@ -21,7 +21,6 @@ PKG_LICENSE:=GPL-2.0+
 
 include $(INCLUDE_DIR)/package.mk
 
-
 define Package/opennds
 	SUBMENU:=Captive Portals
 	SECTION:=net

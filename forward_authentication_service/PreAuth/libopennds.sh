@@ -117,11 +117,11 @@ get_data_file() {
 			wget -T 2 -q -P "$mountpoint/ndsdata" -O "$filename" "$dataurl"
 		elif [ "$protocol" = "https" ]; then
 			#test for https support
-			result=$(wget -q -O - "https://detectportal.firefox.com/success.txt")
+			result=$(wget -T 2 -q -O - "https://detectportal.firefox.com/success.txt")
 			if [ "$result" = "success" ];then
-				wget -q -P "$mountpoint/ndsdata" -O "$filename" "$dataurl"
+				wget -T 2 -q -P "$mountpoint/ndsdata" -O "$filename" "$dataurl"
 			else
-				echo "wget - https support not installed - skipping image download" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
+				echo "wget - https support failed or not installed - skipping image download" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 			fi
 		elif [ "$protocol" = "file" ]; then
 			sourcefile=$(echo "$dataurl" | awk -F'://' '{printf("%s" $2)}')

@@ -403,6 +403,10 @@ setup_from_config(void)
 		debug(LOG_DEBUG, "Custom FAS files string [%s]", config->custom_files);
 	}
 
+	if (config->gw_fqdn == "disable") {
+		config->gw_fqdn = NULL;
+	}
+
 	if (config->gw_fqdn || config->walledgarden_fqdn_list) {
 		// For Client status Page - configure the hosts file
 		if (config->gw_fqdn) {

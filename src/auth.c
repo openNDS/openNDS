@@ -103,7 +103,7 @@ static void binauth_action(t_client *client, const char *reason, char *customdat
 			sessionstart = now;
 		}
 
-		debug(LOG_NOTICE, "BinAuth %s - client session end time: [ %lu ]", reason, sessionend);
+		debug(LOG_DEBUG, "BinAuth %s - client session end time: [ %lu ]", reason, sessionend);
 
 		execute("%s %s %s %llu %llu %lu %lu %s %s",
 			config->binauth,

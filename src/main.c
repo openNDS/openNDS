@@ -403,7 +403,7 @@ setup_from_config(void)
 		debug(LOG_DEBUG, "Custom FAS files string [%s]", config->custom_files);
 	}
 
-	if (config->gw_fqdn == "disable") {
+	if (strcmp(config->gw_fqdn, "disable") == 0) {
 		config->gw_fqdn = NULL;
 	}
 

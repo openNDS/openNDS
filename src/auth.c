@@ -231,7 +231,6 @@ fw_refresh_client_list(void)
 	unsigned long long int download_bytes, upload_bytes;
 	unsigned long long int uprate;
 	unsigned long long int downrate;
-	unsigned long long int packets;
 	int action;
 
 	debug(LOG_DEBUG, "Rate Check Window is set to %u period(s) of checkinterval", config->rate_check_window);

@@ -863,12 +863,8 @@ int
 iptables_download_ratelimit_enable(t_client *client, int enable)
 {
 	int rc = 0;
-	unsigned long long int download_rate, packets;
+	unsigned long long int packets;
 
-	s_config *config;
-	config = config_get_config();
-
-	download_rate = client->download_rate;
 	packets = client->download_rate * 1024 / 1500;
 
 	if (enable == 1) {
@@ -924,12 +920,8 @@ int
 iptables_upload_ratelimit_enable(t_client *client, int enable)
 {
 	int rc = 0;
-	unsigned long long int upload_rate, packets;
+	unsigned long long int packets;
 
-	s_config *config;
-	config = config_get_config();
-
-	upload_rate = client->upload_rate;
 	packets = client->upload_rate * 1024 / 1500;
 
 	if (enable == 1) {
@@ -961,22 +953,7 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 int
 iptables_fw_authenticate(t_client *client)
 {
-	int rc = 0, download_rate, upload_rate;
-	s_config *config;
-	char upload_ifbname[16];
-
-	config = config_get_config();
-	sprintf(upload_ifbname, "ifb%d", config->upload_ifb);
-
-	LOCK_CONFIG();
-	download_rate = config->download_rate;
-	upload_rate = config->upload_rate;
-	UNLOCK_CONFIG();
-
-	if ((client->download_rate > 0) && (client->upload_rate > 0)) {
-		download_rate = client->download_rate;
-		upload_rate = client->upload_rate;
-	}
+	int rc = 0;
 
 	debug(LOG_NOTICE, "Authenticating %s %s", client->ip, client->mac);
 
@@ -999,20 +976,12 @@ iptables_fw_authenticate(t_client *client)
 int
 iptables_fw_deauthenticate(t_client *client)
 {
-	unsigned long long int download_rate, upload_rate, packetsup, packetsdown;
-	s_config *config;
+	unsigned long long int download_rate, packetsdown;
 	int rc = 0;
 
-	config = config_get_config();
-
-	LOCK_CONFIG();
 	download_rate = client->download_rate;
-	upload_rate = client->upload_rate;
-	UNLOCK_CONFIG();
 
 	packetsdown=download_rate * 1024 / 1500;
-	packetsup=upload_rate * 1024 / 1500;
-
 
 	// Remove the authentication rules.
 	debug(LOG_NOTICE, "Deauthenticating %s %s", client->ip, client->mac);

@@ -27,6 +27,7 @@
 
 # Get custom image files
 get_image_file() {
+
 	imagename=$1
 	shelldetect=$(head -1 "/usr/lib/opennds/libopennds.sh")
 
@@ -37,7 +38,7 @@ get_image_file() {
 		set -o posix
 		setcontents=$(set)
 		set +o posix
-		imageurl=$(echo "$setcontents" | grep "$imagename=")
+		imageurl=$(echo "$setcontents" | grep "$imagename=" | awk -F"=" '{print $2}')
 	fi
 
 	setcontents=""
@@ -58,20 +59,20 @@ get_image_file() {
 
 	if [ ! -f "$mountpoint/ndsremote/$filename" ]; then
 		# get protocol
-		protocol=$(echo "$imageurl" | awk -F'://' '{printf("%s" $1)}')
+		protocol=$(echo "$imageurl" | awk -F'://' '{printf("%s", $1)}')
 
 		if [ "$protocol" = "http" ]; then
-			wget -T 2 -q -P "$mountpoint/ndsremote" -O "$filename" "$imageurl"
+			wget -T 2 -q -O "$mountpoint/ndsremote/$filename" "$imageurl"
 		elif [ "$protocol" = "https" ]; then
 			#test for https support
 			result=$(wget -q -O - "https://detectportal.firefox.com/success.txt")
 			if [ "$result" = "success" ];then
-				wget -q -P "$mountpoint/ndsremote" -O "$filename" "$imageurl"
+				wget -T 2 -q -O "$mountpoint/ndsremote/$filename" "$imageurl"
 			else
-				echo "wget - https support not installed - skipping image download" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
+				echo "wget - https support failed or not installed - skipping file download" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 			fi
 		elif [ "$protocol" = "file" ]; then
-			sourcefile=$(echo "$imageurl" | awk -F'://' '{printf("%s" $2)}')
+			sourcefile=$(echo "$imageurl" | awk -F'://' '{printf("%s", $2)}')
 			destinationfile="$mountpoint/ndsremote/$filename"
 			cp "$sourcefile" "$destinationfile"
 		else
@@ -94,7 +95,7 @@ get_data_file() {
 		set -o posix
 		setcontents=$(set)
 		set +o posix
-		dataurl=$(echo "$setcontents" | grep "$dataname=")
+		dataurl=$(echo "$setcontents" | grep "$dataname=" | awk -F"=" '{print $2}')
 	fi
 
 	setcontents=""
@@ -111,20 +112,20 @@ get_data_file() {
 
 	if [ ! -f "$mountpoint/ndsdata/$filename" ]; then
 		# get protocol
-		protocol=$(echo "$dataurl" | awk -F'://' '{printf("%s" $1)}')
+		protocol=$(echo "$dataurl" | awk -F'://' '{printf("%s", $1)}')
 
 		if [ "$protocol" = "http" ]; then
-			wget -T 2 -q -P "$mountpoint/ndsdata" -O "$filename" "$dataurl"
+			wget -T 2 -q -O "$mountpoint/ndsdata/$filename" "$dataurl"
 		elif [ "$protocol" = "https" ]; then
 			#test for https support
 			result=$(wget -T 2 -q -O - "https://detectportal.firefox.com/success.txt")
 			if [ "$result" = "success" ];then
-				wget -T 2 -q -P "$mountpoint/ndsdata" -O "$filename" "$dataurl"
+				wget -T 2 -q -O "$mountpoint/ndsdata/$filename" "$dataurl"
 			else
-				echo "wget - https support failed or not installed - skipping image download" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
+				echo "wget - https support failed or not installed - skipping file download" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 			fi
 		elif [ "$protocol" = "file" ]; then
-			sourcefile=$(echo "$dataurl" | awk -F'://' '{printf("%s" $2)}')
+			sourcefile=$(echo "$dataurl" | awk -F'://' '{printf("%s", $2)}')
 			destinationfile="$mountpoint/ndsdata/$filename"
 			cp "$sourcefile" "$destinationfile"
 		else
@@ -161,6 +162,8 @@ do_ndsctl () {
 			fi
 
 		done
+
+		keyword=""
 
 		if [ $tic = $timeout ] ; then
 			busy_page
@@ -287,9 +290,12 @@ get_theme_environment() {
 			ndsctlcmd="b64decode $b64frag"
 			do_ndsctl
 			frag=$ndsctlout
+			ndsctlcmd=""
+			ndsctlout=""
 
 			# parse variables in this fragment (each time round this loop we will add more parsed variables)
 			query="$frag"
+			frag=""
 			queryvarlist=$ndsparamlist
 
 			parse_variables
@@ -350,8 +356,9 @@ parse_variables() {
 		fi
 
 		eval $var=$(echo "\"$evalstr\"")
-
+		evalstr=""
 	done
+	query=""
 }
 
 configure_log_location() {
@@ -621,11 +628,15 @@ config_input_fields () {
 
 				# Make a list of field names
 				inputnames="$inputnames $name"
-				eval $namevalue="$name""_value"
+
+
+				val=$(echo "$fasvars" | awk -F"$name=" '{print $2}' | awk -F', ' '{print $1}')
+
+				eval $name=$(echo "\"$val\"")
 
 				custom_inputs="
 					$custom_inputs
-					<input type=\"$type\" name=\"$name\" value=\"$namevalue\" required autocomplete=\"on\" ><br><b>$description</b><br><br>
+					<input type=\"$type\" name=\"$name\" value=\"$val\" required autocomplete=\"on\" ><br><b>$description</b><br><br>
 				"
 
 				if [ "$inputtail" = "$inputremainder" ]; then

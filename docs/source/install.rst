@@ -22,27 +22,29 @@ openNDS is designed to run on a device configured as an IPv4 router and will hav
 Installing on OpenWrt
 *********************
 
-* Have a router working with OpenWrt. At the time of writing, openNDS has been tested with OpenWrt 18.06.x, 19.7.x and Snapshot. 
+* Have a router working with OpenWrt. At the time of writing, openNDS has been tested with OpenWrt 18.06.x, 19.7.x 21.2.x and Snapshot.
 
-* OpenWrt version 19.07.x or less requires openNDS v5.2.0 or less. 
+* OpenWrt version 19.07.x or less requires theoogle.com updated libmicrohttpd-no-ssl_0.9.71-1 package (or higher version) from Openwrt 21.2.x or higher.
 
-* OpenWrt Snapshot or versions higher than 19.07.x require openNDS v6.0.0 or higher.
+* openNDS may or may not work on older versions of OpenWrt.
 
-* Note: To run openNDS v6.0.0 or higher on OpenWrt 19.07.x or lower you must upgrade/install libmicrohttpd to v0.9.71 or higher first.
-
-* openNDS may or may not work on older versions of OpenWrt or on other kinds of Linux-based router firmware.
-
-* Make sure your router is basically working before you try to install  openNDS. In particular, make sure your DHCP daemon is serving addresses on the interface that openNDS will manage.
+* Make sure your router is working correctly before you try to install  openNDS. In particular, make sure your DHCP daemon is serving addresses on the interface that openNDS will manage.
 
   The default interface is br-lan but can be changed to any LAN interface by editing the /etc/config/opennds file.
 
-* To install openNDS, you may use the OpenWrt Luci web interface or alternatively, ssh to your router and run the command:
+* To install openNDS on 21.3.x or higher, you may use the OpenWrt Luci web interface or alternatively, ssh to your router and run the command:
 
     ``opkg update``
 
   followed by
 
     ``opkg install opennds``
+
+* To install on 19.7.x or lower, download libmicrohttpd-no-ssl_0.9.71-1 or higher to the /tmp directory on your router. Then install using the command:
+    ``opkg install <packagename> --force-reinstall``
+
+* Similarly, download openNDS v9.0.0 or higher to /tmp, again installing using the command:
+    ``opkg install <packagename> --force-reinstall``
 
 * openNDS is enabled by default and will start automatically on reboot or can be started and stopped manually.
 
@@ -63,7 +65,7 @@ Installing on OpenWrt
 
  If your client device does not display the splash page it most likely does not support CPD.
 
- You should then manually trigger openNDS by trying to access a port 80 web site (for example, google.com:80 is a good choice).
+ You should then manually trigger openNDS by trying to access a port 80 web site (for example, http://gnome.org is a good choice).
 
 * To stop openNDS:
 
@@ -76,23 +78,6 @@ Installing on OpenWrt
 Generic Linux
 *************
 
-openNDS can be compiled for most distributions of Linux
-
-openNDS **requires the libmicrohttpd (MHD) library**. The version must be greater than 0.9.51 but no higher than 0.9.70 for openNDS v5.2.0.
-openNDS v6.0.0 or higher requires libmicrohttpd 0.9.71 or higher.
-
-If your distribution of Linux has a package of version less then 0.9.69, you can set the openNDS config option *use_outdated_mhd* to 1. This will force openNDS to use it.
-
- Older versions of MHD convert & and + characters to spaces when present in form data.
-
- This can make a PreAuth or BinAuth impossible to use for a client if form data contains either of these characters eg. in username or password.
-
- MHD versions earlier than 0.9.69 are detected.
-
- If the option *use_outdated_mhd* is set to 0 (default), NDS will terminate if MHD is earlier than 0.9.69
-
- If this option is set to 1, NDS will start but log an error.
-
-You can also compile libmicrohttpd yourself to get the latest version.
+openNDS and libmicrohttps-ssl can be compiled in place for most distributions of Linux.
 
 To compile libmicrohttpd and openNDS, see the chapter "How to Compile and install openNDS".

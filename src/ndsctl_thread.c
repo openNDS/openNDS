@@ -300,6 +300,7 @@ ndsctl_auth(FILE *fp, char *arg)
 	unsigned id;
 	int rc = -1;
 	int seconds = 60 * config->session_timeout;
+	int custom_seconds;
 	int uploadrate = config->upload_rate;
 	int downloadrate = config->download_rate;
 	unsigned long long int uploadquota = config->upload_quota;
@@ -329,7 +330,10 @@ ndsctl_auth(FILE *fp, char *arg)
 	debug(LOG_DEBUG, "arg3 [%s]", arg3);
 
 	if (arg3 != NULL) {
-		seconds = 60 * strtol(arg3, &ptr, 10);
+		custom_seconds = 60 * strtol(arg3, &ptr, 10);
+		if (custom_seconds > 0) {
+			seconds = custom_seconds;
+		}
 	}
 
 	// arg4 = upload rate (kb/s)

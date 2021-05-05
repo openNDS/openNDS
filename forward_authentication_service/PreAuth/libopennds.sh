@@ -721,7 +721,7 @@ key="1234567890"
 #
 # eg for 20 hours and 30 minutes:
 # session_length=$((20*60+30))
-session_length=$((24*60+30))
+session_length="0"
 
 # Set Rate and Quota values for the client
 # The session length, rate and quota values could be determined by this script, on a per client basis.

@@ -451,15 +451,15 @@ display_terms() {
 #
 # eg for 20 hours and 30 minutes:
 # session_length=$((20*60+30))
-session_length=$((24*60+45))
+session_length="0"
 
 # Set Rate and Quota values for the client
 # The session length, rate and quota values could be determined by this script, on a per client basis.
 # rates are in kb/s, quotas are in kB. - if set to 0 then defaults to global value).
-#upload_rate="0"
-#download_rate="0"
-#upload_quota="0"
-#download_quota="0"
+upload_rate="0"
+download_rate="0"
+upload_quota="0"
+download_quota="0"
 
 quotas="$session_length $upload_rate $download_rate $upload_quota $download_quota"
 

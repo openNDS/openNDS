@@ -70,7 +70,6 @@ struct MHD_Daemon * webserver = NULL;
 
 void stop_mhd(void)
 {
-	debug(LOG_INFO, "Calling MHD_stop_daemon [%lu]", webserver);
 	MHD_stop_daemon(webserver);
 }
 
@@ -83,14 +82,13 @@ void start_mhd(void)
 	if (config->unescape_callback_enabled == 0) {
 		debug(LOG_INFO, "MHD Unescape Callback is Disabled");
 
-		if ((webserver = MHD_start_daemon(MHD_USE_AUTO_INTERNAL_THREAD | MHD_USE_TCP_FASTOPEN,
-			config->gw_port,
-			NULL, NULL,
-			libmicrohttpd_cb, NULL,
-			MHD_OPTION_CONNECTION_TIMEOUT, (unsigned int) 120,
-			MHD_OPTION_LISTENING_ADDRESS_REUSE, 1,
-			MHD_OPTION_END))
-				== NULL) {
+		if ((webserver = MHD_start_daemon(MHD_USE_EPOLL_INTERNAL_THREAD | MHD_USE_TCP_FASTOPEN,
+								config->gw_port,
+								NULL, NULL,
+								libmicrohttpd_cb, NULL,
+								MHD_OPTION_CONNECTION_TIMEOUT, (unsigned int) 120,
+								MHD_OPTION_LISTENING_ADDRESS_REUSE, 1,
+								MHD_OPTION_END)) == NULL) {
 			debug(LOG_ERR, "Could not create web server: %s", strerror(errno));
 			exit(1);
 		}
@@ -98,15 +96,14 @@ void start_mhd(void)
 	} else {
 		debug(LOG_NOTICE, "MHD Unescape Callback is Enabled");
 
-		if ((webserver = MHD_start_daemon(MHD_USE_AUTO_INTERNAL_THREAD | MHD_USE_TCP_FASTOPEN,
-			config->gw_port,
-			NULL, NULL,
-			libmicrohttpd_cb, NULL,
-			MHD_OPTION_CONNECTION_TIMEOUT, (unsigned int) 120,
-			MHD_OPTION_LISTENING_ADDRESS_REUSE, 1,
-			MHD_OPTION_UNESCAPE_CALLBACK, unescape, NULL,
-			MHD_OPTION_END))
-				== NULL) {
+		if ((webserver = MHD_start_daemon(MHD_USE_EPOLL_INTERNAL_THREAD | MHD_USE_TCP_FASTOPEN,
+								config->gw_port,
+								NULL, NULL,
+								libmicrohttpd_cb, NULL,
+								MHD_OPTION_CONNECTION_TIMEOUT, (unsigned int) 120,
+								MHD_OPTION_LISTENING_ADDRESS_REUSE, 1,
+								MHD_OPTION_UNESCAPE_CALLBACK, unescape, NULL,
+								MHD_OPTION_END)) == NULL) {
 			debug(LOG_ERR, "Could not create web server: %s", strerror(errno));
 			exit(1);
 		}

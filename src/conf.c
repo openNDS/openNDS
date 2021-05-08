@@ -818,7 +818,7 @@ config_read(const char *filename)
 			config.gw_ip = safe_strdup(p1);
 			break;
 		case oGatewayPort:
-			if (sscanf(p1, "%u", &config.gw_port) < 81) {
+			if (sscanf(p1, "%u", &config.gw_port) < 1) {
 				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
 				debug(LOG_ERR, "Exiting...");
 				exit(1);

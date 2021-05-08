@@ -84,9 +84,6 @@
  */
 static pthread_t tid_client_check = 0;
 
-// The internal web server
-struct MHD_Daemon * webserver = NULL;
-
 // Time when opennds started
 time_t started_time = 0;
 
@@ -504,39 +501,8 @@ setup_from_config(void)
 		started_time = time(NULL);
 	}
 
-	// Initializes the web server
-	if (config->unescape_callback_enabled == 0) {
-		debug(LOG_INFO, "MHD Unescape Callback is Disabled");
-
-		if ((webserver = MHD_start_daemon(MHD_USE_EPOLL_INTERNAL_THREAD | MHD_USE_TCP_FASTOPEN,
-								config->gw_port,
-								NULL, NULL,
-								libmicrohttpd_cb, NULL,
-								MHD_OPTION_CONNECTION_TIMEOUT, (unsigned int) 120,
-								MHD_OPTION_LISTENING_ADDRESS_REUSE, 1,
-								MHD_OPTION_END)) == NULL) {
-			debug(LOG_ERR, "Could not create web server: %s", strerror(errno));
-			exit(1);
-		}
-
-	} else {
-		debug(LOG_NOTICE, "MHD Unescape Callback is Enabled");
-
-		if ((webserver = MHD_start_daemon(MHD_USE_EPOLL_INTERNAL_THREAD | MHD_USE_TCP_FASTOPEN,
-								config->gw_port,
-								NULL, NULL,
-								libmicrohttpd_cb, NULL,
-								MHD_OPTION_CONNECTION_TIMEOUT, (unsigned int) 120,
-								MHD_OPTION_LISTENING_ADDRESS_REUSE, 1,
-								MHD_OPTION_UNESCAPE_CALLBACK, unescape, NULL,
-								MHD_OPTION_END)) == NULL) {
-			debug(LOG_ERR, "Could not create web server: %s", strerror(errno));
-			exit(1);
-		}
-	}
-
-	debug(LOG_NOTICE, "Created web server on %s", config->gw_address);
-	debug(LOG_INFO, "Handle [%i]", webserver);
+	// Initialize the web server
+	start_mhd();
 
 	// Get the ndsctl socket path/filename
 	if (strcmp(config->ndsctl_sock, DEFAULT_NDSCTL_SOCK) == 0) {
@@ -804,7 +770,9 @@ main_loop(void)
 	if (result) {
 		debug(LOG_INFO, "Failed to wait for opennds thread.");
 	}
-	MHD_stop_daemon(webserver);
+	//MHD_stop_daemon(webserver);
+	stop_mhd();
+
 	termination_handler(result);
 }
 

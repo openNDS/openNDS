@@ -66,6 +66,53 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 static const char *get_redirect_url(struct MHD_Connection *connection);
 static const char *lookup_mimetype(const char *filename);
 
+struct MHD_Daemon * webserver = NULL;
+
+void stop_mhd(void)
+{
+	MHD_stop_daemon(webserver);
+}
+
+void start_mhd(void)
+{
+	// Initializes the web server
+	s_config *config;
+	config = config_get_config();
+
+	if (config->unescape_callback_enabled == 0) {
+		debug(LOG_INFO, "MHD Unescape Callback is Disabled");
+
+		if ((webserver = MHD_start_daemon(MHD_USE_EPOLL_INTERNAL_THREAD | MHD_USE_TCP_FASTOPEN,
+								config->gw_port,
+								NULL, NULL,
+								libmicrohttpd_cb, NULL,
+								MHD_OPTION_CONNECTION_TIMEOUT, (unsigned int) 120,
+								MHD_OPTION_LISTENING_ADDRESS_REUSE, 1,
+								MHD_OPTION_END)) == NULL) {
+			debug(LOG_ERR, "Could not create web server: %s", strerror(errno));
+			exit(1);
+		}
+
+	} else {
+		debug(LOG_NOTICE, "MHD Unescape Callback is Enabled");
+
+		if ((webserver = MHD_start_daemon(MHD_USE_EPOLL_INTERNAL_THREAD | MHD_USE_TCP_FASTOPEN,
+								config->gw_port,
+								NULL, NULL,
+								libmicrohttpd_cb, NULL,
+								MHD_OPTION_CONNECTION_TIMEOUT, (unsigned int) 120,
+								MHD_OPTION_LISTENING_ADDRESS_REUSE, 1,
+								MHD_OPTION_UNESCAPE_CALLBACK, unescape, NULL,
+								MHD_OPTION_END)) == NULL) {
+			debug(LOG_ERR, "Could not create web server: %s", strerror(errno));
+			exit(1);
+		}
+	}
+
+	debug(LOG_NOTICE, "Created web server on %s", config->gw_address);
+	debug(LOG_INFO, "Handle [%lu]", webserver);
+}
+
 
 /* Call the BinAuth script or program with output and input arguments.
  * Output arguments to BinAuth:
@@ -1254,22 +1301,6 @@ static int get_query(struct MHD_Connection *connection, char **query, const char
 	free(elements);
 	return 0;
 }
-
-//static int send_refresh(struct MHD_Connection *connection)
-//{
-//	struct MHD_Response *response = NULL;
-
-//	const char *refresh = "<html><meta http-equiv=\"refresh\" content=\"1\"><head/></html>";
-//	const char *mimetype = lookup_mimetype("foo.html");
-//	int ret;
-
-//	response = MHD_create_response_from_buffer(strlen(refresh), (char *)refresh, MHD_RESPMEM_PERSISTENT);
-//	MHD_add_response_header(response, "Content-Type", mimetype);
-//	MHD_add_response_header (response, MHD_HTTP_HEADER_CONNECTION, "close");
-//	ret = MHD_queue_response(connection, 200, response);
-
-//	return ret;
-//}
 
 static int send_error(struct MHD_Connection *connection, int error)
 {

@@ -703,7 +703,11 @@ get_key_from_config() {
 
 	key=$faskey
 }
+<<<<<<< .mine
 
+=======
+
+>>>>>>> .theirs
 #### end of functions ####
 
 

@@ -90,9 +90,14 @@ int get_client_interface(char* clientif, int clientif_len, const char *climac)
 		debug(LOG_DEBUG, "Client Mac Address: %s", climac);
 		debug(LOG_DEBUG, "Client Connection(s) [localif] [remotemeshnodemac] [localmeshif]: %s", clientif);
 	} else {
-		debug(LOG_ERR, "Failed to get client connections - client probably offline");
-		free (clifcmd);
-		return -1;
+		debug(LOG_INFO, "Failed to get client connections for [%s] - retrying", climac);
+		sleep(1);
+
+		if (execute_ret_url_encoded(clientif, clientif_len - 1, clifcmd) == 0) {
+			debug(LOG_DEBUG, "Client Connection(s) [localif] [remotemeshnodemac] [localmeshif]: %s", clientif);
+		} else {
+			debug(LOG_INFO, "Failed to get client connections for [%s] - giving up", climac);
+		}
 	}
 	free (clifcmd);
 	return 0;

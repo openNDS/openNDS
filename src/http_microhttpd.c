@@ -70,6 +70,7 @@ struct MHD_Daemon * webserver = NULL;
 
 void stop_mhd(void)
 {
+	debug(LOG_INFO, "Calling MHD_stop_daemon [%lu]", webserver);
 	MHD_stop_daemon(webserver);
 }
 
@@ -82,13 +83,14 @@ void start_mhd(void)
 	if (config->unescape_callback_enabled == 0) {
 		debug(LOG_INFO, "MHD Unescape Callback is Disabled");
 
-		if ((webserver = MHD_start_daemon(MHD_USE_EPOLL_INTERNAL_THREAD | MHD_USE_TCP_FASTOPEN,
-								config->gw_port,
-								NULL, NULL,
-								libmicrohttpd_cb, NULL,
-								MHD_OPTION_CONNECTION_TIMEOUT, (unsigned int) 120,
-								MHD_OPTION_LISTENING_ADDRESS_REUSE, 1,
-								MHD_OPTION_END)) == NULL) {
+		if ((webserver = MHD_start_daemon(MHD_USE_AUTO_INTERNAL_THREAD | MHD_USE_TCP_FASTOPEN,
+			config->gw_port,
+			NULL, NULL,
+			libmicrohttpd_cb, NULL,
+			MHD_OPTION_CONNECTION_TIMEOUT, (unsigned int) 120,
+			MHD_OPTION_LISTENING_ADDRESS_REUSE, 1,
+			MHD_OPTION_END))
+				== NULL) {
 			debug(LOG_ERR, "Could not create web server: %s", strerror(errno));
 			exit(1);
 		}
@@ -96,14 +98,15 @@ void start_mhd(void)
 	} else {
 		debug(LOG_NOTICE, "MHD Unescape Callback is Enabled");
 
-		if ((webserver = MHD_start_daemon(MHD_USE_EPOLL_INTERNAL_THREAD | MHD_USE_TCP_FASTOPEN,
-								config->gw_port,
-								NULL, NULL,
-								libmicrohttpd_cb, NULL,
-								MHD_OPTION_CONNECTION_TIMEOUT, (unsigned int) 120,
-								MHD_OPTION_LISTENING_ADDRESS_REUSE, 1,
-								MHD_OPTION_UNESCAPE_CALLBACK, unescape, NULL,
-								MHD_OPTION_END)) == NULL) {
+		if ((webserver = MHD_start_daemon(MHD_USE_AUTO_INTERNAL_THREAD | MHD_USE_TCP_FASTOPEN,
+			config->gw_port,
+			NULL, NULL,
+			libmicrohttpd_cb, NULL,
+			MHD_OPTION_CONNECTION_TIMEOUT, (unsigned int) 120,
+			MHD_OPTION_LISTENING_ADDRESS_REUSE, 1,
+			MHD_OPTION_UNESCAPE_CALLBACK, unescape, NULL,
+			MHD_OPTION_END))
+				== NULL) {
 			debug(LOG_ERR, "Could not create web server: %s", strerror(errno));
 			exit(1);
 		}
@@ -235,7 +238,8 @@ static int do_binauth(
 	free(lockfile);
 
 	if (rc != 0) {
-		return -1;
+		debug(LOG_DEBUG, "BinAuth script failed to execute");
+		return 0;
 	}
 
 	rc = sscanf(msg, "%d %llu %llu %llu %llu", &seconds, &upload_rate, &download_rate, &upload_quota, &download_quota);
@@ -420,9 +424,10 @@ enum MHD_Result libmicrohttpd_cb(
 	char ip[INET6_ADDRSTRLEN+1];
 	char mac[18];
 	char *dds = "../";
+	char *mhdstatus = "/mhdstatus";
 	int rc = 0;
 
-	debug(LOG_DEBUG, "access: %s %s", method, url);
+	debug(LOG_DEBUG, "client access: %s %s", method, url);
 
 	// only allow get
 	if (0 != strcmp(method, "GET")) {
@@ -435,6 +440,13 @@ enum MHD_Result libmicrohttpd_cb(
 		debug(LOG_WARNING, "Probable Path Traversal Attack Detected - %s", url);
 		return send_error(connection, 403);
 	}
+
+	// check for mhdstatus request
+	if (strstr(url, mhdstatus) != NULL) {
+		debug(LOG_DEBUG, "MHD Status Request - %s", url);
+		return send_error(connection, 511);
+	}
+
 
 	/* switch between preauth, authenticated
 	 * - always - set caching headers
@@ -770,7 +782,7 @@ static int authenticated(struct MHD_Connection *connection,
 
 		if (rc != 0) {
 			debug(LOG_WARNING, "Script: /usr/lib/opennds/client_params.sh - failed to execute");
-			return -1;
+			return 0;
 		}
 
 		// serve the script output (in msg)

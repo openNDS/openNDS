@@ -43,6 +43,8 @@
 #include "client_list.h"
 #include "util.h"
 #include "http_microhttpd_utils.h"
+#include "http_microhttpd.h"
+
 #define ENABLE 1
 #define DISABLE 0
 
@@ -156,7 +158,7 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 				client->download_quota = config->download_quota;
 			}
 
-			debug(LOG_INFO, "auth_change_state > authenticated - download_rate [%llu] upload_rate [%llu] ",
+			debug(LOG_DEBUG, "auth_change_state > authenticated - download_rate [%llu] upload_rate [%llu] ",
 				client->download_rate,
 				client->upload_rate
 			);
@@ -495,11 +497,40 @@ thread_client_timeout_check(void *arg)
 	pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 	pthread_mutex_t cond_mutex = PTHREAD_MUTEX_INITIALIZER;
 	struct timespec timeout;
+	char msg[8] = {0};
+	const char mhd_fail[] = "2";
+	char *testcmd;
+	s_config *config = config_get_config();
+
+	// Build command to check MHD
+	safe_asprintf(&testcmd,
+		"/usr/lib/opennds/libopennds.sh mhdcheck \"%s\"",
+		config->gw_address
+	);
+
 
 	while (1) {
-		debug(LOG_DEBUG, "Running fw_refresh_client_list()");
+
+		// check MHD
+		if (execute_ret_url_encoded(msg, sizeof(msg) - 1, testcmd) == 0) {
+			debug(LOG_DEBUG, "MHD Test Result: %s", msg);
+		} else {
+			debug(LOG_DEBUG, "MHD Test failed: Continuing...");
+		}
+
+		if (strcmp(msg, mhd_fail) == 0) {
+			debug(LOG_INFO, "MHD Watchdog - Restart requested");
+			start_mhd();
+			debug(LOG_INFO, "MHD Restarted");
+		}
+
+		memset(msg, 0, sizeof(msg));
+
+		debug(LOG_DEBUG, "Starting Refresh Client List");
 
 		fw_refresh_client_list();
+
+		debug(LOG_DEBUG, "Client List Refresh is Done");
 
 		// Sleep for config.checkinterval seconds...
 		timeout.tv_sec = time(NULL) + config_get_config()->checkinterval;
@@ -515,6 +546,7 @@ thread_client_timeout_check(void *arg)
 		pthread_mutex_unlock(&cond_mutex);
 	}
 
+	free(testcmd);
 	return NULL;
 }
 

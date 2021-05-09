@@ -158,9 +158,6 @@ thankyou_page () {
 landing_page() {
 	originurl=$(printf "${originurl//%/\\x}")
 
-	# Add the user credentials to $userinfo for the log
-	userinfo="$userinfo, user=$username, email=$emailaddress"
-
 	# authenticate and write to the log - returns with $ndsstatus set
 	auth_log
 

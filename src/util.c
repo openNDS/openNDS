@@ -144,9 +144,15 @@ static int _execute_ret(char* msg, int msg_len, const char *cmd)
 
 	fp = popen(cmd, "r");
 	if (fp == NULL) {
-		debug(LOG_ERR, "popen(): %s", strerror(errno));
-		rc = -1;
-		goto abort;
+		debug(LOG_ERR, "popen(): [%s] Retrying..", strerror(errno));
+		sleep(1);
+		fp = popen(cmd, "r");
+
+		if (fp == NULL) {
+			debug(LOG_ERR, "popen(): [%s] Giving up..", strerror(errno));
+			rc = -1;
+			goto abort;
+		}
 	}
 
 	if (msg && msg_len > 0) {

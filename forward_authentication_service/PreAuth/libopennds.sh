@@ -687,6 +687,23 @@ check_mhd() {
 	fi
 }
 
+get_key_from_config() {
+	faskey=""
+
+	if [ -e "/etc/config/opennds" ]; then
+		faskey=$(uci -q get opennds.@opennds[0].faskey | awk '{printf("%s", $0)}')
+
+	elif [ -e "/etc/opennds/opennds.conf" ]; then
+		faskey=$(cat "/etc/opennds/opennds.conf" | awk -F'faskey ' '{printf("%s", $2)}')
+	fi
+
+	if [ -z "$faskey" ]; then
+		faskey="1234567890"
+	fi
+
+	key=$faskey
+}
+
 #### end of functions ####
 
 
@@ -743,9 +760,8 @@ fi
 
 # Preshared key
 #########################################
-# Default value is 1234567890 when faskey is not set
-# Change to match faskey if faskey is set
-key="1234567890"
+# Default value is 1234567890 when faskey is not set in config
+get_key_from_config
 
 # Quotas and Data Rates
 #########################################

@@ -1,19 +1,20 @@
 ## 0. The openNDS project
 
-openNDS is a Captive Portal that offers a simple way to provide restricted access to the Internet by showing a splash page to the user before Internet access is granted.
+openNDS is a Captive Portal solution that offers an instant way to provide restricted access to the Internet.
 
-It also incorporates an API that allows the creation of sophisticated authentication applications.
+With little or no configuration, a dynamically generated and adaptive splash page sequence is automatically served.
 
-It is derived from the codebase of the NoDogSplash project.
+Internet access is granted by either a click to continue button, or after credential verification.
 
-openNDS is released under the GNU General Public License.
+The package incorporates the FAS API allowing many flexible customisation options.
 
-The following describes what openNDS does, how to get it and run it, and
-how to customize its behaviour for your application.
+The creation of sophisticated third party authentication applications is fully supported.
+
+Internet hosted https portals can be utilised to inspire maximum user confidence.
 
 ## 1. Overview
 
-**openNDS** is a high performance, small footprint Captive Portal, offering by default a simple splash page restricted Internet connection, yet incorporates an API that allows the creation of sophisticated authentication applications.
+**openNDS** is a high performance, small footprint Captive Portal, offering by default a simple restricted Internet connection, yet incorporates an API that allows the creation of sophisticated authentication applications.
 
 **Captive Portal Detection (CPD)**
 

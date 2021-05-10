@@ -1406,7 +1406,7 @@ static int send_error(struct MHD_Connection *connection, int error)
 			</body></html>\n",
 			status_url
 		);
-		debug(LOG_DEBUG, " page_511 html: [ %s ]", page_511);
+
 		response = MHD_create_response_from_buffer(strlen(page_511), (char *)page_511, MHD_RESPMEM_MUST_COPY);
 		MHD_add_response_header(response, "Content-Type", mimetype);
 		ret = MHD_queue_response(connection, MHD_HTTP_NETWORK_AUTHENTICATION_REQUIRED, response);

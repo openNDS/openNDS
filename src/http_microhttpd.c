@@ -112,8 +112,7 @@ void start_mhd(void)
 		}
 	}
 
-	debug(LOG_NOTICE, "Created web server on %s", config->gw_address);
-	debug(LOG_INFO, "Handle [%lu]", webserver);
+	debug(LOG_INFO, "MHD Handle [%lu]", webserver);
 }
 
 

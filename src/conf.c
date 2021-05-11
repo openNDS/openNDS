@@ -83,6 +83,10 @@ typedef enum {
 	oFasRemoteFQDN,
 	oFasURL,
 	oFasSSL,
+	oApiRemoteIP,
+	oApiRemoteFQDN,
+	oApiURL,
+	oApiSSL,
 	oLoginOptionEnabled,
 	oThemeSpecPath,
 	oUseOutdatedMHD,
@@ -240,7 +244,10 @@ config_init(void)
 	config.fas_secure_enabled = DEFAULT_FAS_SECURE_ENABLED;
 	config.fas_remoteip = NULL;
 	config.fas_remotefqdn = NULL;
+	config.api_remoteip = NULL;
+	config.api_remotefqdn = NULL;
 	config.fas_url = NULL;
+	config.api_url = NULL;
 	config.fas_ssl = NULL;
 	config.fas_hid = NULL;
 	config.custom_params = NULL;
@@ -879,6 +886,12 @@ config_read(const char *filename)
 			break;
 		case oFasRemoteFQDN:
 			config.fas_remotefqdn = safe_strdup(p1);
+			break;
+		case oApiRemoteIP:
+			config.api_remoteip = safe_strdup(p1);
+			break;
+		case oApiRemoteFQDN:
+			config.api_remotefqdn = safe_strdup(p1);
 			break;
 		case oBinAuth:
 			config.binauth = safe_strdup(p1);

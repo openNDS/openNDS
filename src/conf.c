@@ -147,6 +147,7 @@ static const struct {
 	{ "gatewayport", oGatewayPort },
 	{ "gatewayfqdn", oGatewayFQDN },
 	{ "fasport", oFasPort },
+	{ "apiport", oApiPort },
 	{ "faskey", oFasKey },
 	{ "fasremoteip", oFasRemoteIP },
 	{ "fasremotefqdn", oFasRemoteFQDN },
@@ -236,6 +237,7 @@ config_init(void)
 	config.gw_ip = NULL;
 	config.gw_port = DEFAULT_GATEWAYPORT;
 	config.fas_port = DEFAULT_FASPORT;
+	config.api_port = DEFAULT_FASPORT;
 	config.fas_key = safe_strdup(DEFAULT_FASKEY);
 	config.login_option_enabled = DEFAULT_LOGIN_OPTION_ENABLED;
 	config.themespec_path = NULL;
@@ -838,6 +840,14 @@ config_read(const char *filename)
 				exit(1);
 			}
 			break;
+		case oApiPort:
+			if (sscanf(p1, "%u", &config.api_port) < 1) {
+				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+				debug(LOG_ERR, "Exiting...");
+				exit(1);
+			}
+			break;	
+			
 		case oLoginOptionEnabled:
 			if (sscanf(p1, "%d", &config.login_option_enabled) < 1) {
 				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);

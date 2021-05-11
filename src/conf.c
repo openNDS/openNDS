@@ -237,7 +237,7 @@ config_init(void)
 	config.gw_ip = NULL;
 	config.gw_port = DEFAULT_GATEWAYPORT;
 	config.fas_port = DEFAULT_FASPORT;
-	config.api_port = DEFAULT_FASPORT;
+	config.api_port = DEFAULT_APIPORT;
 	config.fas_key = safe_strdup(DEFAULT_FASKEY);
 	config.login_option_enabled = DEFAULT_LOGIN_OPTION_ENABLED;
 	config.themespec_path = NULL;
@@ -250,6 +250,7 @@ config_init(void)
 	config.api_remotefqdn = NULL;
 	config.fas_url = NULL;
 	config.api_url = NULL;
+	config.auth_url = NULL;
 	config.fas_ssl = NULL;
 	config.fas_hid = NULL;
 	config.custom_params = NULL;

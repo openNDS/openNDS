@@ -38,13 +38,13 @@ Note: upload means to the Internet, download means from the Internet
 
 Global Data Rate Quota
 ----------------------
-A rate quota is a moving average data rate.
+The client data rate is calculated using a moving average. This allows clients to burst at maximum possible rate, only rate limiting if the moving average exceeds the specified upload or download rate.
 
-The average is calculated  over a configured time window.
+The moving average window size is equal to ratecheckwindow times checkinterval (seconds).
 
-If a client exceeds the global data rate quota, or the individual client quota, that client will be blocked for a configured interval before being allowed to continue automatically.
+The default value of ratecheckwindow is 2 and is a good working setting. Increasing the value allows a longer period of bursting. Setting to 0 disables all Data Rate Quotas.
 
-As the Data Rate Quota is a moving average, clients are able to transfer data at the maximum rate the router can achieve for short bursts.
+Simply put, this means clients are able to transfer data at the maximum rate the router can achieve for short bursts.
 
 Data Rate Quotas are ideal for allowing opening of web pages and emails etc in the fastest way possible, yet preventing an individual client from monopolizing all the available bandwidth by streaming or transferring large files.
 
@@ -83,11 +83,13 @@ Data Rate Quotas for Individual Clients
 
 FAS Level 3
 ===========
-FAD level 3 uses the Authmon daemon to set quota values determined by the FAS. The example script fas-aes-https.php shows how to implement this.
+FAS level 3 uses the Authmon daemon to set quota values determined by the FAS. The example script fas-aes-https.php shows how to implement this.
 
-FAS level 0,2 and 2
-===================
-These levels use BinAuth to set quota values determined by the FAS. The FAS would utilise the BinAuth custom variable to send quota values to a BinAuth script configured to interpret the data passed to it in the variable. There is no set method for doing this, it is left to individual installers to develop their own method.
+FAS level 0, 1 and 2
+====================
+These levels can either use BinAuth to set quota values determined by the FAS, or if local to the router can use ndsctl authentication with quota values passed as arguments.
+
+If using BinAuth, the FAS would utilise the BinAuth custom variable to send quota values to a BinAuth script configured to interpret the data passed to it in the variable. There is no set method for doing this, it is left to individual installers to develop their own method.
 
 Traffic Shaping
 ***************

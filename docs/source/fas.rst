@@ -281,6 +281,14 @@ Using a Shared Hosting Server for a Remote FAS
 
   fasremotefqdn = the **Fully Qualified Domain name** of the remote server
 
+Using a CDN (Content Delivery Network) Hosted Server for a Remote FAS
+*********************************************************************
+
+ This is essentially the same as using a Shared Hosting Server with the additional requirement of *also* adding fasremotefqdn to the Walled Garden configuration.
+
+ The setting for fasremoteip should be one of the valid IPv4 addresses of your CDN service.
+
+
 Using the FAS Example Scripts (fas-hid, fas-aes.php and fas-aes-https.php)
 **************************************************************************
 

@@ -76,6 +76,16 @@ You cannot upgrade from NoDogSplash to openNDS, instead you must first uninstall
 
    A client user status page is now available at a configurable Gateway FQDN. This page includes a listing of the client's quota allocation and usage, as well as a "Logout" button. A client that is connected butnot logged in for any reason will be redirected to an RFC6585 Status Code 511 "Network Authentication Required" page with a "Login" button. the default url for a client to access their status page is http://status.client
 
+**openNDS v9** This version contains several major enhancements, including:
+
+ * **Introduction of ThemeSpec Script Files**
+
+   Option login_option is extended to include Themed page sequences with custom parameters, variables, images and files. A ThemeSpec file has the ability to inject html form fields, text strings, images from external sources and content files also from external sources, all defined in the config file.
+
+ * **Enhanced Data Rate Quotas**
+
+   Data Rate Quotas are now enhanced with packet rate limiting being applied when a client average rate rises above its preset threshold. The time window over which the rate is averaged can be tuned using settings in the config file, allowing rate bursting for best user experience while still limiting the rate of larger downloads or uploads that might otherwise impact other clients.
+
 Can I upgrade from NoDogSplash to openNDS?
 ******************************************
 
@@ -106,11 +116,28 @@ You can, if:
  * You modify your FAS scripts to use the openNDS v8 API. The FAS query string is now either base64 encoded, or encrypted.
  * In addition Hashed ID (hid) is used for authentication, removing the need for a FAS script to somehow obtain the client Token.
 
+Can I upgrade from v8 to v9
+***************************
+
+You can, if:
+
+ * You modify your FAS scripts to use the openNDS v9 API
+ * You move to ThemeSpec scripts or FAS **from Legacy Splash**. Legacy Splash Pages are no longer supported. The default ThemeSpec (option login_option 1) is equivalent to the old splash.html click to continue page.
+
 How can I add custom parameters, such as site specific information?
 *******************************************************************
 
 Custom parameters were introduced in openNDS version 7 and are defined simply in the config file. These parameters are passed to the FAS in the query string. Version 8 embeds any custom parameters in the encoded/encrypted query string, macing it much simpler to parse for them in the FAS script.
 
+How can I add custom fields on the login page, such as phone number, car licence plate number etc.?
+***************************************************************************************************
+
+A simple configuration option allows fields to be added automatically to the pages of ThemeSpec login sequences.
+
+Is it possible to display custom info or advertising on the login pages?
+************************************************************************
+
+Yes! Simple config options specify the URLs of images and html content. These will be automatically downloaded and injected into the dynamic pages created by suitable Themespec scripts.
 
 How do I manage client data usage?
 **********************************
@@ -120,7 +147,7 @@ openNDS (NDS) has built in *Data Volume* and *Data Rate* quota support.
  * Data volume and data rate quotas can be set globally in the config file.
  * The global values can be overridden on a client by client basis as required, either by FAS or BinAuth.
  * If a client exceeds their volume quota they will be deauthenticated.
- * If a client exceeds their rate quota, they will be temporarily blocked to ensure their average rate stays below the rate quota value. This allows clients to burst at a higher rate for shot intervals, improving performance, but prevents them from hogging bandwidth. 
+ * If a client exceeds their rate quota, they will be packet rate limited to ensure their average rate stays below the rate quota value. This allows clients to burst at a higher rate for short intervals, improving performance, but prevents them from hogging bandwidth. 
 
 Can I use Traffic Shaping with openNDS?
 ***************************************

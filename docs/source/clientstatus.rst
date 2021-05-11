@@ -19,11 +19,11 @@ The URL used to access this page can be changed by setting the config option gat
 
 For best results it is recommended that gatewayfqdn is set to two words separated by a single period eg in OpenWrt:
 
-	`option gatewayfqdn 'my.status'`
+	``option gatewayfqdn 'my.status'``
 
  **Warning** - if set, services on port 80 of the gateway will no longer be accessible (eg Luci AdminUI)
 
- By default, the Error511/Status page will be found at http://status.client/ by a redirection of port 80 to http://gatewayaddress:gatewayport/
+ By default, the Error511/Status page will be found at ``http://status.client/`` by a redirection of port 80 to ``http://gatewayaddress:gatewayport/``
 
  ***Disable GatewayFQDN*** by setting the option to 'disable'
  ie:

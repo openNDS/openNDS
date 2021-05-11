@@ -505,6 +505,7 @@ setup_from_config(void)
 
 	// Initialize the web server
 	start_mhd();
+	debug(LOG_NOTICE, "Created web server on %s", config->gw_address);
 
 	// Get the ndsctl socket path/filename
 	if (strcmp(config->ndsctl_sock, DEFAULT_NDSCTL_SOCK) == 0) {

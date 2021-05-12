@@ -36,6 +36,7 @@ Contents:
    clientstatus
    customparams
    fas
+   themespec
    preauth
    binauth
    libraries

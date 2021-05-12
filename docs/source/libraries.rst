@@ -95,7 +95,7 @@ This utility controls many of the functions required for PreAuth/ThemeSpec scrip
 
         **arg3**: mode (1, 2 or 3) (this is the mode specified in option login_option in the config file.
 
-        **arg4**: themespecpath (if mode = 3
+        **arg4**: themespecpath (if mode = 3)
 
 
     *returns*: html for the specified ThemeSpec.

@@ -422,12 +422,6 @@ display_terms() {
 #						#
 #################################################
 
-# Preshared key
-#########################################
-# Default value is 1234567890 when faskey is not set
-# Change to match faskey if faskey is set
-#key="1234567890"
-
 # Quotas and Data Rates
 #########################################
 # Set length of session in minutes (eg 24 hours is 1440 minutes - if set to 0 then defaults to global sessiontimeout value):

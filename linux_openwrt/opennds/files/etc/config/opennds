@@ -310,12 +310,14 @@ config opennds
 	# Session Timeout is the interval after which clients are forced out (a value of 0 means never)
 	# Clients will be deauthenticated at the end of this period
 	# Default 1200 minutes (20 hours)
-	#option sessiontimeout '1200'
+	# Example: Set to 24 hours (1440 minutes)
+	#option sessiontimeout '1440'
 	###########################################################################################
 
 	# The interval in seconds at which opennds checks client timeout and quota status
 	# Default 60 seconds (1 minute)
-	#option checkinterval '60'
+	# Example: Set to 30 seconds
+	#option checkinterval '30'
 	###########################################################################################
 
 	# Rate Quotas
@@ -348,11 +350,11 @@ config opennds
 	#
 	# All rate limits can be globally disabled by setting this option to 0 (zero)
 	#
-	# Disable all rate quotas fo all clients, overriding settings made in FAS via Authmon Daemon,
+	# Example: Disable all rate quotas fo all clients, overriding settings made in FAS via Authmon Daemon,
 	#	ThemeSpec scripts, BinAuth, and ndsctl auth:
 	#option ratecheckwindow '0'
 	#
-	# Set to 3 checkinterval periods:
+	# Example: Set to 3 checkinterval periods:
 	#option ratecheckwindow '3'
 	###########################################################################################
 
@@ -375,11 +377,6 @@ config opennds
 	# If set, a BinAuth program or script is triggered by several possible methods
 	# and is called with several arguments on both authentication and deauthentication:
 	#
-	# $<BinAuth> <method> <arg1> <arg2> .... <argN>
-	#
-	# The Binauth script will issue an exit code:
-	# 0 Authentication allowed
-	# 1 Authentication denied
 	#
 	# Possible methods
 	#
@@ -427,6 +424,10 @@ config opennds
 	#
 	# Typical Remote Shared Hosting Example (replace this with your own FAS FQDN):
 	#option fasremotefqdn 'onboard-wifi.net'
+	#
+	# Note: For a CDN (Content Delivery Network) hosted server,
+	#	you must also add fasremotefqdn to the Walled Garden list of FQDNs
+	#
 	###########################################################################################
 
 	# Option: fasremoteip
@@ -587,7 +588,7 @@ config opennds
 	# list walledgarden_port_list 'port1 port2 port3 .... portN'
 	#
 	# Note: If walledgarden_port_list is NOT specified, then Walled Garden access is granted
-	# for both tcp and udp protocols on ALL ports for each fqdn specified in walledgarden_fqdn_list.
+	# for all protocols (tcp, udp, icmp) on ALL ports for each fqdn specified in walledgarden_fqdn_list.
 	#
 	# Note: If walledgarden_port_list IS specified, then:
 	#  1. Specified port numbers apply to ALL FQDN's specified in walledgarden_fqdn_list.
@@ -630,7 +631,7 @@ config opennds
 	#
 	# or
 	#
-	#option macmechanism 'allow'
+	#option macmechanism 'block'
 	#list blockedmac '00:00:C0:01:D0:2D'
 	###########################################################################################
 

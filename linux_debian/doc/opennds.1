@@ -1,6 +1,6 @@
 .\" Man page generated from reStructuredText.
 .
-.TH "OPENNDS" "1" "Feb 21, 2021" "8.1.1" "openNDS"
+.TH "OPENNDS" "1" "May 12, 2021" "9.0.0" "openNDS"
 .SH NAME
 opennds \- opennds Documentation
 .
@@ -68,16 +68,20 @@ All modern mobile devices, most desktop operating systems and most browsers now 
 .SS Provide simple and immediate public Internet access
 .INDENT 0.0
 .INDENT 3.5
-NDS provides two pre\-installed methods.
+NDS provides two selectable ready to run methods.
 .INDENT 0.0
 .IP \(bu 2
-\fBClick to Continue\fP\&. A simple static web page with template variables (\fIdefault\fP). This provides basic notification and a simple click/tap to continue button.
+\fBClick to Continue\fP\&. A simple "Click to Continue" dynamic splash page sequence requiring a client user to accept Terms of Service before continuing to access the Internet (\fIdefault\fP). Basic client device information is recorded in a log file.
 .IP \(bu 2
-\fBusername/email\-address login\fP\&. A simple dynamic set of web pages that provide username/email\-address login, a welcome page and logs access by client users. (\fIInstalled by default and enabled in the configuration file\fP)
+\fBusername/email\-address login\fP\&. A simple dynamic splash page sequence that requires the client user to enter their username and email\-address before accepting the Terms of Service. A welcome page and landing page that can carry an information or advertising payload are served to the client in sequence. Client user and client device information is recorded in the log file. (\fIThis mode is selected in the configuration file\fP)
 .UNINDENT
 .INDENT 0.0
 .INDENT 3.5
-Customising the page seen by users is a simple matter of editing the script file.
+Both these modes are generated using default ThemeSpec script files. These ThemeSpec script files contain easy to edit html blocks, allowing basic content changes to be made very simply.
+.sp
+Modifying the content seen by users is a simple matter of editing the html blocks within the script file.
+.sp
+Additional more advanced ThemeSpec files are included and can also be enabled from the config file. These additional files make use of the custom_parameters, custom_images and custom_files config options. Form input fields and text comments can be added, and images and content blocks can be downloaded on demand from remote servers.
 .UNINDENT
 .UNINDENT
 .UNINDENT
@@ -97,6 +101,141 @@ NDS can be used as the "Engine" behind the most sophisticated Captive Portal sys
 .UNINDENT
 .UNINDENT
 .SH WHAT'S NEW? - CHANGELOG
+.sp
+openNDS (9.0.0)
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+This version introduces major new functionality, some changes and fixes
+.IP \(bu 2
+Add \- post\-request \- add upstream payload [bluewavenet]
+.IP \(bu 2
+Add \- post\-request \- base64 encode payload [bluewavenet]
+.IP \(bu 2
+Add \- authmon add more status checking and default to view mode for upstream processing [bluewavenet]
+.IP \(bu 2
+Add \- authmon add housekeeping call, limit concurrent authentications, send auth\-ack [bluewavenet]
+.IP \(bu 2
+Add \- fas\-aes\-https add housekeeping call, add auth\-ack support, add "try again" button [bluewavenet]
+.IP \(bu 2
+Add \- "$" character added to htmlentityencode [bluewavenet]
+.IP \(bu 2
+Add \- Theme support \- theme_click\-to\-continue [bluewavenet]
+.IP \(bu 2
+Add \- Themespec, custom variables and custom images options to OpenWrt config [bluewavenet]
+.IP \(bu 2
+Add \- Support for ThemeSpecPath, FasCustomParametersList, FasCustomVariablesList, FasCustomImagesList [bluewavenet]
+.IP \(bu 2
+Add \- Example theme \- click\-to\-continue\-custom\-placeholders [bluewavenet]
+.IP \(bu 2
+Add \- Increase Buffer sizes to support custom parameters [bluewavenet]
+.IP \(bu 2
+Add \- themespec_path argument [bluewavenet]
+.IP \(bu 2
+Add \- Increase buffers for custom vars and images [bluewavenet]
+.IP \(bu 2
+Add \- Increase command buffer for custom vars and images [bluewavenet]
+.IP \(bu 2
+Add \- Increase HTMLMAXSIZE [bluewavenet]
+.IP \(bu 2
+Add \- Use MAX_BUF for fasparam, fasvar and fasimage [bluewavenet]
+.IP \(bu 2
+Add \- support for ThemeSpec files and placeholders [bluewavenet]
+.IP \(bu 2
+Add \- Theme Click to Continue with Custom Placeholders [bluewavenet]
+.IP \(bu 2
+Add \- make custom field a required entry [bluewavenet]
+.IP \(bu 2
+Add \- bash/ash check and simplify image download config [bluewavenet]
+.IP \(bu 2
+Add \- example custom images and text placeholders to click\-to\-continue\-custom [bluewavenet]
+.IP \(bu 2
+Add \- theme_user\-email\-login\-custom\-placeholders [bluewavenet]
+.IP \(bu 2
+Add \- Status page for login failure [bluewavenet]
+.IP \(bu 2
+Add \- fas_custom_files_list and update Makefiles [bluewavenet]
+.IP \(bu 2
+Add \- Autoconfiguration of ndsctl socket file to use tmpfs mountpoint [bluewavenet]
+.IP \(bu 2
+Add \- example custom images and custom html [bluewavenet]
+.IP \(bu 2
+Add \- Set default gateway interface br\-lan [bluewavenet]
+.IP \(bu 2
+Add \- libopennds, set wget timeout [bluewavenet]
+.IP \(bu 2
+Add \- allow disabling of gatewayfqdn [bluewavenet]
+.IP \(bu 2
+Add \- packet rate limiting for upload/download rate quotas [bluewavenet]
+.IP \(bu 2
+Add \- get custom resources from Github branch [bluewavenet]
+.IP \(bu 2
+Add \- functions start_mhd() and stop_mhd() [bluewavenet]
+.IP \(bu 2
+Add \- MHD Watchdog \- restart MHD if required [bluewavenet]
+.IP \(bu 2
+Add \- Pause and retry popen on failure [bluewavenet]
+.IP \(bu 2
+Add \- function get_key_from_config() [bluewavenet]
+.IP \(bu 2
+Remove \- deprecated traffic control code [bluewavenet]
+.IP \(bu 2
+Remove \- deprecated binauth scripts [bluewavenet]
+.IP \(bu 2
+Remove \- deprecated legacy splash page support [bluewavenet]
+.IP \(bu 2
+Remove \- deprecated ndsctl clients [bluewavenet]
+.IP \(bu 2
+Remove \- outdated PreAuth scripts [bluewavenet]
+.IP \(bu 2
+Refactor \- Move hid to head of query string [bluewavenet]
+.IP \(bu 2
+Refactor \- Move libopennds to libs
+.IP \(bu 2
+Fix \- ndsctl auth crashed opennds if session duration argument was null [bluewavenet]
+.IP \(bu 2
+Fix \- fas\-aes\-https \- correctly set path for authlist for most server types [bluewavenet]
+.IP \(bu 2
+Fix \- suppress BinAuth syslog notice message [bluewavenet]
+.IP \(bu 2
+Fix \- setting gw_fqdn in hosts file if gw_ip is changed [bluewavenet]
+.IP \(bu 2
+Fix \- add missing comma before trusted list in ndsctl json [bluewavenet] [gueux]
+.IP \(bu 2
+Fix \- Improve Shell detection [bluewavenet]
+.IP \(bu 2
+Fix \- Improve b64decode performance [bluewavenet]
+.IP \(bu 2
+Fix \- ndsctl \-s option [bluewavenet] [gueux]
+.IP \(bu 2
+Fix \- Adjust config defaults to good real world values [bluewavenet]
+.IP \(bu 2
+Fix \- don\(aqt override ndsparamlist in ThemeSpec files [bluewavenet]
+.IP \(bu 2
+Fix \- Check ndsctl lock to prevent calling from Binauth [bluewavenet]
+.IP \(bu 2
+Fix \- Clean up syslog messages at info level (2) [bluewavenet]
+.IP \(bu 2
+Fix \- Debian changelog format to allow package building [bluewavenet]
+.IP \(bu 2
+Fix \- numerous compiler errors and BASH compatibility issues [bluewavenet]
+.IP \(bu 2
+Fix \- ndsctl auth, ensure if session timeout = 0 then use global value [bluewavenet]
+.IP \(bu 2
+Fix \- setting of gatewayport, caused by typo in conf.c [bluewavenet] [Ethan\-Yami]
+.IP \(bu 2
+Fix \- remove unused credential info from log [bluewavenet]
+.IP \(bu 2
+Deprecate \- the legacy opennds.conf file [bluewavenet]
+.UNINDENT
+.UNINDENT
+.UNINDENT
+\(em Rob White <\fI\%dot@blue\-wave.net\fP> Thu, 2 May 2021 17:32:43 +0000
+.UNINDENT
+.UNINDENT
 .sp
 openNDS (8.1.1)
 .INDENT 0.0
@@ -541,21 +680,17 @@ Provide Network Address Translation (NAT) for all outgoing traffic directed to t
 .SS Installing on OpenWrt
 .INDENT 0.0
 .IP \(bu 2
-Have a router working with OpenWrt. At the time of writing, openNDS has been tested with OpenWrt 18.06.x, 19.7.x and Snapshot.
+Have a router working with OpenWrt. At the time of writing, openNDS has been tested with OpenWrt 18.06.x, 19.7.x 21.2.x and Snapshot.
 .IP \(bu 2
-OpenWrt version 19.07.x or less requires openNDS v5.2.0 or less.
+OpenWrt version 19.07.x or less requires theoogle.com updated libmicrohttpd\-no\-ssl_0.9.71\-1 package (or higher version) from Openwrt 21.2.x or higher.
 .IP \(bu 2
-OpenWrt Snapshot or versions higher than 19.07.x require openNDS v6.0.0 or higher.
+openNDS may or may not work on older versions of OpenWrt.
 .IP \(bu 2
-Note: To run openNDS v6.0.0 or higher on OpenWrt 19.07.x or lower you must upgrade/install libmicrohttpd to v0.9.71 or higher first.
-.IP \(bu 2
-openNDS may or may not work on older versions of OpenWrt or on other kinds of Linux\-based router firmware.
-.IP \(bu 2
-Make sure your router is basically working before you try to install  openNDS. In particular, make sure your DHCP daemon is serving addresses on the interface that openNDS will manage.
+Make sure your router is working correctly before you try to install  openNDS. In particular, make sure your DHCP daemon is serving addresses on the interface that openNDS will manage.
 .sp
 The default interface is br\-lan but can be changed to any LAN interface by editing the /etc/config/opennds file.
 .IP \(bu 2
-To install openNDS, you may use the OpenWrt Luci web interface or alternatively, ssh to your router and run the command:
+To install openNDS on 21.3.x or higher, you may use the OpenWrt Luci web interface or alternatively, ssh to your router and run the command:
 .INDENT 2.0
 .INDENT 3.5
 \fBopkg update\fP
@@ -567,6 +702,18 @@ followed by
 .INDENT 3.5
 \fBopkg install opennds\fP
 .UNINDENT
+.UNINDENT
+.IP \(bu 2
+.INDENT 2.0
+.TP
+.B To install on 19.7.x or lower, download libmicrohttpd\-no\-ssl_0.9.71\-1 or higher to the /tmp directory on your router. Then install using the command:
+\fBopkg install <packagename> \-\-force\-reinstall\fP
+.UNINDENT
+.IP \(bu 2
+.INDENT 2.0
+.TP
+.B Similarly, download openNDS v9.0.0 or higher to /tmp, again installing using the command:
+\fBopkg install <packagename> \-\-force\-reinstall\fP
 .UNINDENT
 .IP \(bu 2
 openNDS is enabled by default and will start automatically on reboot or can be started and stopped manually.
@@ -593,7 +740,7 @@ See the Authentication section for details of setting up a proper authentication
 .sp
 If your client device does not display the splash page it most likely does not support CPD.
 .sp
-You should then manually trigger openNDS by trying to access a port 80 web site (for example, google.com:80 is a good choice).
+You should then manually trigger openNDS by trying to access a port 80 web site (for example, \fI\%http://gnome.org\fP is a good choice).
 .UNINDENT
 .UNINDENT
 .INDENT 0.0
@@ -614,27 +761,7 @@ To uninstall openNDS:
 .UNINDENT
 .SS Generic Linux
 .sp
-openNDS can be compiled for most distributions of Linux
-.sp
-openNDS \fBrequires the libmicrohttpd (MHD) library\fP\&. The version must be greater than 0.9.51 but no higher than 0.9.70 for openNDS v5.2.0.
-openNDS v6.0.0 or higher requires libmicrohttpd 0.9.71 or higher.
-.sp
-If your distribution of Linux has a package of version less then 0.9.69, you can set the openNDS config option \fIuse_outdated_mhd\fP to 1. This will force openNDS to use it.
-.INDENT 0.0
-.INDENT 3.5
-Older versions of MHD convert & and + characters to spaces when present in form data.
-.sp
-This can make a PreAuth or BinAuth impossible to use for a client if form data contains either of these characters eg. in username or password.
-.sp
-MHD versions earlier than 0.9.69 are detected.
-.sp
-If the option \fIuse_outdated_mhd\fP is set to 0 (default), NDS will terminate if MHD is earlier than 0.9.69
-.sp
-If this option is set to 1, NDS will start but log an error.
-.UNINDENT
-.UNINDENT
-.sp
-You can also compile libmicrohttpd yourself to get the latest version.
+openNDS and libmicrohttps\-ssl can be compiled in place for most distributions of Linux.
 .sp
 To compile libmicrohttpd and openNDS, see the chapter "How to Compile and install openNDS".
 .SH HOW OPENNDS (NDS) WORKS
@@ -678,38 +805,36 @@ As soon as this initial port 80 request is received on the default gateway inter
 .SS The Thing That Provides the Portal (FAS or PreAuth)
 .INDENT 0.0
 .INDENT 3.5
-The client browser is redirected to the Portal component. This is a web service that is configured to know how to communicate with the core engine of NDS.
+The client browser is redirected to the Portal component. This is a web service that is configured to know how to communicate with the core engine of openNDS.
 .sp
-This is commonly known as the Splash Page.
+This is commonly known as the Splash Page, or more correctly, the entry point to the portal splash page sequence.
 .sp
-NDS has its own web server built in and this can be used to serve the Portal "Splash" pages to the client browser, or a separate web server can be used.
+openNDS has its own web server built in and this can be used to serve the Portal "Splash" pages to the client browser, or a separate web server can be used.
 .sp
-openNDS comes with two standard Splash Page options pre\-installed.
+openNDS comes with numerous standard Splash Page Sequence options pre\-installed.
 .sp
-One provides a trivial Click to Continue splash page and the other provides a Client User form requiring Name and Email address to be entered.
+One provides a trivial Click to Continue splash page and another provides a Client User form requiring Name and Email address to be entered.
 .sp
-Both of these can be customised or a complete specialised Portal can be written by the installer (See FAS, PreAuth).
+All of these can be customised or a complete specialised Portal can be written by the installer (See FAS, PreAuth).
 .sp
-FAS, or Forward Authentication Service may use the web server embedded in NDS, a separate web server installed on the NDS router, a web server residing on the local network or an Internet hosted web server.
+FAS, or Forward Authentication Service may use the web server embedded in openNDS, a separate web server installed on the NDS router, a web server residing on the local network or an Internet hosted web server.
 .sp
 The user of the client device will always be expected to complete some actions on the splash page.
 .sp
 Once the user on the client device has successfully completed the splash page actions, that page then links directly back to NDS.
 .sp
-For security, NDS expects to receive the same valid token it allocated when the client issued its initial port 80 request. If the token received is valid, NDS then "authenticates" the client device, allowing access to the Internet.
+For security, NDS expects to receive the same valid token it allocated when the client issued its initial port 80 request. If the token received is valid, NDS then "authenticates" the client device, allowing access to the Internet. openNDS uses various methods to encrypt this token, ensuring verification cannot be bypassed.
 .sp
-Post authentication processing extensions may be added to NDS (See BinAuth). Once NDS has received a valid token it calls a BinAuth script.
+Post authentication processing extensions may be added to openNDS (See BinAuth). Once openNDS has received a valid token it calls a BinAuth script if enabled.
 .sp
 If the BinAuth script returns positively (ie return code 0), NDS then "authenticates" the client device, allowing access to the Internet.
-.sp
-Where FAS is used, secure modes are provided (levels 1, 2 and 3), where the client token and other required variables are kept securely hidden from the Client, ensuring verification cannot be bypassed.
 .UNINDENT
 .UNINDENT
 .sp
 \fBNOTE:\fP
 .INDENT 0.0
 .INDENT 3.5
-FAS and Binauth can be enabled together. This can give great flexibility, with FAS providing remote verification and Binauth providing local post authentication processing closely linked to  NDS.
+FAS and Binauth can be enabled together. This can give great flexibility, with FAS providing remote verification and Binauth providing local post authentication processing closely linked to openNDS.
 .UNINDENT
 .UNINDENT
 .SS Captive Portal Detection (CPD)
@@ -824,15 +949,15 @@ The global values can be overridden on a client by client basis as required.
 .SS Traffic Shaping
 .sp
 openNDS (NDS) supports Traffic Shaping (Bandwidth Limiting) using the SQM \- Smart Queue Management (sqm\-scripts) package, available for OpenWrt and generic Linux.
-.SH THE SPLASH PAGE
+.SH THE SPLASH PAGE SEQUENCE
 .sp
 As you will see mentioned in the "How openNDS (NDS) Works" section, an initial port 80 request is generated on a client device, either by the user manually browsing to an http web page, or, more usually, automatically by the client device\(aqs built in Captive Portal Detection (CPD).
 .sp
-This request is intercepted by NDS and an html Splash Page is served to the user of the client device to enable them to authenticate and be granted Internet access.
+This request is intercepted by NDS and an html Splash Page Sequence is served to the user of the client device to enable them to authenticate and be granted Internet access.
 .SS Types of Splash Page
 .sp
 This Splash page can be one of the following:
-.SS A Dynamic Web Page served by the built in openNDS web server
+.SS A Dynamic Web Page served by the built in openNDS web server (PreAuth)
 .INDENT 0.0
 .INDENT 3.5
 A script or executable file is called by openNDS. This script or executable will generate html code for the openNDS web server.
@@ -864,20 +989,17 @@ In many instances, one or other of these simple methods will be all that is requ
 .UNINDENT
 .SS The Legacy splash.html Static Web Page
 .sp
-The legacy static splash.html page is now deprecated and disabled. It will be removed in later releases.
-It can be re\-enabled in this release allowing time for migration to the new openNDS API. This is achieved by setting the allow_legacy_splash option in the config file.
+The legacy static splash.html page has been deprecated for some time and in openNDS v 9.0.0 support has been removed.
 .SS Displaying Remote Content
-.SS openNDS provides a simple means of displaying remote content
+.SS openNDS supports the download on demand of remote content
 .INDENT 0.0
 .INDENT 3.5
 openNDS can display content from third party web hosting, on the client user login screen.
 .sp
-This is ideal for serving information, banner advertising etc. when the openNDS device has very limited resources.
-.sp
-An example is described in the \fBDisplaying Remote Banner Images\fP section of the PreAuth chapter.
+This is ideal for serving information, banner advertising etc. and is configured simply by adding a custom_image or custom_file configuration option.
 .UNINDENT
 .UNINDENT
-.SS openNDS has built in Walled Garden support
+.SS Walled Garden support
 .INDENT 0.0
 .INDENT 3.5
 Sophisticated remote content can be served, with access controlled by the openNDS Walled Garden. Simple configuration options can enable such things as a Paypal payment system or access to Facebook resources.
@@ -885,7 +1007,7 @@ Sophisticated remote content can be served, with access controlled by the openND
 For details see the Walled Garden Section.
 .UNINDENT
 .UNINDENT
-.SH THE CLIENT STATUS PAGE
+.SH THE ERROR511/CLIENT STATUS PAGE
 .sp
 From version 8.0.0 onwards, openNDS has a Client Status Page.
 .sp
@@ -893,41 +1015,168 @@ This page is accessible by any connected client by accessing the default url:
 .sp
 \fI\%http://status.client\fP
 .sp
-If the client has been authenticated in the normal way by the client CPD process, a page displaying the Gatewayname and the Network Zone the client device is currently using. A list of allowed quotas and current usage is displayed along with "Refresh" and "Logout" buttons.
+If the client has been authenticated in the normal way by the client CPD process, a page is served displaying the Gatewayname and the Network Zone the client device is currently using.
 .sp
-If the client has not been authenticated, or has been deauthenticated due to timeout or quota usage, then a "Network Authentication Required" page is displayed with "Refresh" and "Portal Login"
+A list of allowed quotas and current usage is displayed along with "Refresh" and "Logout" buttons.
+.sp
+If the client has not been authenticated, or has been deauthenticated due to timeout or quota usage, then a "\fIError 511 Network Authentication Required\fP" page is displayed with "Refresh" and "Portal Login" buttons.
 .sp
 The "Portal Login" button allows the client to immediately attempt to login without waiting for the client CPD to trigger.
 .sp
-The URL used to access this page can be changed by setting the config option gatewayfqdn
+The URL used to access this page can be changed by setting the config option gatewayfqdn.
 .sp
 For best results it is recommended that gatewayfqdn is set to two words separated by a single period eg in OpenWrt:
 .INDENT 0.0
 .INDENT 3.5
-\fIoption gatewayfqdn \(aqmy.status\(aq\fP
+.INDENT 0.0
+.INDENT 3.5
+\fBoption gatewayfqdn \(aqmy.status\(aq\fP
 .UNINDENT
 .UNINDENT
-.SH CUSTOM PARAMETERS
+.sp
+\fBWarning\fP \- if set, services on port 80 of the gateway will no longer be accessible (eg Luci AdminUI)
+.sp
+By default, the Error511/Status page will be found at \fBhttp://status.client/\fP by a redirection of port 80 to \fBhttp://gatewayaddress:gatewayport/\fP
+.sp
+\fB*Disable GatewayFQDN*\fP by setting the option to \(aqdisable\(aq
+ie:
+.sp
+\fBoption gatewayfqdn \(aqdisable\(aq\fP
+.UNINDENT
+.UNINDENT
+.sp
+An alternate Useful Example:
+.sp
+\fBoption gatewayfqdn \(aqlogin.page\(aq\fP
+.SH CUSTOM PARAMETERS, VARIABLES, IMAGES AND FILES
 .sp
 Custom Parameters were first introduced in openNDS version 7.
+With version 9.0.0, custom variables, images and files have been added.
+.SS Custom parameters
 .sp
 Custom parameters are defined in the config file and are sent as fixed values to FAS in the encoded/encrypted query string where they can be parsed and used by the FAS.
 .sp
 This is particularly useful in a remote or centralised FAS that is serving numerous instances of openNDS at different locations/venues.
 .INDENT 0.0
 .IP \(bu 2
-Custom Parameters are listed in configuration file in the form of "param_name=param_value"
+Any number of Custom Parameters can be listed in the configuration file, but each one must be in a separate entry in the form of "param_name=param_value"
 .IP \(bu 2
-param_name and param_value must be htmlentity encoded if containing white space or single quotes.
+param_name and param_value must be urlencoded if containing white space or single quotes.
 .UNINDENT
 .sp
 For example in the OpenWrt UCI config file:
 .sp
-\fBlist fas_custom_parameters_list \(aq<param_name1=param_value1> <param_name2=param_value2> [.....] <param_nameN=param_valueN>\(aq\fP
+\fBlist fas_custom_parameters_list \(aq<param_name1=param_value1>\(aq\fP
+.sp
+\fBlist fas_custom_parameters_list \(aq<param_name2=param_value2>\(aq\fP
+.sp
+etc.
 .sp
 A real example might be:
 .sp
-\fBlist fas_custom_parameters_list \(aqlocation=main_building admin_email=norman@bates\-motel.com>\(aq\fP
+\fBlist fas_custom_parameters_list \(aqlocation=main_building\(aq\fP
+.sp
+\fBlist fas_custom_parameters_list \(aqadmin_email=norman@bates\-motel.com>\(aq\fP
+.sp
+For a small text strings with spaces, replace each space with %20
+.INDENT 0.0
+.INDENT 3.5
+The following Working Example applies to the installed ThemeSpec scripts:
+.INDENT 0.0
+.INDENT 3.5
+theme_click\-to\-continue\-custom\-placeholders
+.sp
+and
+.sp
+theme_user\-email\-login\-custom\-placeholders
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+\fBlist fas_custom_parameters_list \(aqlogo_message=openNDS:%20Perfect%20on%20OpenWrt!\(aq\fP
+.sp
+\fBlist fas_custom_parameters_list \(aqbanner1_message=BlueWave%20\-%20Wireless%20Network%20Specialists\(aq\fP
+.sp
+\fBlist fas_custom_parameters_list \(aqbanner2_message=HMS%20Pickle\(aq\fP
+.sp
+\fBlist fas_custom_parameters_list \(aqbanner3_message=SeaWolf%20Cruiser%20Racer\(aq\fP
+.SS Custom Variables
+.sp
+Custom variables are defined in the config file and are sent as fixed placeholders to FAS in the encoded/encrypted query string where they can be parsed and used by the FAS, generally for user input via html forms added by the installer to suit the requirements of the venue.
+.SS Custom Dynamically Generated Form Fields
+.INDENT 0.0
+.INDENT 3.5
+Custom Dynamically Generated Form Fields are a special case of Custom Variables.
+.sp
+ThemeSpec scripts can dynamically generate Form Field html and inject this into the dynamic splash page sequence.
+.sp
+This is achieved using a SINGLE line containing the keyword "input", in the form: fieldname:field\-description:fieldtype
+.sp
+Numerous fields can be defined in this single "input=" line, separated by a semicolon (;).
+.sp
+The following Working Example applies to the installed ThemeSpec scripts:
+.INDENT 0.0
+.INDENT 3.5
+theme_click\-to\-continue\-custom\-placeholders
+.sp
+and
+.sp
+theme_user\-email\-login\-custom\-placeholders
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+\fBlist fas_custom_variables_list \(aqinput=phone:Phone%20Number:text;postcode:Home%20Post%20Code:text\(aq\fP
+.SS Custom Images
+.sp
+Custom images are defined in the config file and are sent as fixed name/URL pairs to FAS in the encoded/encrypted query string where they can be parsed and used by the FAS, and added by the installer to suit the requirements of the venue.
+.INDENT 0.0
+.INDENT 3.5
+The following Working Example applies to the installed ThemeSpec scripts:
+.INDENT 0.0
+.INDENT 3.5
+theme_click\-to\-continue\-custom\-placeholders
+.sp
+and
+.sp
+theme_user\-email\-login\-custom\-placeholders
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+\fBNote:\fP These pre\-installed ThemeSpec script files will automatically download remote images to volatile storage on the router.
+.sp
+\fBlist fas_custom_images_list \(aqlogo_png=https://openwrt.org/_media/logo.png\(aq\fP
+.sp
+\fBlist fas_custom_images_list \(aqbanner1_jpg=https://raw.githubusercontent.com/openNDS/openNDS/9.0.0/resources/bannerbw.jpg\(aq\fP
+.sp
+\fBlist fas_custom_images_list \(aqbanner2_jpg=https://raw.githubusercontent.com/openNDS/openNDS/9.0.0/resources/bannerpickle.jpg\(aq\fP
+.sp
+\fBlist fas_custom_images_list \(aqbanner3_jpg=https://raw.githubusercontent.com/openNDS/openNDS/9.0.0/resources/bannerseawolf.jpg\(aq\fP
+.SS Custom Files
+.sp
+Custom files are defined in the config file and are sent as fixed name/URL pairs to FAS in the encoded/encrypted query string where they can be parsed and used by the FAS, and added by the installer to suit the requirements of the venue. (in the same way as custom images)
+.INDENT 0.0
+.INDENT 3.5
+The following Working Example applies to the installed ThemeSpec scripts:
+.INDENT 0.0
+.INDENT 3.5
+theme_click\-to\-continue\-custom\-placeholders
+.sp
+and
+.sp
+theme_user\-email\-login\-custom\-placeholders
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+\fBNote:\fP These pre\-installed ThemeSpec script files will automatically download remote files to volatile storage on the router.
+.sp
+\fBlist fas_custom_files_list \(aqadvert1_htm=https://raw.githubusercontent.com/openNDS/openNDS/9.0.0/resources/bannerpickle.htm\(aq\fP
 .SH FORWARDING AUTHENTICATION SERVICE (FAS)
 .SS Overview
 .sp
@@ -1265,6 +1514,14 @@ fasremotefqdn = the \fBFully Qualified Domain name\fP of the remote server
 .UNINDENT
 .UNINDENT
 .UNINDENT
+.SS Using a CDN (Content Delivery Network) Hosted Server for a Remote FAS
+.INDENT 0.0
+.INDENT 3.5
+This is essentially the same as using a Shared Hosting Server with the additional requirement of \fIalso\fP adding fasremotefqdn to the Walled Garden configuration.
+.sp
+The setting for fasremoteip should be one of the valid IPv4 addresses of your CDN service.
+.UNINDENT
+.UNINDENT
 .SS Using the FAS Example Scripts (fas\-hid, fas\-aes.php and fas\-aes\-https.php)
 .sp
 These three, fully functional, example FAS scripts are included in the package install and can be found in the /etc/opennds folder. To function, they need to be copied to the web root or a folder in the web root of your FAS http/php server.
@@ -1428,29 +1685,219 @@ Restart NDS using the command \fBservice opennds restart\fP
 .SS Changing faskey
 .sp
 The value of option faskey should of course be changed, but must also be pre\-shared with FAS by editing the example or your own script to match the new value.
+.SH THEMESPEC SCRIPT FILES
+.SS Overview
+.sp
+ThemeSpec Script files are an evolution of the original PreAuth/Login\-Option scripts that were introduced to provide dynamic splash page sequences without requiring a separate web server or additional dependencies.
+.sp
+From openNDS version 9 onwards, the old login.sh script file is replaced by a new library script that provides resources for openNDS to use along with a standardised method for including themed specification files that generate the required html for the specified theme and functionality required for the venue.
+.SS Pre\-installed ThemeSpec script files
+.sp
+Two default and pre\-installed ThemeSpec script files are included. These provide the equivalent of the pre version 9 "Click to Continue" and "Username/Email" Login splash pages.
+.sp
+These options are selected in the same way as was the case in version 8, using:
+.sp
+\fBoption login_option_enabled \(aq1\(aq\fP (for click to continue)
+.sp
+and
+.sp
+\fBoption login_option_enabled \(aq2\(aq\fP (for username/email login)
+.sp
+Mode 1 selects the script file theme_click\-to\-continue.sh for inclusion.
+.sp
+Mode 2 selects the script file theme_user\-email\-login.sh for inclusion.
+.SS libopennds.sh
+.sp
+This utility controls many of the functions required for PreAuth/ThemeSpec scripts.
+.sp
+\fBWarning\fP: This file will not normally be modified for customisation of the splash page sequence. \fIDo not edit unless you know what you are doing!\fP
+.sp
+Customisation should be carried out in a related Themespec file.
+.INDENT 0.0
+.INDENT 3.5
+Usage: libopennds arg1 arg2 ... argN
+.INDENT 0.0
+.INDENT 3.5
+\fBarg1\fP: "clean", removes custom files, images and client data
+.sp
+\fIreturns\fP: tmpfsmountpoint (the mountpoint of the tmpfs volatile storage of the router.
+.sp
+\fBarg1\fP: "tmpfs", finds the tmpfs mountpoint
+.sp
+\fIreturns\fP: tmpfsmountpoint (the mountpoint of the tmpfs volatile storage of the router.
+.sp
+\fBarg1\fP: "mhdcheck", checks if MHD is running (used by MHD watchdog)
+\fIreturns\fP: "1" if MHD is running, "2" if MHD is not running
+.sp
+\fBarg1\fP: "?fas=<b64string>", generates ThemeSpec html using b64encoded data sent from openNDS
+.INDENT 0.0
+.INDENT 3.5
+\fBarg2\fP: urlencoded_useragent_string
+.sp
+\fBarg3\fP: mode (1, 2 or 3) (this is the mode specified in option login_option in the config file.
+.sp
+\fBarg4\fP: themespecpath (if mode = 3. Will be supplied by the call from openNDS)
+.UNINDENT
+.UNINDENT
+.sp
+\fIreturns\fP: html for the specified ThemeSpec.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS ThemeSpec Templates
+.sp
+Two additional example Themespec script files are provided. These make full use of custom parameters, custom variables, custom images and custom files to define custom placeholders.
+.INDENT 0.0
+.TP
+.B These are:
+.INDENT 7.0
+.IP 1. 3
+theme_click\-to\-continue\-custom\-placeholders.sh
+.IP 2. 3
+theme_user\-email\-login\-custom\-placeholders.sh
+.UNINDENT
+.UNINDENT
+.sp
+The first gives a click to continue login, but with the custom placeholders in place.
+.sp
+The second gives the user email login with custom placeholders.
+.sp
+These two are very similar with a login form added to the second.
+.sp
+The second file will be used here as an example template.
+.SS Template: theme_user\-email\-login\-custom\-placeholders.sh
+.sp
+The default openNDS config file contains the custom options ready to uncomment.
+.sp
+These options are as follows:
+.sp
+\fBlist fas_custom_parameters_list \(aqlogo_message=openNDS:%20Perfect%20on%20OpenWrt!\(aq\fP
+.sp
+\fBlist fas_custom_parameters_list \(aqbanner1_message=BlueWave%20\-%20Wireless%20Network%20Specialists\(aq\fP
+.sp
+\fBlist fas_custom_parameters_list \(aqbanner2_message=HMS%20Pickle\(aq\fP
+.sp
+\fBlist fas_custom_parameters_list \(aqbanner3_message=SeaWolf%20Cruiser%20Racer\(aq\fP
+.sp
+\fBlist fas_custom_variables_list \(aqinput=phone:Phone%20Number:text;postcode:Home%20Post%20Code:text\(aq\fP
+.sp
+\fBlist fas_custom_images_list \(aqlogo_png=https://openwrt.org/_media/logo.png\(aq\fP
+.sp
+\fBlist fas_custom_images_list \(aqbanner1_jpg=https://raw.githubusercontent.com/openNDS/openNDS/9.0.0/resources/bannerbw.jpg\(aq\fP
+.sp
+\fBlist fas_custom_images_list \(aqbanner2_jpg=https://raw.githubusercontent.com/openNDS/openNDS/9.0.0/resources/bannerpickle.jpg\(aq\fP
+.sp
+\fBlist fas_custom_images_list \(aqbanner3_jpg=https://raw.githubusercontent.com/openNDS/openNDS/9.0.0/resources/bannerseawolf.jpg\(aq\fP
+.sp
+\fBlist fas_custom_files_list \(aqadvert1_htm=https://raw.githubusercontent.com/openNDS/openNDS/9.0.0/resources/bannerpickle.htm\(aq\fP
+.sp
+As can be seen, these are of the form: \fBplaceholder=value\fP
+.SS Custom Parameters
+.sp
+In this case the custom parameters each define a short text string.
+These strings will be used as titles for custom images.
+.SS Custom Images
+.sp
+The custom images define remote image files with the URL for download. The images will be downloaded and saved in the tmpfs volatile storage of the router. The themespec script will add the images and the custom parameters (as titles) to the output html served to the client.
+.SS Custom Files
+.sp
+A single custom file is defined. This is a remote html file that is downloaded in the same way as custom images are. This downloaded file is included in the html at the relevant placeholder location in the html served to the client.
+.SS Custom Variables
+.sp
+A single custom variable is defined. Instead of a single placeholder, in this case, the variable definition has the keyword "input=".
+.sp
+The value of this variable is used by the themespec script to inject a list of html form input fields, the location in the output html determined by placeholders.
+.sp
+In this case the custom variable value is:
+.sp
+\fBphone:Phone%20Number:text;postcode:Home%20Post%20Code:text\fP
+.sp
+This is a list of semi\-colon separated fields.
+.sp
+Each field is a colon separated field specification in the form of name:title:type.
+.sp
+In this example we have two input fields:
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+name=phone, title=Phone%20Number, and input type=text
+.IP \(bu 2
+name=postcode, title=Home%20Post%20Code
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+The resulting html served to the client will have two additional input fields on the login page ie. phone number and post code.
+.sp
+\fBNote\fP: Spaces must be url encoded ie replaced with %20, to prevent parsing issues.
+.SS Serving the Splash Page Sequence
+.sp
+When a client connects, openNDS calls the libopennds.sh library script passing a request for client verification along with information about the client device. This information is b64encoded into a single argument.
+.sp
+This argument is identified by the initial character string "?fas="
+.sp
+The libopennds library then decodes the string and parses for data required for verification and logging.
+.sp
+The libopennds library then calls the themespec file configured in the openNDS config.
+.sp
+For this example theme_user\-email\-login\-custom\-placeholders is called:
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+The themespec script sets Quotas and Data Rates that may be required for this theme, overriding global values. These new values, if set, can be set again later in this script on a client by client basis if required. In this case we will set them to "0" (zero), meaning the global values will take effect.
+.IP \(bu 2
+The themespec script then configures itself for any custom requirements such as parameters, images, files and form inputs.
+.IP \(bu 2
+Control is then passed back to libopennds
+.IP \(bu 2
+libopennds then calls download_image_files() if required by themespec. Files are not downloaded if already present.
+.IP \(bu 2
+libopennds then calls download_data_files() if required by themespec. Files are not downloaded if already present.
+.IP \(bu 2
+libopennds then sends the html page header to openNDS to be served to the client.
+.IP \(bu 2
+libopennds checks if "Terms of Service" has been clicked and if it has, calls display_terms().
+.IP \(bu 2
+libopennds checks if the landing page has been requested and if it has, calls landing_page().
+.IP \(bu 2
+libopennds calls generate_splash_sequence() in the themespec script.
+.IP \(bu 2
+themespec checks if this is the initial redirect of the client. If is is, the first page of the splash page sequence is then served ie the "login page".
+.IP \(bu 2
+themespec serves the second page of the splash sequence (thankyou page) once the login page is completed by the client.
+.IP \(bu 2
+themespec returns to libopennds with a request for authentication once the "thankyou page" is accepted by the client.
+.IP \(bu 2
+libopennds calls landing_page() \- the landing page defined in themespec is served to the client.
+.IP \(bu 2
+libopennds finally calls openNDS to authenticate the client, passing on any quotas specific to the theme or client.
+.UNINDENT
+.UNINDENT
+.UNINDENT
 .SH PREAUTH OPTION
 .SS Overview
 .sp
 \fBPreAuth\fP is an implementation of FAS \fIwithout the resource utilisation of a separate web server\fP, particularly useful for legacy devices with limited flash and RAM capacity.
 .sp
-\fBPreAuth\fP is a pre\-authentication process that enables NDS to directly serve dynamic web content generated by a script or executable program.
+\fBPreAuth\fP is a pre\-authentication process that enables NDS to directly serve dynamic web content generated by a script or executable program, using its own built in Web server.
 .sp
 \fBNOTE:\fP
 .INDENT 0.0
 .INDENT 3.5
-A PreAuth login script is pre\-installed. From version 7.0.0 onwards, this generates by default a simple "Click to Continue" page, or by setting config option login_option_enabled to "1" it generates a username/email address dialogue. No other configuration is necessary.
+The Pre\-Installed Basic Splash Pages are pre\-installed PreAuth scripts with special configuration options to enable them.
 .UNINDENT
 .UNINDENT
 .sp
-\fBA custom PreAuth can be enabled\fP by configuring NDS FAS to point to a virtual URL in the NDS web root instead of an independent FAS server. The location of the PreAuth script or program is provided in the config file.
+\fBA custom PreAuth script can be enabled\fP by configuring openNDS FAS to point to a virtual URL in the openNDS webserver root instead of an independent FAS server. The location of the PreAuth script or program is configured in the config file.
 .sp
 \fBThe PreAuth script\fP can be a shell script or any other script type that an interpreter is available for (for example, PHP\-cli, Python etc.).
 .sp
-The default script is a shell script can be found at at /usr/lib/opennds/login.sh
+It can even be a compiled executable binary program if desired, for example, a compiled program written in C or any other language that has a compiler available for the platform.
 .sp
-A PreAuth program could be, for example, a compiled program written in C or any other language that has a compiler available for the platform.
-.sp
-The PreAuth script or program will parse the url encoded command line (query string) passed to it and output html depending on the contents of the query string it receives from NDS. In turn, NDS will serve this html to the client device that is attempting to access the Internet.
+The PreAuth script or program will parse the url encoded command line (query string) passed to it and output html depending on the contents of the query string it receives from openNDS. In turn, openNDS will serve this html to the client device that is attempting to access the Internet.
 .SS Configuring a Custom PreAuth
 .sp
 A custom PreAuth is set up using the standard NDS configuration for FAS
@@ -1478,232 +1925,44 @@ The remaining FAS configuration options must be left unset at the default values
 .IP 1. 3
 \fBfasremoteip\fP\&. Not set (defaults to the gateway ip address).
 .IP 2. 3
+\fBfasremotefqdn\fP\&. Not set.
+.IP 3. 3
 \fBfas_secure_enable\fP\&. Not set (defaults to enabled).
 .UNINDENT
 .UNINDENT
 .SS What Does the Default PreAuth Login Script Do?
 .sp
-\fBThe Default PreAuth Login is a shell script\fP
-.sp
-It is located at /usr/lib/opennds/login.sh.
-.sp
-It generates html output for openNDS to serve as a dynamic splash page.
-.SS Login Mode
-.sp
-The default script has two modes of operation set by the value of the login_option_enabled config option.
-.sp
-The default mode is "login_option_enabled" set to "0". In this mode the initial page served to clients is a simple "Click to Continue" page.
-.sp
-If "login_option_enabled" is set to "1"  asks the client user to enter their name and email address. On entering this information the client user then clicks or taps "Continue".
-.sp
-In both cases, the script then generates a second page for openNDS to serve a  "Thankyou" page. It then adds a log entry ( /tmp/ndslog.log ), recording the client authentication details.
-.sp
-On tapping "Continue" for the second time, the client user is given access to the Internet.
-.SS Customising the default login script
-.sp
-\fBStatic Mode Switching\fP
-.sp
-The login mode provided by the "login_option_enabled" option can be any integer value and is passed to the login script. This is used in the default login.sh to determine which type of "splash page" to serve, in the standard case either "Continue" or "Username/Email"
-.sp
-Additional modes could be added to the login.sh script to determine custom modes of operation.
-.sp
-\fBDynamic Response\fP
-.sp
-The script could modified to ask for any response from the client and conduct its own authentication procedures \- entirely at the discretion of the person setting up their own captive portal functionality. Looking at the details of the default login.sh will show how this is done.
-.sp
-An example file "multifieldlogin.sh" is provided in the source code:
-.sp
-\fIhttps://github.com/opennds/opennds/archive/master.zip\fP
-.sp
-and extracting from the folder:
-.INDENT 0.0
-.INDENT 3.5
-"forward_authentication_service/PreAuth/"
-.UNINDENT
-.UNINDENT
-.SS PreAuth with Remote Images
-.sp
-An additional example PreAuth script, login\-remote\-image.sh, is available in the source code:
-.INDENT 0.0
-.INDENT 3.5
-\fIhttps://github.com/opennds/opennds/archive/master.zip\fP
-.UNINDENT
-.UNINDENT
-.sp
-and extracting from the folder:
-.INDENT 0.0
-.INDENT 3.5
-"forward_authentication_service/PreAuth/"
-.UNINDENT
-.UNINDENT
-.sp
-This is based on an earlier version of the preinstalled login.sh, giving an example of how to display images pulled in from remote web servers, both http and https.
-.sp
-The example displays the openNDS avatar image dynamically retrieved from Github.
-.SS Example of Multi Field Login
-.sp
-An additional example PreAuth script, multifieldlogin.sh, is available in the source code:
-.INDENT 0.0
-.INDENT 3.5
-\fIhttps://github.com/opennds/opennds/archive/master.zip\fP
-.UNINDENT
-.UNINDENT
-.sp
-and extracting from the folder:
-.INDENT 0.0
-.INDENT 3.5
-"forward_authentication_service/PreAuth/"
-.UNINDENT
-.UNINDENT
-.sp
-This is based on an earlier version of the preinstalled login.sh, giving an example of how to add multiple fields of information to be requested from the client.
-.INDENT 0.0
-.TP
-.B The example displays a login form requesting the client to enter:
-.INDENT 7.0
-.IP \(bu 2
-Username
-.IP \(bu 2
-Phone
-.IP \(bu 2
-Address
-.IP \(bu 2
-Access Code
-.UNINDENT
-.UNINDENT
+It generates html output for openNDS to serve as a dynamic series of splash pages.
+The html it outputs can dynamically change according to the inputs received from a client in the html forms it generates.
 .SS Writing A PreAuth Script
 .sp
 A Preauth script can be written as a shell script or any other language that the system has an interpreter for. It could also be a complied program.
 .sp
-openNDS calls the PreAuth script with a command line equivalent to an html query string but with ", " (comma space) in place of "&" (ampersand).
+openNDS calls the PreAuth script with a b64 encoded argument containing the equivalent of an html query string but with ", " (comma space) in place of "&" (ampersand).
 .sp
-Full details are included in the default script login.sh.
-.SS Defining and Using Variables
+Full details of programming a custom PreAuth script can be found by reading and following the logig flow in the libopennds script and accompanying ThemeSpec files.
+.SS Custom Parameters, Variables, Images and Files
 .sp
-A Dynamic set of variables can be defined in the PreAuth dialogue and used for authentication verification purposes and/or logging.
-.sp
-\fBThis is not the same as\fP, and must not be confused with, Custom Parameters. Custom parameters are statically defined by the openNDS configuration and can be read directly by the PreAuth script if required.
-.sp
-In the login.sh script we want to ask the client user for their username and email address.
-.sp
-We could ask for anything we like and add our own variables to the html forms we generate.
-.sp
-If we want to show a sequence of forms or information pages we can do this easily.
-.sp
-To return to the script and show additional pages, the form action must be set to:
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.nf
-.ft C
-<form action=\e"/opennds_preauth/\e" method=\e"get\e">
-.ft P
-.fi
-.UNINDENT
-.UNINDENT
-.sp
-Note: In a shell script, quotes ( " ) must be escaped with the
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.nf
-.ft C
-"\e"
-.ft P
-.fi
-.UNINDENT
-.UNINDENT
-.sp
-character.
-.sp
-Any variables we need to preserve and pass back to ourselves or NDS must be added to the form as hidden:
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.nf
-.ft C
-<input type=\e"hidden\e" name=......
-.ft P
-.fi
-.UNINDENT
-.UNINDENT
-.sp
-Such variables will appear in the query string when NDS re\-calls this script.
-.sp
-We can then parse for them again.
-.sp
-When the logic of this script decides we should allow the client to access the Internet we inform NDS with a final page displaying a continue button with the form action set to:
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.nf
-.ft C
-"<form action=\e"/opennds_auth/\e" method=\e"get\e">"
-.ft P
-.fi
-.UNINDENT
-.UNINDENT
-.sp
-We must also send NDS the client token as a hidden variable, but first we must obtain the token from ndsctl using a suitable command such as:
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.nf
-.ft C
-tok="$(ndsctl json $clientip | grep token | cut \-c 10\- | cut \-c \-8)"
-.ft P
-.fi
-.UNINDENT
-.UNINDENT
-.sp
-In a similar manner we can obtain any client or NDS information that ndsctl provides.
-.sp
-The query string NDS sends to us will always be of the following form (with a "comma space" separator):
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.nf
-.ft C
-?clientip=[clientipaddress], gatewayname=[gatewayname],  redir=[originalurl], var4=[data], var5=[data], var6......
-.ft P
-.fi
-.UNINDENT
-.UNINDENT
-.sp
-The first three variables will be clientip, gatewayname and redir
-.sp
-(Note: In login.sh, we have chosen to name redir as $requested as it is actually the originally requested url.)
-.sp
-There is one exception to the normal sequence. If the client presses "back" on their browser, openNDS detects this and tells us by returning status=authenticated instead of redir=[originalurl]
-.sp
-If we detect "status" in the query string, we show a page telling the client they are already logged in.
-.sp
-Additional variables returned by NDS will be those we define here and send to NDS via an html form method=get
-.sp
-There is no limit to the number of variables we can define dynamically as long as the query string does not exceed 2048 bytes.
-.sp
-The query string will be truncated if it does exceed this length.
+Custom Parameters, Variables, Images and Files, defined in the config and the definitions are passed to PreAuth in the b64 encoded query string.
 .SH BINAUTH OPTION
 .SS Overview
 .sp
 \fBBinAuth provides a method of running a post authentication script\fP or extension program. BinAuth is ALWAYS local to NDS and as such will have access to all the resources of the local system.
 .sp
-\fBBinAuth works with, but does not require FAS\fP and in a simple system can be used to provide site\-wide username/password access.
-.sp
 \fIBinAuth is available when FAS is used at all levels of fas_secure_enabled (0, 1, 2 and 3).\fP
 .sp
-\fBWith FAS, a custom variable is forwarded to BinAuth\fP This can contain an embedded payload of custom data defined by the FAS. As FAS is typically remote from the NDS router, this provides a link to the local system.
+\fBA custom variable is forwarded to BinAuth\fP This can contain an embedded payload of custom data defined by the FAS. As FAS is typically remote from the NDS router, this provides a link to the local system.
 .sp
-\fBBinAuth has the means to set session timeout, data rate and data volume quotas\fP on a client by client basis.
+\fBBinAuth has the means to override session timeout, data rate and data volume quotas\fP on a client by client basis.
 .sp
-\fBBinAuth is called by NDS at the following times:\fP
+\fBBinAuth is called by openNDS at the following times:\fP
 .INDENT 0.0
 .INDENT 3.5
 .INDENT 0.0
 .IP \(bu 2
-After the client CPD browser makes an authentication request to NDS
+After the client CPD browser makes an authentication request to openNDS
 .IP \(bu 2
-After the client device is granted Internet access by NDS
+After the client device is granted Internet access by openNDS
 .IP \(bu 2
 After the client is deauthenticated by request
 .IP \(bu 2
@@ -1746,7 +2005,7 @@ The first argument, arg[1], is always the "method".
 .IP \(bu 2
 "\fBupquota_deauth\fP" \- NDS has deauthenticated the client because the client\(aqs upload quota has been exceeded
 .IP \(bu 2
-"\fBndsctl_auth\fP" \- NDS has authorised the client because of an ndsctl command (most commonly sent by the NDS AuthMon daemon).
+"\fBndsctl_auth\fP" \- NDS has authorised the client because of an ndsctl command (for example, sent by the NDS AuthMon daemon).
 .IP \(bu 2
 "\fBndsctl_deauth\fP" \- NDS has deauthenticated the client because of an ndsctl command.
 .IP \(bu 2
@@ -1764,9 +2023,9 @@ The first argument is auth_client and the following arguments are set to:
 .IP \(bu 2
 arg[2] = client_mac
 .IP \(bu 2
-arg[3] = username
+arg[3] = username (deprecated)
 .IP \(bu 2
-arg[4] = password
+arg[4] = password (deprecated)
 .IP \(bu 2
 arg[5] = url\-escaped redir variable (the URL originally requested by the client.
 .IP \(bu 2
@@ -1826,97 +2085,35 @@ arg[7] = client_token
 .UNINDENT
 .SS Using the Custom Variable string
 .sp
-Method auth_client \- arg[9] contains the url\-escaped custom variable string. openNDS extracts this variable from the query string of the http auth_client call from a FAS or Templated splash page.
+Method auth_client \- arg[9] and ndsctl_auth \- arg[8], contain the url\-escaped custom variable string. openNDS extracts this variable from the query string of the http auth_client call from a FAS or PreAuth page.
 .sp
 It is provided for general unspecified use and is url\-escaped.
-A typical example of its use is for a level 0, 1, or 2 FAS to communicate quota values for individual clients, or groups of clients.
+A typical example of its use is for a level 0, 1, or 2 FAS to communicate special values for individual clients, or groups of clients.
 .SS Example BinAuth Scripts
 .sp
-Two example BinAuth scripts are included in the source files available for download at:
-\fI\%https://github.com/opennds/opennds/releases\fP
+An example BinAuth script is pre\-installed.
+It provides a local NDS Access Log
 .sp
-Both of them are preinstalled and ready to be enabled in the config file.
+FAS is often remote from the NDS router and this script provides a simple method of interacting directly with the local openNDS. FAS can send custom data to BinAuth as a payload in the custom variable string that is relayed to BinAuth.
 .sp
-In addition, the files can be extracted from the downloaded release archive file and reside in the folder:
+The log file is stored by default in the operating system tmpfs volatile storage area to prevent flash storage wear.
 .sp
-\fI/opennds\-[*version*]/forward_authentication_service/binauth\fP
-.SS Example 1 \- Sitewide Username/Password
+On OpenWrt this location is /tmp/ndslog/
 .sp
-This example is a script designed to be used with or without FAS and provides site wide Username/Password login for groups of users, in this case "staff", "guest" and "member" with corresponding sets of credentials. If used without FAS, a special html splash page must be installed, otherwise FAS must forward the required username and password variables.
-.SS Manual Installation (Example 1)
+and on Debian and OpenSuse it is /run/ndslog/
 .sp
-\fBThe binauth_sitewide example is pre\-installed.\fP However, a manual installation is described here by way of example to aid developers in understanding the procedure required for installing their own scripts.
-The binauth_sitewide script actually has three components, the binauth script itself, an associated html file and a user database file.
-.INDENT 0.0
-.INDENT 3.5
-.INDENT 0.0
-.IP \(bu 2
-binauth_sitewide.sh
-.IP \(bu 2
-splash_sitewide.html
-.IP \(bu 2
-userlist.dat
-.UNINDENT
-.UNINDENT
-.UNINDENT
-.sp
-The file binauth_sitewide.sh should be copied to a suitable location on the NDS router, eg \fI/usr/lib/opennds/\fP
-.sp
-The file splash_sitewide.html should be copied to \fI/etc/opennds/htdocs/\fP
-.sp
-The file userlist.dat should be copied to \fI/etc/opennds/\fP
-.sp
-Assuming FAS is not being used, NDS is then configured by setting the BinAuth and SplashPage options in the config file (/etc/config/opennds on Openwrt, or /etc/opennds/opennds.conf on other operating systems.
-.sp
-On OpenWrt this is most easily accomplished by issuing the following commands:
-.INDENT 0.0
-.INDENT 3.5
-\fIuci set opennds.@opennds[0].splashpage=\(aqsplash_sitewide.html\(aq\fP
-.sp
-\fIuci set opennds.@opennds[0].binauth=\(aq/usr/lib/opennds/binauth_sitewide.sh\(aq\fP
-.sp
-\fIuci commit opennds\fP
-.UNINDENT
-.UNINDENT
-.sp
-The script file must be executable and is flagged as such in the source archive. If necessary set using the command:
-.INDENT 0.0
-.INDENT 3.5
-\fIchmod u+x /usr/lib/opennds/binauth_sitewide.sh\fP
-.UNINDENT
-.UNINDENT
-.sp
-This script is then activated with the command:
-.INDENT 0.0
-.INDENT 3.5
-\fIservice opennds restart\fP
-.UNINDENT
-.UNINDENT
-.SS Example 2 \- Local NDS Access Log
-.sp
-This example is a script designed to be used with or without FAS and provides local NDS logging. FAS is often remote from the NDS router and this script provides a simple method of interacting directly with the local NDS. FAS can send custom data to Binauth as a payload in the custom variable parameter that is relayed to BinAuth by NDS.
-.sp
-The log file is stored by default in the /tmp/ndslog/ directory.
-This works for many operating systems including OpenWrt.
-.sp
-The location however must be changed on some operating systems, such as Debian and its variants (eg Raspbian). Here a default location of /run/ndslog/ works well.
-.sp
-The log location is simply changed by editing variables at the beginning of the script file.
+The location is automatically detected on most operating systems.
 .sp
 Free space checking is done and if the log file becomes too large, logging ceases and an error is sent to syslog.
 .sp
-Log files do not persist through a reboot so it would be sensible to change the location of the log file to a USB stick for example.
-.SS Using Example 2
+Log files do not persist through a reboot so if required the location can be changed to, for example, a USB stick.
 .sp
 \fBThe binauth_log example is pre\-installed.\fP
 .sp
-This script has a single component, the shell script.
+This script has a single component, the shell script:
 .INDENT 0.0
 .INDENT 3.5
-.INDENT 0.0
-.IP \(bu 2
-binauth_log.sh
-.UNINDENT
+\fIbinauth_log.sh\fP
 .UNINDENT
 .UNINDENT
 .sp
@@ -1927,7 +2124,7 @@ This is enabled by setting the BinAuth option in the config file (/etc/config/op
 This script is then activated with the command:
 .INDENT 0.0
 .INDENT 3.5
-\fIservice opennds restart\fP
+\fBservice opennds restart\fP
 .UNINDENT
 .UNINDENT
 .SH LIBRARY UTILITIES
@@ -2016,6 +2213,41 @@ Where:
 .UNINDENT
 .UNINDENT
 .UNINDENT
+.SS libopennds.sh
+.sp
+This utility controls many of the functions required for PreAuth/ThemeSpec scripts.
+.INDENT 0.0
+.INDENT 3.5
+Usage: libopennds arg1 arg2 ... argN
+.INDENT 0.0
+.INDENT 3.5
+\fBarg1\fP: "clean", removes custom files, images and client data
+.sp
+\fIreturns\fP: tmpfsmountpoint (the mountpoint of the tmpfs volatile storage of the router.
+.sp
+\fBarg1\fP: "tmpfs", finds the tmpfs mountpoint
+.sp
+\fIreturns\fP: tmpfsmountpoint (the mountpoint of the tmpfs volatile storage of the router.
+.sp
+\fBarg1\fP: "mhdcheck", checks if MHD is running (used by MHD watchdog)
+\fIreturns\fP: "1" if MHD is running, "2" if MHD is not running
+.sp
+\fBarg1\fP: "?fas=<b64string>", generates ThemeSpec html using b64encoded data sent from openNDS
+.INDENT 0.0
+.INDENT 3.5
+\fBarg2\fP: urlencoded_useragent_string
+.sp
+\fBarg3\fP: mode (1, 2 or 3) (this is the mode specified in option login_option in the config file.
+.sp
+\fBarg4\fP: themespecpath (if mode = 3)
+.UNINDENT
+.UNINDENT
+.sp
+\fIreturns\fP: html for the specified ThemeSpec.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
 .SH DATA QUOTAS AND TRAFFIC SHAPING
 .SS Data volume and Rate Quotas
 .sp
@@ -2055,13 +2287,13 @@ Note: upload means to the Internet, download means from the Internet
 \fBQuotas for individual clients\fP will override configured global values and are set either by BinAuth or the Authmon Daemon (fas_secure_enable level 3) \- see example BinAuth script (binauth_log.sh) and example FAS script (fas\-aes\-https.php).
 .SS Global Data Rate Quota
 .sp
-A rate quota is a moving average data rate.
+The client data rate is calculated using a moving average. This allows clients to burst at maximum possible rate, only rate limiting if the moving average exceeds the specified upload or download rate.
 .sp
-The average is calculated  over a configured time window.
+The moving average window size is equal to ratecheckwindow times checkinterval (seconds).
 .sp
-If a client exceeds the global data rate quota, or the individual client quota, that client will be blocked for a configured interval before being allowed to continue automatically.
+The default value of ratecheckwindow is 2 and is a good working setting. Increasing the value allows a longer period of bursting. Setting to 0 disables all Data Rate Quotas.
 .sp
-As the Data Rate Quota is a moving average, clients are able to transfer data at the maximum rate the router can achieve for short bursts.
+Simply put, this means clients are able to transfer data at the maximum rate the router can achieve for short bursts.
 .sp
 Data Rate Quotas are ideal for allowing opening of web pages and emails etc in the fastest way possible, yet preventing an individual client from monopolizing all the available bandwidth by streaming or transferring large files.
 .SS Configuring Data Rate Quotas
@@ -2076,7 +2308,7 @@ Global Data Rate quotas are configured in the config file.
 # Defaults 0
 # Integer values only
 #
-# If the client average data rate exceeds the value set here, the client will be blocked
+# If the client average data rate exceeds the value set here, the client will be rate limited
 # Values are in kb/s
 # If set to 0, there is no limit
 #
@@ -2087,7 +2319,7 @@ option uploadrate \(aq0\(aq
 option downloadrate \(aq0\(aq
 ###########################################################################################
 # The client data rate is calculated using a moving average.
-# This allows clients to burst at maximum possible rate, only blocking if the moving average
+# This allows clients to burst at maximum possible rate, only rate limiting if the moving average
 # exceeds the specified upload or download rate.
 # The moving average window size is equal to ratecheckwindow times checkinterval (seconds)
 # Default 2
@@ -2100,13 +2332,15 @@ option ratecheckwindow \(aq2\(aq
 Note: upload means to the Internet, download means from the Internet
 .SS Data Rate Quotas for Individual Clients
 .sp
-\fBData Rate Quotas for individual clients\fP will override configured global values and are set either by BinAuth or the Authmon Daemon (fas_secure_enable level 3) \- see example BinAuth script (binauth_log.sh) and example FAS script (fas\-aes\-https.php).
+\fBData Rate Quotas for individual clients\fP will override configured global values and are set by ThemeSpec, BinAuth or the Authmon Daemon.
 .SS FAS Level 3
 .sp
-FAD level 3 uses the Authmon daemon to set quota values determined by the FAS. The example script fas\-aes\-https.php shows how to implement this.
-.SS FAS level 0,2 and 2
+FAS level 3 uses the Authmon daemon to set quota values determined by the FAS. The example script fas\-aes\-https.php shows how to implement this.
+.SS FAS level 0, 1 and 2
 .sp
-These levels use BinAuth to set quota values determined by the FAS. The FAS would utilise the BinAuth custom variable to send quota values to a BinAuth script configured to interpret the data passed to it in the variable. There is no set method for doing this, it is left to individual installers to develop their own method.
+These levels can either use BinAuth to set quota values determined by the FAS, or if local to the router can use ndsctl authentication with quota values passed as arguments.
+.sp
+If using BinAuth, the FAS would utilise the BinAuth custom variable to send quota values to a BinAuth script configured to interpret the data passed to it in the variable. There is no set method for doing this, it is left to individual installers to develop their own method.
 .SS Traffic Shaping
 .sp
 openNDS (NDS) supports Traffic Shaping (Bandwidth Limiting) using the SQM \- Smart Queue Management (sqm\-scripts) package, available for OpenWrt and generic Linux.
@@ -2607,133 +2841,30 @@ uci commit opennds
 .UNINDENT
 .SS The Legacy Click and Go Splash Page
 .sp
-\fBThe legacy Click to Continue html splash page is deprecated and disabled.
-It will be removed entirely in later releases.\fP
-.INDENT 0.0
-.TP
-.B To allow time for migration, this can be re\-enabled by setting options:
-allow_legacy_splash = \(aq1\(aq and
-login_option_enabled = "0" (default)
+\fIThe legacy Click to Continue html splash page was deprecated and disabled at v8.0.0.\fP
 .sp
-The legacy splash page can be found at:
-.INDENT 7.0
-.INDENT 3.5
-\fB/etc/opennds/htdocs/splash.html\fP
-.UNINDENT
-.UNINDENT
-.UNINDENT
-.sp
-When the splash page is served, the following variables in the page are
-replaced by their values:
-.INDENT 0.0
-.IP \(bu 2
-\fI$gatewayname\fP The value of GatewayName as set in opennds.conf.
-.IP \(bu 2
-\fI$authtarget\fP A URL which encodes a unique token and the URL of the user\(aqs   original web request. If opennds receives a request at this URL, it completes the authentication process for the client and replies to the request with a "302 Found" to the encoded originally requested URL.
-.sp
-It should be noted however that, depending on vendor, the client\(aqs built in CPD may not respond to simple html links.
-.UNINDENT
-.INDENT 0.0
-.INDENT 3.5
-An href link example that my prove to be problematical:
-.INDENT 0.0
-.INDENT 3.5
-\fB<a href="$authtarget">Enter</a>\fP
-.UNINDENT
-.UNINDENT
-.sp
-(You should instead use a GET\-method HTML form to send this   information to the opennds server; see below.)
-.UNINDENT
-.UNINDENT
-.INDENT 0.0
-.IP \(bu 2
-\fI$tok\fP, \fI$redir\fP, \fI$authaction\fP, and \fI$denyaction\fP are available and should be used to write the splash page to use a GET\-method HTML form instead of using $authtarget as the value of an href attribute to communicate with the opennds server.
-.UNINDENT
-.INDENT 0.0
-.INDENT 3.5
-\fI$authaction\fP and \fI$denyaction\fP are virtual urls used to inform NDS that a client should be authenticated or deauthenticated and are of the form:
-.sp
-\fIhttp://gatewayaddress:gatewayport/opennds_auth/\fP
-.sp
-and
-.sp
-\fIhttp://gatewayaddress:gatewayport/opennds_deny/\fP
-.sp
-A simple example of a GET\-method form:
-.UNINDENT
-.UNINDENT
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.nf
-.ft C
-<form method=\(aqGET\(aq action=\(aq$authaction\(aq>
-  <input type=\(aqhidden\(aq name=\(aqtok\(aq value=\(aq$tok\(aq>
-  <input type=\(aqhidden\(aq name=\(aqredir\(aq value=\(aq$redir\(aq>
-  <input type=\(aqsubmit\(aq value=\(aqClick Here to Enter\(aq>
-</form>
-.ft P
-.fi
-.UNINDENT
-.UNINDENT
-.INDENT 0.0
-.IP \(bu 2
-\fI$clientip\fP, \fI$clientmac\fP and \fI$gatewaymac\fP The respective addresses
-of the client or gateway. This might be useful in cases where the data
-needs to be forwarded to some other place by the splash page itself.
-.IP \(bu 2
-\fI$nclients\fP and \fI$maxclients\fP User stats. Useful when you need to
-display something like "n of m users online" on the splash site.
-.IP \(bu 2
-\fI$uptime\fP The time opennds has been running.
-.UNINDENT
-.INDENT 0.0
-.INDENT 3.5
-A list of all available variables are included in the splash.html file.
-.sp
-If the user accesses the virtual url \fI$authaction\fP when already authenticated, a status page is shown:
-.sp
-\fB/etc/opennds/htdocs/status.html\fP
-.sp
-In the status.html file, the same variables as in the splash.html site can be used.
-.UNINDENT
-.UNINDENT
-.sp
-It should be noted when designing a custom splash page that for security reasons many client device CPD implementations:
-.INDENT 0.0
-.INDENT 3.5
-.INDENT 0.0
-.IP \(bu 2
-Immediately close the browser when the client has authenticated.
-.IP \(bu 2
-Prohibit the use of href links.
-.IP \(bu 2
-Prohibit downloading of external files (including .css and .js, even if they are allowed in NDS firewall settings).
-.IP \(bu 2
-Prohibit the execution of javascript.
-.UNINDENT
-.UNINDENT
-.UNINDENT
-.sp
-Also, note that any images you reference should reside in the subdirectory /etc/opennds/htdocs/images/.
+\fBFrom v 9.0.0 it has been removed entirely.\fP
 .SS Dynamic Splash Pages
 .SS Default Dynamic Click to Continue
 .sp
-The pre\-installed dynamic login page is enabled by setting option login_option_enabled = "0".
-This is the default assuming
-allow_legacy_splash = \(aq0\(aq, the default value.
+The pre\-installed dynamic click to continue page sequence is enabled by default using the ThemeSpec "theme_click\-to\-continue".
+The configuration default is equivalent to setting:
 .sp
-It generates a Click to Continue page.
+\fBoption login_option_enabled \(aq1\(aq\fP
+.sp
+It generates a Click to Continue page followed by Thankyou and Landing pages.
 .sp
 User clicks on "Continue" are recorded in the log file /[tmpfs_dir]/ndslog/ndslog.log
 .sp
 Where [tmpfs_dir] is the operating system "temporary" tmpfs mount point.
 This will be  /tmp /run or /var and is automatically detected.
 .sp
-Details of how the script works are contained in comments in the script itself.
-.SS Pre\-Installed User Login Dynamic Splash Page
+Details of how the script works are contained in comments in the script theme_click\-to\-continue.sh
+.SS Pre\-Installed dynamic User/email Login page sequence
 .sp
-The pre\-installed dynamic login page is enabled by setting option login_option_enabled = "1".
+The pre\-installed dynamic login page is enabled by setting option:
+.sp
+\fBoption login_option_enabled \(aq2\(aq\fP
 .sp
 It generates a login page asking for username and email address.
 User logins are recorded in the log file /[tmpfs_dir]/ndslog/ndslog.log
@@ -2741,12 +2872,51 @@ User logins are recorded in the log file /[tmpfs_dir]/ndslog/ndslog.log
 Where [tmpfs_dir] is the operating system "temporary" tmpfs mount point.
 This will be  /tmp /run or /var and is automatically detected.
 .sp
-Details of how the script works are contained in comments in the script itself.
-.SS Custom Dynamic Splash Pages
+Details of how the script works are contained in comments in the script theme_user\-email\-login.sh
+.SS Custom Dynamic ThemeSpec Pages
 .sp
-Custom designed dynamically generated splash pages are supported using FAS and PreAuth (such as the included alternative username/email login script).
+Custom ThemeSpec page sequences can be added by setting option:
 .sp
-For details see the FAS and PreAuth chapters.
+\fBoption login_option_enabled \(aq3\(aq\fP
+.sp
+and option
+.sp
+\fBoption themespecpath \(aq/path/to/themespec_script\(aq\fP
+.sp
+Two additional ThemeSpec files are included as examples:
+.sp
+/usr/lib/opennds/theme_click\-to\-continue\-custom\-placeholders.sh
+.sp
+and
+.sp
+/usr/lib/opennds/theme_user\-email\-login\-custom\-placeholders.sh
+.sp
+Both these also require custom parameter, variable, image and file lists:
+.sp
+\fBlist fas_custom_parameters_list \(aqlogo_message=openNDS:%20Perfect%20on%20OpenWrt!\(aq\fP
+.sp
+\fBlist fas_custom_parameters_list \(aqbanner1_message=BlueWave%20\-%20Wireless%20Network%20Specialists\(aq\fP
+.sp
+\fBlist fas_custom_parameters_list \(aqbanner2_message=HMS%20Pickle\(aq\fP
+.sp
+\fBlist fas_custom_parameters_list \(aqbanner3_message=SeaWolf%20Cruiser%20Racer\(aq\fP
+.sp
+\fBlist fas_custom_variables_list \(aqinput=phone:Phone%20Number:text;postcode:Home%20Post%20Code:text\(aq\fP
+.sp
+\fBlist fas_custom_images_list \(aqlogo_png=https://openwrt.org/_media/logo.png\(aq\fP
+.sp
+\fBlist fas_custom_images_list \(aqbanner1_jpg=https://raw.githubusercontent.com/openNDS/openNDS/9.0.0/resources/bannerbw.jpg\(aq\fP
+.sp
+\fBlist fas_custom_images_list \(aqbanner2_jpg=https://raw.githubusercontent.com/openNDS/openNDS/9.0.0/resources/bannerpickle.jpg\(aq\fP
+.sp
+\fBlist fas_custom_images_list \(aqbanner3_jpg=https://raw.githubusercontent.com/openNDS/openNDS/9.0.0/resources/bannerseawolf.jpg\(aq\fP
+.sp
+\fBlist fas_custom_files_list \(aqadvert1_htm=https://raw.githubusercontent.com/openNDS/openNDS/9.0.0/resources/bannerpickle.htm\(aq\fP
+.sp
+Once configured these two example ThemeSpec scripts will download custom image files, a custom html file and inject custom user input forms for phone number and home postcode.
+.SS Other Custom Designs
+.sp
+Custom designed dynamically generated ThemeSpec pages are supported using FAS and PreAuth. For details see the FAS and PreAuth chapters.
 .SH FREQUENTLY ASKED QUESTIONS
 .SS What\(aqs the difference between versions?
 .sp
@@ -2843,6 +3013,22 @@ A client user status page is now available at a configurable Gateway FQDN. This 
 .UNINDENT
 .UNINDENT
 .UNINDENT
+.sp
+\fBopenNDS v9\fP This version contains several major enhancements, including:
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+\fBIntroduction of ThemeSpec Script Files\fP
+.sp
+Option login_option is extended to include Themed page sequences with custom parameters, variables, images and files. A ThemeSpec file has the ability to inject html form fields, text strings, images from external sources and content files also from external sources, all defined in the config file.
+.IP \(bu 2
+\fBEnhanced Data Rate Quotas\fP
+.sp
+Data Rate Quotas are now enhanced with packet rate limiting being applied when a client average rate rises above its preset threshold. The time window over which the rate is averaged can be tuned using settings in the config file, allowing rate bursting for best user experience while still limiting the rate of larger downloads or uploads that might otherwise impact other clients.
+.UNINDENT
+.UNINDENT
+.UNINDENT
 .SS Can I upgrade from NoDogSplash to openNDS?
 .sp
 No.
@@ -2879,9 +3065,28 @@ In addition Hashed ID (hid) is used for authentication, removing the need for a 
 .UNINDENT
 .UNINDENT
 .UNINDENT
+.SS Can I upgrade from v8 to v9
+.sp
+You can, if:
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+You modify your FAS scripts to use the openNDS v9 API
+.IP \(bu 2
+You move to ThemeSpec scripts or FAS \fBfrom Legacy Splash\fP\&. Legacy Splash Pages are no longer supported. The default ThemeSpec (option login_option 1) is equivalent to the old splash.html click to continue page.
+.UNINDENT
+.UNINDENT
+.UNINDENT
 .SS How can I add custom parameters, such as site specific information?
 .sp
 Custom parameters were introduced in openNDS version 7 and are defined simply in the config file. These parameters are passed to the FAS in the query string. Version 8 embeds any custom parameters in the encoded/encrypted query string, macing it much simpler to parse for them in the FAS script.
+.SS How can I add custom fields on the login page, such as phone number, car licence plate number etc.?
+.sp
+A simple configuration option allows fields to be added automatically to the pages of ThemeSpec login sequences.
+.SS Is it possible to display custom info or advertising on the login pages?
+.sp
+Yes! Simple config options specify the URLs of images and html content. These will be automatically downloaded and injected into the dynamic pages created by suitable Themespec scripts.
 .SS How do I manage client data usage?
 .sp
 openNDS (NDS) has built in \fIData Volume\fP and \fIData Rate\fP quota support.
@@ -2895,7 +3100,7 @@ The global values can be overridden on a client by client basis as required, eit
 .IP \(bu 2
 If a client exceeds their volume quota they will be deauthenticated.
 .IP \(bu 2
-If a client exceeds their rate quota, they will be temporarily blocked to ensure their average rate stays below the rate quota value. This allows clients to burst at a higher rate for shot intervals, improving performance, but prevents them from hogging bandwidth.
+If a client exceeds their rate quota, they will be packet rate limited to ensure their average rate stays below the rate quota value. This allows clients to burst at a higher rate for short intervals, improving performance, but prevents them from hogging bandwidth.
 .UNINDENT
 .UNINDENT
 .UNINDENT
@@ -3252,6 +3457,16 @@ For extensive suggestions on debugging iptables, see for example, Oskar Andreass
 .SH TODO LIST
 .sp
 Features should be aimed at providing tools to allow openNDS to be used as flexible Captive Portal engine, rather than building in specific solutions.
+.sp
+Here is a list of things that should be done soon:
+.INDENT 0.0
+.IP \(bu 2
+Use uci style config file for all OSes then remove opennds.conf
+.IP \(bu 2
+Add refresh interval for download of external files in ThemeSpec. This will enable automatic update of informational content, banner advertising etc.
+.IP \(bu 2
+Consider providing an openNDS\-mini package for OpenWrt \- for legacy devices with very restricted resources.
+.UNINDENT
 .sp
 Here is a list of possible things TO DO
 .INDENT 0.0

@@ -58,7 +58,7 @@ Global Data Rate quotas are configured in the config file.
 	# Defaults 0
 	# Integer values only
 	#
-	# If the client average data rate exceeds the value set here, the client will be blocked
+	# If the client average data rate exceeds the value set here, the client will be rate limited
 	# Values are in kb/s
 	# If set to 0, there is no limit
 	#
@@ -69,7 +69,7 @@ Global Data Rate quotas are configured in the config file.
 	option downloadrate '0'
 	###########################################################################################
 	# The client data rate is calculated using a moving average.
-	# This allows clients to burst at maximum possible rate, only blocking if the moving average
+	# This allows clients to burst at maximum possible rate, only rate limiting if the moving average
 	# exceeds the specified upload or download rate.
 	# The moving average window size is equal to ratecheckwindow times checkinterval (seconds)
 	# Default 2
@@ -79,7 +79,7 @@ Note: upload means to the Internet, download means from the Internet
 
 Data Rate Quotas for Individual Clients
 ---------------------------------------
-**Data Rate Quotas for individual clients** will override configured global values and are set either by BinAuth or the Authmon Daemon (fas_secure_enable level 3) - see example BinAuth script (binauth_log.sh) and example FAS script (fas-aes-https.php).
+**Data Rate Quotas for individual clients** will override configured global values and are set by ThemeSpec, BinAuth or the Authmon Daemon.
 
 FAS Level 3
 ===========

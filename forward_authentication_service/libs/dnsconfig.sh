@@ -46,8 +46,8 @@ elif [ "$setconf" = "hostconf" ]; then
 	host_entry="$gw_ip $gw_fqdn " 
 	hosts="/etc/hosts"
 	host_entry_check=$(grep "$host_entry" "$hosts")
-	ip_check=$(grep "$gw_ip" "$hosts" | awk 'NR==1{printf("%s " $1)}')
-	fqdn_check=$(grep "$gw_fqdn" "$hosts" | awk 'NR==1{printf("%s " $2)}')
+	ip_check=$(grep "$gw_ip" "$hosts" | awk 'NR==1{printf("%s ", $1)}')
+	fqdn_check=$(grep "$gw_fqdn" "$hosts" | awk 'NR==1{printf("%s ", $2)}')
 
 	if [ -z "$ip_check" ] && [ ! -z "$fqdn_check" ]; then
 		sed -i "/$fqdn_check/d" $hosts

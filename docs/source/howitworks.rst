@@ -35,35 +35,33 @@ The Thing That Does the Capturing (NDS)
 The Thing That Provides the Portal (FAS or PreAuth)
 ===========================================================
 
- The client browser is redirected to the Portal component. This is a web service that is configured to know how to communicate with the core engine of NDS.
+ The client browser is redirected to the Portal component. This is a web service that is configured to know how to communicate with the core engine of openNDS.
 
- This is commonly known as the Splash Page.
+ This is commonly known as the Splash Page, or more correctly, the entry point to the portal splash page sequence.
 
- NDS has its own web server built in and this can be used to serve the Portal "Splash" pages to the client browser, or a separate web server can be used.
+ openNDS has its own web server built in and this can be used to serve the Portal "Splash" pages to the client browser, or a separate web server can be used.
 
- openNDS comes with two standard Splash Page options pre-installed.
+ openNDS comes with numerous standard Splash Page Sequence options pre-installed.
 
- One provides a trivial Click to Continue splash page and the other provides a Client User form requiring Name and Email address to be entered.
+ One provides a trivial Click to Continue splash page and another provides a Client User form requiring Name and Email address to be entered.
 
- Both of these can be customised or a complete specialised Portal can be written by the installer (See FAS, PreAuth).
+ All of these can be customised or a complete specialised Portal can be written by the installer (See FAS, PreAuth).
 
- FAS, or Forward Authentication Service may use the web server embedded in NDS, a separate web server installed on the NDS router, a web server residing on the local network or an Internet hosted web server.
+ FAS, or Forward Authentication Service may use the web server embedded in openNDS, a separate web server installed on the NDS router, a web server residing on the local network or an Internet hosted web server.
 
  The user of the client device will always be expected to complete some actions on the splash page.
 
  Once the user on the client device has successfully completed the splash page actions, that page then links directly back to NDS.
 
- For security, NDS expects to receive the same valid token it allocated when the client issued its initial port 80 request. If the token received is valid, NDS then "authenticates" the client device, allowing access to the Internet.
+ For security, NDS expects to receive the same valid token it allocated when the client issued its initial port 80 request. If the token received is valid, NDS then "authenticates" the client device, allowing access to the Internet. openNDS uses various methods to encrypt this token, ensuring verification cannot be bypassed.
 
- Post authentication processing extensions may be added to NDS (See BinAuth). Once NDS has received a valid token it calls a BinAuth script.
+ Post authentication processing extensions may be added to openNDS (See BinAuth). Once openNDS has received a valid token it calls a BinAuth script if enabled.
 
  If the BinAuth script returns positively (ie return code 0), NDS then "authenticates" the client device, allowing access to the Internet.
 
- Where FAS is used, secure modes are provided (levels 1, 2 and 3), where the client token and other required variables are kept securely hidden from the Client, ensuring verification cannot be bypassed.
-
 .. note::
 
- FAS and Binauth can be enabled together. This can give great flexibility, with FAS providing remote verification and Binauth providing local post authentication processing closely linked to  NDS.
+ FAS and Binauth can be enabled together. This can give great flexibility, with FAS providing remote verification and Binauth providing local post authentication processing closely linked to openNDS.
 
 
 Captive Portal Detection (CPD)

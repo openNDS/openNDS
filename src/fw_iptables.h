@@ -37,6 +37,7 @@
 #define CHAIN_TRUSTED_TO_ROUTER "ndsTRT"
 #define CHAIN_OUTGOING  "ndsOUT"
 #define CHAIN_INCOMING  "ndsINC"
+#define CHAIN_UPLOAD_RATE  "ndsULR"
 #define CHAIN_AUTHENTICATED     "ndsAUT"
 #define CHAIN_PREAUTHENTICATED   "ndsPRE"
 #define CHAIN_BLOCKED    "ndsBLK"
@@ -65,6 +66,12 @@ int iptables_fw_destroy_mention( const char table[], const char chain[], const c
 /** @brief Define the access of a specific client */
 int iptables_fw_authenticate(t_client *client);
 int iptables_fw_deauthenticate(t_client *client);
+
+/** @brief Enable/Disable Upload Rate Limiting of a specific client */
+int iptables_upload_ratelimit_enable(t_client *client, int enable);
+
+/** @brief Enable/Disable Download Rate Limiting of a specific client */
+int iptables_download_ratelimit_enable(t_client *client, int enable);
 
 /** @brief Return the total download usage in bytes */
 unsigned long long int iptables_fw_total_download();

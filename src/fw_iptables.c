@@ -47,7 +47,6 @@
 #include "fw_iptables.h"
 #include "debug.h"
 #include "util.h"
-#include "tc.h"
 
 // iptables v1.4.17
 #define MIN_IPTABLES_VERSION (1 * 10000 + 4 * 100 + 17)
@@ -365,7 +364,6 @@ iptables_fw_init(void)
 	int gw_port = 0;
 	char *fas_remoteip = NULL;
 	int fas_port = 0;
-	int traffic_control;
 	int set_mss, mss_value;
 	t_MAC *pt;
 	t_MAC *pb;
@@ -405,7 +403,6 @@ iptables_fw_init(void)
 	macmechanism = config->macmechanism;
 	set_mss = config->set_mss;
 	mss_value = config->mss_value;
-	traffic_control = config->traffic_control;
 	FW_MARK_BLOCKED = config->fw_mark_blocked;
 	FW_MARK_TRUSTED = config->fw_mark_trusted;
 	FW_MARK_AUTHENTICATED = config->fw_mark_authenticated;
@@ -482,11 +479,6 @@ iptables_fw_init(void)
 		rc = -1;
 	}
 
-	// Set up for traffic control
-	if (traffic_control) {
-		rc |= tc_init_tc();
-	}
-
 	/*
 	 *
 	 * End of mangle table chains and rules
@@ -546,6 +538,7 @@ iptables_fw_init(void)
 	rc |= iptables_do_command("-t filter -N " CHAIN_TO_INTERNET);
 	rc |= iptables_do_command("-t filter -N " CHAIN_TO_ROUTER);
 	rc |= iptables_do_command("-t filter -N " CHAIN_AUTHENTICATED);
+	rc |= iptables_do_command("-t filter -N " CHAIN_UPLOAD_RATE);
 	rc |= iptables_do_command("-t filter -N " CHAIN_TRUSTED);
 	rc |= iptables_do_command("-t filter -N " CHAIN_TRUSTED_TO_ROUTER);
 
@@ -678,6 +671,8 @@ iptables_fw_init(void)
 		rc |= iptables_do_command("-t filter -A " CHAIN_TRUSTED " -j REJECT --reject-with %s-port-unreachable", ICMP_TYPE);
 	}
 
+	// Add basic rule to CHAIN_UPLOAD_RATE for upload rate limiting
+	rc |= iptables_do_command("-t filter -I " CHAIN_UPLOAD_RATE " -j RETURN");
 
 	// CHAIN_TO_INTERNET, packets marked AUTHENTICATED:
 
@@ -697,6 +692,8 @@ iptables_fw_init(void)
 			FW_MARK_AUTHENTICATED,
 			markmask
 		);
+		// CHAIN_AUTHENTICATED, jump to CHAIN_UPLOAD_RATE to handle upload rate limiting
+		rc |= iptables_do_command("-t filter -A " CHAIN_AUTHENTICATED " -j "CHAIN_UPLOAD_RATE);
 		// CHAIN_AUTHENTICATED, related and established packets ACCEPT
 		rc |= iptables_do_command("-t filter -A " CHAIN_AUTHENTICATED " -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT");
 		// CHAIN_AUTHENTICATED, append the "authenticated-users" ruleset
@@ -743,17 +740,10 @@ iptables_fw_destroy(void)
 {
 	fw_quiet = 1;
 	s_config *config;
-	int traffic_control;
 
 	LOCK_CONFIG();
 	config = config_get_config();
-	traffic_control = config->traffic_control;
 	UNLOCK_CONFIG();
-
-	if (traffic_control) {
-		debug(LOG_DEBUG, "Destroying our tc hooks");
-		tc_destroy_tc();
-	}
 
 	debug(LOG_DEBUG, "Destroying our iptables entries");
 
@@ -791,11 +781,13 @@ iptables_fw_destroy(void)
 	iptables_do_command("-t filter -F " CHAIN_TO_ROUTER);
 	iptables_do_command("-t filter -F " CHAIN_TO_INTERNET);
 	iptables_do_command("-t filter -F " CHAIN_AUTHENTICATED);
+	iptables_do_command("-t filter -F " CHAIN_UPLOAD_RATE);
 	iptables_do_command("-t filter -F " CHAIN_TRUSTED);
 	iptables_do_command("-t filter -F " CHAIN_TRUSTED_TO_ROUTER);
 	iptables_do_command("-t filter -X " CHAIN_TO_ROUTER);
 	iptables_do_command("-t filter -X " CHAIN_TO_INTERNET);
 	iptables_do_command("-t filter -X " CHAIN_AUTHENTICATED);
+	iptables_do_command("-t filter -X " CHAIN_UPLOAD_RATE);
 	iptables_do_command("-t filter -X " CHAIN_TRUSTED);
 	iptables_do_command("-t filter -X " CHAIN_TRUSTED_TO_ROUTER);
 
@@ -866,30 +858,102 @@ iptables_fw_destroy_mention(
 	return (retval);
 }
 
+// Enable/Disable Download Rate Limiting for client
+int
+iptables_download_ratelimit_enable(t_client *client, int enable)
+{
+	int rc = 0;
+	unsigned long long int packets;
+
+	packets = client->download_rate * 1024 / 1500;
+
+	if (enable == 1) {
+		debug(LOG_INFO, "Download Rate Limiting [%s] [%s]  to [%llu] packets per second", client->ip, client->mac, packets);
+		// Remove non-rate limiting rule set for this client
+		rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -j MARK %s 0x%x", client->ip, markop, FW_MARK_AUTHENTICATED);
+		rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -j ACCEPT", client->ip);
+
+		// Add rate limiting download rule set for this client
+		rc |= iptables_do_command("-t mangle -A " CHAIN_INCOMING " -d %s -c %llu %llu -j MARK %s 0x%x",
+			client->ip,
+			client->counters.incoming / 1500,
+			client->counters.incoming,
+			markop,
+			FW_MARK_AUTHENTICATED
+		);
+		rc |= iptables_do_command("-t mangle -A " CHAIN_INCOMING " -d %s -c %llu %llu -m limit --limit %llu/sec -j ACCEPT",
+			client->ip,
+			client->counters.incoming / 1500,
+			client->counters.incoming,
+			packets
+		);
+		rc |= iptables_do_command("-t mangle -A " CHAIN_INCOMING " -d %s -j DROP", client->ip);
+	}
+
+	if (enable == 0) {
+		debug(LOG_INFO, "Download Rate Limiting for [%s] [%s] is off", client->ip, client->mac);
+		// Remove rate limiting download rule set for this client
+		rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -j MARK %s 0x%x", client->ip, markop, FW_MARK_AUTHENTICATED);
+		rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -m limit --limit %llu/sec -j ACCEPT", client->ip, packets);
+		rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -j DROP", client->ip);
+
+		// Add non-rate limiting rule set for this client
+		rc |= iptables_do_command("-t mangle -A " CHAIN_INCOMING " -d %s -c %llu %llu -j MARK %s 0x%x",
+			client->ip,
+			client->counters.incoming / 1500,
+			client->counters.incoming,
+			markop,
+			FW_MARK_AUTHENTICATED
+		);
+		rc |= iptables_do_command("-t mangle -A " CHAIN_INCOMING " -d %s -c %llu %llu -j ACCEPT",
+			client->ip,
+			client->counters.incoming / 1500,
+			client->counters.incoming
+		);
+	}
+
+	return rc;
+}
+
+// Enable/Disable Upload Rate Limiting for client
+int
+iptables_upload_ratelimit_enable(t_client *client, int enable)
+{
+	int rc = 0;
+	unsigned long long int packets;
+
+	packets = client->upload_rate * 1024 / 1500;
+
+	if (enable == 1) {
+		debug(LOG_INFO, "Upload Rate Limiting [%s] [%s]  to [%llu] packets per second", client->ip, client->mac, packets);
+
+		// Add rate limiting download rule set for this client
+		rc |= iptables_do_command("-t filter -I " CHAIN_UPLOAD_RATE " -s %s -j DROP", client->ip);
+		rc |= iptables_do_command("-t filter -I " CHAIN_UPLOAD_RATE " -s %s -c %llu %llu -m limit --limit %llu/sec -j RETURN",
+			client->ip,
+			client->counters.outgoing / 1500,
+			client->counters.outgoing,
+			packets
+		);
+	}
+
+	if (enable == 0) {
+		debug(LOG_INFO, "Upload Rate Limiting for [%s] [%s] is off", client->ip, client->mac);
+		// Remove rate limiting upload rule set for this client
+		rc |= iptables_do_command("-t filter -D " CHAIN_UPLOAD_RATE " -s %s -j DROP", client->ip);
+		rc |= iptables_do_command("-t filter -D " CHAIN_UPLOAD_RATE " -s %s -m limit --limit %llu/sec -j RETURN",
+			client->ip,
+			packets
+		);
+	}
+	return rc;
+}
+
 // Insert or delete firewall mangle rules marking a client's packets.
 int
 iptables_fw_authenticate(t_client *client)
 {
-	int rc = 0, download_rate, upload_rate, traffic_control;
-	s_config *config;
-	char upload_ifbname[16];
-
-	config = config_get_config();
-	sprintf(upload_ifbname, "ifb%d", config->upload_ifb);
-
-	LOCK_CONFIG();
-	traffic_control = config->traffic_control;
-	download_rate = config->download_rate;
-	upload_rate = config->upload_rate;
-	UNLOCK_CONFIG();
-
-	if ((client->download_rate > 0) && (client->upload_rate > 0)) {
-		download_rate = client->download_rate;
-		upload_rate = client->upload_rate;
-	}
-
-	//remove client rate block rule if left from a previous instance
-	iptables_do_command("-D FORWARD -s %s -j DROP", client->ip);
+	int rc = 0;
 
 	debug(LOG_NOTICE, "Authenticating %s %s", client->ip, client->mac);
 
@@ -901,14 +965,10 @@ iptables_fw_authenticate(t_client *client)
 		FW_MARK_AUTHENTICATED
 	);
 
+	// This rule is just for download (incoming) byte counting, see iptables_fw_counters_update()
 	rc |= iptables_do_command("-t mangle -A " CHAIN_INCOMING " -d %s -j MARK %s 0x%x", client->ip, markop, FW_MARK_AUTHENTICATED);
 
-	// This rule is just for download (incoming) byte counting, see iptables_fw_counters_update()
 	rc |= iptables_do_command("-t mangle -A " CHAIN_INCOMING " -d %s -j ACCEPT", client->ip);
-
-	if (traffic_control) {
-		rc |= tc_attach_client(config->gw_interface, download_rate, upload_ifbname, upload_rate, client->id, client->ip);
-	}
 
 	return rc;
 }
@@ -916,30 +976,15 @@ iptables_fw_authenticate(t_client *client)
 int
 iptables_fw_deauthenticate(t_client *client)
 {
-	int download_rate, upload_rate, traffic_control;
-	s_config *config;
-	char upload_ifbname[16];
+	unsigned long long int download_rate, packetsdown;
 	int rc = 0;
 
-	config = config_get_config();
-	sprintf(upload_ifbname, "ifb%d", config->upload_ifb);
+	download_rate = client->download_rate;
 
-	LOCK_CONFIG();
-	traffic_control = config->traffic_control;
-	download_rate = config->download_rate;
-	upload_rate = config->upload_rate;
-	UNLOCK_CONFIG();
-
-	if ((client->download_rate > 0) && (client->upload_rate > 0)) {
-		download_rate = client->download_rate;
-		upload_rate = client->upload_rate;
-	}
+	packetsdown=download_rate * 1024 / 1500;
 
 	// Remove the authentication rules.
 	debug(LOG_NOTICE, "Deauthenticating %s %s", client->ip, client->mac);
-
-	//remove client rate block rule if set
-	iptables_do_command("-D FORWARD -s %s -j DROP", client->ip);
 
 	rc |= iptables_do_command("-t mangle -D " CHAIN_OUTGOING " -s %s -m mac --mac-source %s -j MARK %s 0x%x",
 		client->ip,
@@ -947,12 +992,12 @@ iptables_fw_deauthenticate(t_client *client)
 		markop,
 		FW_MARK_AUTHENTICATED
 	);
+
+	rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -j DROP", client->ip);
 	rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -j MARK %s 0x%x", client->ip, markop, FW_MARK_AUTHENTICATED);
 	rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -j ACCEPT", client->ip);
+	rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -m limit --limit %llu/sec -j ACCEPT", client->ip, packetsdown);
 
-	if (traffic_control) {
-		rc |= tc_detach_client(config->gw_interface, download_rate, upload_ifbname, upload_rate, client->id);
-	}
 
 	return rc;
 }

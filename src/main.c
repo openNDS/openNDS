@@ -84,9 +84,6 @@
  */
 static pthread_t tid_client_check = 0;
 
-// The internal web server
-struct MHD_Daemon * webserver = NULL;
-
 // Time when opennds started
 time_t started_time = 0;
 
@@ -139,7 +136,7 @@ termination_handler(int s)
 	static pthread_mutex_t sigterm_mutex = PTHREAD_MUTEX_INITIALIZER;
 	char *fasssl = NULL;
 
-	debug(LOG_NOTICE, "Handler for termination caught signal %d", s);
+	debug(LOG_INFO, "Handler for termination caught signal %d", s);
 
 	// Makes sure we only call iptables_fw_destroy() once.
 	if (pthread_mutex_trylock(&sigterm_mutex)) {
@@ -243,6 +240,7 @@ setup_from_config(void)
 	char msg[255] = {0};
 	char gwhash[255] = {0};
 	char authmonpid[255] = {0};
+	char *socket;
 	char *fasurl = NULL;
 	char *fasssl = NULL;
 	char *gatewayhash = NULL;
@@ -402,6 +400,10 @@ setup_from_config(void)
 		debug(LOG_DEBUG, "Custom FAS files string [%s]", config->custom_files);
 	}
 
+	if (strcmp(config->gw_fqdn, "disable") == 0) {
+		config->gw_fqdn = NULL;
+	}
+
 	if (config->gw_fqdn || config->walledgarden_fqdn_list) {
 		// For Client status Page - configure the hosts file
 		if (config->gw_fqdn) {
@@ -499,55 +501,29 @@ setup_from_config(void)
 		started_time = time(NULL);
 	}
 
-	// Initializes the web server
-	if (config->unescape_callback_enabled == 0) {
-		debug(LOG_INFO, "MHD Unescape Callback is Disabled");
+	// Initialize the web server
+	start_mhd();
+	debug(LOG_NOTICE, "Created web server on %s", config->gw_address);
 
-		if ((webserver = MHD_start_daemon(MHD_USE_EPOLL_INTERNAL_THREAD | MHD_USE_TCP_FASTOPEN,
-								config->gw_port,
-								NULL, NULL,
-								libmicrohttpd_cb, NULL,
-								MHD_OPTION_CONNECTION_TIMEOUT, (unsigned int) 120,
-								MHD_OPTION_LISTENING_ADDRESS_REUSE, 1,
-								MHD_OPTION_END)) == NULL) {
-			debug(LOG_ERR, "Could not create web server: %s", strerror(errno));
-			exit(1);
-		}
-
-	} else {
-		debug(LOG_NOTICE, "MHD Unescape Callback is Enabled");
-
-		if ((webserver = MHD_start_daemon(MHD_USE_EPOLL_INTERNAL_THREAD | MHD_USE_TCP_FASTOPEN,
-								config->gw_port,
-								NULL, NULL,
-								libmicrohttpd_cb, NULL,
-								MHD_OPTION_CONNECTION_TIMEOUT, (unsigned int) 120,
-								MHD_OPTION_LISTENING_ADDRESS_REUSE, 1,
-								MHD_OPTION_UNESCAPE_CALLBACK, unescape, NULL,
-								MHD_OPTION_END)) == NULL) {
-			debug(LOG_ERR, "Could not create web server: %s", strerror(errno));
-			exit(1);
-		}
+	// Get the ndsctl socket path/filename
+	if (strcmp(config->ndsctl_sock, DEFAULT_NDSCTL_SOCK) == 0) {
+		safe_asprintf(&socket, "%s/%s", config->tmpfsmountpoint, DEFAULT_NDSCTL_SOCK);
+		config->ndsctl_sock = safe_strdup(socket);
+		free(socket);
 	}
 
-	// TODO: set listening socket - do we need it?
+	debug(LOG_NOTICE, "Socket access at %s", config->ndsctl_sock);
 
-	debug(LOG_NOTICE, "Created web server on %s", config->gw_address);
-	debug(LOG_INFO, "Handle [%i]", webserver);
-
-	// Check if login script, custom preauth script or legacy splash is enabled
+	// Check if login script or custom preauth script is enabled
 	if (config->login_option_enabled >= 1) {
 		debug(LOG_NOTICE, "Login option is Enabled using mode %d.\n", config->login_option_enabled);
 		config->preauth = safe_strdup(loginscript);
-	} else if (config->login_option_enabled == 0 && config->fas_port == 0 && config->allow_legacy_splash == 0 && config->preauth == NULL) {
+	} else if (config->login_option_enabled == 0 && config->fas_port == 0 && config->preauth == NULL) {
 		debug(LOG_NOTICE, "Click to Continue option is Enabled.\n");
 		config->preauth = safe_strdup(loginscript);
-	} else if (config->login_option_enabled == 0 && config->allow_legacy_splash == 1) {
-		debug(LOG_NOTICE, "Legacy html Splash Page is Enabled.\n");
-		config->preauth = NULL;
-	} else if (config->login_option_enabled == 0 && config->fas_port == 0 && config->allow_legacy_splash == 0 && config->preauth != NULL) {
+	} else if (config->login_option_enabled == 0 && config->fas_port == 0 && config->preauth != NULL) {
 		debug(LOG_NOTICE, "Custom PreAuth Script Enabled.\n");
-	} else if (config->login_option_enabled == 0 && config->fas_port >= 1 && config->allow_legacy_splash == 0 ) {
+	} else if (config->login_option_enabled == 0 && config->fas_port >= 1 ) {
 		debug(LOG_NOTICE, "FAS Enabled.\n");
 		config->preauth = NULL;
 	}
@@ -795,7 +771,9 @@ main_loop(void)
 	if (result) {
 		debug(LOG_INFO, "Failed to wait for opennds thread.");
 	}
-	MHD_stop_daemon(webserver);
+	//MHD_stop_daemon(webserver);
+	stop_mhd();
+
 	termination_handler(result);
 }
 
@@ -810,7 +788,7 @@ int main(int argc, char **argv)
 	parse_commandline(argc, argv);
 
 	// Initialize the config
-	debug(LOG_NOTICE, "openNDS Version %s \n", VERSION);
+	debug(LOG_NOTICE, "openNDS Version %s is in startup\n", VERSION);
 	debug(LOG_INFO, "Reading and validating configuration file %s", config->configfile);
 	config_read(config->configfile);
 	config_validate();

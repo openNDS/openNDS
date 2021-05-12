@@ -85,21 +85,16 @@ typedef enum {
 	oFasSSL,
 	oLoginOptionEnabled,
 	oThemeSpecPath,
-	oAllowLegacySplash,
 	oUseOutdatedMHD,
 	oUnescapeCallbackEnabled,
 	oFasSecureEnabled,
 	oHTTPDMaxConn,
 	oWebRoot,
-	oSplashPage,
-	oStatusPage,
-	oRedirectURL,
 	oPreauthIdleTimeout,
 	oAuthIdleTimeout,
 	oCheckInterval,
 	oSetMSS,
 	oMSSValue,
-	oTrafficControl,
 	oRateCheckWindow,
 	oDownloadRate,
 	oUploadRate,
@@ -155,21 +150,16 @@ static const struct {
 	{ "fasssl", oFasSSL },
 	{ "login_option_enabled", oLoginOptionEnabled },
 	{ "themespec_path", oThemeSpecPath },
-	{ "allow_legacy_splash", oAllowLegacySplash },
 	{ "use_outdated_mhd", oUseOutdatedMHD },
 	{ "unescape_callback_enabled", oUnescapeCallbackEnabled },
 	{ "fas_secure_enabled", oFasSecureEnabled },
 	{ "faspath", oFasPath },
 	{ "webroot", oWebRoot },
-	{ "splashpage", oSplashPage },
-	{ "statuspage", oStatusPage },
-	{ "redirectURL", oRedirectURL },
 	{ "preauthidletimeout", oPreauthIdleTimeout },
 	{ "authidletimeout", oAuthIdleTimeout },
 	{ "checkinterval", oCheckInterval },
 	{ "setmss", oSetMSS },
 	{ "mssvalue", oMSSValue },
-	{ "trafficcontrol", oTrafficControl },
 	{ "ratecheckwindow", oRateCheckWindow },
 	{ "downloadrate", oDownloadRate },
 	{ "uploadrate", oUploadRate },
@@ -236,7 +226,7 @@ config_init(void)
 	config.http_encoded_gw_name = NULL;
 	config.url_encoded_gw_name = NULL;
 	config.gw_fqdn = safe_strdup(DEFAULT_GATEWAYFQDN);
-	config.gw_interface = NULL;
+	config.gw_interface = safe_strdup(DEFAULT_GATEWAYINTERFACE);;
 	config.gw_iprange = safe_strdup(DEFAULT_GATEWAY_IPRANGE);
 	config.gw_address = NULL;
 	config.gw_ip = NULL;
@@ -245,7 +235,6 @@ config_init(void)
 	config.fas_key = safe_strdup(DEFAULT_FASKEY);
 	config.login_option_enabled = DEFAULT_LOGIN_OPTION_ENABLED;
 	config.themespec_path = NULL;
-	config.allow_legacy_splash = DEFAULT_ALLOW_LEGACY_SPLASH;
 	config.use_outdated_mhd = DEFAULT_USE_OUTDATED_MHD;
 	config.unescape_callback_enabled = DEFAULT_UNESCAPE_CALLBACK_ENABLED;
 	config.fas_secure_enabled = DEFAULT_FAS_SECURE_ENABLED;
@@ -261,19 +250,15 @@ config_init(void)
 	config.tmpfsmountpoint = NULL;
 	config.fas_path = DEFAULT_FASPATH;
 	config.webroot = safe_strdup(DEFAULT_WEBROOT);
-	config.splashpage = safe_strdup(DEFAULT_SPLASHPAGE);
-	config.statuspage = safe_strdup(DEFAULT_STATUSPAGE);
 	config.authdir = safe_strdup(DEFAULT_AUTHDIR);
 	config.denydir = safe_strdup(DEFAULT_DENYDIR);
 	config.preauthdir = safe_strdup(DEFAULT_PREAUTHDIR);
-	config.redirectURL = NULL;
 	config.preauth_idle_timeout = DEFAULT_PREAUTH_IDLE_TIMEOUT,
 	config.auth_idle_timeout = DEFAULT_AUTH_IDLE_TIMEOUT,
 	config.checkinterval = DEFAULT_CHECKINTERVAL;
 	config.daemon = -1;
 	config.set_mss = DEFAULT_SET_MSS;
 	config.mss_value = DEFAULT_MSS_VALUE;
-	config.traffic_control = DEFAULT_TRAFFIC_CONTROL;
 	config.rate_check_window = DEFAULT_RATE_CHECK_WINDOW;
 	config.upload_rate =  DEFAULT_UPLOAD_RATE;
 	config.download_rate = DEFAULT_DOWNLOAD_RATE;
@@ -283,7 +268,6 @@ config_init(void)
 	config.syslog_facility = DEFAULT_SYSLOG_FACILITY;
 	config.log_syslog = DEFAULT_LOG_SYSLOG;
 	config.ndsctl_sock = safe_strdup(DEFAULT_NDSCTL_SOCK);
-	config.internal_sock = safe_strdup(DEFAULT_INTERNAL_SOCK);
 	config.rulesets = NULL;
 	config.trustedmaclist = NULL;
 	config.blockedmaclist = NULL;
@@ -834,7 +818,7 @@ config_read(const char *filename)
 			config.gw_ip = safe_strdup(p1);
 			break;
 		case oGatewayPort:
-			if (sscanf(p1, "%u", &config.gw_port) < 81) {
+			if (sscanf(p1, "%u", &config.gw_port) < 1) {
 				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
 				debug(LOG_ERR, "Exiting...");
 				exit(1);
@@ -862,13 +846,6 @@ config_read(const char *filename)
 				exit(1);
 			}
 			debug(LOG_INFO, "Added ThemeSpec [%s]", p1);
-			break;
-		case oAllowLegacySplash:
-			if (sscanf(p1, "%d", &config.allow_legacy_splash) < 1) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
 			break;
 		case oUseOutdatedMHD:
 			if (sscanf(p1, "%d", &config.use_outdated_mhd) < 1) {
@@ -968,19 +945,6 @@ config_read(const char *filename)
 			while((p2 = strrchr(p1,'/')) == (p1 + strlen(p1) - 1)) *p2 = '\0';
 			config.webroot = safe_strdup(p1);
 			break;
-		case oSplashPage:
-			config.splashpage = safe_strdup(p1);
-			break;
-		case oStatusPage:
-			config.statuspage = safe_strdup(p1);
-			break;
-
-		case oRedirectURL:
-			// disable support for redirectURL
-			// TODO Remove code at later date
-			//config.redirectURL = safe_strdup(p1);
-			debug(LOG_ERR, "RedirectURL is no longer supported, please use FAS to provide this functionality");
-			break;
 		case oAuthIdleTimeout:
 			if (sscanf(p1, "%d", &config.auth_idle_timeout) < 1 || config.auth_idle_timeout < 0) {
 				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
@@ -1010,15 +974,6 @@ config_read(const char *filename)
 			break;
 		case oMSSValue:
 			if (sscanf(p1, "%d", &config.mss_value) < 1) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
-		case oTrafficControl:
-			if ((value = parse_boolean(p1)) != -1) {
-				config.traffic_control = value;
-			} else {
 				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
 				debug(LOG_ERR, "Exiting...");
 				exit(1);

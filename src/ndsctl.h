@@ -27,6 +27,6 @@
 #ifndef _NDSCTL_H_
 #define _NDSCTL_H_
 
-#define DEFAULT_SOCK "/tmp/ndsctl.sock"
+#define DEFAULT_SOCKET_FILENAME "ndsctl.sock"
 
 #endif /* _NDSCTL_H_ */

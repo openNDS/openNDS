@@ -1,5 +1,5 @@
-#ifndef NDS_MICROHTTPD_H
-#define NDS_MICROHTTPD_H
+#ifndef HTTP_MICROHTTPD_H
+#define HTTP_MICROHTTPD_H
 
 #include <stddef.h>
 #include <stdio.h>
@@ -10,6 +10,8 @@ struct MHD_Connection;
 /** @brief Get an IP's MAC address from the ARP cache.*/
 int arp_get(char mac_addr[18], const char req_ip[]);
 
+void start_mhd(void);
+void stop_mhd(void);
 
 enum MHD_Result libmicrohttpd_cb (void *cls,
 					struct MHD_Connection *connection,
@@ -21,4 +23,4 @@ enum MHD_Result libmicrohttpd_cb (void *cls,
 
 size_t unescape(void * cls, struct MHD_Connection *c, char *src);
 
-#endif // NDS_MICROHTTPD_H
+#endif // HTTP_MICROHTTPD_H

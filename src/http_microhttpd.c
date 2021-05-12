@@ -39,13 +39,9 @@
 #include "fw_iptables.h"
 #include "mimetypes.h"
 #include "safe.h"
-#include "template.h"
 #include "util.h"
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
-
-// how much memory we reserve for extending template variables
-#define TMPLVAR_SIZE 4096
 
 // Max length of a query string QUERYMAXLEN in bytes defined in common.h
 
@@ -59,20 +55,65 @@ static int authenticate_client(struct MHD_Connection *connection, const char *re
 static enum MHD_Result get_host_value_callback(void *cls, enum MHD_ValueKind kind, const char *key, const char *value);
 static enum MHD_Result get_user_agent_callback(void *cls, enum MHD_ValueKind kind, const char *key, const char *value);
 static int serve_file(struct MHD_Connection *connection, t_client *client, const char *url);
-static int show_splashpage(struct MHD_Connection *connection, t_client *client);
-static int show_statuspage(struct MHD_Connection *connection, t_client *client);
 static int show_preauthpage(struct MHD_Connection *connection, const char *query);
 static int encode_and_redirect_to_splashpage(struct MHD_Connection *connection, t_client *client, const char *originurl, const char *querystr);
 static int redirect_to_splashpage(struct MHD_Connection *connection, t_client *client, const char *host, const char *url);
 static int send_error(struct MHD_Connection *connection, int error);
 static int send_redirect_temp(struct MHD_Connection *connection, t_client *client, const char *url);
-//static int send_refresh(struct MHD_Connection *connection);
 static int is_foreign_hosts(struct MHD_Connection *connection, const char *host);
-static int is_splashpage(const char *host, const char *url);
 static int get_query(struct MHD_Connection *connection, char **collect_query, const char *separator);
 static char *construct_querystring(t_client *client, char *originurl, char *querystr);
 static const char *get_redirect_url(struct MHD_Connection *connection);
 static const char *lookup_mimetype(const char *filename);
+
+struct MHD_Daemon * webserver = NULL;
+
+void stop_mhd(void)
+{
+	debug(LOG_INFO, "Calling MHD_stop_daemon [%lu]", webserver);
+	MHD_stop_daemon(webserver);
+}
+
+void start_mhd(void)
+{
+	// Initializes the web server
+	s_config *config;
+	config = config_get_config();
+
+	if (config->unescape_callback_enabled == 0) {
+		debug(LOG_INFO, "MHD Unescape Callback is Disabled");
+
+		if ((webserver = MHD_start_daemon(MHD_USE_AUTO_INTERNAL_THREAD | MHD_USE_TCP_FASTOPEN,
+			config->gw_port,
+			NULL, NULL,
+			libmicrohttpd_cb, NULL,
+			MHD_OPTION_CONNECTION_TIMEOUT, (unsigned int) 120,
+			MHD_OPTION_LISTENING_ADDRESS_REUSE, 1,
+			MHD_OPTION_END))
+				== NULL) {
+			debug(LOG_ERR, "Could not create web server: %s", strerror(errno));
+			exit(1);
+		}
+
+	} else {
+		debug(LOG_NOTICE, "MHD Unescape Callback is Enabled");
+
+		if ((webserver = MHD_start_daemon(MHD_USE_AUTO_INTERNAL_THREAD | MHD_USE_TCP_FASTOPEN,
+			config->gw_port,
+			NULL, NULL,
+			libmicrohttpd_cb, NULL,
+			MHD_OPTION_CONNECTION_TIMEOUT, (unsigned int) 120,
+			MHD_OPTION_LISTENING_ADDRESS_REUSE, 1,
+			MHD_OPTION_UNESCAPE_CALLBACK, unescape, NULL,
+			MHD_OPTION_END))
+				== NULL) {
+			debug(LOG_ERR, "Could not create web server: %s", strerror(errno));
+			exit(1);
+		}
+	}
+
+	debug(LOG_INFO, "MHD Handle [%lu]", webserver);
+}
 
 
 /* Call the BinAuth script or program with output and input arguments.
@@ -101,7 +142,7 @@ static int do_binauth(
 	char password_enc[64] = {0};
 	char custom_dec_b64[384 *4 / 3] = {0};
 	char custom_enc[384] = {0};
-	char lockfile[] = "/tmp/ndsctl.lock";
+	char *lockfile;
 	FILE *fd;
 	char redirect_url_enc_buf[QUERYMAXLEN] = {0};
 	const char *username;
@@ -159,13 +200,28 @@ static int do_binauth(
 
 	// Note: username, password and user_agent may contain spaces so argument should be quoted
 	safe_asprintf(&argv,"%s auth_client %s '%s' '%s' '%s' '%s' '%s' '%s' '%s'",
-		binauth, client->mac, username_enc, password_enc, redirect_url_enc_buf, enc_user_agent, client->ip, client->token, custom_enc);
+		binauth,
+		client->mac,
+		username_enc,
+		password_enc,
+		redirect_url_enc_buf,
+		enc_user_agent,
+		client->ip,
+		client->token,
+		custom_enc
+	);
 
 	debug(LOG_DEBUG, "BinAuth argv: %s", argv);
 
-	/* ndsctl will deadlock if run within the BinAuth script so we must lock it
-	 *Create lock */
-	fd = fopen(lockfile, "w");
+	// ndsctl will deadlock if run within the BinAuth script so lock it
+
+	safe_asprintf(&lockfile, "%s/ndsctl.lock", config->tmpfsmountpoint);
+
+	if ((fd = fopen(lockfile, "r")) == NULL) {
+		//No lockfile, so create one
+		fd = fopen(lockfile, "w");
+	}
+
 
 	// execute the script
 	rc = execute_ret_url_encoded(msg, sizeof(msg) - 1, argv);
@@ -173,11 +229,16 @@ static int do_binauth(
 	free(argv);
 
 	// unlock ndsctl
-	fclose(fd);
-	remove(lockfile);
+	if (fd) {
+		fclose(fd);
+		remove(lockfile);
+	}
+
+	free(lockfile);
 
 	if (rc != 0) {
-		return -1;
+		debug(LOG_DEBUG, "BinAuth script failed to execute");
+		return 0;
 	}
 
 	rc = sscanf(msg, "%d %llu %llu %llu %llu", &seconds, &upload_rate, &download_rate, &upload_quota, &download_quota);
@@ -233,7 +294,7 @@ static int is_foreign_hosts(struct MHD_Connection *connection, const char *host)
 	char our_host[MAX_HOSTPORTLEN];
 	s_config *config = config_get_config();
 	snprintf(our_host, MAX_HOSTPORTLEN, "%s", config->gw_address);
-	debug(LOG_INFO, "Our host: %s Requested host: %s", our_host, host);
+	debug(LOG_DEBUG, "Our host: %s Requested host: %s", our_host, host);
 
 
 	// we serve all request without a host entry as well we serve all request going to our gw_address
@@ -257,47 +318,6 @@ static int is_foreign_hosts(struct MHD_Connection *connection, const char *host)
 
 	return 1;
 }
-
-static int is_splashpage(const char *host, const char *url)
-{
-	char our_host[MAX_HOSTPORTLEN];
-	s_config *config = config_get_config();
-	snprintf(our_host, MAX_HOSTPORTLEN, "%s", config->gw_address);
-
-	if (host == NULL) {
-		/* no hostname given
-		 * '/' -> splash
-		 * '' -> splash [is this even possible with MHD?
-		 */
-		if (strlen(url) == 0 ||
-				!strcmp("/", url)) {
-			return 1;
-		}
-	} else {
-		// hostname give - check if it's our hostname
-
-		if (strcmp(host, our_host)) {
-			// hostname isn't ours
-			return 0;
-		}
-
-		/* '/' -> splash
-		 * '' -> splash
-		 */
-		if (strlen(url) == 0 ||
-				!strcmp("/", url)) {
-			return 1;
-		}
-
-		if (strlen(url) > 0 &&
-				!strcmp(config->splashpage, url+1)) {
-			return 1;
-		}
-	}
-	// doesnt hit one of our rules - this isn't the splashpage
-	return 0;
-}
-
 
 // @brief Get client mac by ip address from neighbor cache
 int
@@ -403,9 +423,10 @@ enum MHD_Result libmicrohttpd_cb(
 	char ip[INET6_ADDRSTRLEN+1];
 	char mac[18];
 	char *dds = "../";
+	char *mhdstatus = "/mhdstatus";
 	int rc = 0;
 
-	debug(LOG_DEBUG, "access: %s %s", method, url);
+	debug(LOG_DEBUG, "client access: %s %s", method, url);
 
 	// only allow get
 	if (0 != strcmp(method, "GET")) {
@@ -418,6 +439,13 @@ enum MHD_Result libmicrohttpd_cb(
 		debug(LOG_WARNING, "Probable Path Traversal Attack Detected - %s", url);
 		return send_error(connection, 403);
 	}
+
+	// check for mhdstatus request
+	if (strstr(url, mhdstatus) != NULL) {
+		debug(LOG_DEBUG, "MHD Status Request - %s", url);
+		return send_error(connection, 511);
+	}
+
 
 	/* switch between preauth, authenticated
 	 * - always - set caching headers
@@ -640,7 +668,7 @@ static int authenticate_client(struct MHD_Connection *connection,
 		return send_error(connection, 200);
 	}
 
-	debug(LOG_INFO, "authenticate: Session Start - %lu Session End - %lu", client->session_start, client->session_end);
+	debug(LOG_DEBUG, "authenticate: Session Start - %lu Session End - %lu", client->session_start, client->session_end);
 }
 
 /**
@@ -680,7 +708,7 @@ static int authenticated(struct MHD_Connection *connection,
 		debug(LOG_ERR, "authenticated: Error getting host");
 		return ret;
 	} else {
-		debug(LOG_INFO, "An authenticated client is requesting: host [%s] url [%s]", host, url);
+		debug(LOG_DEBUG, "An authenticated client is requesting: host [%s] url [%s]", host, url);
 	}
 
 	/* check if this is a late request, meaning the user tries to get the internet, but ended up here,
@@ -727,8 +755,6 @@ static int authenticated(struct MHD_Connection *connection,
 			ret = show_preauthpage(connection, fasurl);
 			free(fasurl);
 			return ret;	
-		} else {
-			return show_statuspage(connection, client);
 		}
 	}
 
@@ -746,8 +772,6 @@ static int authenticated(struct MHD_Connection *connection,
 			ret = show_preauthpage(connection, fasurl);
 			free(fasurl);
 			return ret;
-		} else {
-			return show_statuspage(connection, client);
 		}
 	}
 
@@ -757,7 +781,7 @@ static int authenticated(struct MHD_Connection *connection,
 
 		if (rc != 0) {
 			debug(LOG_WARNING, "Script: /usr/lib/opennds/client_params.sh - failed to execute");
-			return -1;
+			return 0;
 		}
 
 		// serve the script output (in msg)
@@ -863,8 +887,6 @@ static int preauthenticated(struct MHD_Connection *connection,
 	}
 
 	debug(LOG_DEBUG, "preauthenticated: host [%s] url [%s]", host, url);
-	debug(LOG_DEBUG, "config->preauthdir: [ %s ], config->gw_fqdn: [ %s ] ", config->preauthdir, config->gw_fqdn);
-	debug(LOG_DEBUG, "config->gw_address: [ %s ], config->gw_ip: [ %s ] ", config->gw_address, config->gw_ip);
 
 	// User just accessed gatewayaddress:gatewayport either directly or by redirect
 	if (strcmp(url, "/") == 0) {
@@ -893,16 +915,12 @@ static int preauthenticated(struct MHD_Connection *connection,
 
 	debug(LOG_DEBUG, "preauthenticated: Requested Host is [ %s ]", host);
 	debug(LOG_DEBUG, "preauthenticated: Requested url is [ %s ]", url);
-	debug(LOG_DEBUG, "preauthenticated: Gateway Address is [ %s ]", config->gw_address);
-	debug(LOG_DEBUG, "preauthenticated: Gateway Port is [ %u ]", config->gw_port);
 
 	// check if this is an attempt to directly access the basic splash page when FAS is enabled
 	if (config->fas_port) {
 		snprintf(portstr, MAX_HOSTPORTLEN, ":%u", config->gw_port);
 
 		debug(LOG_DEBUG, "preauthenticated: FAS is enabled");
-		debug(LOG_DEBUG, "preauthenticated: NDS port ID is [ %s ]", portstr);
-		debug(LOG_DEBUG, "preauthenticated: NDS port ID search result is [ %s ]", strstr(host, portstr));
 
 		if (check_authdir_match(url, config->authdir) || strstr(host, "/splash.css") == NULL) {
 			debug(LOG_DEBUG, "preauthenticated: splash.css or authdir detected");
@@ -925,26 +943,8 @@ static int preauthenticated(struct MHD_Connection *connection,
 	 * check if client wants to be authenticated
 	 */
 	if (check_authdir_match(url, config->authdir)) {
-
-		/* Only the first request will redirected to config->redirectURL.
-		 * TODO: Deprecate redirectURL
-
-			redirectURL is now redundant as most CPD implementations immediately close the "splash" page
-			as soon as NDS authenticates, thus redirectURL will not be shown.
-
-			This functionality, ie displaying a particular web page as a final "Landing Page"
-			can be achieved reliably using FAS, with NDS calling the previous "redirectURL" as the FAS page.
-
-		 * When the client reloads a page when it's authenticated, it should be redirected
-		 * to their origin url
-		 */
 		debug(LOG_DEBUG, "authdir url detected: %s", url);
-
-		if (config->redirectURL) {
-			redirect_url = config->redirectURL;
-		} else {
-			redirect_url = get_redirect_url(connection);
-		}
+		redirect_url = get_redirect_url(connection);
 
 		if (!try_to_authenticate(connection, client, host, url)) {
 			// user used an invalid token, redirect to splashpage but hold query "redir" intact
@@ -954,10 +954,6 @@ static int preauthenticated(struct MHD_Connection *connection,
 		}
 
 		return authenticate_client(connection, redirect_url, client);
-	}
-
-	if (is_splashpage(host, url)) {
-		return show_splashpage(connection, client);
 	}
 
 	// no special handling left - try to serve static content to the user
@@ -1023,9 +1019,6 @@ static int encode_and_redirect_to_splashpage(struct MHD_Connection *connection, 
 			safe_asprintf(&splashpageurl, "%s?%s",
 				config->fas_url, querystr);
 		}
-	} else {
-		safe_asprintf(&splashpageurl, "http://%s/%s?redir=%s",
-			config->gw_address, config->splashpage, originurl);
 	}
 
 	debug(LOG_DEBUG, "splashpageurl: %s", splashpageurl);
@@ -1100,7 +1093,7 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 				debug(LOG_DEBUG, "hid=%s", hash);
 
 				get_client_interface(clientif, sizeof(clientif), client->mac);
-				debug(LOG_INFO, "clientif: [%s] url_encoded_gw_name: [%s]", clientif, config->url_encoded_gw_name);
+				debug(LOG_DEBUG, "clientif: [%s] url_encoded_gw_name: [%s]", clientif, config->url_encoded_gw_name);
 
 				snprintf(query_str, QUERYMAXLEN,
 					"hid=%s%sclientip=%s%sclientmac=%s%sgatewayname=%s%sversion=%s%sgatewayaddress=%s%sgatewaymac=%s%soriginurl=%s%sclientif=%s%sthemespec=%s%s%s%s%s%s",
@@ -1139,7 +1132,7 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 		debug(LOG_DEBUG, "hid=%s", hash);
 
 		get_client_interface(clientif, sizeof(clientif), client->mac);
-		debug(LOG_INFO, "clientif: [%s]", clientif);
+		debug(LOG_DEBUG, "clientif: [%s]", clientif);
 		snprintf(querystr, QUERYMAXLEN,
 			"hid=%s%sclientip=%s%sclientmac=%s%sgatewayname=%s%sversion=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s%sthemespec=%s%s%s%s%s%s",
 			hash, QUERYSEPARATOR,
@@ -1320,22 +1313,6 @@ static int get_query(struct MHD_Connection *connection, char **query, const char
 	return 0;
 }
 
-//static int send_refresh(struct MHD_Connection *connection)
-//{
-//	struct MHD_Response *response = NULL;
-
-//	const char *refresh = "<html><meta http-equiv=\"refresh\" content=\"1\"><head/></html>";
-//	const char *mimetype = lookup_mimetype("foo.html");
-//	int ret;
-
-//	response = MHD_create_response_from_buffer(strlen(refresh), (char *)refresh, MHD_RESPMEM_PERSISTENT);
-//	MHD_add_response_header(response, "Content-Type", mimetype);
-//	MHD_add_response_header (response, MHD_HTTP_HEADER_CONNECTION, "close");
-//	ret = MHD_queue_response(connection, 200, response);
-
-//	return ret;
-//}
-
 static int send_error(struct MHD_Connection *connection, int error)
 {
 	struct MHD_Response *response = NULL;
@@ -1428,7 +1405,7 @@ static int send_error(struct MHD_Connection *connection, int error)
 			</body></html>\n",
 			status_url
 		);
-		debug(LOG_DEBUG, " page_511 html: [ %s ]", page_511);
+
 		response = MHD_create_response_from_buffer(strlen(page_511), (char *)page_511, MHD_RESPMEM_MUST_COPY);
 		MHD_add_response_header(response, "Content-Type", mimetype);
 		ret = MHD_queue_response(connection, MHD_HTTP_NETWORK_AUTHENTICATION_REQUIRED, response);
@@ -1488,158 +1465,6 @@ static enum MHD_Result get_user_agent_callback(void *cls, enum MHD_ValueKind kin
 	}
 
 	return MHD_YES;
-}
-
-/**
- * Replace variables in src and copy result to dst
- */
-static void replace_variables(
-	struct MHD_Connection *connection, t_client *client,
-	char *dst, size_t dst_len, const char *src, size_t src_len)
-{
-	s_config *config = config_get_config();
-
-	char nclients[12];
-	char maxclients[12];
-	char clientupload[20];
-	char clientdownload[20];
-	char uptime[64];
-
-	const char *redirect_url = NULL;
-	char *denyaction = NULL;
-	char *authaction = NULL;
-	char *authtarget = NULL;
-
-	sprintf(clientupload, "%llu", client->counters.outgoing);
-	sprintf(clientdownload, "%llu", client->counters.incoming);
-
-	get_uptime_string(uptime);
-	redirect_url = get_redirect_url(connection);
-
-	sprintf(nclients, "%d", get_client_list_length());
-	sprintf(maxclients, "%d", config->maxclients);
-	safe_asprintf(&denyaction, "http://%s/%s/", config->gw_address, config->denydir);
-	safe_asprintf(&authaction, "http://%s/%s/", config->gw_address, config->authdir);
-	safe_asprintf(&authtarget, "http://%s/%s/?tok=%s&amp;redir=%s",
-		config->gw_address, config->authdir, client->token, redirect_url);
-
-	struct template vars[] = {
-		{"authaction", authaction},
-		{"denyaction", denyaction},
-		{"authtarget", authtarget},
-		{"clientip", client->ip},
-		{"clientmac", client->mac},
-		{"clientupload", clientupload},
-		{"clientdownload", clientdownload},
-		{"gatewaymac", config->gw_mac},
-		{"gatewayname", config->http_encoded_gw_name},
-		{"maxclients", maxclients},
-		{"nclients", nclients},
-		{"redir", redirect_url},
-		{"tok", client->token},
-		{"token", client->token},
-		{"uptime", uptime},
-		{"version", VERSION},
-		{NULL, NULL}
-	};
-
-	tmpl_parse(vars, dst, dst_len, src, src_len);
-
-	free(denyaction);
-	free(authaction);
-	free(authtarget);
-}
-
-static int show_templated_page(struct MHD_Connection *connection, t_client *client, const char *page)
-{
-	struct MHD_Response *response;
-	s_config *config = config_get_config();
-	int ret = -1;
-	char filename[PATH_MAX];
-	const char *mimetype;
-	int size = 0, bytes = 0;
-	int page_fd;
-	char *page_result;
-	char *page_tmpl;
-
-	snprintf(filename, PATH_MAX, "%s/%s", config->webroot, page);
-
-	page_fd = open(filename, O_RDONLY);
-	if (page_fd < 0) {
-		return send_error(connection, 404);
-	}
-
-	mimetype = lookup_mimetype(filename);
-
-	// input size
-	size = lseek(page_fd, 0, SEEK_END);
-	lseek(page_fd, 0, SEEK_SET);
-
-	// we TMPLVAR_SIZE for template variables
-	page_tmpl = calloc(size, 1);
-	if (page_tmpl == NULL) {
-		close(page_fd);
-		return send_error(connection, 503);
-	}
-
-	page_result = calloc(size + TMPLVAR_SIZE, 1);
-	if (page_result == NULL) {
-		close(page_fd);
-		free(page_tmpl);
-		return send_error(connection, 503);
-	}
-
-	while (bytes < size) {
-		ret = read(page_fd, page_tmpl + bytes, size - bytes);
-		if (ret < 0) {
-			free(page_result);
-			free(page_tmpl);
-			close(page_fd);
-			return send_error(connection, 503);
-		}
-		bytes += ret;
-	}
-
-	replace_variables(connection, client, page_result, size + TMPLVAR_SIZE, page_tmpl, size);
-
-	response = MHD_create_response_from_buffer(strlen(page_result), (void *)page_result, MHD_RESPMEM_MUST_FREE);
-	if (!response) {
-		close(page_fd);
-		return send_error(connection, 503);
-	}
-
-	MHD_add_response_header(response, "Content-Type", mimetype);
-	ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
-	MHD_destroy_response(response);
-
-	free(page_tmpl);
-	close(page_fd);
-
-	return ret;
-}
-
-/**
- * @brief show_splashpage is called when the client clicked on Ok as well when the client doesn't know us yet.
- * @param connection
- * @param client
- * @return
- */
-static int show_splashpage(struct MHD_Connection *connection, t_client *client)
-{
-	s_config *config = config_get_config();
-	return show_templated_page(connection, client, config->splashpage);
-}
-
-/**
- * @brief show_statuspage is called when the client is already authenticated but still accesses the captive portal
- * @param connection
- * @param client
- * @return
- */
-static int show_statuspage(struct MHD_Connection *connection, t_client *client)
-{
-	s_config *config = config_get_config();
-	return show_templated_page(connection, client, config->statuspage);
 }
 
 /**

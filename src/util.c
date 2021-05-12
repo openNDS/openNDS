@@ -90,9 +90,14 @@ int get_client_interface(char* clientif, int clientif_len, const char *climac)
 		debug(LOG_DEBUG, "Client Mac Address: %s", climac);
 		debug(LOG_DEBUG, "Client Connection(s) [localif] [remotemeshnodemac] [localmeshif]: %s", clientif);
 	} else {
-		debug(LOG_ERR, "Failed to get client connections - client probably offline");
-		free (clifcmd);
-		return -1;
+		debug(LOG_INFO, "Failed to get client connections for [%s] - retrying", climac);
+		sleep(1);
+
+		if (execute_ret_url_encoded(clientif, clientif_len - 1, clifcmd) == 0) {
+			debug(LOG_DEBUG, "Client Connection(s) [localif] [remotemeshnodemac] [localmeshif]: %s", clientif);
+		} else {
+			debug(LOG_INFO, "Failed to get client connections for [%s] - giving up", climac);
+		}
 	}
 	free (clifcmd);
 	return 0;
@@ -139,9 +144,15 @@ static int _execute_ret(char* msg, int msg_len, const char *cmd)
 
 	fp = popen(cmd, "r");
 	if (fp == NULL) {
-		debug(LOG_ERR, "popen(): %s", strerror(errno));
-		rc = -1;
-		goto abort;
+		debug(LOG_ERR, "popen(): [%s] Retrying..", strerror(errno));
+		sleep(1);
+		fp = popen(cmd, "r");
+
+		if (fp == NULL) {
+			debug(LOG_ERR, "popen(): [%s] Giving up..", strerror(errno));
+			rc = -1;
+			goto abort;
+		}
 	}
 
 	if (msg && msg_len > 0) {
@@ -463,10 +474,6 @@ ndsctl_status(FILE *fp)
 	fprintf(fp, "Preauthenticated Client Idle Timeout: %dm\n", config->preauth_idle_timeout);
 	fprintf(fp, "Authenticated Client Idle Timeout: %dm\n", config->auth_idle_timeout);
 
-	if (config->redirectURL) {
-		fprintf(fp, "Redirect URL: %s\n", config->redirectURL);
-	}
-
 	if (config->download_rate > 0) {
 		fprintf(fp, "Download rate limit (default per client): %llu kbit/s\n", config->download_rate);
 	} else {
@@ -652,62 +659,6 @@ ndsctl_status(FILE *fp)
 	}
 
 	fprintf(fp, "========\n");
-}
-
-// TODO Deprecated ndsctl clients, remove at future date
-void
-ndsctl_clients(FILE *fp)
-{
-	t_client *client;
-	int indx;
-	unsigned long int now, durationsecs = 0;
-	unsigned long long int download_bytes, upload_bytes;
-
-	now = time(NULL);
-
-	// Update the client's counters so info is current
-	iptables_fw_counters_update();
-
-	LOCK_CLIENT_LIST();
-
-	fprintf(fp, "%d\n", get_client_list_length());
-
-	client = client_get_first_client();
-	if (client) {
-		fprintf(fp, "\n");
-	}
-
-	indx = 0;
-	while (client != NULL) {
-		fprintf(fp, "client_id=%d\n", indx);
-		fprintf(fp, "ip=%s\nmac=%s\n", client->ip, client->mac);
-		fprintf(fp, "added=%lld\n", (long long) client->session_start);
-		fprintf(fp, "active=%lld\n", (long long) client->counters.last_updated);
-		if (client->session_start) {
-			fprintf(fp, "duration=%lu\n", now - client->session_start);
-		} else {
-			fprintf(fp, "duration=%lu\n", 0ul);
-		}
-		fprintf(fp, "token=%s\n", client->token ? client->token : "none");
-		fprintf(fp, "state=%s\n", fw_connection_state_as_string(client->fw_connection_state));
-
-		durationsecs = now - client->session_start;
-		download_bytes = client->counters.incoming;
-		upload_bytes = client->counters.outgoing;
-
-		fprintf(fp, "downloaded=%llu\n", download_bytes/1000);
-		fprintf(fp, "avg_down_speed=%.2f\n", ((double)download_bytes) / 125 / durationsecs);
-		fprintf(fp, "uploaded=%llu\n", upload_bytes/1000);
-		fprintf(fp, "avg_up_speed=%.2f\n\n", ((double)upload_bytes) / 125 / durationsecs);
-
-		fprintf(fp, "Warning - ndsctl clients is deprecated and will be removed in future versions.\n");
-		fprintf(fp, "Please use status or json options instead.\n\n");
-
-		indx++;
-		client = client->next;
-	}
-
-	UNLOCK_CLIENT_LIST();
 }
 
 static void

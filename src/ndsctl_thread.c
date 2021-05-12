@@ -119,12 +119,12 @@ thread_ndsctl(void *arg)
 
 	// Which to use, AF_UNIX, PF_UNIX, AF_LOCAL, PF_LOCAL?
 	if (bind(sock, (struct sockaddr *)&sa_un, strlen(sock_name) + sizeof(sa_un.sun_family))) {
-		debug(LOG_ERR, "Could not bind control socket: %s", strerror(errno));
+		debug(LOG_ERR, "Could not bind control socket: [%s] Terminating...", strerror(errno));
 		pthread_exit(NULL);
 	}
 
 	if (listen(sock, 5)) {
-		debug(LOG_ERR, "Could not listen on control socket: %s", strerror(errno));
+		debug(LOG_ERR, "Could not listen on control socket: [%s] Terminating...", strerror(errno));
 		pthread_exit(NULL);
 	}
 
@@ -135,7 +135,7 @@ thread_ndsctl(void *arg)
 	ev.data.fd = sock;
 
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, sock, &ev) < 0) {
-		debug(LOG_ERR, "Could not insert socket fd to epoll set: %s", strerror(errno));
+		debug(LOG_ERR, "Could not insert socket fd to epoll set: [%s] Terminating...", strerror(errno));
 		pthread_exit(NULL);
 	}
 
@@ -255,8 +255,6 @@ ndsctl_handler(int fd)
 
 	if (strncmp(request, "status", 6) == 0) {
 		ndsctl_status(fp);
-	} else if (strncmp(request, "clients", 7) == 0) {
-		ndsctl_clients(fp);
 	} else if (strncmp(request, "json", 4) == 0) {
 		ndsctl_json(fp, (request + 5));
 	} else if (strncmp(request, "stop", 4) == 0) {
@@ -302,6 +300,7 @@ ndsctl_auth(FILE *fp, char *arg)
 	unsigned id;
 	int rc = -1;
 	int seconds = 60 * config->session_timeout;
+	int custom_seconds;
 	int uploadrate = config->upload_rate;
 	int downloadrate = config->download_rate;
 	unsigned long long int uploadquota = config->upload_quota;
@@ -331,7 +330,10 @@ ndsctl_auth(FILE *fp, char *arg)
 	debug(LOG_DEBUG, "arg3 [%s]", arg3);
 
 	if (arg3 != NULL) {
-		seconds = 60 * strtol(arg3, &ptr, 10);
+		custom_seconds = 60 * strtol(arg3, &ptr, 10);
+		if (custom_seconds > 0) {
+			seconds = custom_seconds;
+		}
 	}
 
 	// arg4 = upload rate (kb/s)

@@ -139,8 +139,6 @@ usage(void)
 		"commands:\n"
 		"  status\n"
 		"	View the status of opennds\n\n"
-		"  clients\n"
-		"	Display machine-readable client list\n\n"
 		"  json	mac|ip|token(optional)\n"
 		"	Display client list in json format\n"
 		"	mac|ip|token is optional, if not specified, all clients are listed\n\n"
@@ -183,7 +181,6 @@ usage(void)
 }
 
 static struct argument arguments[] = {
-	{"clients", NULL, NULL},
 	{"json", NULL, NULL},
 	{"status", NULL, NULL},
 	{"stop", NULL, NULL},
@@ -320,25 +317,22 @@ int
 main(int argc, char **argv)
 {
 	const struct argument* arg;
-	const char *socket;
+	char *socket;
 	int i = 1;
 	int counter;
-	char args[1024] = {0};
-	char argi[512] = {0};
+	char args[256] = {0};
+	char argi[128] = {0};
 	char str_b64[QUERYMAXLEN] = {0};
-	char msg[128] = {0};
+	char mountpoint[128] = {0};
 	char *lockfile;
 	char *cmd;
 	FILE *fd;
 
-	socket = strdup(DEFAULT_SOCK);
+	socket = strdup(DEFAULT_SOCKET_FILENAME);
+
+	// check arguments and take action:
 
 	if (argc <= i) {
-		usage();
-		return 0;
-	}
-
-	if (strcmp(argv[1], "-h") == 0) {
 		usage();
 		return 1;
 	}
@@ -353,10 +347,14 @@ main(int argc, char **argv)
 		}
 	}
 
-
-	if (strcmp(argv[1], "b64decode") == 0) {
+	if (strcmp(argv[i], "b64decode") == 0) {
 		uh_b64decode(str_b64, sizeof(str_b64), argv[i+1], strlen(argv[i+1]));
 		printf("%s", str_b64);
+		return 0;
+	}
+
+	if (strcmp(argv[1], "-h") == 0) {
+		usage();
 		return 0;
 	}
 
@@ -367,12 +365,12 @@ main(int argc, char **argv)
 		printf("Unable to open library - Terminating");
 		exit(1);
 	}
-
 	free(cmd);
-	fgets(msg, sizeof(msg), fd);
+	fgets(mountpoint, sizeof(mountpoint), fd);
 	pclose(fd);
 
-	safe_asprintf(&lockfile, "%s/ndsctl.lock", msg);
+	// Create the lock file
+	safe_asprintf(&lockfile, "%s/ndsctl.lock", mountpoint);
 
 	if ((fd = fopen(lockfile, "r")) != NULL) {
 		openlog ("ndsctl", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
@@ -386,6 +384,13 @@ main(int argc, char **argv)
 		fd = fopen(lockfile, "w");
 	}
 
+	// Get the socket path/filename
+	if (strcmp(socket, DEFAULT_SOCKET_FILENAME) == 0) {
+		free(socket);
+		safe_asprintf(&socket, "%s/%s", mountpoint, DEFAULT_SOCKET_FILENAME);
+	}
+
+	// check arguments that need socket access and take action:
 	arg = find_argument(argv[i]);
 
 	if (arg == NULL) {
@@ -399,17 +404,17 @@ main(int argc, char **argv)
 	snprintf(args, sizeof(args), "%s", argv[i+1]);
 
 	if (argc > i) {
-		for (counter=2; counter < argc-1; counter++) {
-			snprintf(argi, sizeof(argi), ",%s", argv[i+counter]);
+		for (counter=i+2; counter < argc; counter++) {
+			snprintf(argi, sizeof(argi), ",%s", argv[counter]);
 			strncat(args, argi, sizeof(args)-1);
 		}
 	}
-
 
 	ndsctl_do(socket, arg, args);
 	fclose(fd);
 	remove(lockfile);
 	free(lockfile);
+	free(socket);
 	return 0;
 }
 

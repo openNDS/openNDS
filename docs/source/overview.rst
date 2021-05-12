@@ -9,12 +9,16 @@ Captive Portal Detection (CPD)
 
 Provide simple and immediate public Internet access
 ***************************************************
- NDS provides two pre-installed methods.
+ NDS provides two selectable ready to run methods.
 
- * **Click to Continue**. A simple static web page with template variables (*default*). This provides basic notification and a simple click/tap to continue button.
- * **username/email-address login**. A simple dynamic set of web pages that provide username/email-address login, a welcome page and logs access by client users. (*Installed by default and enabled in the configuration file*)
+ * **Click to Continue**. A simple "Click to Continue" dynamic splash page sequence requiring a client user to accept Terms of Service before continuing to access the Internet (*default*). Basic client device information is recorded in a log file.
+ * **username/email-address login**. A simple dynamic splash page sequence that requires the client user to enter their username and email-address before accepting the Terms of Service. A welcome page and landing page that can carry an information or advertising payload are served to the client in sequence. Client user and client device information is recorded in the log file. (*This mode is selected in the configuration file*)
 
-  Customising the page seen by users is a simple matter of editing the script file.
+  Both these modes are generated using default ThemeSpec script files. These ThemeSpec script files contain easy to edit html blocks, allowing basic content changes to be made very simply.
+
+  Modifying the content seen by users is a simple matter of editing the html blocks within the script file.
+
+  Additional more advanced ThemeSpec files are included and can also be enabled from the config file. These additional files make use of the custom_parameters, custom_images and custom_files config options. Form input fields and text comments can be added, and images and content blocks can be downloaded on demand from remote servers.  
 
 Write Your Own Captive Portal.
 ******************************

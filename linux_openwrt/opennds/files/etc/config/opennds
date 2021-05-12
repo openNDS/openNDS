@@ -6,13 +6,13 @@ config opennds
 	option enabled 1
 	###########################################################################################
 
-	# Use plain configuration file (not recommended)
+	# Use deprecated generic configuration file (not recommended)
 	#option config '/etc/opennds/opennds.conf'
 	###########################################################################################
 
 	# Enable debug output (0-3)
 	# Default: 1
-	# 0 : Silent (only LOG_ERR and LOG_EMERG messages will be seen, otherwise there will be no logging.)
+	# 0 : Silent (only initial startup, LOG_ERR and LOG_EMERG messages will be seen, otherwise there will be no logging.)
 	# 1 : LOG_ERR, LOG_EMERG, LOG_WARNING and LOG_NOTICE (this is the default level).
 	# 2 : debuglevel 1  + LOG_INFO
 	# 3 : debuglevel 2 + LOG_DEBUG
@@ -26,24 +26,26 @@ config opennds
 	###########################################################################################
 
 	# Login Option
-	# Default: 0
+	# Default: 1
 	# Integer value sent to PreAuth script as login mode
 	#
 	# opennds comes preconfigured for three basic modes of operation
 	#
-	# 0.If FAS is not enabled AND legacy templated splash is not enabled, then this functions as mode 1
+	# 0. If FAS is not enabled, then this functions as mode 1
 	#
 	# 1.Default Dynamic Click to Continue
 	# The pre-installed dynamic login page is enabled by setting option login_option_enabled = '1'.
 	# It generates a Click to Continue page followed by a info/advertising page.
 	# User clicks on “Continue” are recorded in the log file /[tmpfs_dir]/ndslog/ndslog.log
 	#
-	# 2.Username/Emailaddress Dynamic Login
+	# 2. Username/Emailaddress Dynamic Login
 	# The pre-installed dynamic login page is enabled by setting option login_option_enabled = '2'.
 	# It generates a login page asking for username and email address followed by an info/advertising page.
 	# User logins are recorded in the log file /[tmpfs_dir]/ndslog/ndslog.log
 	#
-	#option login_option_enabled '0'
+	# 3. Use Theme defined in ThemeSpec path (option themespec_path)
+	#
+	#option login_option_enabled '1'
 	###########################################################################################
 
 	# ThemeSpec Path
@@ -55,12 +57,11 @@ config opennds
 	#
 	# Sets the ThemeSpec file path to be used when login_option_enabled '3'
 	#
-	# The ThemeSpec Path contains:
-	# 1. lists of custom parameters, variables and image urls
-	# 2. html to be used in the generation of the dynamic splash page sequence
+	# The ThemeSpec script makes use of lists of custom parameters, custom variables, custom image urls and custom files.
+	# and is used to generate the dynamic splash page sequence
 	#
-	# ThemeSpec file will normally reside in /usr/lib/opennds/ but can be anywhere accessible to openNDS.
-	# File must be flagged as executable.
+	# The ThemeSpec file will normally reside in /usr/lib/opennds/ but can be anywhere accessible to openNDS.
+	# The file must be flagged as executable and have the correct shebang for the default shell.
 	#
 	#option themespec_path '/usr/lib/opennds/<filename>'
 	###########################################################################################
@@ -70,12 +71,24 @@ config opennds
 	# Default None
 	#
 	# Custom Parameters listed in the form of param_name=param_value
-	# param_name and param_value must be htmlentity encoded if containing white space or single quotes
+	# param_name and param_value must be urlencoded if containing white space or single quotes
+	# eg replace spaces with %20 - replace single quotes with %27
 	#
-	#list fas_custom_parameters_list '<param_name1=param_value1> <param_name2=param_value2> [.....] <param_nameN=param_valueN>'
+	# Parameters should be configured one per line to prevent possible parsing errors.
+	# eg:
+	#list fas_custom_parameters_list '<param_name1=param_value1>'
+	#list fas_custom_parameters_list '<param_name2=param_value2>'
+	# etc.
 	#
-	# Example:
-	#list fas_custom_parameters_list 'location=main_building admin_email=norman@bates-motel.com'
+	# The following Working Example applies to the installed ThemeSpec Files:
+	# theme_click-to-continue-custom-placeholders
+	# and
+	# theme_user-email-login-custom-placeholders
+	#
+	#list fas_custom_parameters_list 'logo_message=openNDS:%20Perfect%20on%20OpenWrt!'
+	#list fas_custom_parameters_list 'banner1_message=BlueWave%20-%20Wireless%20Network%20Specialists'
+	#list fas_custom_parameters_list 'banner2_message=HMS%20Pickle'
+	#list fas_custom_parameters_list 'banner3_message=SeaWolf%20Cruiser%20Racer'
 	###########################################################################################
 
 	# Define Custom Variables
@@ -83,57 +96,129 @@ config opennds
 	# Default None
 	#
 	# Custom Variables are listed in the form of var_name=var_type
-	# var_name and var_type must be htmlentity encoded if containing white space or single quotes
+	# var_name and var_type must be urlencoded if containing white space or single quotes
+	# eg replace spaces with %20 - replace single quotes with %27
 	#
-	#list fas_custom_variables_list '<var_name1=var_type1> <var_name2=var_type2> [.....] <var_nameN=var_typeN>'
+	# Variables should be configured one per line to prevent possible parsing errors.
+	# eg:
+	#list fas_custom_variables_list '<var_name1=var_type1>'
+	#list fas_custom_variables_list '<var_name2=var_type2>'
+	# etc.
 	#
-	# Example:
-	#list fas_custom_variables_list 'address_line1=text membership_number=number access_code=password'
+	# FAS Generic Variables - a custom FAS or ThemeSpec must be written to make use of FAS Generic Variables
+	#-------------------------------------------------------------------------------------------------------
+	# eg:
+	#list fas_custom_variables_list 'membership_number=number'
+	#list fas_custom_variables_list 'access_code=password'
+	#
+	# ThemeSpec Dynamically generated Form Fields
+	#--------------------------------------------
+	# ThemeSpec scripts can dynamically generate Form Field html and inject into the dynamic splash page sequence.
+	# This is achieved using a SINGLE line containing the keyword "input",
+	# in the form: fieldname:field-description:fieldtype
+	#
+	# Numerous fields can be defined in this single "input=" line, separated by a semicolon (;).
+	#
+	# The following Working Example applies to the installed ThemeSpec Files:
+	# theme_click-to-continue-custom-placeholders
+	# and
+	# theme_user-email-login-custom-placeholders
+	#
+	# this example inserts Phone Number and Home Post Code fields:
+	#
+	#list fas_custom_variables_list 'input=phone:Phone%20Number:text;postcode:Home%20Post%20Code:text'
+	#
 	###########################################################################################
 
 	# Define Custom Images
-	# Custom Images are served by FAS where required in dynamic portal pages
+	# Custom Images are served by a local FAS where required in dynamic portal pages
 	# Default None
 	#
-	# Custom Images are listed in the form of image_name_type=image_url
-	# image_name and image_url must be htmlentity encoded if containing white space or single quotes
-	# The image url must begin with http:// https:// or file://
+	# Custom images will be copied from the URL to the openNDS router
 	#
-	#list fas_custom_images_list '<image_name1_[type]=image_url1> <image_name2_[type]=image_url2> [.....] <image_nameN_[type]=image_urlN>'
+	# Custom Images are listed in the form of image_name_type=image_url
+	# image_name and image_url must be urlencoded if containing white space or single quotes
+	# The image url must begin with http:// https:// or file://
+	# Custom images will be copied from the URL to the openNDS router
+	#
+	# Images should be configured one per line to prevent possible parsing errors.
+	#
+	#list fas_custom_images_list '<image_name1_[type]=image_url1>'
+	#list fas_custom_images_list '<image_name2_[type]=image_url2>'
+	# etc.
+	#
 	# "type" can be any recognised image file extension eg jpg, png, ico, etc.
 	#
-	# Example:
+	# The following Working Example applies to the installed ThemeSpec Files:
+	# theme_click-to-continue-custom-placeholders
+	# and
+	# theme_user-email-login-custom-placeholders
+	#
 	#list fas_custom_images_list 'logo_png=https://openwrt.org/_media/logo.png'
-	#list fas_custom_images_list 'favicon_ico=https://openwrt.org/_media/favicon.ico'
-	#list fas_custom_images_list 'main_jpg=file://etc/opennds/htdocs/images/splash.jpg'
+	#list fas_custom_images_list 'banner1_jpg=https://raw.githubusercontent.com/openNDS/openNDS/v9.0.0/resources/bannerbw.jpg'
+	#list fas_custom_images_list 'banner2_jpg=https://raw.githubusercontent.com/openNDS/openNDS/v9.0.0/resources/bannerpickle.jpg'
+	#list fas_custom_images_list 'banner3_jpg=https://raw.githubusercontent.com/openNDS/openNDS/v9.0.0/resources/bannerseawolf.jpg'
+	#
+	###########################################################################################
+
+	# Define Custom Files
+	# Custom Files are served by a local FAS where required in dynamic portal pages
+	# Default None
+	#
+	# Custom files will be copied from the URL to the openNDS router
+	#
+	# Images should be configured one per line to prevent possible parsing errors.
+	#
+	# Custom files are listed in the form of file_name_type=file_url
+	# file_name and file_url must be urlencoded if containing white space or single quotes
+	# The file url must begin with http:// https:// or file://
+	# Custom files will be copied from the URL to the openNDS router
+	#
+	#list fas_custom_files_list '<file_name1_[type]=file_url1>'
+	#list fas_custom_files_list '<file_name2_[type]=file_url2>'
+	# "type" can be any recognised file extension that can be used to display web content eg txt, htm etc.
+	#
+	# The following Working Example applies to the installed ThemeSpec Files:
+	# theme_click-to-continue-custom-placeholders
+	# and
+	# theme_user-email-login-custom-placeholders
+	#
+	#list fas_custom_files_list 'advert1_htm=https://raw.githubusercontent.com/openNDS/openNDS/v9.0.0/resources/bannerpickle.htm'
+	#
 	###########################################################################################
 
 	# Use outdated libmicrohttpd (MHD)
+	# Default 0
+	#
 	# Warning, this may be unstable or fail entirely - it would be better to upgrade MHD.
+	# Use at your own risk
+	#
 	# Older versions of MHD convert & and + characters to spaces when present in form data
 	# This can make a PreAuth or BinAuth impossible to use for a client if form data contains either of these characters
 	# eg. in username or password
+	#
 	# MHD versions earlier than 0.9.71 are detected.
+	#
 	# If this option is set to 0 (default), NDS will terminate if MHD is earlier than 0.9.71
 	# If this option is set to 1, NDS will attempt to start and log an error.
+	#
 	#option use_outdated_mhd '0'
 	###########################################################################################
 
-	# MHD Unescape callback
+	# MHD Unescape callback - This is an advanced option
+	# Default 0
+	#
 	# MHD has a built in unescape function that urldecodes incoming queries from browsers
-	# This option allows an external unescape script to be enabled
+	#
+	# This option allows an external unescape script to be enabled and replace the built in decoder
+	#
 	# The script must be named unescape.sh, be present in /usr/lib/opennds/ and be executable.
-	# A standard unescape.sh script is installed by default
+	#
+	# A very simple standard unescape.sh script is installed by default
 	# Set to 1 to enable this option, 0 to disable
 	# default is disabled
+	#
 	#option unescape_callback_enabled '0'
-	###########################################################################################
-
-	# Allow use of legacy html splash page
-	# Default '0'
-	# If set to '0' use of legacy html splash page is not allowed
-	# If set to '1' the legacy html splash page is allowed if FAS is not configured and login_option is set to 0
-	#option allow_legacy_splash '0'
 	###########################################################################################
 
 	# WebRoot
@@ -144,31 +229,14 @@ config opennds
 	#option webroot '/etc/opennds/htdocs'
 	###########################################################################################
 
-	# statuspage
-	# Deprecated
-	# Default: status.html
-	#
-	# This is the legacy page that the client is shown if they are already authenticated but navigate to the captive portal.
-	#
-	###########################################################################################
-
-
-	# splashpage
-	# Deprecated
-	# Default: splash.html
-	#
-	# The legacy html page used for templated splash page generation.
-	#
-	# splash.html displays a simplistic click to continue button.
-	#
-	###########################################################################################
-
-	# Interface to use
+	# GateWayInterface
+	# Default br-lan
 	# Use this option to set the device opennds will bind to.
 	# The value may be an interface section in /etc/config/network or a device name such as br-lan.
 	# The selected interface must be allocated an IPv4 address.
 	# In OpenWrt this is normally br-lan, in generic Linux it might be wlan0
-	option gatewayinterface 'br-lan'
+	#
+	#option gatewayinterface 'br-lan'
 	###########################################################################################
 
 	# GatewayPort
@@ -198,21 +266,29 @@ config opennds
 	# Instead use:
 	# option gatewayname 'Bill&#39;s WiFi'
 	#
-	option gatewayname 'OpenWrt openNDS'
+	#option gatewayname 'OpenWrt openNDS'
 	###########################################################################################
 
 	# GatewayFQDN
-	# Default: not set
+	# Default: status.client
 	# This is the simulated FQDN used by a client to access the Client Status Page
 	# If not set, the Status page can be accessed at: http://gatewayaddress:gatewayport/
 	#
 	# Warning - if set, services on port 80 of the gateway will no longer be accessible (eg Luci AdminUI)
 	#
-	option gatewayfqdn 'status.client'
+	# By default, the Error511/Status page will be found at http://status.client/ by a redirection
+	# of port 80 to http://gatewayaddress:gatewayport/
+	#
+	# Disable GatewayFQDN by setting the option to 'disable'
+	# ie:
+	#option gatewayfqdn 'disable'
+	#
+	# Alternate Useful Example:
+	#option gatewayfqdn 'login.page'
 	###########################################################################################
 
 	# MaxClients
-	# Default 20
+	# Default 250
 	# The maximum number of clients allowed to connect
 	# This should be less than or equal to the number of allowed DHCP leases
 	# For example:
@@ -220,17 +296,31 @@ config opennds
 	###########################################################################################
 
 	# Client timeouts in minutes
-	option preauthidletimeout '30'
-	option authidletimeout '120'
+	#
+	# preauthidletimeout is the time in minutes after which a client is disconnected if not authenticated
+	# ie the client has not attempted to authenticate for this period
+	# Default 30 minutes
+	#option preauthidletimeout '30'
+
+	# authidletimeout is the time in minutes after which an idle client is disconnected
+	# ie the client has not used the network access for this period
+	# Default 120 minutes
+	#option authidletimeout '120'
+
 	# Session Timeout is the interval after which clients are forced out (a value of 0 means never)
-	option sessiontimeout '1200'
+	# Clients will be deauthenticated at the end of this period
+	# Default 1200 minutes (20 hours)
+	# Example: Set to 24 hours (1440 minutes)
+	#option sessiontimeout '1440'
 	###########################################################################################
 
-	# The interval in seconds at which opennds checks client timeout status
-	option checkinterval '60'
+	# The interval in seconds at which opennds checks client timeout and quota status
+	# Default 60 seconds (1 minute)
+	# Example: Set to 30 seconds
+	#option checkinterval '30'
 	###########################################################################################
 
-	# Quotas and Rates
+	# Rate Quotas
 	# Note: upload means to the Internet, download means from the Internet
 	# Defaults 0
 	# Integer values only
@@ -239,42 +329,54 @@ config opennds
 	# Values are in kb/s
 	# If set to 0, there is no limit
 	#
-	# Quotas and rates can also be set by FAS via Authmon Daemon, by BinAuth, and by ndsctl auth.
+	# Quotas and rates can also be set by FAS via Authmon Daemon, ThemeSpec scripts, BinAuth, and ndsctl auth.
 	# Values set by these methods, will override values set in this config file.
 	#
 	# Rates:
-	option uploadrate '0'
-	option downloadrate '0'
+	#option uploadrate '0'
+	#option downloadrate '0'
 	#
 	###########################################################################################
+
+	# RateCheckWindow
+	# Default 2
+	#
 	# The client data rate is calculated using a moving average.
+	#
 	# This allows clients to burst at maximum possible rate, only blocking if the moving average
 	# exceeds the specified upload or download rate.
-	# The moving average window size is equal to ratecheckwindow times checkinterval (seconds)
-	# Default 2
-	option ratecheckwindow '2'
-	###########################################################################################
 	#
+	# The moving average window size is equal to ratecheckwindow times checkinterval (seconds)
+	#
+	# All rate limits can be globally disabled by setting this option to 0 (zero)
+	#
+	# Example: Disable all rate quotas fo all clients, overriding settings made in FAS via Authmon Daemon,
+	#	ThemeSpec scripts, BinAuth, and ndsctl auth:
+	#option ratecheckwindow '0'
+	#
+	# Example: Set to 3 checkinterval periods:
+	#option ratecheckwindow '3'
+	###########################################################################################
+
 	# Volume Quotas:
 	# If the client data quota exceeds the value set here, the client will be forced out
+	# Defaults 0
+	# Integer values only
+	#
 	# Values are in kB
 	# If set to 0, there is no limit
 	#
-	option uploadquota '0'
-	option downloadquota '0'
+	#option uploadquota '0'
+	#option downloadquota '0'
 	###########################################################################################
 
-	# Enable BinAuth Support.
+	# Enable BinAuth Support. BinAuth enables POST AUTHENTICATION PROCESSING
+	# and is useful in particular when a FAS is configured remotely
 	# Default disabled
 	#
 	# If set, a BinAuth program or script is triggered by several possible methods
 	# and is called with several arguments on both authentication and deauthentication:
 	#
-	# $<BinAuth> <method> <arg1> <arg2> .... <argN>
-	#
-	# The Binauth script will issue an exit code:
-	# 0 Authentication allowed
-	# 1 Authentication denied
 	#
 	# Possible methods
 	#
@@ -295,7 +397,7 @@ config opennds
 	# "shutdown_deauth": Client was deauthenticated by openNDS terminating.
 	#
 	# A fully functional BinAuth script is pre-installed and provides local logging
-	# of client activity if enabled by uncommenting the following line:
+	# of client activity. This is enabled by uncommenting the following line:
 	#option binauth '/usr/lib/opennds/binauth_log.sh'
 	###########################################################################################
 
@@ -320,15 +422,19 @@ config opennds
 	#
 	# If set, DNS MUST resolve fasremotefqdn to be the same ip address as fasremoteip.
 	#
-	# Typical Remote Shared Hosting Example:
+	# Typical Remote Shared Hosting Example (replace this with your own FAS FQDN):
 	#option fasremotefqdn 'onboard-wifi.net'
+	#
+	# Note: For a CDN (Content Delivery Network) hosted server,
+	#	you must also add fasremotefqdn to the Walled Garden list of FQDNs
+	#
 	###########################################################################################
 
 	# Option: fasremoteip
 	# Default: GatewayAddress (the IP of NDS)
 	# If set, this is the remote ip address of the FAS.
 	#
-	# Typical Remote Shared Hosting Example:
+	# Typical Remote Shared Hosting Example (replace this with your own remote FAS IP):
 	#option fasremoteip '46.32.240.41'
 	###########################################################################################
 
@@ -336,6 +442,8 @@ config opennds
 	# Default: /
 	# This is the path from the FAS Web Root to the FAS login page
 	# (not the file system root).
+	#
+	# In the following examples, replace with your own values for faspath
 	#
 	# Typical Remote Shared Hosting Example (if fasremotefqdn is not specified):
 	#option faspath '/remote_host_fqdn/fas/fas-hid.php'
@@ -350,7 +458,7 @@ config opennds
 	# Option: faskey
 	# Default: 1234567890
 	# A key phrase for NDS to encrypt the query string sent to FAS
-	# Can be up to 64 characters with no white space
+	# Can be any text string with no white space
 	#
 	# Option faskey must be pre-shared with FAS.
 	#
@@ -363,14 +471,14 @@ config opennds
 	# ****If set to "0"****
 	# The FAS is enforced by NDS to use http protocol.
 	# The client token is sent to the FAS in clear text in the query string of the redirect along with authaction and redir.
-	# Note: This level is insecure and can easily be bypassed
+	# Note: This level is insecure and can be easily bypassed
 
 	# ****If set to "1"****
 	# The FAS is enforced by NDS to use http protocol.
 	# The client token will be hashed and sent to the FAS along with other relevent information in a base 64 encoded string
 	#
 	# FAS must return the sha256sum of the concatenation of hid(the hashed original token), and faskey to be used by NDS for client authentication.
-	# This is returned in the normal way in the query string identified as "tok".
+	# This is returned to FAS for authentication
 	#
 
 	# ****If set to "2"****
@@ -401,24 +509,15 @@ config opennds
 	# to achieve NDS authentication without generating browser security warnings or errors.
 	# An example FAS level 3 php script (fas-aes-https.php) is included in the /etc/opennds directory and also supplied in the source code.
 	#
-	# Note: Option faskey must be set if fas secure is set to levels 2 and 3 but is optional for level 1.
-	#option fas_secure_enabled '0'
+	# Note: Option faskey must be pre shared with the FAs script in use (including any ThemeSpec local file) if fas secure is set to levels 1, 2 and 3.
+	#option fas_secure_enabled '1'
 	###########################################################################################
 
 	# PreAuth
+	# Default Not set, or automatically set by "option login_option_enabled"
 	# PreAuth support allows FAS to call a local program or script with html served by the built in NDS web server
 	# If the option is set, it points to a program/script that is called by the NDS FAS handler
 	# All other FAS settings will be overidden.
-	# Initially FAS appends its query string to faspath.
-	# The Preauth program will output html code that will be served to the client by NDS
-	# Using html GET the Preauth program may call:
-	# /opennds_preauth/ to ask the client for more information
-	# or
-	# /opennds_auth/ to authenticate the client
-	#
-	# The Preauth program should append at least the client ip to the query string
-	# (using html input type hidden) for all calls to /opennds_preauth/
-	# It must also obtain the client token (using ndsctl), for NDS authentication when calling /opennds_auth/
 	#
 	#option preauth '/path/to/myscript/myscript.sh'
 	###########################################################################################
@@ -489,7 +588,7 @@ config opennds
 	# list walledgarden_port_list 'port1 port2 port3 .... portN'
 	#
 	# Note: If walledgarden_port_list is NOT specified, then Walled Garden access is granted
-	# for both tcp and udp protocols on ALL ports for each fqdn specified in walledgarden_fqdn_list.
+	# for all protocols (tcp, udp, icmp) on ALL ports for each fqdn specified in walledgarden_fqdn_list.
 	#
 	# Note: If walledgarden_port_list IS specified, then:
 	#  1. Specified port numbers apply to ALL FQDN's specified in walledgarden_fqdn_list.
@@ -509,19 +608,19 @@ config opennds
 
 	# User access to the router
 	#
-	# Essential - Allow ports for DNS and DHCP:
+	# Essential - Allow ports for DNS and DHCP (disabling these will soft brick your router):
 	list users_to_router 'allow tcp port 53'
 	list users_to_router 'allow udp port 53'
 	list users_to_router 'allow udp port 67'
 
 	# Optional - Allow ports for SSH/Telnet/HTTP/HTTPS:
 	list users_to_router 'allow tcp port 22'
-	list users_to_router 'allow tcp port 23'
+	#list users_to_router 'allow tcp port 23'
 	list users_to_router 'allow tcp port 80'
 	list users_to_router 'allow tcp port 443'
 	###########################################################################################
 
-	# MAC addresses that are / are not allowed to access the splash page
+	# MAC addresses that are/are-not allowed to access the splash page
 	# Value is either 'allow' or 'block'. The allowedmac or blockedmac list is used.
 	#
 	# Examples:
@@ -532,7 +631,7 @@ config opennds
 	#
 	# or
 	#
-	#option macmechanism 'allow'
+	#option macmechanism 'block'
 	#list blockedmac '00:00:C0:01:D0:2D'
 	###########################################################################################
 

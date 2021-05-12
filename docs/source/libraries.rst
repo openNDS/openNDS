@@ -71,3 +71,31 @@ eg In the OpenWrt configuration file
   Where:
 
     [-option] is unescape type, currently -url only
+
+libopennds.sh
+#############
+This utility controls many of the functions required for PreAuth/ThemeSpec scripts.
+
+  Usage: libopennds arg1 arg2 ... argN
+
+    **arg1**: "clean", removes custom files, images and client data
+
+    *returns*: tmpfsmountpoint (the mountpoint of the tmpfs volatile storage of the router.
+
+    **arg1**: "tmpfs", finds the tmpfs mountpoint
+
+    *returns*: tmpfsmountpoint (the mountpoint of the tmpfs volatile storage of the router.
+
+    **arg1**: "mhdcheck", checks if MHD is running (used by MHD watchdog)
+    *returns*: "1" if MHD is running, "2" if MHD is not running
+
+    **arg1**: "?fas=<b64string>", generates ThemeSpec html using b64encoded data sent from openNDS
+
+        **arg2**: urlencoded_useragent_string
+
+        **arg3**: mode (1, 2 or 3) (this is the mode specified in option login_option in the config file.
+
+        **arg4**: themespecpath (if mode = 3)
+
+
+    *returns*: html for the specified ThemeSpec.

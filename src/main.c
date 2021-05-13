@@ -649,19 +649,20 @@ setup_from_config(void)
 		debug(LOG_NOTICE, "FAS URL is %s\n", config->fas_url);
 		free(fasurl);
 
-		// Setup the API URL
+		// Setup the API URL | ensure that the api option has been configured
 		if (config->api_remotefqdn) {
 			safe_asprintf(&apiurl, "%s://%s:%u%s",
 				protocol, config->api_remotefqdn, config->api_port,config->api_path);
-			config->api_url = safe_strdup(apiurl);
-		} else {
+			config->api_url = safe_strdup(apiurl);		 
+			free(apiurl);
+		} else if(config->api_remoteip) {
 			safe_asprintf(&apiurl, "%s://%s:%u%s",
 				protocol, config->api_remoteip, config->api_port,config->api_path);
-			config->api_url = safe_strdup(apiurl);
+			config->api_url = safe_strdup(apiurl);			
+			free(apiurl);
 		}
+		
 		debug(LOG_NOTICE, "API URL is %s\n", config->api_url);
-		free(apiurl);
-
 		// Setup the Auth URL
 		if(config->api_url){
 			safe_asprintf(&authurl, "%s",config->api_url);

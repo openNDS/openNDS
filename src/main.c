@@ -242,6 +242,8 @@ setup_from_config(void)
 	char authmonpid[255] = {0};
 	char *socket;
 	char *fasurl = NULL;
+	char *apiurl = NULL;
+	char *authurl = NULL;
 	char *fasssl = NULL;
 	char *gatewayhash = NULL;
 	char *fashid = NULL;
@@ -647,6 +649,32 @@ setup_from_config(void)
 		debug(LOG_NOTICE, "FAS URL is %s\n", config->fas_url);
 		free(fasurl);
 
+		// Setup the API URL | ensure that the api option has been configured
+		if (config->api_remotefqdn) {
+			safe_asprintf(&apiurl, "%s://%s:%u%s",
+				protocol, config->api_remotefqdn, config->api_port,config->api_path);
+			config->api_url = safe_strdup(apiurl);		 
+			free(apiurl);
+		} else if(config->api_remoteip) {
+			safe_asprintf(&apiurl, "%s://%s:%u%s",
+				protocol, config->api_remoteip, config->api_port,config->api_path);
+			config->api_url = safe_strdup(apiurl);			
+			free(apiurl);
+		}
+		
+		debug(LOG_NOTICE, "API URL is %s\n", config->api_url);
+		// Setup the Auth URL
+		if(config->api_url){
+			safe_asprintf(&authurl, "%s",config->api_url);
+			config->auth_url = safe_strdup(authurl);
+		}else{
+			safe_asprintf(&authurl, "%s",config->fas_url);
+			config->auth_url = safe_strdup(authurl);
+		}
+
+		debug(LOG_NOTICE, "Auth URL is %s\n", config->auth_url);
+		free(auth_url);
+
 		// Check if authmon is running and if it is, kill it
 		safe_asprintf(&fasssl, "kill $(pgrep -f \"usr/lib/opennds/authmon.sh\") > /dev/null 2>&1");
 		system(fasssl);
@@ -675,7 +703,7 @@ setup_from_config(void)
 			// Start authmon in the background
 			safe_asprintf(&fasssl,
 				"/usr/lib/opennds/authmon.sh \"%s\" \"%s\" \"%s\" &",
-				config->fas_url,
+				config->auth_url,//config->fas_url,
 				gatewayhash,
 				config->fas_ssl
 			);

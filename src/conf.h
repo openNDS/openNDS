@@ -29,7 +29,7 @@
 #ifndef _CONF_H_
 #define _CONF_H_
 
-#define VERSION "9.0.1beta"
+#define VERSION "9.0.0"
 
 /*
  * Defines how many times should we try detecting the interface with the default route (in seconds).
@@ -57,11 +57,13 @@
 #define DEFAULT_GATEWAYPORT 2050
 #define DEFAULT_GATEWAYFQDN "status.client"
 #define DEFAULT_FASPORT 0
+#define DEFAULT_APIPORT 0
 #define DEFAULT_LOGIN_OPTION_ENABLED 0
 #define DEFAULT_USE_OUTDATED_MHD 0
 #define DEFAULT_UNESCAPE_CALLBACK_ENABLED 0
 #define DEFAULT_FAS_SECURE_ENABLED 1
 #define DEFAULT_FASPATH "/"
+#define DEFAULT_APIPATH "/"
 #define DEFAULT_FASKEY "1234567890"
 #define DEFAULT_CHECKINTERVAL 60
 #define DEFAULT_SESSION_TIMEOUT 1200

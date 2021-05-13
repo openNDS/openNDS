@@ -455,6 +455,59 @@ config opennds
 	#option faspath '/fas/fas-hid.php'
 	###########################################################################################
 
+	# Enable Forwarding Authentication Service (API)
+	# If set all post request to get clients authentication inforamtion that it is changed to send to API server
+	# The value is the IP port number of the API 
+	#
+	# Typical Remote Shared Hosting Example:
+	#option apiport '80'
+	#
+	# Typical Locally Hosted example (ie fasremoteip not set):
+	#option apiport '2080'
+	###########################################################################################
+
+	# Option: apiremotefqdn
+	# Default: Not set
+	# If set, this is the remote fully qualified domain name (FQDN) of the API.
+	# The protocol must NOT be prepended to the FQDN (ie http:// or https://)
+	# To prevent CPD or browser security errors NDS prepends the required http:// or https://
+	# before redirection, depending upon the fas_secure_enabled option.
+	#
+	# If set, DNS MUST resolve apiremotefqdn to be the same ip address as apiremoteip.
+	#
+	# Typical Remote Shared Hosting Example (replace this with your own FAS FQDN):
+	#option apiremotefqdn 'onboard-wifi.net'
+	#
+	# Note: For a CDN (Content Delivery Network) hosted server,
+	#	you must also add fasremotefqdn to the Walled Garden list of FQDNs
+	#
+	###########################################################################################
+
+	# Option: apiremoteip
+	# Default: API server (the IP of NDS)
+	# If set, this is the remote ip address of the FAS API server.
+	#
+	# Typical Remote Shared Hosting Example (replace this with your own remote FAS IP):
+	#option apiremoteip '46.32.240.41'
+	###########################################################################################
+
+	# Option: apipath
+	# Default: /
+	# This is the path from the API endPoint to process the client data	 
+	#
+	# In the following examples, replace with your own values for apipath
+	#
+	# Typical Remote Shared Hosting Example (if fasremotefqdn is not specified):
+	#option faspath '/remote_host_fqdn/fas/api-aes-https.php'
+	#
+	# Typical Remote Shared Hosting Example (ie BOTH fasremoteip AND fasremotefqdn set):
+	#option faspath '/fas/api-aes-https.php'
+	#
+	# Typical Locally Hosted Example (ie fasremoteip not set):
+	#option apipath '/fas/api-aes-https.php'
+	###########################################################################################
+	
+
 	# Option: faskey
 	# Default: 1234567890
 	# A key phrase for NDS to encrypt the query string sent to FAS

@@ -79,10 +79,15 @@ typedef enum {
 	oFasPort,
 	oFasKey,
 	oFasPath,
+	oApiPath,
 	oFasRemoteIP,
 	oFasRemoteFQDN,
 	oFasURL,
 	oFasSSL,
+	oApiRemoteIP,
+	oApiRemoteFQDN,
+	oApiURL,
+	oApiSSL,
 	oLoginOptionEnabled,
 	oThemeSpecPath,
 	oUseOutdatedMHD,
@@ -143,6 +148,7 @@ static const struct {
 	{ "gatewayport", oGatewayPort },
 	{ "gatewayfqdn", oGatewayFQDN },
 	{ "fasport", oFasPort },
+	{ "apiport", oApiPort },
 	{ "faskey", oFasKey },
 	{ "fasremoteip", oFasRemoteIP },
 	{ "fasremotefqdn", oFasRemoteFQDN },
@@ -154,6 +160,7 @@ static const struct {
 	{ "unescape_callback_enabled", oUnescapeCallbackEnabled },
 	{ "fas_secure_enabled", oFasSecureEnabled },
 	{ "faspath", oFasPath },
+	{ "apipath", oApiPath },
 	{ "webroot", oWebRoot },
 	{ "preauthidletimeout", oPreauthIdleTimeout },
 	{ "authidletimeout", oAuthIdleTimeout },
@@ -232,6 +239,7 @@ config_init(void)
 	config.gw_ip = NULL;
 	config.gw_port = DEFAULT_GATEWAYPORT;
 	config.fas_port = DEFAULT_FASPORT;
+	config.api_port = DEFAULT_APIPORT;
 	config.fas_key = safe_strdup(DEFAULT_FASKEY);
 	config.login_option_enabled = DEFAULT_LOGIN_OPTION_ENABLED;
 	config.themespec_path = NULL;
@@ -240,7 +248,11 @@ config_init(void)
 	config.fas_secure_enabled = DEFAULT_FAS_SECURE_ENABLED;
 	config.fas_remoteip = NULL;
 	config.fas_remotefqdn = NULL;
+	config.api_remoteip = NULL;
+	config.api_remotefqdn = NULL;
 	config.fas_url = NULL;
+	config.api_url = NULL;
+	config.auth_url = NULL;
 	config.fas_ssl = NULL;
 	config.fas_hid = NULL;
 	config.custom_params = NULL;
@@ -249,6 +261,7 @@ config_init(void)
 	config.custom_files = NULL;
 	config.tmpfsmountpoint = NULL;
 	config.fas_path = DEFAULT_FASPATH;
+	config.api_path = DEFAULT_APIPATH;
 	config.webroot = safe_strdup(DEFAULT_WEBROOT);
 	config.authdir = safe_strdup(DEFAULT_AUTHDIR);
 	config.denydir = safe_strdup(DEFAULT_DENYDIR);
@@ -831,6 +844,14 @@ config_read(const char *filename)
 				exit(1);
 			}
 			break;
+		case oApiPort:
+			if (sscanf(p1, "%u", &config.api_port) < 1) {
+				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+				debug(LOG_ERR, "Exiting...");
+				exit(1);
+			}
+			break;	
+			
 		case oLoginOptionEnabled:
 			if (sscanf(p1, "%d", &config.login_option_enabled) < 1) {
 				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
@@ -870,6 +891,8 @@ config_read(const char *filename)
 			break;
 		case oFasPath:
 			config.fas_path = safe_strdup(p1);
+		case oApiPath:
+			config.api_path = safe_strdup(p1);
 			break;
 		case oFasKey:
 			config.fas_key = safe_strdup(p1);
@@ -879,6 +902,12 @@ config_read(const char *filename)
 			break;
 		case oFasRemoteFQDN:
 			config.fas_remotefqdn = safe_strdup(p1);
+			break;
+		case oApiRemoteIP:
+			config.api_remoteip = safe_strdup(p1);
+			break;
+		case oApiRemoteFQDN:
+			config.api_remotefqdn = safe_strdup(p1);
 			break;
 		case oBinAuth:
 			config.binauth = safe_strdup(p1);

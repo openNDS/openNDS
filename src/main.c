@@ -651,12 +651,12 @@ setup_from_config(void)
 
 		// Setup the API URL
 		if (config->api_remotefqdn) {
-			safe_asprintf(&apiurl, "%s://%s:%u",
-				protocol, config->api_remotefqdn, config->api_port);
+			safe_asprintf(&apiurl, "%s://%s:%u%s",
+				protocol, config->api_remotefqdn, config->api_port,config->api_path);
 			config->api_url = safe_strdup(apiurl);
 		} else {
-			safe_asprintf(&apiurl, "%s://%s:%u",
-				protocol, config->api_remoteip, config->api_port);
+			safe_asprintf(&apiurl, "%s://%s:%u%s",
+				protocol, config->api_remoteip, config->api_port,config->api_path);
 			config->api_url = safe_strdup(apiurl);
 		}
 		debug(LOG_NOTICE, "API URL is %s\n", config->api_url);

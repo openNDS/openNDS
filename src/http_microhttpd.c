@@ -868,7 +868,8 @@ static int preauthenticated(struct MHD_Connection *connection,
 							const char *url,
 							t_client *client)
 {
-	const char *host = NULL;
+	s_config *config = config_get_config();
+	const char *host = config->gw_address;
 	const char *redirect_url;
 	char query_str[QUERYMAXLEN] = {0};
 	char *query = query_str;
@@ -877,7 +878,6 @@ static int preauthenticated(struct MHD_Connection *connection,
 	char originurl[QUERYMAXLEN] = {0};
 
 	int ret;
-	s_config *config = config_get_config();
 
 	ret = MHD_get_connection_values(connection, MHD_HEADER_KIND, get_host_value_callback, &host);
 
@@ -887,6 +887,11 @@ static int preauthenticated(struct MHD_Connection *connection,
 	}
 
 	debug(LOG_DEBUG, "preauthenticated: host [%s] url [%s]", host, url);
+
+	if (host == NULL) {
+		debug(LOG_ERR, "preauthenticated: Error getting host");
+		host = config->gw_address;
+	}
 
 	// User just accessed gatewayaddress:gatewayport either directly or by redirect
 	if (strcmp(url, "/") == 0) {

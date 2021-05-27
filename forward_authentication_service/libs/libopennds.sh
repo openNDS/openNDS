@@ -666,24 +666,30 @@ config_input_fields () {
 
 check_mhd() {
 	shelldetect=$(head -1 "/usr/lib/opennds/libopennds.sh")
+	mhdstatus="2"
+	mhd_get_status
+
+	if [ "$mhdstatus" = "2" ]; then
+		# MHD response fail - wait then try again:
+		sleep 1
+		mhd_get_status
+	fi
+}
+
+mhd_get_status() {
 
 	if [ "$shelldetect" = "#!/bin/sh" ]; then
+		mhdtest=$(wget -T 1 -O - "http://$gw_address/mhdstatus" 2>&1 | awk -F'error ' '{printf("%s", $2)}')
 
-		mhdstatus=$(wget -T 1 -O - "http://$gw_address/mhdstatus" 2>&1 | awk -F'error ' '{printf("%s", $2)}')
-
-		if [ "$mhdstatus" = "511" ]; then
-			mhdstatus=1
+		if [ "$mhdtest" = "511" ]; then
+			mhdstatus="1"
 		fi
 	else
-		mhdstatus=$(wget -t 1 -T 1 -O - "http://$gw_address/mhdstatus" 2>&1 | awk -F'ERROR 511: ' '{printf("%s", $2)}')
+		mhdtest=$(wget -t 1 -T 1 -O - "http://$gw_address/mhdstatus" 2>&1 | awk -F'ERROR 511: ' '{printf("%s", $2)}')
 
-		if [ "$mhdstatus" = "Network Authentication Required." ]; then
-			mhdstatus=1
+		if [ "$mhdtest" = "Network Authentication Required." ]; then
+			mhdstatus="1"
 		fi
-	fi
-
-	if [ -z "$mhdstatus" ]; then
-		mhdstatus="2"
 	fi
 }
 

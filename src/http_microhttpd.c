@@ -636,7 +636,7 @@ static int authenticate_client(struct MHD_Connection *connection,
 		seconds = (60 * config->session_timeout);
 	}
 
-	debug(LOG_DEBUG, "timout seconds: %d", seconds);
+	debug(LOG_DEBUG, "timeout seconds: %d", seconds);
 
 	if (seconds != (60 * config->session_timeout)) {
 		client->session_end = (client->session_start + seconds);

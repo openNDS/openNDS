@@ -520,6 +520,9 @@ thread_client_timeout_check(void *arg)
 
 		if (strcmp(msg, mhd_fail) == 0) {
 			debug(LOG_INFO, "MHD Watchdog - Restart requested");
+			debug(LOG_DEBUG, "MHD Watchdog - Attempting to stop failing MHD instance");
+			stop_mhd();
+			debug(LOG_DEBUG, "MHD Watchdog - Restarting MHD");
 			start_mhd();
 			debug(LOG_INFO, "MHD Restarted");
 		}

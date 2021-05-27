@@ -91,33 +91,28 @@ thread_ndsctl(void *arg)
 	int number_of_count;
 	int i;
 
-	debug(LOG_DEBUG, "Starting ndsctl.");
+	debug(LOG_DEBUG, "Starting ndsctl thread");
 
 	memset(&sa_un, 0, sizeof(sa_un));
 	sock_name = (char *)arg;
 	debug(LOG_DEBUG, "Socket name: %s", sock_name);
 
 	if (strlen(sock_name) > (sizeof(sa_un.sun_path) - 1)) {
-		// TODO: Die handler with logging....
 		debug(LOG_ERR, "NDSCTL socket name too long");
 		exit(1);
 	}
 
-	debug(LOG_DEBUG, "Creating socket");
-	sock = socket(PF_UNIX, SOCK_STREAM, 0);
+	// Use AF_UNIX, not PF_UNIX, AF_LOCAL or PF_LOCAL
+	sock = socket(AF_UNIX, SOCK_STREAM, 0);
 
-	debug(LOG_DEBUG, "Got server socket %d", sock);
-
-	// If it exists, delete... Not the cleanest way to deal.
+	// If socket file exists, delete it..
 	unlink(sock_name);
 
-	debug(LOG_DEBUG, "Filling sockaddr_un");
-	strcpy(sa_un.sun_path, sock_name); // XXX No size check because we check a few lines before.
+	strcpy(sa_un.sun_path, sock_name);
 	sa_un.sun_family = AF_UNIX;
 
-	debug(LOG_DEBUG, "Binding socket (%s) (%d)", sa_un.sun_path, strlen(sock_name));
+	debug(LOG_DEBUG, "Binding socket [%s] Socket descriptor [%d]", sa_un.sun_path, sock);
 
-	// Which to use, AF_UNIX, PF_UNIX, AF_LOCAL, PF_LOCAL?
 	if (bind(sock, (struct sockaddr *)&sa_un, strlen(sock_name) + sizeof(sa_un.sun_family))) {
 		debug(LOG_ERR, "Could not bind control socket: [%s] Terminating...", strerror(errno));
 		pthread_exit(NULL);
@@ -147,6 +142,8 @@ thread_ndsctl(void *arg)
 	}
 
 	current_fd_count = 1;
+
+	debug(LOG_DEBUG, "Entering ndsctl thread loop");
 
 	while (1) {
 		memset(&sa_un, 0, sizeof(sa_un));
@@ -209,7 +206,6 @@ thread_ndsctl(void *arg)
 				if (events[i].data.fd > 0) {
 					events[i].data.fd = 0;
 				}
-
 			}
 		}
 	}
@@ -227,13 +223,14 @@ ndsctl_handler(int fd)
 	FILE* fp;
 
 	debug(LOG_DEBUG, "Entering thread_ndsctl_handler....");
-	debug(LOG_DEBUG, "Read bytes and stuff from descriptor %d", fd);
 
 	// Init variables
 	read_bytes = 0;
 	done = 0;
 	memset(request, 0, sizeof(request));
 	fp = fdopen(fd, "w");
+
+	debug(LOG_DEBUG, "Read bytes and stuff from socket descriptor [%d], pointer [%lu]", fd, fp);
 
 	// Read....
 	while (!done && read_bytes < (sizeof(request) - 1)) {

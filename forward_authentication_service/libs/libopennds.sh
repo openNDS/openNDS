@@ -665,29 +665,34 @@ config_input_fields () {
 }
 
 check_mhd() {
-	shelldetect=$(head -1 "/usr/lib/opennds/libopennds.sh")
+	fetch=$(type -t uclient-fetch)
 	mhdstatus="2"
-	mhd_get_status
+	local timeout=4
 
-	if [ "$mhdstatus" = "2" ]; then
-		# MHD response fail - wait then try again:
-		sleep 1
+	for tic in $(seq $timeout); do
 		mhd_get_status
-	fi
+
+		if [ "$mhdstatus" = "2" ]; then
+			# MHD response fail - wait then try again:
+			sleep 1
+		elif [ "$mhdstatus" = "1" ]; then
+			break
+		fi
+	done
 }
 
 mhd_get_status() {
 
-	if [ "$shelldetect" = "#!/bin/sh" ]; then
-		mhdtest=$(wget -T 1 -O - "http://$gw_address/mhdstatus" 2>&1 | awk -F'error ' '{printf("%s", $2)}')
-
-		if [ "$mhdtest" = "511" ]; then
-			mhdstatus="1"
-		fi
-	else
+	if [ -z "$fetch" ]; then
 		mhdtest=$(wget -t 1 -T 1 -O - "http://$gw_address/mhdstatus" 2>&1 | awk -F'ERROR 511: ' '{printf("%s", $2)}')
 
 		if [ "$mhdtest" = "Network Authentication Required." ]; then
+			mhdstatus="1"
+		fi
+	else
+		mhdtest=$(uclient-fetch -T 1 -O - "http://$gw_address/mhdstatus" 2>&1 | awk -F'error ' '{printf("%s", $2)}')
+
+		if [ "$mhdtest" = "511" ]; then
 			mhdstatus="1"
 		fi
 	fi

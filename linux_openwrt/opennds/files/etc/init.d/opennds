@@ -122,7 +122,7 @@ generate_uci_config() {
     sessiontimeout preauthidletimeout authidletimeout checkinterval \
     setmss mssvalue ratecheckwindow downloadrate uploadrate downloadquota uploadquota \
     syslogfacility ndsctlsocket fw_mark_authenticated \
-    fw_mark_blocked fw_mark_trusted
+    fw_mark_blocked fw_mark_trusted ifb
   do
     config_get val "$cfg" "$option"
 

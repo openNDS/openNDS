@@ -691,7 +691,7 @@ static int authenticated(struct MHD_Connection *connection,
 						t_client *client)
 {
 	s_config *config = config_get_config();
-	const char *host = NULL;
+	const char *host = config->gw_address;
 	char redirect_to_us[128];
 	char *fasurl = NULL;
 	char query_str[QUERYMAXLEN] = {0};
@@ -709,6 +709,11 @@ static int authenticated(struct MHD_Connection *connection,
 		return ret;
 	} else {
 		debug(LOG_DEBUG, "An authenticated client is requesting: host [%s] url [%s]", host, url);
+	}
+
+	if (host == NULL) {
+		debug(LOG_ERR, "authenticated: Error getting host");
+		host = config->gw_address;
 	}
 
 	/* check if this is a late request, meaning the user tries to get the internet, but ended up here,

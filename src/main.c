@@ -260,6 +260,12 @@ setup_from_config(void)
 
 	config = config_get_config();
 
+	if (!((stat(loginscript, &sb) == 0) && S_ISREG(sb.st_mode) && (sb.st_mode & S_IXUSR))) {
+		debug(LOG_ERR, "Library libopennds does not exist or is not executable");
+		debug(LOG_ERR, "Exiting...");
+		exit(1);
+	}
+
 	debug(LOG_INFO, "tmpfs mountpoint is [%s]", config->tmpfsmountpoint);
 	// Before we do anything else, reset the firewall (cleans it, in case we are restarting after opennds crash)
 	iptables_fw_destroy();
@@ -271,7 +277,7 @@ setup_from_config(void)
 	int outdated = 0;
 	const char *version = MHD_get_version();
 
-	debug(LOG_INFO, "MHD version is %s", version);
+	debug(LOG_NOTICE, "MHD version is %s", version);
 
 	if (sscanf(version, "%d.%d.%d", &major, &minor, &patch) == 3) {
 
@@ -316,7 +322,7 @@ setup_from_config(void)
 
 	config->gw_mac = get_iface_mac(config->gw_interface);
 
-	if (config->gw_mac == NULL) {
+	if (strcmp(config->gw_mac, "00:00:00:00:00:00") == 0 || config->gw_mac == NULL) {
 		debug(LOG_ERR, "Could not get MAC address information of %s, exiting...", config->gw_interface);
 		exit(1);
 	}

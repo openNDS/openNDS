@@ -263,10 +263,19 @@ get_iface_mac(const char ifname[])
 {
 	char addrbuf[18] = {0};
 	char cmd[128] = {0};
+	s_config *config;
 
-	snprintf(cmd, sizeof(cmd), "ip address | grep -A1 '%s:' | grep 'link/ether ' | awk '{print $2}' | awk -F'/' '{printf $1}'",
-		ifname
+	config = config_get_config();
+
+	if (config->gw_mac == NULL) {
+		config->gw_mac = safe_strdup("00:00:00:00:00:00");
+	}
+
+	snprintf(cmd, sizeof(cmd), "/usr/lib/opennds/libopennds.sh \"gatewaymac\" \"%s\" \"%s\"",
+		ifname,
+		config->gw_mac
 	);
+
 
 	execute_ret(addrbuf, sizeof(addrbuf), cmd);
 	return safe_strdup(addrbuf);

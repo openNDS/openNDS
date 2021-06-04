@@ -59,6 +59,7 @@
 #define DEFAULT_FASPORT 0
 #define DEFAULT_LOGIN_OPTION_ENABLED 0
 #define DEFAULT_USE_OUTDATED_MHD 0
+#define DEFAULT_ALLOW_PREEMPTIVE_AUTHENTICATION 0
 #define DEFAULT_UNESCAPE_CALLBACK_ENABLED 0
 #define DEFAULT_FAS_SECURE_ENABLED 1
 #define DEFAULT_FASPATH "/"
@@ -188,6 +189,7 @@ typedef struct {
 	unsigned int fas_port;				//@brief Port the fas server will run on
 	int login_option_enabled;			//@brief Use default PreAuth Login script
 	int use_outdated_mhd;				//@brief Use outdated libmicrohttpd
+	int allow_preemptive_authentication;		//@brief Allow Preemptive Authentication using the ndsctl utility
 	int unescape_callback_enabled;			//@brief Enable external MHD unescape callback script
 	int fas_secure_enabled;			//@brief Enable Secure FAS
 	char *fas_path;				//@brief Path to forward authentication page of FAS

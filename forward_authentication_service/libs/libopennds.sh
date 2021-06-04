@@ -786,6 +786,17 @@ elif [ "$1" = "gatewaymac" ]; then
 	printf "$gw_mac"
 	exit 0
 
+elif [ "$1" = "clientaddress" ]; then
+	# Find and return client ip and mac
+	# $2 contains either client mac or client ip
+	addrs=$(ip neigh | grep "$2" | awk 'NR==1, length($1)<16 {printf("%s %s", $1, $5)}')
+
+	if [ -z "$addrs" ]; then
+		addrs="-"
+	fi
+	printf "$addrs"
+	exit 0
+
 else
 	#Display a splash page sequence using a Themespec
 

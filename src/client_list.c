@@ -116,7 +116,7 @@ _client_list_append(const char mac[], const char ip[])
 	client->mac = safe_strdup(mac);
 	client->ip = safe_strdup(ip);
 
-	// Reset volatile fields
+	// Reset volatile fields and create new token
 	client_reset(client);
 
 	// Blocked or Trusted client do not trigger the splash page.

@@ -786,6 +786,25 @@ elif [ "$1" = "gatewaymac" ]; then
 	printf "$gw_mac"
 	exit 0
 
+elif [ "$1" = "gatewayroute" ]; then
+	# Check for valid gatewayroute
+	ifname=$2
+	defaultif=$(ip route | grep "default" | awk '{printf("%s %s", $3, $5)}')
+
+	if [ -z "$defaultif" ]; then
+		defaultif="offline"
+	else
+		for var in $defaultif; do
+			if [ "$var" = "$ifname" ]; then
+				defaultif="-"
+				break
+			fi
+		done
+	fi
+
+	printf "$defaultif"
+	exit 0
+
 elif [ "$1" = "clientaddress" ]; then
 	# Find and return client ip and mac
 	# $2 contains either client mac or client ip

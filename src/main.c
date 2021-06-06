@@ -237,9 +237,13 @@ setup_from_config(void)
 {
 	char protocol[8] = {0};
 	char port[8] = {0};
-	char msg[255] = {0};
-	char gwhash[255] = {0};
-	char authmonpid[255] = {0};
+	char msg[256] = {0};
+	char rtest[32] = {0};
+	char *rcmd;
+	const char rtr_fail[] = "-";
+	const char rtr_offline[] = "offline";
+	char gwhash[256] = {0};
+	char authmonpid[16] = {0};
 	char *socket;
 	char *fasurl = NULL;
 	char *fasssl = NULL;
@@ -247,9 +251,9 @@ setup_from_config(void)
 	char *fashid = NULL;
 	char *phpcmd = NULL;
 	char *preauth_dir = NULL;
-	char loginscript[] = "/usr/lib/opennds/libopennds.sh";
-	char gw_name_entityencoded[QUERYMAXLEN] = {0};
-	char gw_name_urlencoded[QUERYMAXLEN] = {0};
+	char libscript[] = "/usr/lib/opennds/libopennds.sh";
+	char gw_name_entityencoded[256] = {0};
+	char gw_name_urlencoded[256] = {0};
 	struct stat sb;
 	time_t sysuptime;
 	t_WGFQDN *allowed_wgfqdn;
@@ -260,7 +264,7 @@ setup_from_config(void)
 
 	config = config_get_config();
 
-	if (!((stat(loginscript, &sb) == 0) && S_ISREG(sb.st_mode) && (sb.st_mode & S_IXUSR))) {
+	if (!((stat(libscript, &sb) == 0) && S_ISREG(sb.st_mode) && (sb.st_mode & S_IXUSR))) {
 		debug(LOG_ERR, "Library libopennds does not exist or is not executable");
 		debug(LOG_ERR, "Exiting...");
 		exit(1);
@@ -328,6 +332,32 @@ setup_from_config(void)
 	}
 
 	debug(LOG_NOTICE, "Interface %s is at %s (%s)", config->gw_interface, config->gw_ip, config->gw_mac);
+
+	// Check routing configuration
+	safe_asprintf(&rcmd,
+		"/usr/lib/opennds/libopennds.sh gatewayroute \"%s\"",
+		config->gw_interface
+	);
+
+	if (execute_ret_url_encoded(rtest, sizeof(rtest) - 1, rcmd) == 0) {
+		if (strcmp(rtest, rtr_fail) == 0) {
+			debug(LOG_ERR, "Routing configuration is not valid for openNDS, exiting ...");
+			exit(1);
+		} else if (strcmp(rtest, rtr_offline) == 0) {
+			debug(LOG_WARNING, "Upstream gateway is not connected or offline");
+		} else {
+			debug(LOG_NOTICE, "Upstream gateway address/via interface [ %s ]", rtest);
+		}
+	} else {
+		debug(LOG_ERR, "Unable to get routing configuration, exiting ...");
+		exit(1);
+	}
+
+
+	// Warn if Preemptive Authentication is enabled
+	if (config->allow_preemptive_authentication == 1) {
+		debug(LOG_NOTICE, "Preemptive authentication is enabled");
+	}
 
 	// Make sure fas_remoteip is set. Note: This does not enable FAS.
 	if (!config->fas_remoteip) {
@@ -523,10 +553,10 @@ setup_from_config(void)
 	// Check if login script or custom preauth script is enabled
 	if (config->login_option_enabled >= 1) {
 		debug(LOG_NOTICE, "Login option is Enabled using mode %d.\n", config->login_option_enabled);
-		config->preauth = safe_strdup(loginscript);
+		config->preauth = safe_strdup(libscript);
 	} else if (config->login_option_enabled == 0 && config->fas_port == 0 && config->preauth == NULL) {
 		debug(LOG_NOTICE, "Click to Continue option is Enabled.\n");
-		config->preauth = safe_strdup(loginscript);
+		config->preauth = safe_strdup(libscript);
 	} else if (config->login_option_enabled == 0 && config->fas_port == 0 && config->preauth != NULL) {
 		debug(LOG_NOTICE, "Custom PreAuth Script Enabled.\n");
 	} else if (config->login_option_enabled == 0 && config->fas_port >= 1 ) {

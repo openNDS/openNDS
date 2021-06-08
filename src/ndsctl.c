@@ -40,6 +40,7 @@
 #include <ctype.h>
 
 #include "ndsctl.h"
+#include "ndsctl_lock.h"
 #include "common.h"
 
 int safe_asprintf(char **strp, const char *fmt, ...);
@@ -214,7 +215,6 @@ static int
 connect_to_server(const char sock_name[])
 {
 	int sock;
-	char lockfile[] = "/tmp/ndsctl.lock";
 	struct sockaddr_un sa_un;
 
 	// Connect to socket
@@ -225,7 +225,6 @@ connect_to_server(const char sock_name[])
 
 	if (connect(sock, (struct sockaddr *)&sa_un, strlen(sa_un.sun_path) + sizeof(sa_un.sun_family))) {
 		fprintf(stderr, "ndsctl: opennds probably not started (Error: %s)\n", strerror(errno));
-		remove(lockfile);
 		return -1;
 	}
 
@@ -327,6 +326,8 @@ main(int argc, char **argv)
 	char *lockfile;
 	char *cmd;
 	FILE *fd;
+	int lock_fd;
+	int ret;
 
 	socket = strdup(DEFAULT_SOCKET_FILENAME);
 
@@ -372,16 +373,12 @@ main(int argc, char **argv)
 	// Create the lock file
 	safe_asprintf(&lockfile, "%s/ndsctl.lock", mountpoint);
 
-	if ((fd = fopen(lockfile, "r")) != NULL) {
+	if ((lock_fd = ndsctl_lock(lockfile)) < 0) {
 		openlog ("ndsctl", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
 		syslog (LOG_NOTICE, "ndsctl is locked by another process");
 		printf ("ndsctl is locked by another process\n");
 		closelog ();
-		fclose(fd);
 		return 0;
-	} else {
-		//Create lock
-		fd = fopen(lockfile, "w");
 	}
 
 	// Get the socket path/filename
@@ -395,9 +392,8 @@ main(int argc, char **argv)
 
 	if (arg == NULL) {
 		fprintf(stderr, "Unknown command: %s\n", argv[i]);
-		fclose(fd);
-		remove(lockfile);
-		return 1;
+		ret = 1;
+		goto out;
 	}
 
 	// Collect command line arguments then send the command
@@ -411,11 +407,13 @@ main(int argc, char **argv)
 	}
 
 	ndsctl_do(socket, arg, args);
-	fclose(fd);
-	remove(lockfile);
+
+	ret = 0;
+out:
+	ndsctl_unlock(lock_fd);
 	free(lockfile);
 	free(socket);
-	return 0;
+	return ret;
 }
 
 

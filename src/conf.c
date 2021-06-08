@@ -707,7 +707,6 @@ config_read(const char *filename)
 	struct stat sb;
 	char msg[128] = {0};
 	char *cmd = NULL;
-	char *lockfile;
 
 	safe_asprintf(&cmd, "/usr/lib/opennds/libopennds.sh clean");
 
@@ -719,16 +718,6 @@ config_read(const char *filename)
 	} else {
 		config.tmpfsmountpoint = safe_strdup(msg);
 	}
-
-	safe_asprintf(&lockfile, "%s/ndsctl.lock", config.tmpfsmountpoint);
-
-	//Remove ndsctl lock file if it exists
-	if ((fd = fopen(lockfile, "r")) != NULL) {
-		fclose(fd);
-		remove(lockfile);
-	}
-
-	free (lockfile);
 
 	debug(LOG_INFO, "Reading configuration file '%s'", filename);
 

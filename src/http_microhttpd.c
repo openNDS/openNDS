@@ -40,6 +40,7 @@
 #include "mimetypes.h"
 #include "safe.h"
 #include "util.h"
+#include "ndsctl_lock.h"
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
@@ -143,7 +144,7 @@ static int do_binauth(
 	char custom_dec_b64[384 *4 / 3] = {0};
 	char custom_enc[384] = {0};
 	char *lockfile;
-	FILE *fd;
+	int fd;
 	char redirect_url_enc_buf[QUERYMAXLEN] = {0};
 	const char *username;
 	const char *password;
@@ -217,23 +218,15 @@ static int do_binauth(
 
 	safe_asprintf(&lockfile, "%s/ndsctl.lock", config->tmpfsmountpoint);
 
-	if ((fd = fopen(lockfile, "r")) == NULL) {
-		//No lockfile, so create one
-		fd = fopen(lockfile, "w");
-	}
-
+	if ((fd = ndsctl_lock(lockfile)) < 0)
+		return -1;
 
 	// execute the script
 	rc = execute_ret_url_encoded(msg, sizeof(msg) - 1, argv);
 	debug(LOG_DEBUG, "BinAuth returned arguments: %s", msg);
 	free(argv);
 
-	// unlock ndsctl
-	if (fd) {
-		fclose(fd);
-		remove(lockfile);
-	}
-
+	ndsctl_unlock(fd);
 	free(lockfile);
 
 	if (rc != 0) {

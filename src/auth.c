@@ -44,6 +44,7 @@
 #include "util.h"
 #include "http_microhttpd_utils.h"
 #include "http_microhttpd.h"
+#include "ndsctl_lock.h"
 
 #define ENABLE 1
 #define DISABLE 0
@@ -59,7 +60,7 @@ static void binauth_action(t_client *client, const char *reason, char *customdat
 {
 	s_config *config = config_get_config();
 	char *lockfile;
-	FILE *fd;
+	int fd;
 	time_t now = time(NULL);
 	int seconds = 60 * config->session_timeout;
 	unsigned long int sessionstart;
@@ -77,9 +78,11 @@ static void binauth_action(t_client *client, const char *reason, char *customdat
 		// ndsctl will deadlock if run within the BinAuth script so lock it
 		safe_asprintf(&lockfile, "%s/ndsctl.lock", config->tmpfsmountpoint);
 
-		if ((fd = fopen(lockfile, "r")) == NULL) {
-			//No lockfile, so create one
-			fd = fopen(lockfile, "w");
+		if ((fd = ndsctl_lock(lockfile)) < 0) {
+			openlog ("auth", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
+			syslog (LOG_NOTICE, "ndsctl is locked by another process");
+			closelog ();
+			return;
 		}
 
 		uh_urlencode(customdata_enc, sizeof(customdata_enc), customdata, strlen(customdata));
@@ -119,12 +122,7 @@ static void binauth_action(t_client *client, const char *reason, char *customdat
 			customdata_enc
 		);
 
-		// unlock ndsctl
-		if (fd) {
-			fclose(fd);
-			remove(lockfile);
-		}
-		free(lockfile);
+		ndsctl_unlock(fd);
 	}
 }
 

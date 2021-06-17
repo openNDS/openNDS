@@ -48,7 +48,6 @@ void mark_online();
 void mark_offline();
 /* @brief Returns a guess (true or false) on whether we're online or not based on previous calls to mark_online and mark_offline */
 int is_online();
-
 /* @brief Sets hint that an auth server online action succeeded */
 void mark_auth_online();
 /* @brief Sets hint that an auth server online action failed */
@@ -67,6 +66,14 @@ time_t get_system_uptime();
 
 /* @brief Returns the hash of a string */
 int hash_str(char *buf, int hash_len, const char *src);
+
+/* @brief writes an element or elements of client info to the cidfile,
+ * mode can be:
+ * write (write the info)
+ * or
+ * parse (parse the info string for multiple elements and write)
+ */
+int write_client_info(char* msg, int msg_len, const char *mode, const char *cid, const char *info);
 
 /* @brief Returns the client local interface,
  * meshnode mac address (null if mesh not present) and

@@ -515,7 +515,6 @@ static int try_to_authenticate(struct MHD_Connection *connection, t_client *clie
 {
 	s_config *config;
 	const char *tok;
-	char hid[128] = {0};
 	char rhid[128] = {0};
 	char *rhidraw = NULL;
 
@@ -533,8 +532,7 @@ static int try_to_authenticate(struct MHD_Connection *connection, t_client *clie
 		//Check if token (tok) or hash_id (hid) mode
 		if (strlen(tok) > 8) {
 			// hid mode
-			hash_str(hid, sizeof(hid), client->token);
-			safe_asprintf(&rhidraw, "%s%s", hid, config->fas_key);
+			safe_asprintf(&rhidraw, "%s%s", client->hid, config->fas_key);
 			hash_str(rhid, sizeof(rhid), rhidraw);
 			free (rhidraw);
 			if (tok && !strcmp(rhid, tok)) {
@@ -1081,10 +1079,15 @@ static int redirect_to_splashpage(struct MHD_Connection *connection, t_client *c
  */
 static char *construct_querystring(t_client *client, char *originurl, char *querystr ) {
 
-	char hash[128] = {0};
+	char cid[87] = {0};
+	char msg[16] = {0};
 	char clientif[64] = {0};
+	char info_enc[1024] = {0};
 	char query_str[QUERYMAXLEN] = {0};
 	char query_str_b64[QUERYMAXLEN] = {0};
+	char *cidinfo;
+	char *cidfile;
+	int cidgood = 0;
 
 	s_config *config = config_get_config();
 
@@ -1099,15 +1102,14 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 	} else if (config->fas_secure_enabled == 1) {
 
 			if (config->fas_hid) {
-				hash_str(hash, sizeof(hash), client->token);
-				debug(LOG_DEBUG, "hid=%s", hash);
+				debug(LOG_DEBUG, "hid=%s", client->hid);
 
 				get_client_interface(clientif, sizeof(clientif), client->mac);
 				debug(LOG_DEBUG, "clientif: [%s] url_encoded_gw_name: [%s]", clientif, config->url_encoded_gw_name);
 
 				snprintf(query_str, QUERYMAXLEN,
 					"hid=%s%sclientip=%s%sclientmac=%s%sgatewayname=%s%sversion=%s%sgatewayaddress=%s%sgatewaymac=%s%soriginurl=%s%sclientif=%s%sthemespec=%s%s%s%s%s%s",
-					hash, QUERYSEPARATOR,
+					client->hid, QUERYSEPARATOR,
 					client->ip, QUERYSEPARATOR,
 					client->mac, QUERYSEPARATOR,
 					config->url_encoded_gw_name, QUERYSEPARATOR,
@@ -1128,6 +1130,68 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 					"?fas=%s",
 					query_str_b64
 				);
+
+				if (config->login_option_enabled >=1) {
+					if (client->cid) {
+						cidgood = 1;
+						safe_asprintf(&cidfile, "%s/ndscids/%s", config->tmpfsmountpoint, client->cid);
+
+						if(access(cidfile, F_OK) != 0) {
+							cidgood=0;
+						}
+						free(cidfile);
+					}
+
+					if (cidgood == 0) {
+						strncpy(cid, query_str_b64+5, 86);
+						client->cid = safe_strdup(cid);
+
+						// Write the new cidfile:
+						safe_asprintf(&cidinfo, "hid=\"%s\"\0", client->hid);
+						write_client_info(msg, sizeof(msg), "write", cid, cidinfo);
+
+						safe_asprintf(&cidinfo, "clientip=\"%s\"\0", client->ip);
+						write_client_info(msg, sizeof(msg), "write", cid, cidinfo);
+
+						safe_asprintf(&cidinfo, "clientmac=\"%s\"\0", client->mac);
+						write_client_info(msg, sizeof(msg), "write", cid, cidinfo);
+
+						safe_asprintf(&cidinfo, "gatewayname=\"%s\"\0", config->http_encoded_gw_name);
+						write_client_info(msg, sizeof(msg), "write", cid, cidinfo);
+
+						safe_asprintf(&cidinfo, "version=\"%s\"\0", VERSION);
+						write_client_info(msg, sizeof(msg), "write", cid, cidinfo);
+
+						safe_asprintf(&cidinfo, "gatewayaddress=\"%s\"\0", config->gw_address);
+						write_client_info(msg, sizeof(msg), "write", cid, cidinfo);
+
+						safe_asprintf(&cidinfo, "gatewaymac=\"%s\"\0", config->gw_mac);
+						write_client_info(msg, sizeof(msg), "write", cid, cidinfo);
+
+						safe_asprintf(&cidinfo, "originurl=\"%s\"\0", originurl);
+						write_client_info(msg, sizeof(msg), "write", cid, cidinfo);
+
+						safe_asprintf(&cidinfo, "clientif=\"%s\"\0", clientif);
+						write_client_info(msg, sizeof(msg), "write", cid, cidinfo);
+
+						safe_asprintf(&cidinfo, "themespec=\"%s\"\0", config->themespec_path);
+						write_client_info(msg, sizeof(msg), "write", cid, cidinfo);
+
+						safe_asprintf(&cidinfo, "%s\0", config->custom_params);
+						write_client_info(msg, sizeof(msg), "parse", cid, cidinfo);
+
+						safe_asprintf(&cidinfo, "%s\0", config->custom_vars);
+						write_client_info(msg, sizeof(msg), "parse", cid, cidinfo);
+
+						safe_asprintf(&cidinfo, "%s\0", config->custom_images);
+						write_client_info(msg, sizeof(msg), "parse", cid, cidinfo);
+
+						safe_asprintf(&cidinfo, "%s\0", config->custom_files);
+						write_client_info(msg, sizeof(msg), "parse", cid, cidinfo);
+
+						free(cidinfo);
+					}
+				}
 			} else {
 				snprintf(querystr, QUERYMAXLEN,
 					"?clientip=%s&gatewayname=%s&redir=%s",
@@ -1138,14 +1202,14 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 			}
 
 	} else if (config->fas_secure_enabled == 2 || config->fas_secure_enabled == 3) {
-		hash_str(hash, sizeof(hash), client->token);
-		debug(LOG_DEBUG, "hid=%s", hash);
+
+		debug(LOG_DEBUG, "hid=%s", client->hid);
 
 		get_client_interface(clientif, sizeof(clientif), client->mac);
 		debug(LOG_DEBUG, "clientif: [%s]", clientif);
 		snprintf(querystr, QUERYMAXLEN,
 			"hid=%s%sclientip=%s%sclientmac=%s%sgatewayname=%s%sversion=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s%sthemespec=%s%s%s%s%s%s",
-			hash, QUERYSEPARATOR,
+			client->hid, QUERYSEPARATOR,
 			client->ip, QUERYSEPARATOR,
 			client->mac, QUERYSEPARATOR,
 			config->url_encoded_gw_name, QUERYSEPARATOR,

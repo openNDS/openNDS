@@ -28,9 +28,20 @@
 
 # functions:
 
+# Download external file
+webget() {
+	fetch=$(type -t uclient-fetch)
+
+	if [ -z "$fetch" ]; then
+		wret="wget -t 1 -T 1"
+	else
+		wret="uclient-fetch -T 1"
+	fi
+}
+
 # Get custom image files
 get_image_file() {
-
+	webget
 	imagename=$1
 	shelldetect=$(head -1 "/usr/lib/opennds/libopennds.sh")
 
@@ -65,12 +76,12 @@ get_image_file() {
 		protocol=$(echo "$imageurl" | awk -F'://' '{printf("%s", $1)}')
 
 		if [ "$protocol" = "http" ]; then
-			wget -T 2 -q -O "$mountpoint/ndsremote/$filename" "$imageurl"
+			retrieve=$($wret -q -O "$mountpoint/ndsremote/$filename" "$imageurl")
 		elif [ "$protocol" = "https" ]; then
 			#test for https support
-			result=$(wget -q -O - "https://detectportal.firefox.com/success.txt")
+			result=$($wret -q -O - "https://detectportal.firefox.com/success.txt")
 			if [ "$result" = "success" ];then
-				wget -T 2 -q -O "$mountpoint/ndsremote/$filename" "$imageurl"
+				retrieve=$($wret -q -O "$mountpoint/ndsremote/$filename" "$imageurl")
 			else
 				echo "wget - https support failed or not installed - skipping file download" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 			fi
@@ -79,7 +90,7 @@ get_image_file() {
 			destinationfile="$mountpoint/ndsremote/$filename"
 			cp "$sourcefile" "$destinationfile"
 		else
-			unsupported="Unsupported protocol [$protocol] for [$filename]in url [$imageurl] - skipping image download"
+			unsupported="Unsupported protocol [$protocol] for [$filename]in url [$imageurl] - skipping download"
 			echo "$unsupported" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 		fi
 	fi
@@ -87,6 +98,7 @@ get_image_file() {
 
 # Get custom data files
 get_data_file() {
+	webget
 	dataname=$1
 	shelldetect=$(head -1 "/usr/lib/opennds/libopennds.sh")
 
@@ -118,12 +130,12 @@ get_data_file() {
 		protocol=$(echo "$dataurl" | awk -F'://' '{printf("%s", $1)}')
 
 		if [ "$protocol" = "http" ]; then
-			wget -T 2 -q -O "$mountpoint/ndsdata/$filename" "$dataurl"
+			retrieve=$($wret -q -O "$mountpoint/ndsdata/$filename" "$dataurl")
 		elif [ "$protocol" = "https" ]; then
 			#test for https support
-			result=$(wget -T 2 -q -O - "https://detectportal.firefox.com/success.txt")
+			result=$($wret -q -O - "https://detectportal.firefox.com/success.txt")
 			if [ "$result" = "success" ];then
-				wget -T 2 -q -O "$mountpoint/ndsdata/$filename" "$dataurl"
+				retrieve=$($wret -q -O "$mountpoint/ndsdata/$filename" "$dataurl")
 			else
 				echo "wget - https support failed or not installed - skipping file download" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 			fi
@@ -132,7 +144,7 @@ get_data_file() {
 			destinationfile="$mountpoint/ndsdata/$filename"
 			cp "$sourcefile" "$destinationfile"
 		else
-			unsupported="Unsupported protocol [$protocol] for [$filename]in url [$imageurl] - skipping image download"
+			unsupported="Unsupported protocol [$protocol] for [$filename]in url [$imageurl] - skipping download"
 			echo "$unsupported" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 		fi
 	fi
@@ -268,10 +280,11 @@ get_theme_environment() {
 
 	faslen=$((${#fas}))
 
-	# Test if we have already decoded the query string and parsed it
+	# Test if we have already decoded the query string and parsed it, or openNDS parsed it for us
 	if [ -e "$ciddir/$cid" ]; then
-		# We have done it already so include the data
+		# We have it already so include the data
 		. $ciddir/$cid
+
 	else
 
 		# Fragment and decode:
@@ -523,10 +536,7 @@ auth_log () {
 		fi
 	fi
 
-	# Finally, remove the client id file
-	if [ -e "$ciddir/$cid" ]; then
-		rm "$ciddir/$cid"
-	fi
+	# We will not remove the client id file, rather we will let openNDS delete it on deauth/timeout
 }
 
 default_header() {
@@ -756,6 +766,10 @@ if [ "$1" = "clean" ]; then
 		rm -R "$mountpoint/ndscids"
 	fi
 
+	mkdir "$mountpoint/ndsremote"
+	mkdir "$mountpoint/ndsdata"
+	mkdir "$mountpoint/ndscids"
+
 	printf "$mountpoint"
 	exit 0
 
@@ -816,6 +830,36 @@ elif [ "$1" = "clientaddress" ]; then
 	printf "$addrs"
 	exit 0
 
+elif [ "$1" = "rmcid" ]; then
+	# Remove an existing cidfile
+	# $2 contains the cid
+	# $3 contains the mountpoint
+	rm "$3/ndscids/$2"
+	echo "done"
+	exit 0
+
+elif [ "$1" = "write" ]; then
+	# Write client info element to cidfile
+	# $2 contains the cid
+	# $3 contains the mountpoint
+	# $4 contains the info element
+	echo "$4" >> "$3/ndscids/$2"
+	echo "done"
+	exit 0
+
+elif [ "$1" = "parse" ]; then
+	# Parse for sub elements and write to cidfile
+	# $2 contains the cid
+	# $3 contains the mountpoint
+	# $4 contains the info elements
+	list="$4"
+	list=${list//', '/'"; '}
+	list=${list//'='/'="'}
+	list=$(printf "${list//%/\\x}")
+
+	echo "$list" >> "$3/ndscids/$2"
+	echo "done"
+	exit 0
 else
 	#Display a splash page sequence using a Themespec
 

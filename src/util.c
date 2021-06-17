@@ -65,6 +65,7 @@
 #include "conf.h"
 #include "debug.h"
 #include "fw_iptables.h"
+#include "http_microhttpd_utils.h"
 
 // Defined in main.c
 extern time_t started_time;
@@ -79,6 +80,30 @@ extern unsigned int authenticated_since_start;
 // Defined in main.c
 extern int created_httpd_threads;
 extern int current_httpd_threads;
+
+int write_client_info(char* msg, int msg_len, const char *mode, const char *cid, const char *info)
+{
+	char *cmd = NULL;
+	s_config *config = config_get_config();
+
+	debug(LOG_DEBUG, "Client Info: %s", info);
+	safe_asprintf(&cmd, "/usr/lib/opennds/libopennds.sh '%s' '%s' '%s' '%s'", mode, cid, config->tmpfsmountpoint, info);
+		debug(LOG_DEBUG, "WriteClientInfo command: %s", cmd);
+	if (execute_ret_url_encoded(msg, msg_len - 1, cmd) == 0) {
+		debug(LOG_DEBUG, "Client Info added: %s", info);
+	} else {
+		debug(LOG_INFO, "Failed to write client info [%s] - retrying", info);
+		sleep(1);
+
+		if (execute_ret_url_encoded(msg, msg_len - 1, cmd) == 0) {
+			debug(LOG_DEBUG, "Client Info added: %s", info);
+		} else {
+			debug(LOG_INFO, "Failed to write client info [%s] - giving up", info);
+		}
+	}
+	free (cmd);
+	return 0;
+}
 
 int get_client_interface(char* clientif, int clientif_len, const char *climac)
 {

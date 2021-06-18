@@ -326,6 +326,7 @@ main(int argc, char **argv)
 	char mountpoint[128] = {0};
 	char *lockfile;
 	char *cmd;
+	int ret;
 	FILE *fd;
 
 	socket = strdup(DEFAULT_SOCKET_FILENAME);
@@ -378,7 +379,7 @@ main(int argc, char **argv)
 		printf ("ndsctl is locked by another process\n");
 		closelog ();
 		fclose(fd);
-		return 0;
+		return 4;
 	} else {
 		//Create lock
 		fd = fopen(lockfile, "w");
@@ -410,12 +411,12 @@ main(int argc, char **argv)
 		}
 	}
 
-	ndsctl_do(socket, arg, args);
+	ret = ndsctl_do(socket, arg, args);
 	fclose(fd);
 	remove(lockfile);
 	free(lockfile);
 	free(socket);
-	return 0;
+	return ret;
 }
 
 

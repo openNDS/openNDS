@@ -770,6 +770,11 @@ setup_from_config(void)
 		exit(1);
 	}
 
+	// Preload remote files defined in themespec
+	if (config->login_option_enabled == 3) {
+		download_remotes();
+	}
+
 	debug(LOG_NOTICE, "openNDS is now running.\n");
 }
 

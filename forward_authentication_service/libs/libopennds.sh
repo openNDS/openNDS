@@ -71,7 +71,7 @@ get_image_file() {
 	evalimg=$(echo "$customimageroot/""$filename")
 	eval $forename=$evalimg
 
-	if [ ! -f "$mountpoint/ndsremote/$filename" ]; then
+	if [ ! -f "$mountpoint/ndsremote/$filename" ] || [ "$refresh" = "1" ]; then
 		# get protocol
 		protocol=$(echo "$imageurl" | awk -F'://' '{printf("%s", $1)}')
 
@@ -860,6 +860,42 @@ elif [ "$1" = "parse" ]; then
 	echo "$list" >> "$3/ndscids/$2"
 	echo "done"
 	exit 0
+
+elif [ "$1" = "download" ]; then
+	# Download files required for themespec
+	# $2 contains the themespec path
+	# $3 contains the image list
+	# $4 contains the file list
+	# $5 contains the refresh flag, set to 1 to refresh downloads
+
+	refresh=$5
+	configure_log_location
+
+	list="$3"
+	if [ ! -z "$list" ]; then
+		list=${list//', '/'"; '}
+		list=${list//'='/'="'}
+		eval $list
+	fi
+
+	list="$4"
+	if [ ! -z "$list" ]; then
+		list=${list//', '/'"; '}
+		list=${list//'='/'="'}
+		eval $list
+	fi
+
+	# Include the Theme:
+	themespecpath=$2
+	. $themespecpath
+
+	type download_image_files &>/dev/null && download_image_files
+	type download_data_files &>/dev/null && download_data_files
+
+	echo "done"
+
+	exit 0
+
 else
 	#Display a splash page sequence using a Themespec
 

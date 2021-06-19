@@ -67,6 +67,9 @@ time_t get_system_uptime();
 /* @brief Returns the hash of a string */
 int hash_str(char *buf, int hash_len, const char *src);
 
+// @brief Downloads remote files specified in the configured themespec
+int download_remotes();
+
 /* @brief writes an element or elements of client info to the cidfile,
  * mode can be:
  * write (write the info)

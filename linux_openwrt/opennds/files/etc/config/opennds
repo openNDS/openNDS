@@ -224,6 +224,18 @@ config opennds
 	#option use_outdated_mhd '0'
 	###########################################################################################
 
+	# Maximum Page Size to be served by MHD
+	# Default 10240 bytes
+	# Minimum value 1024 bytes
+	#
+	# This sets the maximum number of bytes that will be served per page by the MHD web server
+	# Setting this option is useful:
+	#	1. To reduce memory requirements on a resource constrained router
+	#	2. To allow large pages to be served where memory usage is not a concern
+	#
+	#option max_page_size '4096'
+	###########################################################################################
+
 	# MHD Unescape callback - This is an advanced option
 	# Default 0
 	#

@@ -56,6 +56,7 @@
 #define DEFAULT_GATEWAYNAME "openNDS"
 #define DEFAULT_GATEWAYPORT 2050
 #define DEFAULT_GATEWAYFQDN "status.client"
+#define DEFAULT_MAX_PAGE_SIZE 10240
 #define DEFAULT_FASPORT 0
 #define DEFAULT_LOGIN_OPTION_ENABLED 0
 #define DEFAULT_USE_OUTDATED_MHD 0
@@ -190,6 +191,7 @@ typedef struct {
 	unsigned int fas_port;				//@brief Port the fas server will run on
 	int login_option_enabled;			//@brief Use default PreAuth Login script
 	int use_outdated_mhd;				//@brief Use outdated libmicrohttpd
+	int max_page_size;				//@brief Max page size to be served by libmicrohttpd
 	int allow_preemptive_authentication;		//@brief Allow Preemptive Authentication using the ndsctl utility
 	int unescape_callback_enabled;			//@brief Enable external MHD unescape callback script
 	int fas_secure_enabled;			//@brief Enable Secure FAS

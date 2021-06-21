@@ -86,6 +86,7 @@ typedef enum {
 	oLoginOptionEnabled,
 	oThemeSpecPath,
 	oUseOutdatedMHD,
+	oMaxPageSize,
 	oAllowPreemptiveAuthentication,
 	oUnescapeCallbackEnabled,
 	oFasSecureEnabled,
@@ -153,6 +154,7 @@ static const struct {
 	{ "login_option_enabled", oLoginOptionEnabled },
 	{ "themespec_path", oThemeSpecPath },
 	{ "use_outdated_mhd", oUseOutdatedMHD },
+	{ "max_page_size", oMaxPageSize },
 	{ "allow_preemptive_authentication", oAllowPreemptiveAuthentication },
 	{ "unescape_callback_enabled", oUnescapeCallbackEnabled },
 	{ "fas_secure_enabled", oFasSecureEnabled },
@@ -240,6 +242,7 @@ config_init(void)
 	config.login_option_enabled = DEFAULT_LOGIN_OPTION_ENABLED;
 	config.themespec_path = NULL;
 	config.use_outdated_mhd = DEFAULT_USE_OUTDATED_MHD;
+	config.max_page_size = DEFAULT_MAX_PAGE_SIZE;
 	config.allow_preemptive_authentication = DEFAULT_ALLOW_PREEMPTIVE_AUTHENTICATION;
 	config.unescape_callback_enabled = DEFAULT_UNESCAPE_CALLBACK_ENABLED;
 	config.fas_secure_enabled = DEFAULT_FAS_SECURE_ENABLED;
@@ -855,6 +858,13 @@ config_read(const char *filename)
 			break;
 		case oUseOutdatedMHD:
 			if (sscanf(p1, "%d", &config.use_outdated_mhd) < 1) {
+				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+				debug(LOG_ERR, "Exiting...");
+				exit(1);
+			}
+			break;
+		case oMaxPageSize:
+			if (sscanf(p1, "%d", &config.max_page_size) < 1) {
 				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
 				debug(LOG_ERR, "Exiting...");
 				exit(1);

@@ -694,11 +694,13 @@ static int authenticated(struct MHD_Connection *connection,
 	char *fasurl = NULL;
 	char query_str[QUERYMAXLEN] = {0};
 	char *query = query_str;
-	char msg[HTMLMAXSIZE] = {0};
+	char msg[HTMLMAXSIZE];
 	char clientif[64] = {0};
 	int rc;
 	int ret;
 	struct MHD_Response *response;
+
+	memset(msg, 0, sizeof(msg));
 
 	ret = MHD_get_connection_values(connection, MHD_HEADER_KIND, get_host_value_callback, &host);
 
@@ -810,7 +812,7 @@ static int authenticated(struct MHD_Connection *connection,
 static int show_preauthpage(struct MHD_Connection *connection, const char *query)
 {
 	s_config *config = config_get_config();
-	char msg[HTMLMAXSIZE] = {0};
+	char msg[HTMLMAXSIZE];
 	const char *user_agent = NULL;
 	char enc_user_agent[256] = {0};
 	char *preauthpath = NULL;
@@ -822,6 +824,7 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 	int rc;
 	int ret;
 	struct MHD_Response *response;
+	memset(msg, 0, sizeof(msg));
 
 	safe_asprintf(&preauthpath, "/%s/", config->preauthdir);
 

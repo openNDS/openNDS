@@ -83,7 +83,6 @@
 #define DEFAULT_DOWNLOAD_RATE 0 // 0 means no limit
 #define DEFAULT_UPLOAD_QUOTA 0 // 0 means no limit
 #define DEFAULT_DOWNLOAD_QUOTA 0 // 0 means no limit
-#define DEFAULT_UPLOAD_IFB 0
 #define DEFAULT_LOG_SYSLOG 0
 #define DEFAULT_SYSLOG_FACILITY LOG_DAEMON
 #define DEFAULT_NDSCTL_SOCK "ndsctl.sock"
@@ -222,7 +221,6 @@ typedef struct {
 	unsigned long long int upload_rate;		//@brief Upload rate, kb/s
 	unsigned long long int download_quota;		//@brief Download quota, kB
 	unsigned long long int upload_quota;		//@brief Upload quota, kB
-	int upload_ifb;				//@brief Number of IFB handling upload
 	int log_syslog;				//@brief boolean, whether to log to syslog
 	int syslog_facility;				//@brief facility to use when using syslog for logging
 	int macmechanism; 				//@brief mechanism wrt MAC addrs

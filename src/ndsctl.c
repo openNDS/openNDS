@@ -77,7 +77,7 @@ int safe_vasprintf(char **strp, const char *fmt, va_list ap)
 	return (retval);
 }
 
-int uh_b64decode(char *buf, int blen, const void *src, int slen)
+int b64decode(char *buf, int blen, const void *src, int slen)
 {
 	const unsigned char *str = src;
 	unsigned int cout = 0;
@@ -116,10 +116,45 @@ int uh_b64decode(char *buf, int blen, const void *src, int slen)
 		buf[len++] = (char)(cout);
 	}
 
-	//debug(LOG_DEBUG, "b64 decoded string: %s, decoded length: %d", buf, len);
 	buf[len++] = 0;
 	return len;
 }
+
+int b64encode(char *buf, int blen, const char *src, int slen)
+{
+	int  i;
+	int  v;
+	int len = 0;
+	const char b64chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+	for (i=0, len=0; i<slen; i+=3, len+=4) {
+		if ((len+4) <= blen) {
+			v = src[i];
+			v = i+1 < slen ? v << 8 | src[i+1] : v << 8;
+			v = i+2 < slen ? v << 8 | src[i+2] : v << 8;
+
+			buf[len]   = b64chars[(v >> 18) & 0x3F];
+			buf[len+1] = b64chars[(v >> 12) & 0x3F];
+
+			if (i+1 < slen) {
+				buf[len+2] = b64chars[(v >> 6) & 0x3F];
+			} else {
+				buf[len+2] = '=';
+			}
+
+			if (i+2 < slen) {
+				buf[len+3] = b64chars[v & 0x3F];
+			} else {
+				buf[len+3] = '=';
+			}
+		} else {
+			break;
+		}
+	}
+
+	return (i == slen) ? (len + 4) : -1;
+}
+
 
 /** @internal
  * @brief Print usage
@@ -175,7 +210,9 @@ usage(void)
 		"  debuglevel n\n"
 		"	Set debug level to n (0=silent, 1=Normal, 2=Info, 3=debug)\n\n"
 		"  b64decode \"string_to_decode\"\n"
-		"	Base 64 decode the given string\n"
+		"	Base 64 decode the given string\n\n"
+		"  b64encode \"string_to_encode\"\n"
+		"	Base 64 encode the given string\n"
 		"\n"
 	);
 }
@@ -194,6 +231,7 @@ static struct argument arguments[] = {
 	{"trust", "MAC %s trusted.\n", "Failed to trust MAC %s.\n"},
 	{"untrust", "MAC %s untrusted.\n", "Failed to untrust MAC %s.\n"},
 	{"b64decode", NULL, NULL},
+	{"b64encode", NULL, NULL},
 	{NULL, NULL, NULL}
 };
 
@@ -349,10 +387,25 @@ main(int argc, char **argv)
 	}
 
 	if (strcmp(argv[i], "b64decode") == 0) {
-		uh_b64decode(str_b64, sizeof(str_b64), argv[i+1], strlen(argv[i+1]));
-		printf("%s", str_b64);
-		return 0;
+		if(argv[i+1] == NULL) {
+			return 1;
+		} else {
+			b64decode(str_b64, sizeof(str_b64), argv[i+1], strlen(argv[i+1]));
+			printf("%s", str_b64);
+			return 0;
+		}
 	}
+
+	if (strcmp(argv[i], "b64encode") == 0) {
+		if(argv[i+1] == NULL) {
+			return 1;
+		} else {
+			b64encode(str_b64, sizeof(str_b64), argv[i+1], strlen(argv[i+1]));
+			printf("%s", str_b64);
+			return 0;
+		}
+	}
+
 
 	if (strcmp(argv[1], "-h") == 0) {
 		usage();

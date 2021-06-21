@@ -81,21 +81,29 @@ extern unsigned int authenticated_since_start;
 extern int created_httpd_threads;
 extern int current_httpd_threads;
 
-int download_remotes()
+int download_remotes(int refresh)
 {
 	char *cmd = NULL;
 	s_config *config = config_get_config();
 
-	safe_asprintf(&cmd,
-		"/usr/lib/opennds/libopennds.sh download \"%s\" \"%s\" \"%s\" &",
-		config->themespec_path,
-		config->custom_images,
-		config->custom_files
-	);
-
-	debug(LOG_DEBUG, "Background Downloading of remotes for: %s\n", config->themespec_path);
-	debug(LOG_DEBUG, "	Images: %s\n", config->custom_images);
-	debug(LOG_DEBUG, "	Files:  %s\n", config->custom_files);
+	if(refresh == 0) {
+		debug(LOG_DEBUG, "Background Checking of remotes for: %s\n", config->themespec_path);
+		safe_asprintf(&cmd,
+			"/usr/lib/opennds/libopennds.sh download \"%s\" \"%s\" \"%s\" &",
+			config->themespec_path,
+			config->custom_images,
+			config->custom_files
+		);
+	} else {
+		debug(LOG_DEBUG, "Background Refreshing of remotes for: %s\n", config->themespec_path);
+		safe_asprintf(&cmd,
+			"/usr/lib/opennds/libopennds.sh download \"%s\" \"%s\" \"%s\" \"%d\" &",
+			config->themespec_path,
+			config->custom_images,
+			config->custom_files,
+			refresh
+		);
+	}
 
 	system(cmd);
 	free(cmd);

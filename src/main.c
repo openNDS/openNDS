@@ -256,6 +256,7 @@ setup_from_config(void)
 	char gw_name_urlencoded[256] = {0};
 	struct stat sb;
 	time_t sysuptime;
+	time_t now = time(NULL);
 	t_WGFQDN *allowed_wgfqdn;
 	char wgfqdns[1024] = {0};
 	char *dnscmd;
@@ -772,7 +773,8 @@ setup_from_config(void)
 
 	// Preload remote files defined in themespec
 	if (config->login_option_enabled == 3) {
-		download_remotes();
+		download_remotes(0);
+		config->remotes_last_refresh = now;
 	}
 
 	debug(LOG_NOTICE, "openNDS is now running.\n");

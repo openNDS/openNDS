@@ -68,6 +68,7 @@
 #define DEFAULT_SESSION_TIMEOUT 1200
 #define DEFAULT_PREAUTH_IDLE_TIMEOUT 30
 #define DEFAULT_AUTH_IDLE_TIMEOUT 120
+#define DEFAULT_REMOTES_REFRESH_INTERVAL 0
 #define DEFAULT_WEBROOT "/etc/opennds/htdocs"
 #define DEFAULT_AUTHDIR "opennds_auth"
 #define DEFAULT_DENYDIR "opennds_deny"
@@ -208,6 +209,8 @@ typedef struct {
 	int session_timeout;				//@brief Minutes of the default session length
 	int preauth_idle_timeout;			//@brief Minutes a preauthenticated client will be kept in the system
 	int auth_idle_timeout;				//@brief Minutes an authenticated client will be kept in the system
+	int remotes_refresh_interval;			//@brief Minutes before remote files will be refreshed
+	unsigned long long int remotes_last_refresh;	//@brief Time of last refresh of remote files
 	int checkinterval;				//@brief Period the the client timeout check thread will run, in seconds
 	int set_mss;					//@brief boolean, whether to set mss
 	int mss_value;					//@brief int, mss value; <= 0 clamp to pmtu

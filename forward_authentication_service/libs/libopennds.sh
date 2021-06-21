@@ -125,7 +125,7 @@ get_data_file() {
 	evaldata=$(echo "$mountpoint/ndsdata/""$filename")
 	eval $forename=$evaldata
 
-	if [ ! -f "$mountpoint/ndsdata/$filename" ]; then
+	if [ ! -f "$mountpoint/ndsdata/$filename" ] || [ "$refresh" = "1" ]; then
 		# get protocol
 		protocol=$(echo "$dataurl" | awk -F'://' '{printf("%s", $1)}')
 

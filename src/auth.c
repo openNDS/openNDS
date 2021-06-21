@@ -34,6 +34,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <syslog.h>
+#include <time.h>
 
 #include "safe.h"
 #include "conf.h"
@@ -228,12 +229,34 @@ fw_refresh_client_list(void)
 	s_config *config = config_get_config();
 	const int preauth_idle_timeout_secs = 60 * config->preauth_idle_timeout;
 	const int auth_idle_timeout_secs = 60 * config->auth_idle_timeout;
+	const int remotes_refresh_interval_secs = 60 * config->remotes_refresh_interval;
 	const time_t now = time(NULL);
 	unsigned long long int durationsecs;
 	unsigned long long int download_bytes, upload_bytes;
 	unsigned long long int uprate;
 	unsigned long long int downrate;
 	int action;
+
+	if (config->login_option_enabled == 3) {
+		/* If the refresh interval has expired, refresh the downloaded remote files.
+			This can be used to update data files or images used by openNDS from storage on a remote server.
+			Access to the openNDS router is not required to update these files as openNDS downloads them.
+			The primary uses are:
+				to provide up to date info to clients.
+				to provide adverising content that automatically updates.
+		*/
+
+		if (remotes_refresh_interval_secs > 0 ) {
+			// Refresh downloaded files with new ones
+			if ((config->remotes_last_refresh + remotes_refresh_interval_secs) <= now) {
+				download_remotes(1);
+				config->remotes_last_refresh = now;
+			} else {
+				// Check if all required files are present, if any are missing, download them
+				download_remotes(0);
+			}
+		}
+	}
 
 	debug(LOG_DEBUG, "Rate Check Window is set to %u period(s) of checkinterval", config->rate_check_window);
 

@@ -198,6 +198,14 @@ config opennds
 	#
 	###########################################################################################
 
+	# Set refresh interval for downloaded remote files (in minutes)
+	# Seting to 0 (zero) means refresh is disabled
+	# Default 0
+	#
+	#option remotes_refresh_interval '720'
+	#
+	###########################################################################################
+
 	# Use outdated libmicrohttpd (MHD)
 	# Default 0
 	#

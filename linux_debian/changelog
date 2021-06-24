@@ -1,3 +1,24 @@
+opennds (9.1.0-1) stable; urgency=medium
+
+  * This version introduces new functionality, some changes and fixes
+  * Add - Add - ndsctl lockf() file locking [bluewavenet] [T-X]
+  * Add - b64encode to ndsctl [bluewavenet]
+  * Add - option max_page_size for MHD [bluewavenet]
+  * Add - option remotes_refresh_interval [bluewave.net]
+  * Add - Pre-download remote files in background after startup [bluewave.net]
+  * Add - client id data files created by openNDS on client connect [bluewave.net]
+  * Add - check routing is configured and up [bluewave.net]
+  * Add - support for Preemptive Authentication for connected client devices. [bluewave.net]
+  * Add - Gateway interface watchdog [bluewave.net]
+  * Remove - deprecated IFB config [bluewavenet]
+  * Fix - ndsctl, send return codes [bluewave.net]
+  * Fix - MHD Watchdog Use uclient-fetch in OpenWrt [bluewave.net]
+  * Fix - Improve MHD watchdog [bluewave.net]
+  * Fix - update legacy code in ndsctl_thread [bluewave.net]
+  * Fix - edge case where MHD returns (null) as host value [bluewave.net]
+
+ -- Rob White <dot@blue-wave.net>  Thu, 24 June 2021 15:06:30 +0000
+
 openNDS (9.0.0-1) stable; urgency=medium
 
   * This version introduces major new functionality, some changes and fixes

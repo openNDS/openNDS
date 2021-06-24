@@ -50,7 +50,7 @@ config opennds
 
 	# Allow Preemptive Authenticaion
 	# Default: 0 - Disabled
-	# Enable by seeting to 1
+	# Enable by setting to 1
 	# This allows the ndsctl utility to preemptively authorise **connected** clients
 	# that have not entered the preauthenticated state.
 	# This is useful for example with IoT devices that do not have CPD (captive portal detection)

@@ -353,17 +353,17 @@ ndsctl_do(const char *socket, const struct argument *arg, const char *param)
 	return ret;
 }
 
-int ndsctl_lock(char *mountpoint, int lockfd)
+int ndsctl_lock(char *mountpoint, int *lockfd)
 {
 	int i;
 	char *lockfile;
 
 	// Open or create the lock file
 	safe_asprintf(&lockfile, "%s/ndsctl.lock", mountpoint);
-	lockfd = open(lockfile, O_RDWR | O_CREAT);
+	*lockfd = open(lockfile, O_RDWR | O_CREAT);
 	free(lockfile);
 
-	if (lockfd < 0) {
+	if (*lockfd < 0) {
 		openlog ("ndsctl", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
 		syslog (LOG_ERR, "CRITICAL ERROR - Unable to open [%s]", lockfile);
 		closelog ();
@@ -371,7 +371,7 @@ int ndsctl_lock(char *mountpoint, int lockfd)
 	}
 
 
-	if (lockf(lockfd, F_TLOCK, 0) == 0) {
+	if (lockf(*lockfd, F_TLOCK, 0) == 0) {
 		return 0;
 	} else {
 
@@ -380,7 +380,7 @@ int ndsctl_lock(char *mountpoint, int lockfd)
 			openlog ("ndsctl", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
 			syslog (LOG_ERR, "CRITICAL ERROR - Unable to create lock on [%s]", lockfile);
 			closelog ();
-			close(lockfd);
+			close(*lockfd);
 			return 6;
 		}
 
@@ -388,15 +388,15 @@ int ndsctl_lock(char *mountpoint, int lockfd)
 		syslog (LOG_NOTICE, "ndsctl is locked by another process");
 		printf ("ndsctl is locked by another process\n");
 		closelog ();
-		close(lockfd);
+		close(*lockfd);
 		return 4;
 	}
 }
 
-void ndsctl_unlock(int lockfd)
+void ndsctl_unlock(int *lockfd)
 {
-	lockf(lockfd, F_ULOCK, 0);
-	close(lockfd);
+	lockf(*lockfd, F_ULOCK, 0);
+	close(*lockfd);
 }
 
 
@@ -411,7 +411,6 @@ main(int argc, char **argv)
 	char argi[128] = {0};
 	char str_b64[QUERYMAXLEN] = {0};
 	char mountpoint[128] = {0};
-	char *lockfile;
 	char *cmd;
 	int ret;
 	int lockfd;
@@ -476,7 +475,7 @@ main(int argc, char **argv)
 
 
 	//Create lock
-	ret=ndsctl_lock(mountpoint, lockfd);
+	ret=ndsctl_lock(mountpoint, &lockfd);
 
 	if (ret > 0) {
 		return ret;
@@ -493,7 +492,7 @@ main(int argc, char **argv)
 
 	if (arg == NULL) {
 		fprintf(stderr, "Unknown command: %s\n", argv[i]);
-		ndsctl_unlock(lockfd);
+		ndsctl_unlock(&lockfd);
 		free(socket);
 		return 1;
 	}
@@ -509,7 +508,7 @@ main(int argc, char **argv)
 	}
 
 	ret = ndsctl_do(socket, arg, args);
-	ndsctl_unlock(lockfd);
+	ndsctl_unlock(&lockfd);
 	free(socket);
 	return ret;
 }

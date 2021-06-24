@@ -33,28 +33,29 @@
 int execute(const char fmt[], ...);
 int execute_ret(char* msg, int msg_len, const char fmt[], ...);
 int execute_ret_url_encoded(char* msg, int msg_len, const char *cmd);
+
 /* @brief Get IP address of an interface */
 char *get_iface_ip(const char ifname[], int ip6);
 
 /* @brief Get MAC address of an interface */
 char *get_iface_mac(const char ifname[]);
 
-/* @brief Get interface name of default gateway */
-char *get_ext_iface (void);
+// @brief Get interface name of default gateway (currently unused)
+//char *get_ext_iface (void);
 
-/* @brief Sets hint that an online action (dns/connect/etc using WAN) succeeded */
-void mark_online();
-/* @brief Sets hint that an online action (dns/connect/etc using WAN) failed */
-void mark_offline();
-/* @brief Returns a guess (true or false) on whether we're online or not based on previous calls to mark_online and mark_offline */
-int is_online();
-
-/* @brief Sets hint that an auth server online action succeeded */
-void mark_auth_online();
-/* @brief Sets hint that an auth server online action failed */
-void mark_auth_offline();
-/* @brief Returns a guess (true or false) on whether we're an auth server is online or not based on previous calls to mark_auth_online and mark_auth_offline */
-int is_auth_online();
+// TODO online/offline checking
+// @brief Sets hint that an online action (dns/connect/etc using WAN) succeeded
+//void mark_online();
+// @brief Sets hint that an online action (dns/connect/etc using WAN) failed
+//void mark_offline();
+// @brief Returns a guess (true or false) on whether we're online or not based on previous calls to mark_online and mark_offline
+//int is_online();
+// @brief Sets hint that an auth server online action succeeded
+//void mark_auth_online();
+// @brief Sets hint that an auth server online action failed
+//void mark_auth_offline();
+// @brief Returns a guess (true or false) on whether we're an auth server is online or not based on previous calls to mark_auth_online and mark_auth_offline
+//int is_auth_online();
 
 /* @brief Format a time_t value to 'Fri Jul 27 18:52:22 2018' */
 char *format_time(time_t time, char buf[64]);
@@ -67,6 +68,23 @@ time_t get_system_uptime();
 
 /* @brief Returns the hash of a string */
 int hash_str(char *buf, int hash_len, const char *src);
+
+// @brief Downloads remote files specified in the configured themespec
+int download_remotes(int refresh);
+
+// @brief locks ndsctl
+int ndsctl_lock();
+
+// @brief unlocks ndsctl
+void ndsctl_unlock();
+
+/* @brief writes an element or elements of client info to the cidfile,
+ * mode can be:
+ * write (write the info)
+ * or
+ * parse (parse the info string for multiple elements and write)
+ */
+int write_client_info(char* msg, int msg_len, const char *mode, const char *cid, const char *info);
 
 /* @brief Returns the client local interface,
  * meshnode mac address (null if mesh not present) and

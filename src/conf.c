@@ -86,12 +86,15 @@ typedef enum {
 	oLoginOptionEnabled,
 	oThemeSpecPath,
 	oUseOutdatedMHD,
+	oMaxPageSize,
+	oAllowPreemptiveAuthentication,
 	oUnescapeCallbackEnabled,
 	oFasSecureEnabled,
 	oHTTPDMaxConn,
 	oWebRoot,
 	oPreauthIdleTimeout,
 	oAuthIdleTimeout,
+	oRemotesRefreshInterval,
 	oCheckInterval,
 	oSetMSS,
 	oMSSValue,
@@ -100,7 +103,6 @@ typedef enum {
 	oUploadRate,
 	oDownloadQuota,
 	oUploadQuota,
-	oUploadIFB,
 	oNdsctlSocket,
 	oSyslogFacility,
 	oFirewallRule,
@@ -151,12 +153,15 @@ static const struct {
 	{ "login_option_enabled", oLoginOptionEnabled },
 	{ "themespec_path", oThemeSpecPath },
 	{ "use_outdated_mhd", oUseOutdatedMHD },
+	{ "max_page_size", oMaxPageSize },
+	{ "allow_preemptive_authentication", oAllowPreemptiveAuthentication },
 	{ "unescape_callback_enabled", oUnescapeCallbackEnabled },
 	{ "fas_secure_enabled", oFasSecureEnabled },
 	{ "faspath", oFasPath },
 	{ "webroot", oWebRoot },
 	{ "preauthidletimeout", oPreauthIdleTimeout },
 	{ "authidletimeout", oAuthIdleTimeout },
+	{ "remotes_refresh_interval", oRemotesRefreshInterval },
 	{ "checkinterval", oCheckInterval },
 	{ "setmss", oSetMSS },
 	{ "mssvalue", oMSSValue },
@@ -165,7 +170,6 @@ static const struct {
 	{ "uploadrate", oUploadRate },
 	{ "downloadquota", oDownloadQuota },
 	{ "uploadquota", oUploadQuota },
-	{ "ifb", oUploadIFB },
 	{ "syslogfacility", oSyslogFacility },
 	{ "ndsctlsocket", oNdsctlSocket },
 	{ "firewallruleset", oFirewallRuleSet },
@@ -236,6 +240,8 @@ config_init(void)
 	config.login_option_enabled = DEFAULT_LOGIN_OPTION_ENABLED;
 	config.themespec_path = NULL;
 	config.use_outdated_mhd = DEFAULT_USE_OUTDATED_MHD;
+	config.max_page_size = DEFAULT_MAX_PAGE_SIZE;
+	config.allow_preemptive_authentication = DEFAULT_ALLOW_PREEMPTIVE_AUTHENTICATION;
 	config.unescape_callback_enabled = DEFAULT_UNESCAPE_CALLBACK_ENABLED;
 	config.fas_secure_enabled = DEFAULT_FAS_SECURE_ENABLED;
 	config.fas_remoteip = NULL;
@@ -255,6 +261,7 @@ config_init(void)
 	config.preauthdir = safe_strdup(DEFAULT_PREAUTHDIR);
 	config.preauth_idle_timeout = DEFAULT_PREAUTH_IDLE_TIMEOUT,
 	config.auth_idle_timeout = DEFAULT_AUTH_IDLE_TIMEOUT,
+	config.remotes_refresh_interval = DEFAULT_REMOTES_REFRESH_INTERVAL,
 	config.checkinterval = DEFAULT_CHECKINTERVAL;
 	config.daemon = -1;
 	config.set_mss = DEFAULT_SET_MSS;
@@ -264,7 +271,6 @@ config_init(void)
 	config.download_rate = DEFAULT_DOWNLOAD_RATE;
 	config.upload_quota =  DEFAULT_UPLOAD_QUOTA;
 	config.download_quota = DEFAULT_DOWNLOAD_QUOTA;
-	config.upload_ifb =  DEFAULT_UPLOAD_IFB;
 	config.syslog_facility = DEFAULT_SYSLOG_FACILITY;
 	config.log_syslog = DEFAULT_LOG_SYSLOG;
 	config.ndsctl_sock = safe_strdup(DEFAULT_NDSCTL_SOCK);
@@ -282,6 +288,7 @@ config_init(void)
 	config.walledgarden_fqdn_list = NULL;
 	config.walledgarden_port_list = NULL;
 	config.fas_custom_parameters_list = NULL;
+	config.lockfd = 0;
 
 	// Set up default FirewallRuleSets, and their empty ruleset policies
 	rs = add_ruleset("trusted-users");
@@ -854,6 +861,20 @@ config_read(const char *filename)
 				exit(1);
 			}
 			break;
+		case oMaxPageSize:
+			if (sscanf(p1, "%d", &config.max_page_size) < 1) {
+				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+				debug(LOG_ERR, "Exiting...");
+				exit(1);
+			}
+			break;
+		case oAllowPreemptiveAuthentication:
+			if (sscanf(p1, "%d", &config.allow_preemptive_authentication) < 1) {
+				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+				debug(LOG_ERR, "Exiting...");
+				exit(1);
+			}
+			break;
 		case oUnescapeCallbackEnabled:
 			if (sscanf(p1, "%d", &config.unescape_callback_enabled) < 1) {
 				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
@@ -959,6 +980,13 @@ config_read(const char *filename)
 				exit(1);
 			}
 			break;
+		case oRemotesRefreshInterval:
+			if (sscanf(p1, "%d", &config.remotes_refresh_interval) < 1 || config.remotes_refresh_interval < 0) {
+				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+				debug(LOG_ERR, "Exiting...");
+				exit(1);
+			}
+			break;
 		case oNdsctlSocket:
 			free(config.ndsctl_sock);
 			config.ndsctl_sock = safe_strdup(p1);
@@ -1009,13 +1037,6 @@ config_read(const char *filename)
 			break;
 		case oUploadQuota:
 			if (sscanf(p1, "%llu", &config.upload_quota) < 1 || config.upload_quota < 0) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
-		case oUploadIFB:
-			if(sscanf(p1, "%d", &config.upload_ifb) < 1 || config.upload_ifb < 0) {
 				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
 				debug(LOG_ERR, "Exiting...");
 				exit(1);

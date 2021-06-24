@@ -156,7 +156,7 @@ _iptables_check_mark_masking()
 		markmask = "";
 	}
 
-	debug(LOG_INFO, "Iptables mark op \"%s\" and mark mask \"%s\".", markop, markmask);
+	debug(LOG_DEBUG, "Iptables mark op \"%s\" and mark mask \"%s\".", markop, markmask);
 
 	fw_quiet = 0; // restore verbosity
 

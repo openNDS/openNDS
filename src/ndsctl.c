@@ -21,7 +21,8 @@
 /** @file ndsctl.c
     @brief Monitoring and control of opennds, client part
     @author Copyright (C) 2004 Alexandre Carmel-Veilleux <acv@acv.ca>
-    trivially modified for opennds
+    @author Copyright (C) 2015-2021 Modifications and additions by BlueWave Projects and Services <opennds@blue-wave.net>
+    @author Copyright (C) 2021 ndsctl_lock() and ndsctl_unlock() based on code by Linus Lüssing <ll@simonwunderlich.de>
 */
 
 #define _GNU_SOURCE
@@ -34,6 +35,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <syslog.h>
 #include <errno.h>
@@ -77,7 +79,7 @@ int safe_vasprintf(char **strp, const char *fmt, va_list ap)
 	return (retval);
 }
 
-int uh_b64decode(char *buf, int blen, const void *src, int slen)
+int b64decode(char *buf, int blen, const void *src, int slen)
 {
 	const unsigned char *str = src;
 	unsigned int cout = 0;
@@ -116,10 +118,45 @@ int uh_b64decode(char *buf, int blen, const void *src, int slen)
 		buf[len++] = (char)(cout);
 	}
 
-	//debug(LOG_DEBUG, "b64 decoded string: %s, decoded length: %d", buf, len);
 	buf[len++] = 0;
 	return len;
 }
+
+int b64encode(char *buf, int blen, const char *src, int slen)
+{
+	int  i;
+	int  v;
+	int len = 0;
+	const char b64chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+	for (i=0, len=0; i<slen; i+=3, len+=4) {
+		if ((len+4) <= blen) {
+			v = src[i];
+			v = i+1 < slen ? v << 8 | src[i+1] : v << 8;
+			v = i+2 < slen ? v << 8 | src[i+2] : v << 8;
+
+			buf[len]   = b64chars[(v >> 18) & 0x3F];
+			buf[len+1] = b64chars[(v >> 12) & 0x3F];
+
+			if (i+1 < slen) {
+				buf[len+2] = b64chars[(v >> 6) & 0x3F];
+			} else {
+				buf[len+2] = '=';
+			}
+
+			if (i+2 < slen) {
+				buf[len+3] = b64chars[v & 0x3F];
+			} else {
+				buf[len+3] = '=';
+			}
+		} else {
+			break;
+		}
+	}
+
+	return (i == slen) ? (len + 4) : -1;
+}
+
 
 /** @internal
  * @brief Print usage
@@ -175,7 +212,9 @@ usage(void)
 		"  debuglevel n\n"
 		"	Set debug level to n (0=silent, 1=Normal, 2=Info, 3=debug)\n\n"
 		"  b64decode \"string_to_decode\"\n"
-		"	Base 64 decode the given string\n"
+		"	Base 64 decode the given string\n\n"
+		"  b64encode \"string_to_encode\"\n"
+		"	Base 64 encode the given string\n"
 		"\n"
 	);
 }
@@ -194,6 +233,7 @@ static struct argument arguments[] = {
 	{"trust", "MAC %s trusted.\n", "Failed to trust MAC %s.\n"},
 	{"untrust", "MAC %s untrusted.\n", "Failed to untrust MAC %s.\n"},
 	{"b64decode", NULL, NULL},
+	{"b64encode", NULL, NULL},
 	{NULL, NULL, NULL}
 };
 
@@ -264,7 +304,7 @@ ndsctl_do(const char *socket, const struct argument *arg, const char *param)
 	int len, rlen;
 	int ret;
 
-	setlogmask(LOG_UPTO (LOG_NOTICE));
+	//setlogmask(LOG_UPTO (LOG_NOTICE));
 	sock = connect_to_server(socket);
 
 	if (sock < 0) {
@@ -313,6 +353,53 @@ ndsctl_do(const char *socket, const struct argument *arg, const char *param)
 	return ret;
 }
 
+int ndsctl_lock(char *mountpoint, int lockfd)
+{
+	int i;
+	char *lockfile;
+
+	// Open or create the lock file
+	safe_asprintf(&lockfile, "%s/ndsctl.lock", mountpoint);
+	lockfd = open(lockfile, O_RDWR | O_CREAT);
+	free(lockfile);
+
+	if (lockfd < 0) {
+		openlog ("ndsctl", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
+		syslog (LOG_ERR, "CRITICAL ERROR - Unable to open [%s]", lockfile);
+		closelog ();
+		return 5;
+	}
+
+
+	if (lockf(lockfd, F_TLOCK, 0) == 0) {
+		return 0;
+	} else {
+
+		if (errno != EACCES && errno != EAGAIN) {
+			// persistent error
+			openlog ("ndsctl", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
+			syslog (LOG_ERR, "CRITICAL ERROR - Unable to create lock on [%s]", lockfile);
+			closelog ();
+			close(lockfd);
+			return 6;
+		}
+
+		openlog ("ndsctl", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
+		syslog (LOG_NOTICE, "ndsctl is locked by another process");
+		printf ("ndsctl is locked by another process\n");
+		closelog ();
+		close(lockfd);
+		return 4;
+	}
+}
+
+void ndsctl_unlock(int lockfd)
+{
+	lockf(lockfd, F_ULOCK, 0);
+	close(lockfd);
+}
+
+
 int
 main(int argc, char **argv)
 {
@@ -326,6 +413,8 @@ main(int argc, char **argv)
 	char mountpoint[128] = {0};
 	char *lockfile;
 	char *cmd;
+	int ret;
+	int lockfd;
 	FILE *fd;
 
 	socket = strdup(DEFAULT_SOCKET_FILENAME);
@@ -348,10 +437,25 @@ main(int argc, char **argv)
 	}
 
 	if (strcmp(argv[i], "b64decode") == 0) {
-		uh_b64decode(str_b64, sizeof(str_b64), argv[i+1], strlen(argv[i+1]));
-		printf("%s", str_b64);
-		return 0;
+		if(argv[i+1] == NULL) {
+			return 1;
+		} else {
+			b64decode(str_b64, sizeof(str_b64), argv[i+1], strlen(argv[i+1]));
+			printf("%s", str_b64);
+			return 0;
+		}
 	}
+
+	if (strcmp(argv[i], "b64encode") == 0) {
+		if(argv[i+1] == NULL) {
+			return 1;
+		} else {
+			b64encode(str_b64, sizeof(str_b64), argv[i+1], strlen(argv[i+1]));
+			printf("%s", str_b64);
+			return 0;
+		}
+	}
+
 
 	if (strcmp(argv[1], "-h") == 0) {
 		usage();
@@ -363,26 +467,20 @@ main(int argc, char **argv)
 	fd = popen(cmd, "r");
 	if (fd == NULL) {
 		printf("Unable to open library - Terminating");
+		pclose(fd);
 		exit(1);
 	}
 	free(cmd);
 	fgets(mountpoint, sizeof(mountpoint), fd);
 	pclose(fd);
 
-	// Create the lock file
-	safe_asprintf(&lockfile, "%s/ndsctl.lock", mountpoint);
 
-	if ((fd = fopen(lockfile, "r")) != NULL) {
-		openlog ("ndsctl", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
-		syslog (LOG_NOTICE, "ndsctl is locked by another process");
-		printf ("ndsctl is locked by another process\n");
-		closelog ();
-		fclose(fd);
-		return 0;
-	} else {
-		//Create lock
-		fd = fopen(lockfile, "w");
-	}
+	//Create lock
+	ret=ndsctl_lock(mountpoint, lockfd);
+
+	if (ret > 0) {
+		return ret;
+	} 
 
 	// Get the socket path/filename
 	if (strcmp(socket, DEFAULT_SOCKET_FILENAME) == 0) {
@@ -395,8 +493,8 @@ main(int argc, char **argv)
 
 	if (arg == NULL) {
 		fprintf(stderr, "Unknown command: %s\n", argv[i]);
-		fclose(fd);
-		remove(lockfile);
+		ndsctl_unlock(lockfd);
+		free(socket);
 		return 1;
 	}
 
@@ -410,12 +508,10 @@ main(int argc, char **argv)
 		}
 	}
 
-	ndsctl_do(socket, arg, args);
-	fclose(fd);
-	remove(lockfile);
-	free(lockfile);
+	ret = ndsctl_do(socket, arg, args);
+	ndsctl_unlock(lockfd);
 	free(socket);
-	return 0;
+	return ret;
 }
 
 

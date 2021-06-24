@@ -29,7 +29,7 @@
 #ifndef _CONF_H_
 #define _CONF_H_
 
-#define VERSION "9.0.1beta"
+#define VERSION "9.1.0"
 
 /*
  * Defines how many times should we try detecting the interface with the default route (in seconds).
@@ -56,9 +56,11 @@
 #define DEFAULT_GATEWAYNAME "openNDS"
 #define DEFAULT_GATEWAYPORT 2050
 #define DEFAULT_GATEWAYFQDN "status.client"
+#define DEFAULT_MAX_PAGE_SIZE 10240
 #define DEFAULT_FASPORT 0
 #define DEFAULT_LOGIN_OPTION_ENABLED 0
 #define DEFAULT_USE_OUTDATED_MHD 0
+#define DEFAULT_ALLOW_PREEMPTIVE_AUTHENTICATION 0
 #define DEFAULT_UNESCAPE_CALLBACK_ENABLED 0
 #define DEFAULT_FAS_SECURE_ENABLED 1
 #define DEFAULT_FASPATH "/"
@@ -67,6 +69,7 @@
 #define DEFAULT_SESSION_TIMEOUT 1200
 #define DEFAULT_PREAUTH_IDLE_TIMEOUT 30
 #define DEFAULT_AUTH_IDLE_TIMEOUT 120
+#define DEFAULT_REMOTES_REFRESH_INTERVAL 0
 #define DEFAULT_WEBROOT "/etc/opennds/htdocs"
 #define DEFAULT_AUTHDIR "opennds_auth"
 #define DEFAULT_DENYDIR "opennds_deny"
@@ -74,13 +77,11 @@
 #define DEFAULT_MACMECHANISM MAC_BLOCK
 #define DEFAULT_SET_MSS 1 //allow setting the TCP Maximum Segment Size
 #define DEFAULT_MSS_VALUE 0 // value to set the MSS. 0 means use max possible ie clamp-mss-to-pmtu
-#define DEFAULT_TRAFFIC_CONTROL 0 // Defunct. TODO could fix
 #define DEFAULT_RATE_CHECK_WINDOW 2 // The data rate check moving average window size multiply this by CHECKINTERVAL to give window size in seconds
 #define DEFAULT_UPLOAD_RATE 0 // 0 means no limit
 #define DEFAULT_DOWNLOAD_RATE 0 // 0 means no limit
 #define DEFAULT_UPLOAD_QUOTA 0 // 0 means no limit
 #define DEFAULT_DOWNLOAD_QUOTA 0 // 0 means no limit
-#define DEFAULT_UPLOAD_IFB 0
 #define DEFAULT_LOG_SYSLOG 0
 #define DEFAULT_SYSLOG_FACILITY LOG_DAEMON
 #define DEFAULT_NDSCTL_SOCK "ndsctl.sock"
@@ -110,7 +111,7 @@ typedef enum {
 // Firewall rules
 typedef struct _firewall_rule_t {
 	t_firewall_target target;	//@brief t_firewall_target
-	char *protocol;			//@brief tcp, udp, etc ...
+	char *protocol;		//@brief tcp, udp, etc ...
 	char *port;			//@brief Port to block/allow
 	char *mask;			//@brief Mask for the rule *destination*
 	char *ipset;			//@brief IPset rule
@@ -188,6 +189,8 @@ typedef struct {
 	unsigned int fas_port;				//@brief Port the fas server will run on
 	int login_option_enabled;			//@brief Use default PreAuth Login script
 	int use_outdated_mhd;				//@brief Use outdated libmicrohttpd
+	int max_page_size;				//@brief Max page size to be served by libmicrohttpd
+	int allow_preemptive_authentication;		//@brief Allow Preemptive Authentication using the ndsctl utility
 	int unescape_callback_enabled;			//@brief Enable external MHD unescape callback script
 	int fas_secure_enabled;			//@brief Enable Secure FAS
 	char *fas_path;				//@brief Path to forward authentication page of FAS
@@ -206,16 +209,16 @@ typedef struct {
 	int session_timeout;				//@brief Minutes of the default session length
 	int preauth_idle_timeout;			//@brief Minutes a preauthenticated client will be kept in the system
 	int auth_idle_timeout;				//@brief Minutes an authenticated client will be kept in the system
+	int remotes_refresh_interval;			//@brief Minutes before remote files will be refreshed
+	unsigned long long int remotes_last_refresh;	//@brief Time of last refresh of remote files
 	int checkinterval;				//@brief Period the the client timeout check thread will run, in seconds
 	int set_mss;					//@brief boolean, whether to set mss
 	int mss_value;					//@brief int, mss value; <= 0 clamp to pmtu
-	int traffic_control;				//@brief boolean, whether to do tc
 	int rate_check_window;				//@brief window size in multiples of checkinterval for rate check moving average
 	unsigned long long int download_rate;		//@brief Download rate, kb/s
 	unsigned long long int upload_rate;		//@brief Upload rate, kb/s
 	unsigned long long int download_quota;		//@brief Download quota, kB
 	unsigned long long int upload_quota;		//@brief Upload quota, kB
-	int upload_ifb;				//@brief Number of IFB handling upload
 	int log_syslog;				//@brief boolean, whether to log to syslog
 	int syslog_facility;				//@brief facility to use when using syslog for logging
 	int macmechanism; 				//@brief mechanism wrt MAC addrs
@@ -239,6 +242,7 @@ typedef struct {
 	int ip6;					//@brief enable IPv6
 	char *binauth;					//@brief external authentication program
 	char *preauth;					//@brief external preauthentication program
+	int lockfd;					//@brief ndsctl lockfile file descriptor
 } s_config;
 
 // @brief Get the current gateway configuration

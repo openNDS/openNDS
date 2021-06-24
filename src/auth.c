@@ -34,6 +34,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <syslog.h>
+#include <time.h>
 
 #include "safe.h"
 #include "conf.h"
@@ -58,8 +59,6 @@ unsigned int authenticated_since_start = 0;
 static void binauth_action(t_client *client, const char *reason, char *customdata)
 {
 	s_config *config = config_get_config();
-	char *lockfile;
-	FILE *fd;
 	time_t now = time(NULL);
 	int seconds = 60 * config->session_timeout;
 	unsigned long int sessionstart;
@@ -68,18 +67,11 @@ static void binauth_action(t_client *client, const char *reason, char *customdat
 	char *client_auth = "client_auth";
 	char *ndsctl_auth = "ndsctl_auth";
 	char customdata_enc[384] = {0};
-
-	if (!customdata) {
-		customdata="na";
-	}
+	int ret;
 
 	if (config->binauth) {
-		// ndsctl will deadlock if run within the BinAuth script so lock it
-		safe_asprintf(&lockfile, "%s/ndsctl.lock", config->tmpfsmountpoint);
-
-		if ((fd = fopen(lockfile, "r")) == NULL) {
-			//No lockfile, so create one
-			fd = fopen(lockfile, "w");
+		if (!customdata || strlen(customdata) == 0) {
+			customdata="na";
 		}
 
 		uh_urlencode(customdata_enc, sizeof(customdata_enc), customdata, strlen(customdata));
@@ -90,19 +82,25 @@ static void binauth_action(t_client *client, const char *reason, char *customdat
 		sessionend = client->session_end;
 		debug(LOG_DEBUG, "binauth_action client: seconds=%lu, sessionstart=%lu, sessionend=%lu", seconds, sessionstart, sessionend);
 
-		// Check for a deauth reason
-		if (strstr(reason, deauth) != NULL) {
-			sessionend = now;
-		}
-
 		// Check for client_auth reason
 		if (strstr(reason, client_auth) != NULL) {
 			sessionstart = now;
 		}
 
+		// Check for a deauth reason
+		if (strstr(reason, deauth) != NULL) {
+			sessionend = now;
+		}
+
 		// Check for ndsctl_auth reason
 		if (strstr(reason, ndsctl_auth) != NULL) {
 			sessionstart = now;
+		}
+
+		// ndsctl will deadlock if run within the BinAuth script so lock it.
+		// But if a call to ndsctl auth or seauth brought us here then it is locked already.
+		if (strstr(reason, deauth) == NULL && strstr(reason, ndsctl_auth) == NULL) {
+			ret=ndsctl_lock();
 		}
 
 		debug(LOG_DEBUG, "BinAuth %s - client session end time: [ %lu ]", reason, sessionend);
@@ -119,12 +117,12 @@ static void binauth_action(t_client *client, const char *reason, char *customdat
 			customdata_enc
 		);
 
-		// unlock ndsctl
-		if (fd) {
-			fclose(fd);
-			remove(lockfile);
+		if (strstr(reason, deauth) == NULL && strstr(reason, ndsctl_auth) == NULL) {
+			// unlock ndsctl
+			if (ret == 0) {
+				ndsctl_unlock();
+			}
 		}
-		free(lockfile);
 	}
 }
 
@@ -228,12 +226,34 @@ fw_refresh_client_list(void)
 	s_config *config = config_get_config();
 	const int preauth_idle_timeout_secs = 60 * config->preauth_idle_timeout;
 	const int auth_idle_timeout_secs = 60 * config->auth_idle_timeout;
+	const int remotes_refresh_interval_secs = 60 * config->remotes_refresh_interval;
 	const time_t now = time(NULL);
 	unsigned long long int durationsecs;
 	unsigned long long int download_bytes, upload_bytes;
 	unsigned long long int uprate;
 	unsigned long long int downrate;
 	int action;
+
+	if (config->login_option_enabled == 3) {
+		/* If the refresh interval has expired, refresh the downloaded remote files.
+			This can be used to update data files or images used by openNDS from storage on a remote server.
+			Access to the openNDS router is not required to update these files as openNDS downloads them.
+			The primary uses are:
+				to provide up to date info to clients.
+				to provide adverising content that automatically updates.
+		*/
+
+		if (remotes_refresh_interval_secs > 0 ) {
+			// Refresh downloaded files with new ones
+			if ((config->remotes_last_refresh + remotes_refresh_interval_secs) <= now) {
+				download_remotes(1);
+				config->remotes_last_refresh = now;
+			} else {
+				// Check if all required files are present, if any are missing, download them
+				download_remotes(0);
+			}
+		}
+	}
 
 	debug(LOG_DEBUG, "Rate Check Window is set to %u period(s) of checkinterval", config->rate_check_window);
 
@@ -510,6 +530,9 @@ thread_client_timeout_check(void *arg)
 
 
 	while (1) {
+		// check gateway mac
+		config->gw_mac = get_iface_mac(config->gw_interface);
+		debug(LOG_DEBUG, "Watchdog: Gateway Interface [%s], mac [%s]", config->gw_interface, config->gw_mac);
 
 		// check MHD
 		if (execute_ret_url_encoded(msg, sizeof(msg) - 1, testcmd) == 0) {

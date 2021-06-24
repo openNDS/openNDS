@@ -44,6 +44,6 @@
 #define URL_COMMASPACE "%2c%20"
 
 /* Max dynamic html page size in bytes */
-#define HTMLMAXSIZE 10240
+#define HTMLMAXSIZE config->max_page_size
 
 #endif /* _COMMON_H_ */

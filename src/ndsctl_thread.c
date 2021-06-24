@@ -302,6 +302,8 @@ ndsctl_auth(FILE *fp, char *arg)
 	int downloadrate = config->download_rate;
 	unsigned long long int uploadquota = config->upload_quota;
 	unsigned long long int downloadquota = config->download_quota;
+	char *testcmd;
+	char msg[64] = {0};
 	char customdata[256] = {0};
 	char *argcopy;
 	const char *arg2;
@@ -312,6 +314,8 @@ ndsctl_auth(FILE *fp, char *arg)
 	const char *arg7;
 	const char *arg8;
 	char *ptr;
+	char *ipclient;
+	char *macclient;
 	time_t now = time(NULL);
 
 	debug(LOG_DEBUG, "Entering ndsctl_auth [%s]", arg);
@@ -375,10 +379,42 @@ ndsctl_auth(FILE *fp, char *arg)
 	}
 
 	LOCK_CLIENT_LIST();
-	debug(LOG_DEBUG, "find in client list - arg2: [%d]", arg2);
+	debug(LOG_DEBUG, "find in client list - arg2: [%s]", arg2);
 	client = client_list_find_by_any(arg2, arg2, arg2);
 	id = client ? client->id : 0;
 	debug(LOG_DEBUG, "client id: [%d]", id);
+
+	if (!id  && config->allow_preemptive_authentication == 1) {
+		// Client is neither preauthenticated nor authenticated
+		// If Preemptive authentication is enabled we should try to auth by mac
+		debug(LOG_DEBUG, "Client is not in client list.");
+		// Build command to get client mac and ip
+		safe_asprintf(&testcmd,
+			"/usr/lib/opennds/libopennds.sh clientaddress \"%s\"",
+			arg2
+		);
+
+		if (execute_ret_url_encoded(msg, sizeof(msg) - 1, testcmd) == 0) {
+			debug(LOG_DEBUG, "Client ip/mac: %s", msg);
+
+			if (strcmp(msg, "-") == 0) {
+				debug(LOG_DEBUG, "Client [%s] is not connected", arg2);
+			} else {
+				ipclient = strtok(msg, " ");
+				macclient = strtok(NULL, " ");
+				debug(LOG_DEBUG, "Client ip [%s], mac [%s]", ipclient, macclient);
+
+				client_list_add_client(macclient, ipclient);
+				client = client_list_find_by_any(arg2, arg2, arg2);
+				id = client ? client->id : 0;
+				debug(LOG_DEBUG, "client id: [%d]", id);
+			}
+		} else {
+			debug(LOG_DEBUG, "Client connection not found: Continuing...");
+			rc = -1;
+		}
+		free(testcmd);
+	}
 
 	if (id) {
 
@@ -402,7 +438,9 @@ ndsctl_auth(FILE *fp, char *arg)
 			rc = auth_client_auth_nolock(id, "ndsctl_auth", customdata);
 		}
 	} else {
-		debug(LOG_DEBUG, "Client not found.");
+		// Client is neither preauthenticated nor authenticated
+		// If Preemptive authentication is enabled we should try to auth by mac
+		debug(LOG_DEBUG, "Client is not in client list.");
 		rc = -1;
 	}
 

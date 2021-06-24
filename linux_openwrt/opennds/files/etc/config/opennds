@@ -48,6 +48,17 @@ config opennds
 	#option login_option_enabled '1'
 	###########################################################################################
 
+	# Allow Preemptive Authenticaion
+	# Default: 0 - Disabled
+	# Enable by seeting to 1
+	# This allows the ndsctl utility to preemptively authorise **connected** clients
+	# that have not entered the preauthenticated state.
+	# This is useful for example with IoT devices that do not have CPD (captive portal detection)
+	# or for a FAS to manage inter-captive-portal roaming by making use of a centralised database of client validations.
+	#
+	#option allow_preemptive_authentication '1'
+	###########################################################################################
+
 	# ThemeSpec Path
 	# Default: None
 	# Required when when login_option_enabled is set to '3'
@@ -187,6 +198,14 @@ config opennds
 	#
 	###########################################################################################
 
+	# Set refresh interval for downloaded remote files (in minutes)
+	# Seting to 0 (zero) means refresh is disabled
+	# Default 0
+	#
+	#option remotes_refresh_interval '720'
+	#
+	###########################################################################################
+
 	# Use outdated libmicrohttpd (MHD)
 	# Default 0
 	#
@@ -203,6 +222,18 @@ config opennds
 	# If this option is set to 1, NDS will attempt to start and log an error.
 	#
 	#option use_outdated_mhd '0'
+	###########################################################################################
+
+	# Maximum Page Size to be served by MHD
+	# Default 10240 bytes
+	# Minimum value 1024 bytes
+	#
+	# This sets the maximum number of bytes that will be served per page by the MHD web server
+	# Setting this option is useful:
+	#	1. To reduce memory requirements on a resource constrained router
+	#	2. To allow large pages to be served where memory usage is not a concern
+	#
+	#option max_page_size '4096'
 	###########################################################################################
 
 	# MHD Unescape callback - This is an advanced option

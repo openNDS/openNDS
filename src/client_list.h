@@ -44,6 +44,8 @@ typedef struct _t_client {
 	char *ip;				/**< @brief Client IP address */
 	char *mac;				/**< @brief Client MAC address */
 	char *token;				/**< @brief Client token */
+	char *hid;				/**< @brief Client hid */
+	char *cid;				/**< @brief Client cid */
 	unsigned int fw_connection_state;	/**< @brief Client Connection state in the firewall */
 	time_t session_start;			/**< @brief Actual Time the client was authenticated */
 	time_t window_start;			/**< @brief Actual Time the client rate check window begins */

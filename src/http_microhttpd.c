@@ -157,7 +157,7 @@ static int do_binauth(
 	unsigned long long int download_rate;
 	unsigned long long int upload_quota;
 	unsigned long long int download_quota;
-	int rc;
+	int rc =1;
 	s_config *config;
 
 	config = config_get_config();
@@ -185,7 +185,7 @@ static int do_binauth(
 	} else {
 
 		if (!custom || strlen(custom) == 0) {
-			custom="bmE";
+			custom="bmE=";
 		}
 		uh_b64decode(custom_dec_b64, sizeof(custom_dec_b64), custom, strlen(custom));
 		uh_urlencode(custom_enc, sizeof(custom_enc), custom_dec_b64, strlen(custom_dec_b64));
@@ -214,27 +214,15 @@ static int do_binauth(
 	debug(LOG_DEBUG, "BinAuth argv: %s", argv);
 
 	// ndsctl will deadlock if run within the BinAuth script so lock it
+	if(ndsctl_lock() == 0) {
+		// execute the script
+		rc = execute_ret_url_encoded(msg, sizeof(msg) - 1, argv);
+		debug(LOG_DEBUG, "BinAuth returned arguments: %s", msg);
+		free(argv);
 
-	safe_asprintf(&lockfile, "%s/ndsctl.lock", config->tmpfsmountpoint);
-
-	if ((fd = fopen(lockfile, "r")) == NULL) {
-		//No lockfile, so create one
-		fd = fopen(lockfile, "w");
+		// unlock ndsctl
+		ndsctl_unlock();
 	}
-
-
-	// execute the script
-	rc = execute_ret_url_encoded(msg, sizeof(msg) - 1, argv);
-	debug(LOG_DEBUG, "BinAuth returned arguments: %s", msg);
-	free(argv);
-
-	// unlock ndsctl
-	if (fd) {
-		fclose(fd);
-		remove(lockfile);
-	}
-
-	free(lockfile);
 
 	if (rc != 0) {
 		debug(LOG_DEBUG, "BinAuth script failed to execute");
@@ -515,7 +503,6 @@ static int try_to_authenticate(struct MHD_Connection *connection, t_client *clie
 {
 	s_config *config;
 	const char *tok;
-	char hid[128] = {0};
 	char rhid[128] = {0};
 	char *rhidraw = NULL;
 
@@ -533,8 +520,7 @@ static int try_to_authenticate(struct MHD_Connection *connection, t_client *clie
 		//Check if token (tok) or hash_id (hid) mode
 		if (strlen(tok) > 8) {
 			// hid mode
-			hash_str(hid, sizeof(hid), client->token);
-			safe_asprintf(&rhidraw, "%s%s", hid, config->fas_key);
+			safe_asprintf(&rhidraw, "%s%s", client->hid, config->fas_key);
 			hash_str(rhid, sizeof(rhid), rhidraw);
 			free (rhidraw);
 			if (tok && !strcmp(rhid, tok)) {
@@ -691,16 +677,18 @@ static int authenticated(struct MHD_Connection *connection,
 						t_client *client)
 {
 	s_config *config = config_get_config();
-	const char *host = NULL;
+	const char *host = config->gw_address;
 	char redirect_to_us[128];
 	char *fasurl = NULL;
 	char query_str[QUERYMAXLEN] = {0};
 	char *query = query_str;
-	char msg[HTMLMAXSIZE] = {0};
+	char msg[HTMLMAXSIZE];
 	char clientif[64] = {0};
 	int rc;
 	int ret;
 	struct MHD_Response *response;
+
+	memset(msg, 0, sizeof(msg));
 
 	ret = MHD_get_connection_values(connection, MHD_HEADER_KIND, get_host_value_callback, &host);
 
@@ -709,6 +697,11 @@ static int authenticated(struct MHD_Connection *connection,
 		return ret;
 	} else {
 		debug(LOG_DEBUG, "An authenticated client is requesting: host [%s] url [%s]", host, url);
+	}
+
+	if (host == NULL) {
+		debug(LOG_ERR, "authenticated: Error getting host");
+		host = config->gw_address;
 	}
 
 	/* check if this is a late request, meaning the user tries to get the internet, but ended up here,
@@ -807,7 +800,7 @@ static int authenticated(struct MHD_Connection *connection,
 static int show_preauthpage(struct MHD_Connection *connection, const char *query)
 {
 	s_config *config = config_get_config();
-	char msg[HTMLMAXSIZE] = {0};
+	char msg[HTMLMAXSIZE];
 	const char *user_agent = NULL;
 	char enc_user_agent[256] = {0};
 	char *preauthpath = NULL;
@@ -819,6 +812,7 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 	int rc;
 	int ret;
 	struct MHD_Response *response;
+	memset(msg, 0, sizeof(msg));
 
 	safe_asprintf(&preauthpath, "/%s/", config->preauthdir);
 
@@ -1076,10 +1070,15 @@ static int redirect_to_splashpage(struct MHD_Connection *connection, t_client *c
  */
 static char *construct_querystring(t_client *client, char *originurl, char *querystr ) {
 
-	char hash[128] = {0};
+	char cid[87] = {0};
+	char msg[16] = {0};
 	char clientif[64] = {0};
+	char info_enc[1024] = {0};
 	char query_str[QUERYMAXLEN] = {0};
 	char query_str_b64[QUERYMAXLEN] = {0};
+	char *cidinfo;
+	char *cidfile;
+	int cidgood = 0;
 
 	s_config *config = config_get_config();
 
@@ -1094,15 +1093,14 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 	} else if (config->fas_secure_enabled == 1) {
 
 			if (config->fas_hid) {
-				hash_str(hash, sizeof(hash), client->token);
-				debug(LOG_DEBUG, "hid=%s", hash);
+				debug(LOG_DEBUG, "hid=%s", client->hid);
 
 				get_client_interface(clientif, sizeof(clientif), client->mac);
 				debug(LOG_DEBUG, "clientif: [%s] url_encoded_gw_name: [%s]", clientif, config->url_encoded_gw_name);
 
 				snprintf(query_str, QUERYMAXLEN,
 					"hid=%s%sclientip=%s%sclientmac=%s%sgatewayname=%s%sversion=%s%sgatewayaddress=%s%sgatewaymac=%s%soriginurl=%s%sclientif=%s%sthemespec=%s%s%s%s%s%s",
-					hash, QUERYSEPARATOR,
+					client->hid, QUERYSEPARATOR,
 					client->ip, QUERYSEPARATOR,
 					client->mac, QUERYSEPARATOR,
 					config->url_encoded_gw_name, QUERYSEPARATOR,
@@ -1123,6 +1121,68 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 					"?fas=%s",
 					query_str_b64
 				);
+
+				if (config->login_option_enabled >=1) {
+					if (client->cid) {
+						cidgood = 1;
+						safe_asprintf(&cidfile, "%s/ndscids/%s", config->tmpfsmountpoint, client->cid);
+
+						if(access(cidfile, F_OK) != 0) {
+							cidgood=0;
+						}
+						free(cidfile);
+					}
+
+					if (cidgood == 0) {
+						strncpy(cid, query_str_b64+5, 86);
+						client->cid = safe_strdup(cid);
+
+						// Write the new cidfile:
+						safe_asprintf(&cidinfo, "hid=\"%s\"\0", client->hid);
+						write_client_info(msg, sizeof(msg), "write", cid, cidinfo);
+
+						safe_asprintf(&cidinfo, "clientip=\"%s\"\0", client->ip);
+						write_client_info(msg, sizeof(msg), "write", cid, cidinfo);
+
+						safe_asprintf(&cidinfo, "clientmac=\"%s\"\0", client->mac);
+						write_client_info(msg, sizeof(msg), "write", cid, cidinfo);
+
+						safe_asprintf(&cidinfo, "gatewayname=\"%s\"\0", config->http_encoded_gw_name);
+						write_client_info(msg, sizeof(msg), "write", cid, cidinfo);
+
+						safe_asprintf(&cidinfo, "version=\"%s\"\0", VERSION);
+						write_client_info(msg, sizeof(msg), "write", cid, cidinfo);
+
+						safe_asprintf(&cidinfo, "gatewayaddress=\"%s\"\0", config->gw_address);
+						write_client_info(msg, sizeof(msg), "write", cid, cidinfo);
+
+						safe_asprintf(&cidinfo, "gatewaymac=\"%s\"\0", config->gw_mac);
+						write_client_info(msg, sizeof(msg), "write", cid, cidinfo);
+
+						safe_asprintf(&cidinfo, "originurl=\"%s\"\0", originurl);
+						write_client_info(msg, sizeof(msg), "write", cid, cidinfo);
+
+						safe_asprintf(&cidinfo, "clientif=\"%s\"\0", clientif);
+						write_client_info(msg, sizeof(msg), "write", cid, cidinfo);
+
+						safe_asprintf(&cidinfo, "themespec=\"%s\"\0", config->themespec_path);
+						write_client_info(msg, sizeof(msg), "write", cid, cidinfo);
+
+						safe_asprintf(&cidinfo, "%s\0", config->custom_params);
+						write_client_info(msg, sizeof(msg), "parse", cid, cidinfo);
+
+						safe_asprintf(&cidinfo, "%s\0", config->custom_vars);
+						write_client_info(msg, sizeof(msg), "parse", cid, cidinfo);
+
+						safe_asprintf(&cidinfo, "%s\0", config->custom_images);
+						write_client_info(msg, sizeof(msg), "parse", cid, cidinfo);
+
+						safe_asprintf(&cidinfo, "%s\0", config->custom_files);
+						write_client_info(msg, sizeof(msg), "parse", cid, cidinfo);
+
+						free(cidinfo);
+					}
+				}
 			} else {
 				snprintf(querystr, QUERYMAXLEN,
 					"?clientip=%s&gatewayname=%s&redir=%s",
@@ -1133,14 +1193,14 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 			}
 
 	} else if (config->fas_secure_enabled == 2 || config->fas_secure_enabled == 3) {
-		hash_str(hash, sizeof(hash), client->token);
-		debug(LOG_DEBUG, "hid=%s", hash);
+
+		debug(LOG_DEBUG, "hid=%s", client->hid);
 
 		get_client_interface(clientif, sizeof(clientif), client->mac);
 		debug(LOG_DEBUG, "clientif: [%s]", clientif);
 		snprintf(querystr, QUERYMAXLEN,
 			"hid=%s%sclientip=%s%sclientmac=%s%sgatewayname=%s%sversion=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s%sthemespec=%s%s%s%s%s%s",
-			hash, QUERYSEPARATOR,
+			client->hid, QUERYSEPARATOR,
 			client->ip, QUERYSEPARATOR,
 			client->mac, QUERYSEPARATOR,
 			config->url_encoded_gw_name, QUERYSEPARATOR,

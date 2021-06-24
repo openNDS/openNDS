@@ -21,7 +21,8 @@
 /** @file ndsctl.c
     @brief Monitoring and control of opennds, client part
     @author Copyright (C) 2004 Alexandre Carmel-Veilleux <acv@acv.ca>
-    trivially modified for opennds
+    @author Copyright (C) 2015-2021 Modifications and additions by BlueWave Projects and Services <opennds@blue-wave.net>
+    @author Copyright (C) 2021 ndsctl_lock() and ndsctl_unlock() based on code by Linus Lüssing <ll@simonwunderlich.de>
 */
 
 #define _GNU_SOURCE
@@ -34,6 +35,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <syslog.h>
 #include <errno.h>
@@ -302,7 +304,7 @@ ndsctl_do(const char *socket, const struct argument *arg, const char *param)
 	int len, rlen;
 	int ret;
 
-	setlogmask(LOG_UPTO (LOG_NOTICE));
+	//setlogmask(LOG_UPTO (LOG_NOTICE));
 	sock = connect_to_server(socket);
 
 	if (sock < 0) {
@@ -351,6 +353,53 @@ ndsctl_do(const char *socket, const struct argument *arg, const char *param)
 	return ret;
 }
 
+int ndsctl_lock(char *mountpoint, int lockfd)
+{
+	int i;
+	char *lockfile;
+
+	// Open or create the lock file
+	safe_asprintf(&lockfile, "%s/ndsctl.lock", mountpoint);
+	lockfd = open(lockfile, O_RDWR | O_CREAT);
+	free(lockfile);
+
+	if (lockfd < 0) {
+		openlog ("ndsctl", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
+		syslog (LOG_ERR, "CRITICAL ERROR - Unable to open [%s]", lockfile);
+		closelog ();
+		return 5;
+	}
+
+
+	if (lockf(lockfd, F_TLOCK, 0) == 0) {
+		return 0;
+	} else {
+
+		if (errno != EACCES && errno != EAGAIN) {
+			// persistent error
+			openlog ("ndsctl", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
+			syslog (LOG_ERR, "CRITICAL ERROR - Unable to create lock on [%s]", lockfile);
+			closelog ();
+			close(lockfd);
+			return 6;
+		}
+
+		openlog ("ndsctl", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
+		syslog (LOG_NOTICE, "ndsctl is locked by another process");
+		printf ("ndsctl is locked by another process\n");
+		closelog ();
+		close(lockfd);
+		return 4;
+	}
+}
+
+void ndsctl_unlock(int lockfd)
+{
+	lockf(lockfd, F_ULOCK, 0);
+	close(lockfd);
+}
+
+
 int
 main(int argc, char **argv)
 {
@@ -365,6 +414,7 @@ main(int argc, char **argv)
 	char *lockfile;
 	char *cmd;
 	int ret;
+	int lockfd;
 	FILE *fd;
 
 	socket = strdup(DEFAULT_SOCKET_FILENAME);
@@ -417,26 +467,20 @@ main(int argc, char **argv)
 	fd = popen(cmd, "r");
 	if (fd == NULL) {
 		printf("Unable to open library - Terminating");
+		pclose(fd);
 		exit(1);
 	}
 	free(cmd);
 	fgets(mountpoint, sizeof(mountpoint), fd);
 	pclose(fd);
 
-	// Create the lock file
-	safe_asprintf(&lockfile, "%s/ndsctl.lock", mountpoint);
 
-	if ((fd = fopen(lockfile, "r")) != NULL) {
-		openlog ("ndsctl", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
-		syslog (LOG_NOTICE, "ndsctl is locked by another process");
-		printf ("ndsctl is locked by another process\n");
-		closelog ();
-		fclose(fd);
-		return 4;
-	} else {
-		//Create lock
-		fd = fopen(lockfile, "w");
-	}
+	//Create lock
+	ret=ndsctl_lock(mountpoint, lockfd);
+
+	if (ret > 0) {
+		return ret;
+	} 
 
 	// Get the socket path/filename
 	if (strcmp(socket, DEFAULT_SOCKET_FILENAME) == 0) {
@@ -449,8 +493,8 @@ main(int argc, char **argv)
 
 	if (arg == NULL) {
 		fprintf(stderr, "Unknown command: %s\n", argv[i]);
-		fclose(fd);
-		remove(lockfile);
+		ndsctl_unlock(lockfd);
+		free(socket);
 		return 1;
 	}
 
@@ -465,9 +509,7 @@ main(int argc, char **argv)
 	}
 
 	ret = ndsctl_do(socket, arg, args);
-	fclose(fd);
-	remove(lockfile);
-	free(lockfile);
+	ndsctl_unlock(lockfd);
 	free(socket);
 	return ret;
 }

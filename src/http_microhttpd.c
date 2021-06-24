@@ -157,7 +157,7 @@ static int do_binauth(
 	unsigned long long int download_rate;
 	unsigned long long int upload_quota;
 	unsigned long long int download_quota;
-	int rc;
+	int rc =1;
 	s_config *config;
 
 	config = config_get_config();
@@ -214,27 +214,15 @@ static int do_binauth(
 	debug(LOG_DEBUG, "BinAuth argv: %s", argv);
 
 	// ndsctl will deadlock if run within the BinAuth script so lock it
+	if(ndsctl_lock() == 0) {
+		// execute the script
+		rc = execute_ret_url_encoded(msg, sizeof(msg) - 1, argv);
+		debug(LOG_DEBUG, "BinAuth returned arguments: %s", msg);
+		free(argv);
 
-	safe_asprintf(&lockfile, "%s/ndsctl.lock", config->tmpfsmountpoint);
-
-	if ((fd = fopen(lockfile, "r")) == NULL) {
-		//No lockfile, so create one
-		fd = fopen(lockfile, "w");
+		// unlock ndsctl
+		ndsctl_unlock();
 	}
-
-
-	// execute the script
-	rc = execute_ret_url_encoded(msg, sizeof(msg) - 1, argv);
-	debug(LOG_DEBUG, "BinAuth returned arguments: %s", msg);
-	free(argv);
-
-	// unlock ndsctl
-	if (fd) {
-		fclose(fd);
-		remove(lockfile);
-	}
-
-	free(lockfile);
 
 	if (rc != 0) {
 		debug(LOG_DEBUG, "BinAuth script failed to execute");

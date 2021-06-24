@@ -288,6 +288,7 @@ config_init(void)
 	config.walledgarden_fqdn_list = NULL;
 	config.walledgarden_port_list = NULL;
 	config.fas_custom_parameters_list = NULL;
+	config.lockfd = 0;
 
 	// Set up default FirewallRuleSets, and their empty ruleset policies
 	rs = add_ruleset("trusted-users");

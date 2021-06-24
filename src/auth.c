@@ -59,8 +59,6 @@ unsigned int authenticated_since_start = 0;
 static void binauth_action(t_client *client, const char *reason, char *customdata)
 {
 	s_config *config = config_get_config();
-	char *lockfile;
-	FILE *fd;
 	time_t now = time(NULL);
 	int seconds = 60 * config->session_timeout;
 	unsigned long int sessionstart;
@@ -69,41 +67,39 @@ static void binauth_action(t_client *client, const char *reason, char *customdat
 	char *client_auth = "client_auth";
 	char *ndsctl_auth = "ndsctl_auth";
 	char customdata_enc[384] = {0};
+	int ret;
 
 	if (!customdata) {
 		customdata="na";
 	}
 
 	if (config->binauth) {
-		// ndsctl will deadlock if run within the BinAuth script so lock it
-		safe_asprintf(&lockfile, "%s/ndsctl.lock", config->tmpfsmountpoint);
-
-		if ((fd = fopen(lockfile, "r")) == NULL) {
-			//No lockfile, so create one
-			fd = fopen(lockfile, "w");
-		}
-
-		uh_urlencode(customdata_enc, sizeof(customdata_enc), customdata, strlen(customdata));
-		debug(LOG_DEBUG, "binauth_action: customdata_enc [%s]", customdata_enc);
-
 		// get client's current session start and end
 		sessionstart = client->session_start;
 		sessionend = client->session_end;
 		debug(LOG_DEBUG, "binauth_action client: seconds=%lu, sessionstart=%lu, sessionend=%lu", seconds, sessionstart, sessionend);
-
-		// Check for a deauth reason
-		if (strstr(reason, deauth) != NULL) {
-			sessionend = now;
-		}
 
 		// Check for client_auth reason
 		if (strstr(reason, client_auth) != NULL) {
 			sessionstart = now;
 		}
 
+		// Check for a deauth reason
+		if (strstr(reason, deauth) != NULL) {
+			sessionend = now;
+		}
+
 		// Check for ndsctl_auth reason
 		if (strstr(reason, ndsctl_auth) != NULL) {
 			sessionstart = now;
+			uh_urlencode(customdata_enc, sizeof(customdata_enc), customdata, strlen(customdata));
+			debug(LOG_DEBUG, "binauth_action: customdata_enc [%s]", customdata_enc);
+		}
+
+		// ndsctl will deadlock if run within the BinAuth script so lock it.
+		// But if a call to ndsctl auth or seauth brought us here then it is locked already.
+		if (strstr(reason, deauth) == NULL && strstr(reason, ndsctl_auth) == NULL) {
+			ret=ndsctl_lock();
 		}
 
 		debug(LOG_DEBUG, "BinAuth %s - client session end time: [ %lu ]", reason, sessionend);
@@ -120,12 +116,12 @@ static void binauth_action(t_client *client, const char *reason, char *customdat
 			customdata_enc
 		);
 
-		// unlock ndsctl
-		if (fd) {
-			fclose(fd);
-			remove(lockfile);
+		if (strstr(reason, deauth) == NULL && strstr(reason, ndsctl_auth) == NULL) {
+			// unlock ndsctl
+			if (ret == 0) {
+				ndsctl_unlock();
+			}
 		}
-		free(lockfile);
 	}
 }
 

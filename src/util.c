@@ -24,6 +24,9 @@
   @author Copyright (C) 2004 Philippe April <papril777@yahoo.com>
   @author Copyright (C) 2006 Benoit Grégoire <bock@step.polymtl.ca>
   @author Copyright (C) 2008 Paul Kube <nodogsplash@kokoro.ucsd.edu>
+  @author Copyright (C) 2015-2021 Modifications and additions by BlueWave Projects and Services <opennds@blue-wave.net>
+  @author Copyright (C) 2021 ndsctl_lock() and ndsctl_unlock() based on code by Linus Lüssing <ll@simonwunderlich.de>
+
  */
 
 #define _GNU_SOURCE
@@ -80,6 +83,47 @@ extern unsigned int authenticated_since_start;
 // Defined in main.c
 extern int created_httpd_threads;
 extern int current_httpd_threads;
+
+int ndsctl_lock()
+{
+	int i;
+	char *lockfile;
+	s_config *config = config_get_config();
+
+	// Open or create the lock file
+	safe_asprintf(&lockfile, "%s/ndsctl.lock", config->tmpfsmountpoint);
+	config->lockfd = open(lockfile, O_RDWR | O_CREAT);
+	free(lockfile);
+
+	if (config->lockfd < 0) {
+		debug(LOG_ERR, "CRITICAL ERROR - Unable to open [%s]", lockfile);
+		return 5;
+	}
+
+	if (lockf(config->lockfd, F_TLOCK, 0) == 0) {
+		return 0;
+	} else {
+
+		if (errno != EACCES && errno != EAGAIN) {
+			// persistent error
+			debug(LOG_ERR, "CRITICAL ERROR - Unable to create lock on [%s]", lockfile);
+			close(config->lockfd);
+			return 6;
+		}
+
+		debug(LOG_ERR, "ndsctl is locked by another process");
+		close(config->lockfd);
+		return 4;
+	}
+}
+
+void ndsctl_unlock()
+{
+	s_config *config = config_get_config();
+	lockf(config->lockfd, F_ULOCK, 0);
+	close(config->lockfd);
+}
+
 
 int download_remotes(int refresh)
 {
@@ -362,7 +406,10 @@ get_ext_iface(void)
 			}
 		}
 		fclose(input);
-		debug(LOG_ERR, "get_ext_iface(): Failed to detect the external interface after try %d (maybe the interface is not up yet?).  Retry limit: %d", i, NUM_EXT_INTERFACE_DETECT_RETRY);
+		debug(LOG_ERR, "get_ext_iface(): Failed to detect the external interface after try %d (maybe the interface is not up yet?).  Retry limit: %d",
+			i,
+			NUM_EXT_INTERFACE_DETECT_RETRY
+		);
 
 		// Sleep for EXT_INTERFACE_DETECT_RETRY_INTERVAL seconds
 		timeout.tv_sec = time(NULL) + EXT_INTERFACE_DETECT_RETRY_INTERVAL;

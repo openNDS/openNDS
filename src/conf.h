@@ -77,7 +77,6 @@
 #define DEFAULT_MACMECHANISM MAC_BLOCK
 #define DEFAULT_SET_MSS 1 //allow setting the TCP Maximum Segment Size
 #define DEFAULT_MSS_VALUE 0 // value to set the MSS. 0 means use max possible ie clamp-mss-to-pmtu
-#define DEFAULT_TRAFFIC_CONTROL 0 // Defunct. TODO could fix
 #define DEFAULT_RATE_CHECK_WINDOW 2 // The data rate check moving average window size multiply this by CHECKINTERVAL to give window size in seconds
 #define DEFAULT_UPLOAD_RATE 0 // 0 means no limit
 #define DEFAULT_DOWNLOAD_RATE 0 // 0 means no limit
@@ -112,7 +111,7 @@ typedef enum {
 // Firewall rules
 typedef struct _firewall_rule_t {
 	t_firewall_target target;	//@brief t_firewall_target
-	char *protocol;			//@brief tcp, udp, etc ...
+	char *protocol;		//@brief tcp, udp, etc ...
 	char *port;			//@brief Port to block/allow
 	char *mask;			//@brief Mask for the rule *destination*
 	char *ipset;			//@brief IPset rule
@@ -215,7 +214,6 @@ typedef struct {
 	int checkinterval;				//@brief Period the the client timeout check thread will run, in seconds
 	int set_mss;					//@brief boolean, whether to set mss
 	int mss_value;					//@brief int, mss value; <= 0 clamp to pmtu
-	int traffic_control;				//@brief boolean, whether to do tc
 	int rate_check_window;				//@brief window size in multiples of checkinterval for rate check moving average
 	unsigned long long int download_rate;		//@brief Download rate, kb/s
 	unsigned long long int upload_rate;		//@brief Upload rate, kb/s
@@ -244,6 +242,7 @@ typedef struct {
 	int ip6;					//@brief enable IPv6
 	char *binauth;					//@brief external authentication program
 	char *preauth;					//@brief external preauthentication program
+	int lockfd;					//@brief ndsctl lockfile file descriptor
 } s_config;
 
 // @brief Get the current gateway configuration

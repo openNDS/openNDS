@@ -69,11 +69,14 @@ static void binauth_action(t_client *client, const char *reason, char *customdat
 	char customdata_enc[384] = {0};
 	int ret;
 
-	if (!customdata) {
-		customdata="na";
-	}
-
 	if (config->binauth) {
+		if (!customdata || strlen(customdata) == 0) {
+			customdata="na";
+		}
+
+		uh_urlencode(customdata_enc, sizeof(customdata_enc), customdata, strlen(customdata));
+		debug(LOG_DEBUG, "binauth_action: customdata_enc [%s]", customdata_enc);
+
 		// get client's current session start and end
 		sessionstart = client->session_start;
 		sessionend = client->session_end;
@@ -92,8 +95,6 @@ static void binauth_action(t_client *client, const char *reason, char *customdat
 		// Check for ndsctl_auth reason
 		if (strstr(reason, ndsctl_auth) != NULL) {
 			sessionstart = now;
-			uh_urlencode(customdata_enc, sizeof(customdata_enc), customdata, strlen(customdata));
-			debug(LOG_DEBUG, "binauth_action: customdata_enc [%s]", customdata_enc);
 		}
 
 		// ndsctl will deadlock if run within the BinAuth script so lock it.

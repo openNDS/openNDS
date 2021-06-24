@@ -185,7 +185,7 @@ static int do_binauth(
 	} else {
 
 		if (!custom || strlen(custom) == 0) {
-			custom="bmE";
+			custom="bmE=";
 		}
 		uh_b64decode(custom_dec_b64, sizeof(custom_dec_b64), custom, strlen(custom));
 		uh_urlencode(custom_enc, sizeof(custom_enc), custom_dec_b64, strlen(custom_dec_b64));

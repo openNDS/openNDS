@@ -316,7 +316,6 @@ client_list_find_by_token(const char token[])
 	t_client *ptr;
 	s_config *config;
 	config = config_get_config();
-	char hid[128] = {0};
 	char rhid[128] = {0};
 	char *rhidraw = NULL;
 

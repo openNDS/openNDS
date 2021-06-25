@@ -355,7 +355,6 @@ ndsctl_do(const char *socket, const struct argument *arg, const char *param)
 
 int ndsctl_lock(char *mountpoint, int *lockfd)
 {
-	int i;
 	char *lockfile;
 
 	// Open or create the lock file

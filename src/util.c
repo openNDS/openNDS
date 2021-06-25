@@ -86,7 +86,6 @@ extern int current_httpd_threads;
 
 int ndsctl_lock()
 {
-	int i;
 	char *lockfile;
 	s_config *config = config_get_config();
 

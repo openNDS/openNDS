@@ -142,8 +142,6 @@ static int do_binauth(
 	char password_enc[64] = {0};
 	char custom_dec_b64[384 *4 / 3] = {0};
 	char custom_enc[384] = {0};
-	char *lockfile;
-	FILE *fd;
 	char redirect_url_enc_buf[QUERYMAXLEN] = {0};
 	const char *username;
 	const char *password;
@@ -1073,7 +1071,6 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 	char cid[87] = {0};
 	char msg[16] = {0};
 	char clientif[64] = {0};
-	char info_enc[1024] = {0};
 	char query_str[QUERYMAXLEN] = {0};
 	char query_str_b64[QUERYMAXLEN] = {0};
 	char *cidinfo;

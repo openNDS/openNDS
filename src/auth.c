@@ -67,7 +67,7 @@ static void binauth_action(t_client *client, const char *reason, char *customdat
 	char *client_auth = "client_auth";
 	char *ndsctl_auth = "ndsctl_auth";
 	char customdata_enc[384] = {0};
-	int ret;
+	int ret = 1;
 
 	if (config->binauth) {
 		if (!customdata || strlen(customdata) == 0) {

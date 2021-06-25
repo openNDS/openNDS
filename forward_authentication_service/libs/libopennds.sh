@@ -52,7 +52,8 @@ get_image_file() {
 		set -o posix
 		setcontents=$(set)
 		set +o posix
-		imageurl=$(echo "$setcontents" | grep "$imagename=" | awk -F"=" '{print $2}')
+		imageurl=$(echo "$setcontents" | grep "$imagename=" | awk -F"$imagename=" '{print $2}' | awk -F", " 'NR==1{print $1}')
+
 	fi
 
 	setcontents=""
@@ -110,7 +111,7 @@ get_data_file() {
 		set -o posix
 		setcontents=$(set)
 		set +o posix
-		dataurl=$(echo "$setcontents" | grep "$dataname=" | awk -F"=" '{print $2}')
+		dataurl=$(echo "$setcontents" | grep "$dataname=" | awk -F"$dataname=" '{print $2}' | awk -F", " 'NR==1{print $1}')
 	fi
 
 	setcontents=""

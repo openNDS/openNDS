@@ -355,7 +355,6 @@ ndsctl_do(const char *socket, const struct argument *arg, const char *param)
 
 int ndsctl_lock(char *mountpoint, int *lockfd)
 {
-	int i;
 	char *lockfile;
 
 	// Open or create the lock file
@@ -364,6 +363,7 @@ int ndsctl_lock(char *mountpoint, int *lockfd)
 	free(lockfile);
 
 	if (*lockfd < 0) {
+		// Critical error - must report to syslog
 		openlog ("ndsctl", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
 		syslog (LOG_ERR, "CRITICAL ERROR - Unable to open [%s]", lockfile);
 		closelog ();
@@ -377,6 +377,7 @@ int ndsctl_lock(char *mountpoint, int *lockfd)
 
 		if (errno != EACCES && errno != EAGAIN) {
 			// persistent error
+			// This is a Critical error - must report to syslog
 			openlog ("ndsctl", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
 			syslog (LOG_ERR, "CRITICAL ERROR - Unable to create lock on [%s]", lockfile);
 			closelog ();
@@ -384,10 +385,8 @@ int ndsctl_lock(char *mountpoint, int *lockfd)
 			return 6;
 		}
 
-		openlog ("ndsctl", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
-		syslog (LOG_NOTICE, "ndsctl is locked by another process");
-		printf ("ndsctl is locked by another process\n");
-		closelog ();
+		// This is a normal operating state, no need to report to syslog
+		// It is the responsibility of the caller to check return code and retry if required
 		close(*lockfd);
 		return 4;
 	}

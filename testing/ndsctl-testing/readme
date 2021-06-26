@@ -1,13 +1,13 @@
 These two scripts, ndsctltest.sh and ndsstatus.sh are for stress testing ndsctl.
 They were created for testing on OpenWrt.
-They may or may not work on other operating systems
+They may or may not work on other operating systems but seems fine on Raspberry Pi OS and Opensuse
 
 Copy this folder to a suitable location on your router.
 Check both files are executable.
 
 If you are not using OpenWrt:
 	If your router defaults to busybox ash shell, all is well.
-	If your router defaults to bash shell (eg Debian and variants), then you must edit the shebang in each file:
+	If your router defaults to bash shell (eg Debian and variants), then you should probably edit the shebang in each file:
 		From	#!/bin/sh
 		To	#!/bin/bash
 

@@ -56,6 +56,7 @@
 #define DEFAULT_GATEWAYNAME "openNDS"
 #define DEFAULT_GATEWAYPORT 2050
 #define DEFAULT_GATEWAYFQDN "status.client"
+#define DEFAULT_STATUSPATH "/usr/lib/opennds/client_params.sh"
 #define DEFAULT_MAX_PAGE_SIZE 10240
 #define DEFAULT_FASPORT 0
 #define DEFAULT_LOGIN_OPTION_ENABLED 0
@@ -185,6 +186,7 @@ typedef struct {
 	char *gw_address;				//@brief Internal IP with port for our web server
 	char *gw_mac;					//@brief MAC address of the interface we manage
 	char *gw_fqdn;					//@brief FQDN of the client status page
+	char *status_path;				//@brief Path to the client status page script
 	unsigned int gw_port;				//@brief Port the webserver will run on
 	unsigned int fas_port;				//@brief Port the fas server will run on
 	int login_option_enabled;			//@brief Use default PreAuth Login script

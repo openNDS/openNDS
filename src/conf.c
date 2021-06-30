@@ -76,6 +76,7 @@ typedef enum {
 	oGatewayAddress,
 	oGatewayPort,
 	oGatewayFQDN,
+	oStatusPath,
 	oFasPort,
 	oFasKey,
 	oFasPath,
@@ -144,6 +145,7 @@ static const struct {
 	{ "gatewayaddress", oGatewayAddress },
 	{ "gatewayport", oGatewayPort },
 	{ "gatewayfqdn", oGatewayFQDN },
+	{ "statuspath", oStatusPath },
 	{ "fasport", oFasPort },
 	{ "faskey", oFasKey },
 	{ "fasremoteip", oFasRemoteIP },
@@ -230,6 +232,7 @@ config_init(void)
 	config.http_encoded_gw_name = NULL;
 	config.url_encoded_gw_name = NULL;
 	config.gw_fqdn = safe_strdup(DEFAULT_GATEWAYFQDN);
+	config.status_path = safe_strdup(DEFAULT_STATUSPATH);
 	config.gw_interface = safe_strdup(DEFAULT_GATEWAYINTERFACE);;
 	config.gw_iprange = safe_strdup(DEFAULT_GATEWAY_IPRANGE);
 	config.gw_address = NULL;
@@ -812,6 +815,9 @@ config_read(const char *filename)
 			break;
 		case oGatewayFQDN:
 			config.gw_fqdn = safe_strdup(p1);
+			break;
+		case oStatusPath:
+			config.status_path = safe_strdup(p1);
 			break;
 		case oGatewayInterface:
 			config.gw_interface = safe_strdup(p1);

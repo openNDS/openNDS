@@ -768,10 +768,10 @@ static int authenticated(struct MHD_Connection *connection,
 
 	// User just entered gatewayaddress:gatewayport so give them the info page
 	if (strcmp(url, "/") == 0) {
-		rc = execute_ret(msg, HTMLMAXSIZE - 1, "/usr/lib/opennds/client_params.sh '%s'", client->ip);
+		rc = execute_ret(msg, HTMLMAXSIZE - 1, "%s '%s'", config->status_path, client->ip);
 
 		if (rc != 0) {
-			debug(LOG_WARNING, "Script: /usr/lib/opennds/client_params.sh - failed to execute");
+			debug(LOG_WARNING, "Script: %s - failed to execute", config->status_path);
 			return 0;
 		}
 

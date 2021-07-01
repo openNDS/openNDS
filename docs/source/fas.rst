@@ -14,7 +14,7 @@ These options are:
  6. **faskey** Used in combination with fas_secure_enable level 1, 2 and 3, this is a key phrase for NDS to encrypt data sent to FAS.
 
 .. note::
- FAS (and Preauth/FAS) enables pre authentication processing. NDS authentication is the process that openNDS uses to allow a client device to access the Internet through the Firewall. In contrast, Forward Authentication is a process of "Credential Verification", after which FAS, if the verification process is successful, passes the client token to NDS for access to the Internet to be granted.
+ FAS (and Preauth/FAS) enables pre authentication processing. NDS authentication is the process that openNDS uses to allow a client device to access the Internet through the Firewall. In contrast, Forward Authentication is a process of "Credential Verification", after which FAS, if the verification process is successful, passes a request to NDS for access to the Internet to be granted for that client.
 
 Using FAS
 *********
@@ -28,7 +28,7 @@ The FAS service must serve a splash page of its own to replace the openNDS serve
 
 Typically, the FAS service will be written in PHP or any other language that can provide dynamic web content.
 
-FAS can then provide an action form for the client, typically requesting login, or self account creation for login.
+FAS can then generate an action form for the client, typically requesting login, or self account creation for login.
 
 The FAS can be on the same device as openNDS, on the same local area network as NDS, or on an Internet hosted web server.
 
@@ -43,7 +43,7 @@ Security
    **If set to "1"** The FAS is enforced by NDS to use **http** protocol.
    A base64 encoded query string containing the hid is sent to the FAS, along with the clientip, clientmac, gatewayname, client_hid, gatewayaddress, authdir, originurl, clientif and custom parameters and variables.
 
-   Should sha256sum not be available, then openNDS will terminate with an error message on startup.
+   Should the sha256sum utility not be available, openNDS will terminate with an error message on startup.
 
    **If set to "2"** The FAS is enforced by NDS to use **http** protocol.
 
@@ -74,7 +74,7 @@ Example FAS Query strings
 
    `http://fasremoteip:fasport/faspath?authaction=http://gatewayaddress:gatewayport/opennds_auth/?clientip=[clientip]&gatewayname=[gatewayname]&tok=[token]&redir=[requested_url]`
 
-   Note: a knowledgeable user could bypass FAS, so running fas_secure_enabled at level 1, 2 or 3 is recommended.
+   **Note: a knowledgeable user could bypass FAS, so running fas_secure_enabled at level 1, 2 or 3 is recommended.**
 
 
   **Level 1** (fas_secure_enabled = 1)
@@ -190,10 +190,10 @@ Authentication Method for fas_secure_enabled levels 0,1 and 2
  This is most commonly achieved using an html form of method GET.
  The parameter redir can be the client's originally requested URL sent by NDS, or more usefully, the URL of a suitable landing page.
 
-The "login_option" special case
-+++++++++++++++++++++++++++++++
+The "login_option/Themespec" special case
++++++++++++++++++++++++++++++++++++++++++
 
-The default "login_option" script, login.sh, must always be a local script so has access to ndsctl auth method of authentication without needing the authmon daemon so uses this rather than use the authdir GET method detailed above. This means login.sh can directly set client quotas without requiring BinAuth.
+The default "login_option" library, libopennds.sh, is a local script so has access to ndsctl auth method of authentication without needing the authmon daemon so uses this rather than the authdir GET method detailed above. This means Themespec can directly set client quotas without requiring BinAuth.
 
 Authentication Method for fas_secure_enabled level 3 (Authmon Daemon)
 ---------------------------------------------------------------------

@@ -4,7 +4,7 @@ Custom Parameters, Variables, Images and files
 Custom Parameters were first introduced in openNDS version 7.
 With version 9.0.0, custom variables, images and files have been added.
 
-Custom parameters
+Custom Parameters
 *****************
 
 Custom parameters are defined in the config file and are sent as fixed values to FAS in the encoded/encrypted query string where they can be parsed and used by the FAS.

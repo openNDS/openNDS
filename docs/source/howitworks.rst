@@ -32,8 +32,8 @@ The Thing That Does the Capturing (NDS)
 
  As soon as this initial port 80 request is received on the default gateway interface, NDS will "Capture" it, make a note of the client device identity, allocate a unique token for the client device, then redirect the client browser to the Portal component of NDS.
 
-The Thing That Provides the Portal (FAS or PreAuth)
-===========================================================
+The Thing That Provides the Portal (FAS, PreAuth, Themespec)
+============================================================
 
  The client browser is redirected to the Portal component. This is a web service that is configured to know how to communicate with the core engine of openNDS.
 
@@ -45,7 +45,7 @@ The Thing That Provides the Portal (FAS or PreAuth)
 
  One provides a trivial Click to Continue splash page and another provides a Client User form requiring Name and Email address to be entered.
 
- All of these can be customised or a complete specialised Portal can be written by the installer (See FAS, PreAuth).
+ All of these can be customised or a complete specialised Portal can be written by the installer (See FAS, PreAuth, Themespec).
 
  FAS, or Forward Authentication Service may use the web server embedded in openNDS, a separate web server installed on the NDS router, a web server residing on the local network or an Internet hosted web server.
 
@@ -53,11 +53,11 @@ The Thing That Provides the Portal (FAS or PreAuth)
 
  Once the user on the client device has successfully completed the splash page actions, that page then links directly back to NDS.
 
- For security, NDS expects to receive the same valid token it allocated when the client issued its initial port 80 request. If the token received is valid, NDS then "authenticates" the client device, allowing access to the Internet. openNDS uses various methods to encrypt this token, ensuring verification cannot be bypassed.
+ For security, NDS expects to receive valid verification of the client. If the verification is valid, openNDS then "authenticates" the client device, allowing access to the Internet. openNDS uses various methods of encryption to ensure verification cannot be bypassed.
 
- Post authentication processing extensions may be added to openNDS (See BinAuth). Once openNDS has received a valid token it calls a BinAuth script if enabled.
+ Post authentication processing extensions may be added to openNDS (See BinAuth). Once openNDS has authenticated a client, it calls a BinAuth script if enabled.
 
- If the BinAuth script returns positively (ie return code 0), NDS then "authenticates" the client device, allowing access to the Internet.
+ Typically, BinAuth is used to provide a local log of authenticated clients. In addition the BinAuth script can override client authentication if required.
 
 .. note::
 

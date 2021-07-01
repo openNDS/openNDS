@@ -1,7 +1,8 @@
 opennds (9.1.0)
 
   * This version introduces new functionality, some changes and fixes
-  * Add - Add - ndsctl lockf() file locking [bluewavenet] [T-X]
+  * Add - option statuspath to enable alternate status page scripts [bluewavenet]
+  * Add - ndsctl lockf() file locking [bluewavenet] [T-X]
   * Add - b64encode to ndsctl [bluewavenet]
   * Add - option max_page_size for MHD [bluewavenet]
   * Add - option remotes_refresh_interval [bluewave.net]

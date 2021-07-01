@@ -1,6 +1,6 @@
 .\" Man page generated from reStructuredText.
 .
-.TH "OPENNDS" "1" "May 12, 2021" "9.0.0" "openNDS"
+.TH "OPENNDS" "1" "Jul 01, 2021" "9.1.0" "openNDS"
 .SH NAME
 opennds \- opennds Documentation
 .
@@ -101,6 +101,53 @@ NDS can be used as the "Engine" behind the most sophisticated Captive Portal sys
 .UNINDENT
 .UNINDENT
 .SH WHAT'S NEW? - CHANGELOG
+.sp
+opennds (9.1.0)
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+This version introduces new functionality, some changes and fixes
+.IP \(bu 2
+Add \- option statuspath to enable alternate status page scripts [bluewavenet]
+.IP \(bu 2
+Add \- ndsctl lockf() file locking [bluewavenet] [T\-X]
+.IP \(bu 2
+Add \- b64encode to ndsctl [bluewavenet]
+.IP \(bu 2
+Add \- option max_page_size for MHD [bluewavenet]
+.IP \(bu 2
+Add \- option remotes_refresh_interval [bluewave.net]
+.IP \(bu 2
+Add \- Pre\-download remote files in background after startup [bluewave.net]
+.IP \(bu 2
+Add \- client id data files created by openNDS on client connect [bluewave.net]
+.IP \(bu 2
+Add \- check routing is configured and up [bluewave.net]
+.IP \(bu 2
+Add \- support for Preemptive Authentication for connected client devices. [bluewave.net]
+.IP \(bu 2
+Add \- Gateway interface watchdog [bluewave.net]
+.IP \(bu 2
+Remove \- deprecated IFB config [bluewavenet]
+.IP \(bu 2
+Fix \- ndsctl, send return codes [bluewave.net]
+.IP \(bu 2
+Fix \- MHD Watchdog Use uclient\-fetch in OpenWrt [bluewave.net]
+.IP \(bu 2
+Fix \- Improve MHD watchdog [bluewave.net]
+.IP \(bu 2
+Fix \- update legacy code in ndsctl_thread [bluewave.net]
+.IP \(bu 2
+Fix \- edge case where MHD returns (null) as host value [bluewave.net]
+.UNINDENT
+.UNINDENT
+.UNINDENT
+\(em Rob White <\fI\%dot@blue\-wave.net\fP> Thu, 24 June 2021 15:06:30 +0000
+.UNINDENT
+.UNINDENT
 .sp
 openNDS (9.0.0)
 .INDENT 0.0
@@ -648,122 +695,6 @@ Fix \- Allow use of "#" in gatewayname [bluewavenet]
 \(em Rob White <\fI\%dot@blue\-wave.net\fP> Sat, 03 Apr 2020 13:23:36 +0000
 .UNINDENT
 .UNINDENT
-.SH INSTALLING OPENNDS
-.SS Prerequisites
-.sp
-openNDS is designed to run on a device configured as an IPv4 router and will have at least two network interfaces:
-.INDENT 0.0
-.INDENT 3.5
-\fBA WAN interface\fP (Wide Area Network). This interface must be connected to an Internet feed:
-.INDENT 0.0
-.IP \(bu 2
-Either an ISP CPE (Internet Service Provider Customer Premises Equipment)
-.IP \(bu 2
-Or another router, such as the venue ADSL router.
-.IP \(bu 2
-It must be configured as a DHCP client, obtaining its IPv4 address and DNS server from the connected network.
-.UNINDENT
-.sp
-\fBA LAN interface\fP (Local Area Network). This interface MUST be configured to:
-.INDENT 0.0
-.IP \(bu 2
-Provide the Default IPv4 gateway in a private IPv4 subnet that is different to any private subnets between it and the ISP CPE
-.IP \(bu 2
-Provide DHCP services to connected clients
-.IP \(bu 2
-Provide DNS services to connected clients
-.IP \(bu 2
-Provide Network Address Translation (NAT) for all outgoing traffic directed to the WAN interface.
-.UNINDENT
-.UNINDENT
-.UNINDENT
-.SS Installing on OpenWrt
-.INDENT 0.0
-.IP \(bu 2
-Have a router working with OpenWrt. At the time of writing, openNDS has been tested with OpenWrt 18.06.x, 19.7.x 21.2.x and Snapshot.
-.IP \(bu 2
-OpenWrt version 19.07.x or less requires theoogle.com updated libmicrohttpd\-no\-ssl_0.9.71\-1 package (or higher version) from Openwrt 21.2.x or higher.
-.IP \(bu 2
-openNDS may or may not work on older versions of OpenWrt.
-.IP \(bu 2
-Make sure your router is working correctly before you try to install  openNDS. In particular, make sure your DHCP daemon is serving addresses on the interface that openNDS will manage.
-.sp
-The default interface is br\-lan but can be changed to any LAN interface by editing the /etc/config/opennds file.
-.IP \(bu 2
-To install openNDS on 21.3.x or higher, you may use the OpenWrt Luci web interface or alternatively, ssh to your router and run the command:
-.INDENT 2.0
-.INDENT 3.5
-\fBopkg update\fP
-.UNINDENT
-.UNINDENT
-.sp
-followed by
-.INDENT 2.0
-.INDENT 3.5
-\fBopkg install opennds\fP
-.UNINDENT
-.UNINDENT
-.IP \(bu 2
-.INDENT 2.0
-.TP
-.B To install on 19.7.x or lower, download libmicrohttpd\-no\-ssl_0.9.71\-1 or higher to the /tmp directory on your router. Then install using the command:
-\fBopkg install <packagename> \-\-force\-reinstall\fP
-.UNINDENT
-.IP \(bu 2
-.INDENT 2.0
-.TP
-.B Similarly, download openNDS v9.0.0 or higher to /tmp, again installing using the command:
-\fBopkg install <packagename> \-\-force\-reinstall\fP
-.UNINDENT
-.IP \(bu 2
-openNDS is enabled by default and will start automatically on reboot or can be started and stopped manually.
-.IP \(bu 2
-If the interface that you want openNDS to manage is not br\-lan,
-edit /etc/config/opennds and set GatewayInterface.
-.IP \(bu 2
-To start openNDS, run the following, or just reboot the router:
-.INDENT 2.0
-.INDENT 3.5
-\fBservice opennds start\fP
-.UNINDENT
-.UNINDENT
-.IP \(bu 2
-To test the installation, connect a client device to the interface on your router that is managed by openNDS (for example, connect to the router\(aqs wireless lan).
-.UNINDENT
-.INDENT 0.0
-.INDENT 3.5
-Most client device operating systems and browsers support Captive Portal Detection (CPD) and the operating system or browser on that device will attempt to contact a pre defined port 80 web page.
-.sp
-CPD will trigger openNDS to serve the default splash page where you can click or tap Continue to access the Internet.
-.sp
-See the Authentication section for details of setting up a proper authentication process.
-.sp
-If your client device does not display the splash page it most likely does not support CPD.
-.sp
-You should then manually trigger openNDS by trying to access a port 80 web site (for example, \fI\%http://gnome.org\fP is a good choice).
-.UNINDENT
-.UNINDENT
-.INDENT 0.0
-.IP \(bu 2
-To stop openNDS:
-.INDENT 2.0
-.INDENT 3.5
-\fBservice opennds stop\fP
-.UNINDENT
-.UNINDENT
-.IP \(bu 2
-To uninstall openNDS:
-.INDENT 2.0
-.INDENT 3.5
-\fBopkg remove opennds\fP
-.UNINDENT
-.UNINDENT
-.UNINDENT
-.SS Generic Linux
-.sp
-openNDS and libmicrohttps\-ssl can be compiled in place for most distributions of Linux.
-.sp
-To compile libmicrohttpd and openNDS, see the chapter "How to Compile and install openNDS".
 .SH HOW OPENNDS (NDS) WORKS
 .sp
 openNDS is a Captive Portal Engine. Any Captive Portal, including NDS, will have two main components:
@@ -802,7 +733,7 @@ This request will of course \fBbe routed by the client device to the Default Gat
 As soon as this initial port 80 request is received on the default gateway interface, NDS will "Capture" it, make a note of the client device identity, allocate a unique token for the client device, then redirect the client browser to the Portal component of NDS.
 .UNINDENT
 .UNINDENT
-.SS The Thing That Provides the Portal (FAS or PreAuth)
+.SS The Thing That Provides the Portal (FAS, PreAuth, Themespec)
 .INDENT 0.0
 .INDENT 3.5
 The client browser is redirected to the Portal component. This is a web service that is configured to know how to communicate with the core engine of openNDS.
@@ -815,7 +746,7 @@ openNDS comes with numerous standard Splash Page Sequence options pre\-installed
 .sp
 One provides a trivial Click to Continue splash page and another provides a Client User form requiring Name and Email address to be entered.
 .sp
-All of these can be customised or a complete specialised Portal can be written by the installer (See FAS, PreAuth).
+All of these can be customised or a complete specialised Portal can be written by the installer (See FAS, PreAuth, Themespec).
 .sp
 FAS, or Forward Authentication Service may use the web server embedded in openNDS, a separate web server installed on the NDS router, a web server residing on the local network or an Internet hosted web server.
 .sp
@@ -823,11 +754,11 @@ The user of the client device will always be expected to complete some actions o
 .sp
 Once the user on the client device has successfully completed the splash page actions, that page then links directly back to NDS.
 .sp
-For security, NDS expects to receive the same valid token it allocated when the client issued its initial port 80 request. If the token received is valid, NDS then "authenticates" the client device, allowing access to the Internet. openNDS uses various methods to encrypt this token, ensuring verification cannot be bypassed.
+For security, NDS expects to receive valid verification of the client. If the verification is valid, openNDS then "authenticates" the client device, allowing access to the Internet. openNDS uses various methods of encryption to ensure verification cannot be bypassed.
 .sp
-Post authentication processing extensions may be added to openNDS (See BinAuth). Once openNDS has received a valid token it calls a BinAuth script if enabled.
+Post authentication processing extensions may be added to openNDS (See BinAuth). Once openNDS has authenticated a client, it calls a BinAuth script if enabled.
 .sp
-If the BinAuth script returns positively (ie return code 0), NDS then "authenticates" the client device, allowing access to the Internet.
+Typically, BinAuth is used to provide a local log of authenticated clients. In addition the BinAuth script can override client authentication if required.
 .UNINDENT
 .UNINDENT
 .sp
@@ -949,6 +880,124 @@ The global values can be overridden on a client by client basis as required.
 .SS Traffic Shaping
 .sp
 openNDS (NDS) supports Traffic Shaping (Bandwidth Limiting) using the SQM \- Smart Queue Management (sqm\-scripts) package, available for OpenWrt and generic Linux.
+.SH INSTALLING OPENNDS
+.SS Prerequisites
+.sp
+openNDS is designed to run on a device configured as an IPv4 router and will have at least two network interfaces:
+.INDENT 0.0
+.INDENT 3.5
+\fBA WAN interface\fP (Wide Area Network). This interface must be connected to an Internet feed:
+.INDENT 0.0
+.IP \(bu 2
+Either an ISP CPE (Internet Service Provider Customer Premises Equipment)
+.IP \(bu 2
+Or another router, such as the venue ADSL router.
+.IP \(bu 2
+It must be configured as a DHCP client, obtaining its IPv4 address and DNS server from the connected network.
+.UNINDENT
+.sp
+\fBA LAN interface\fP (Local Area Network). This interface MUST be configured to:
+.INDENT 0.0
+.IP \(bu 2
+Provide the Default IPv4 gateway in a private IPv4 subnet that is different to any private subnets between it and the ISP CPE
+.IP \(bu 2
+Provide DHCP services to connected clients
+.IP \(bu 2
+Provide DNS services to connected clients
+.IP \(bu 2
+Provide Network Address Translation (NAT) for all outgoing traffic directed to the WAN interface.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+If an improper routing configuration is detected, openNDS will shut down.
+.SS Installing on OpenWrt
+.INDENT 0.0
+.IP \(bu 2
+Have a router working with OpenWrt. At the time of writing, openNDS has been tested with OpenWrt 18.06.x, 19.7.x 21.2.x and Snapshot.
+.IP \(bu 2
+OpenWrt version 19.07.x or less requires theoogle.com updated libmicrohttpd\-no\-ssl_0.9.71\-1 package (or higher version) from Openwrt 21.2.x or higher.
+.IP \(bu 2
+openNDS may or may not work on older versions of OpenWrt.
+.IP \(bu 2
+Make sure your router is working correctly before you try to install  openNDS. In particular, make sure your DHCP daemon is serving addresses on the interface that openNDS will manage.
+.sp
+The default interface is br\-lan but can be changed to any LAN interface by editing the /etc/config/opennds file.
+.IP \(bu 2
+To install openNDS on 21.3.x or higher, you may use the OpenWrt Luci web interface or alternatively, ssh to your router and run the command:
+.INDENT 2.0
+.INDENT 3.5
+\fBopkg update\fP
+.UNINDENT
+.UNINDENT
+.sp
+followed by
+.INDENT 2.0
+.INDENT 3.5
+\fBopkg install opennds\fP
+.UNINDENT
+.UNINDENT
+.IP \(bu 2
+.INDENT 2.0
+.TP
+.B To install on 19.7.x or lower, download libmicrohttpd\-no\-ssl_0.9.71\-1 or higher to the /tmp directory on your router. Then install using the command:
+\fBopkg install <packagename> \-\-force\-reinstall\fP
+.UNINDENT
+.IP \(bu 2
+.INDENT 2.0
+.TP
+.B Similarly, download openNDS v9.0.0 or higher to /tmp, again installing using the command:
+\fBopkg install <packagename> \-\-force\-reinstall\fP
+.UNINDENT
+.IP \(bu 2
+openNDS is enabled by default and will start automatically on reboot or can be started and stopped manually.
+.IP \(bu 2
+If the interface that you want openNDS to manage is not br\-lan,
+edit /etc/config/opennds and set GatewayInterface.
+.IP \(bu 2
+To start openNDS, run the following, or just reboot the router:
+.INDENT 2.0
+.INDENT 3.5
+\fBservice opennds start\fP
+.UNINDENT
+.UNINDENT
+.IP \(bu 2
+To test the installation, connect a client device to the interface on your router that is managed by openNDS (for example, connect to the router\(aqs wireless lan).
+.UNINDENT
+.INDENT 0.0
+.INDENT 3.5
+Most client device operating systems and browsers support Captive Portal Detection (CPD) and the operating system or browser on that device will attempt to contact a pre defined port 80 web page.
+.sp
+CPD will trigger openNDS to serve the default splash page where you can click or tap Continue to access the Internet.
+.sp
+See the Authentication section for details of setting up a proper authentication process.
+.sp
+If your client device does not display the splash page it most likely does not support CPD.
+.sp
+You should then manually trigger openNDS by trying to access a port 80 web site (for example, \fI\%http://gnome.org\fP is a good choice).
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.IP \(bu 2
+To stop openNDS:
+.INDENT 2.0
+.INDENT 3.5
+\fBservice opennds stop\fP
+.UNINDENT
+.UNINDENT
+.IP \(bu 2
+To uninstall openNDS:
+.INDENT 2.0
+.INDENT 3.5
+\fBopkg remove opennds\fP
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS Generic Linux
+.sp
+openNDS and libmicrohttps\-ssl can be compiled in place for most distributions of Linux.
+.sp
+To compile libmicrohttpd and openNDS, see the chapter "How to Compile and install openNDS".
 .SH THE SPLASH PAGE SEQUENCE
 .sp
 As you will see mentioned in the "How openNDS (NDS) Works" section, an initial port 80 request is generated on a client device, either by the user manually browsing to an http web page, or, more usually, automatically by the client device\(aqs built in Captive Portal Detection (CPD).
@@ -1007,52 +1056,197 @@ Sophisticated remote content can be served, with access controlled by the openND
 For details see the Walled Garden Section.
 .UNINDENT
 .UNINDENT
-.SH THE ERROR511/CLIENT STATUS PAGE
+.SH CUSTOMISING OPENNDS
 .sp
-From version 8.0.0 onwards, openNDS has a Client Status Page.
+After initial installation, openNDS (NDS) should be working in its most basic mode and client Captive Portal Detection (CPD) should pop up the default Click to Continue page.
 .sp
-This page is accessible by any connected client by accessing the default url:
+Before attempting to customise NDS you should ensure it is working in this basic mode.
 .sp
-\fI\%http://status.client\fP
+NDS reads its configuration file when it starts up but the location of this file varies depending on the operating system.
 .sp
-If the client has been authenticated in the normal way by the client CPD process, a page is served displaying the Gatewayname and the Network Zone the client device is currently using.
+As NDS is a package that requires hardware configured as an IP router, perhaps the most common installation is using OpenWrt. However NDS can be compiled to run on most Linux distributions, the most common being Debian or one of its popular variants (eg Raspbian).
 .sp
-A list of allowed quotas and current usage is displayed along with "Refresh" and "Logout" buttons.
+If NDS is working in the default, post installation mode, then you will have met the NDS dependencies and can now move on to your own customisation.
+.SS Rules for Customised Splash Pages
 .sp
-If the client has not been authenticated, or has been deauthenticated due to timeout or quota usage, then a "\fIError 511 Network Authentication Required\fP" page is displayed with "Refresh" and "Portal Login" buttons.
-.sp
-The "Portal Login" button allows the client to immediately attempt to login without waiting for the client CPD to trigger.
-.sp
-The URL used to access this page can be changed by setting the config option gatewayfqdn.
-.sp
-For best results it is recommended that gatewayfqdn is set to two words separated by a single period eg in OpenWrt:
+It should be noted when designing a custom splash page that for security reasons many client device CPD implementations:
 .INDENT 0.0
 .INDENT 3.5
 .INDENT 0.0
+.IP \(bu 2
+Immediately close the browser when the client has authenticated.
+.IP \(bu 2
+Prohibit the use of href links.
+.IP \(bu 2
+Prohibit downloading of external files (including .css and .js, even if they are allowed in NDS firewall settings).
+.IP \(bu 2
+Prohibit the execution of javascript.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS The Configuration File
+.sp
+In OpenWrt, or operating systems supporting UCI (such as LEDE) the configuration is kept in the file:
+.INDENT 0.0
 .INDENT 3.5
-\fBoption gatewayfqdn \(aqmy.status\(aq\fP
+\fB/etc/config/opennds\fP
 .UNINDENT
 .UNINDENT
 .sp
-\fBWarning\fP \- if set, services on port 80 of the gateway will no longer be accessible (eg Luci AdminUI)
-.sp
-By default, the Error511/Status page will be found at \fBhttp://status.client/\fP by a redirection of port 80 to \fBhttp://gatewayaddress:gatewayport/\fP
-.sp
-\fB*Disable GatewayFQDN*\fP by setting the option to \(aqdisable\(aq
-ie:
-.sp
-\fBoption gatewayfqdn \(aqdisable\(aq\fP
+In other operating systems the configuration is kept in the file:
+.INDENT 0.0
+.INDENT 3.5
+\fB/etc/opennds/opennds.conf\fP
 .UNINDENT
 .UNINDENT
 .sp
-An alternate Useful Example:
+Both of these files contain a full list of options and can be edited directly. A restart of NDS is required for any changes to take effect.
 .sp
-\fBoption gatewayfqdn \(aqlogin.page\(aq\fP
+In the case of OpenWrt though, once you are confident in your configuration requirements you can use UCI to read and set any of the configuration options using simple commands, making this very convenient if making changes from scripts, such as those you may write to use with Binauth and FAS.
+.sp
+For example, to list the full configuration, at the command line type:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+uci show opennds
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+To display the Gateway Name, type:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+uci get opennds.@opennds[0].gatewayname
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+To set the Gateway Name to a new value, type:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+uci set opennds.@opennds[0].gatewayname=\(aqmy new gateway\(aq
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+To add a new firewall rule allowing access to another service running on port 8888 on the router, type:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+uci add_list opennds.@opennds[0].users_to_router=\(aqallow
+tcp port 8888\(aq
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Finally you must tell UCI to commit your changes to the configuration file:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+uci commit opennds
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.SS The Legacy Click and Go Splash Page
+.sp
+\fIThe legacy Click to Continue html splash page was deprecated and disabled at v8.0.0.\fP
+.sp
+\fBFrom v 9.0.0 it has been removed entirely.\fP
+.SS Dynamic Splash Pages
+.SS Default Dynamic Click to Continue
+.sp
+The pre\-installed dynamic click to continue page sequence is enabled by default using the ThemeSpec "theme_click\-to\-continue".
+The configuration default is equivalent to setting:
+.sp
+\fBoption login_option_enabled \(aq1\(aq\fP
+.sp
+It generates a Click to Continue page followed by Thankyou and Landing pages.
+.sp
+User clicks on "Continue" are recorded in the log file /[tmpfs_dir]/ndslog/ndslog.log
+.sp
+Where [tmpfs_dir] is the operating system "temporary" tmpfs mount point.
+This will be  /tmp /run or /var and is automatically detected.
+.sp
+Details of how the script works are contained in comments in the script theme_click\-to\-continue.sh
+.SS Pre\-Installed dynamic User/email Login page sequence
+.sp
+The pre\-installed dynamic login page is enabled by setting option:
+.sp
+\fBoption login_option_enabled \(aq2\(aq\fP
+.sp
+It generates a login page asking for username and email address.
+User logins are recorded in the log file /[tmpfs_dir]/ndslog/ndslog.log
+.sp
+Where [tmpfs_dir] is the operating system "temporary" tmpfs mount point.
+This will be  /tmp /run or /var and is automatically detected.
+.sp
+Details of how the script works are contained in comments in the script theme_user\-email\-login.sh
+.SS Custom Dynamic ThemeSpec Pages
+.sp
+Custom ThemeSpec page sequences can be added by setting option:
+.sp
+\fBoption login_option_enabled \(aq3\(aq\fP
+.sp
+and option
+.sp
+\fBoption themespecpath \(aq/path/to/themespec_script\(aq\fP
+.sp
+Two additional ThemeSpec files are included as examples:
+.sp
+/usr/lib/opennds/theme_click\-to\-continue\-custom\-placeholders.sh
+.sp
+and
+.sp
+/usr/lib/opennds/theme_user\-email\-login\-custom\-placeholders.sh
+.sp
+Both these also require custom parameter, variable, image and file lists:
+.sp
+\fBlist fas_custom_parameters_list \(aqlogo_message=openNDS:%20Perfect%20on%20OpenWrt!\(aq\fP
+.sp
+\fBlist fas_custom_parameters_list \(aqbanner1_message=BlueWave%20\-%20Wireless%20Network%20Specialists\(aq\fP
+.sp
+\fBlist fas_custom_parameters_list \(aqbanner2_message=HMS%20Pickle\(aq\fP
+.sp
+\fBlist fas_custom_parameters_list \(aqbanner3_message=SeaWolf%20Cruiser%20Racer\(aq\fP
+.sp
+\fBlist fas_custom_variables_list \(aqinput=phone:Phone%20Number:text;postcode:Home%20Post%20Code:text\(aq\fP
+.sp
+\fBlist fas_custom_images_list \(aqlogo_png=https://openwrt.org/_media/logo.png\(aq\fP
+.sp
+\fBlist fas_custom_images_list \(aqbanner1_jpg=https://raw.githubusercontent.com/openNDS/openNDS/9.0.0/resources/bannerbw.jpg\(aq\fP
+.sp
+\fBlist fas_custom_images_list \(aqbanner2_jpg=https://raw.githubusercontent.com/openNDS/openNDS/9.0.0/resources/bannerpickle.jpg\(aq\fP
+.sp
+\fBlist fas_custom_images_list \(aqbanner3_jpg=https://raw.githubusercontent.com/openNDS/openNDS/9.0.0/resources/bannerseawolf.jpg\(aq\fP
+.sp
+\fBlist fas_custom_files_list \(aqadvert1_htm=https://raw.githubusercontent.com/openNDS/openNDS/9.0.0/resources/bannerpickle.htm\(aq\fP
+.sp
+Once configured these two example ThemeSpec scripts will download custom image files, a custom html file and inject custom user input forms for phone number and home postcode.
+.SS Other Custom Designs
+.sp
+Custom designed dynamically generated ThemeSpec pages are supported using FAS and PreAuth. For details see the FAS and PreAuth chapters.
 .SH CUSTOM PARAMETERS, VARIABLES, IMAGES AND FILES
 .sp
 Custom Parameters were first introduced in openNDS version 7.
 With version 9.0.0, custom variables, images and files have been added.
-.SS Custom parameters
+.SS Custom Parameters
 .sp
 Custom parameters are defined in the config file and are sent as fixed values to FAS in the encoded/encrypted query string where they can be parsed and used by the FAS.
 .sp
@@ -1203,7 +1397,7 @@ openNDS (NDS) has the ability to forward requests to a third party authenticatio
 \fBNOTE:\fP
 .INDENT 0.0
 .INDENT 3.5
-FAS (and Preauth/FAS) enables pre authentication processing. NDS authentication is the process that openNDS uses to allow a client device to access the Internet through the Firewall. In contrast, Forward Authentication is a process of "Credential Verification", after which FAS, if the verification process is successful, passes the client token to NDS for access to the Internet to be granted.
+FAS (and Preauth/FAS) enables pre authentication processing. NDS authentication is the process that openNDS uses to allow a client device to access the Internet through the Firewall. In contrast, Forward Authentication is a process of "Credential Verification", after which FAS, if the verification process is successful, passes a request to NDS for access to the Internet to be granted for that client.
 .UNINDENT
 .UNINDENT
 .SS Using FAS
@@ -1217,7 +1411,7 @@ The FAS service must serve a splash page of its own to replace the openNDS serve
 .sp
 Typically, the FAS service will be written in PHP or any other language that can provide dynamic web content.
 .sp
-FAS can then provide an action form for the client, typically requesting login, or self account creation for login.
+FAS can then generate an action form for the client, typically requesting login, or self account creation for login.
 .sp
 The FAS can be on the same device as openNDS, on the same local area network as NDS, or on an Internet hosted web server.
 .SS Security
@@ -1231,7 +1425,7 @@ The client token is sent to the FAS in clear text in the query string of the red
 \fBIf set to "1"\fP The FAS is enforced by NDS to use \fBhttp\fP protocol.
 A base64 encoded query string containing the hid is sent to the FAS, along with the clientip, clientmac, gatewayname, client_hid, gatewayaddress, authdir, originurl, clientif and custom parameters and variables.
 .sp
-Should sha256sum not be available, then openNDS will terminate with an error message on startup.
+Should the sha256sum utility not be available, openNDS will terminate with an error message on startup.
 .sp
 \fBIf set to "2"\fP The FAS is enforced by NDS to use \fBhttp\fP protocol.
 .sp
@@ -1263,7 +1457,7 @@ NDS sends the token and other information to FAS as clear text.
 .sp
 \fIhttp://fasremoteip:fasport/faspath?authaction=http://gatewayaddress:gatewayport/opennds_auth/?clientip=[clientip]&gatewayname=[gatewayname]&tok=[token]&redir=[requested_url]\fP
 .sp
-Note: a knowledgeable user could bypass FAS, so running fas_secure_enabled at level 1, 2 or 3 is recommended.
+\fBNote: a knowledgeable user could bypass FAS, so running fas_secure_enabled at level 1, 2 or 3 is recommended.\fP
 .UNINDENT
 .UNINDENT
 .sp
@@ -1404,9 +1598,9 @@ This is most commonly achieved using an html form of method GET.
 The parameter redir can be the client\(aqs originally requested URL sent by NDS, or more usefully, the URL of a suitable landing page.
 .UNINDENT
 .UNINDENT
-.SS The "login_option" special case
+.SS The "login_option/Themespec" special case
 .sp
-The default "login_option" script, login.sh, must always be a local script so has access to ndsctl auth method of authentication without needing the authmon daemon so uses this rather than use the authdir GET method detailed above. This means login.sh can directly set client quotas without requiring BinAuth.
+The default "login_option" library, libopennds.sh, is a local script so has access to ndsctl auth method of authentication without needing the authmon daemon so uses this rather than the authdir GET method detailed above. This means Themespec can directly set client quotas without requiring BinAuth.
 .SS Authentication Method for fas_secure_enabled level 3 (Authmon Daemon)
 .INDENT 0.0
 .INDENT 3.5
@@ -1718,17 +1912,6 @@ Customisation should be carried out in a related Themespec file.
 Usage: libopennds arg1 arg2 ... argN
 .INDENT 0.0
 .INDENT 3.5
-\fBarg1\fP: "clean", removes custom files, images and client data
-.sp
-\fIreturns\fP: tmpfsmountpoint (the mountpoint of the tmpfs volatile storage of the router.
-.sp
-\fBarg1\fP: "tmpfs", finds the tmpfs mountpoint
-.sp
-\fIreturns\fP: tmpfsmountpoint (the mountpoint of the tmpfs volatile storage of the router.
-.sp
-\fBarg1\fP: "mhdcheck", checks if MHD is running (used by MHD watchdog)
-\fIreturns\fP: "1" if MHD is running, "2" if MHD is not running
-.sp
 \fBarg1\fP: "?fas=<b64string>", generates ThemeSpec html using b64encoded data sent from openNDS
 .INDENT 0.0
 .INDENT 3.5
@@ -1887,7 +2070,7 @@ libopennds finally calls openNDS to authenticate the client, passing on any quot
 \fBNOTE:\fP
 .INDENT 0.0
 .INDENT 3.5
-The Pre\-Installed Basic Splash Pages are pre\-installed PreAuth scripts with special configuration options to enable them.
+PreAuth is the underlying method used by Themespec scripts.
 .UNINDENT
 .UNINDENT
 .sp
@@ -1940,10 +2123,10 @@ A Preauth script can be written as a shell script or any other language that the
 .sp
 openNDS calls the PreAuth script with a b64 encoded argument containing the equivalent of an html query string but with ", " (comma space) in place of "&" (ampersand).
 .sp
-Full details of programming a custom PreAuth script can be found by reading and following the logig flow in the libopennds script and accompanying ThemeSpec files.
+Full details of programming a custom PreAuth script can be found by reading and following the login flow in the libopennds script and accompanying ThemeSpec files.
 .SS Custom Parameters, Variables, Images and Files
 .sp
-Custom Parameters, Variables, Images and Files, defined in the config and the definitions are passed to PreAuth in the b64 encoded query string.
+Custom Parameters, Variables, Images and Files, defined in the config and the definitions are passed to PreAuth in the b64 encoded query string as well as being cached in a local database file for each client.
 .SH BINAUTH OPTION
 .SS Overview
 .sp
@@ -2089,10 +2272,17 @@ Method auth_client \- arg[9] and ndsctl_auth \- arg[8], contain the url\-escaped
 .sp
 It is provided for general unspecified use and is url\-escaped.
 A typical example of its use is for a level 0, 1, or 2 FAS to communicate special values for individual clients, or groups of clients.
-.SS Example BinAuth Scripts
+.SS Example BinAuth Script
 .sp
 An example BinAuth script is pre\-installed.
 It provides a local NDS Access Log
+.sp
+\fBNOTE:\fP
+.INDENT 0.0
+.INDENT 3.5
+Other example scripts from previous versions are no longer supported.
+.UNINDENT
+.UNINDENT
 .sp
 FAS is often remote from the NDS router and this script provides a simple method of interacting directly with the local openNDS. FAS can send custom data to BinAuth as a payload in the custom variable string that is relayed to BinAuth.
 .sp
@@ -2127,6 +2317,129 @@ This script is then activated with the command:
 \fBservice opennds restart\fP
 .UNINDENT
 .UNINDENT
+.SH WALLED GARDEN
+.SS Manual Walled Garden
+.sp
+Preauthenticated clients are, by default, blocked from all access to the Internet.
+.sp
+Access to certain web sites can be allowed. For example, clients will automatically be granted access to an external FAS server for the purpose of authentication.
+.sp
+Access to other web sites may be manually granted so clients can be served content such as news, information, advertising, etc. This is achieved in openNDS by allowing access to the IP address of the web sites as required.
+.sp
+A set of such web sites is referred to as a Walled Garden.
+.SS Autonomous Walled Garden
+.sp
+Granting access by specifying the site IP address works well in the simplest of cases but the administrative overhead can rapidly become very difficult, for example with social media sites that load balance high volumes of traffic over many possible IP addresses.
+.sp
+In addition, the IP address of any web site may change.
+.sp
+Rather than using IP addresses, a much more efficient method of granting access would be by using the Fully Qualified Domain Name (FQDN) of each site and have a background process populate a database of allowed IP addresses.
+.sp
+openNDS supports Autonomous Walled Garden by means of a simple configuration option. This does have additional dependencies but these only apply if the Autonomous Walled Garden is enabled.
+.SS OpenWrt Walled Garden
+.sp
+The additional dependencies are the ipset and dnsmasq\-full packages.
+Install these by running the following commands:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+opkg update
+opkg install ipset
+opkg remove dnsmasq
+opkg install dnsmasq\-full
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Configure as follows:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+uci add_list opennds.@opennds[0].walledgarden_fqdn_list=\(aq<fqdn1> <fqdn2> <fqdn3> [......] <fqdnN>\(aq
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+where <fqdn1> to <fqdnN> are the fully qualified domain names of the URLs you want to use to populate the ipset.
+.sp
+eg. For Facebook use facebook.com and fbcdn.net as fqdn1 and fqdn2
+.sp
+In addition you can limit access to the Walled Garden to a list of IP ports:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+uci add_list opennds.@opennds[0].walledgarden_port_list=\(aq<port1> <port2> <port3> [......] <portN>\(aq
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Restart openNDS to activate the Walled Garden.
+.sp
+To make these changes permanent (eg survive a reboot), run the command:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+uci commit opennds
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.SS Generic Linux Walled Garden
+.sp
+On most generic Linux platforms the procedure is in principle the same as for OpenWrt.
+.sp
+The ipset and full dnasmasq packages are requirements.
+.sp
+You can check the compile time options of dnsmasq with the following command:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+dnsmasq \-\-version | grep \-m1 \(aqCompile time options:\(aq | cut \-d: \-f2
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+If the returned string contains "no\-ipset" then you will have to upgrade dnsmasq to the full version.
+.sp
+To enable Walled Garden, add the following to the /etc/opennds/opennds.conf file
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+walledgarden_fqdn_list <fqdn1> <fqdn2> <fqdn3> [......] <fqdnN>
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+In addition you can specify a restricted set of ports for access to the walled garden by adding the line:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+walledgarden_port_list <port1> <port2> <port3> [......] <portN>
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Restart openNDS to activate the Walled Garden.
 .SH LIBRARY UTILITIES
 .SS Overview
 .sp
@@ -2136,7 +2449,7 @@ By default, library utilities will be installed in the folder
 .sp
 \fB/usr/lib/opennds/\fP
 .SS List of Library Utilities
-.SS get_client_token.sh
+.SS get_client_token.sh (deprecated)
 .sp
 This utility allows the unique token of a client to be determined from the client ip address.
 .sp
@@ -2159,9 +2472,7 @@ This utility allows the interface a client is using to be determined from the cl
 .sp
 It can be used in PreAuth and local FAS scripts.
 .sp
-It is used by NDS when fas secure levels 1 and 2 are set along with faskey also being set.
-.sp
-Its output is sent to FAS in the encrypted query string as the variable "clientif"
+Its output is also sent to FAS in the encrypted query string as the variable "clientif"
 .INDENT 0.0
 .INDENT 3.5
 Usage: get_client_interface.sh [clientmac]
@@ -2219,20 +2530,56 @@ This utility controls many of the functions required for PreAuth/ThemeSpec scrip
 .INDENT 0.0
 .INDENT 3.5
 Usage: libopennds arg1 arg2 ... argN
+.UNINDENT
+.UNINDENT
+.SS clean:
 .INDENT 0.0
 .INDENT 3.5
-\fBarg1\fP: "clean", removes custom files, images and client data
+\fBarg1\fP: "\fIclean\fP", removes custom files, images and client data
 .sp
 \fIreturns\fP: tmpfsmountpoint (the mountpoint of the tmpfs volatile storage of the router.
-.sp
-\fBarg1\fP: "tmpfs", finds the tmpfs mountpoint
+.UNINDENT
+.UNINDENT
+.SS tmpfs:
+.INDENT 0.0
+.INDENT 3.5
+\fBarg1\fP: "\fItmpfs\fP", finds the tmpfs mountpoint
 .sp
 \fIreturns\fP: tmpfsmountpoint (the mountpoint of the tmpfs volatile storage of the router.
-.sp
-\fBarg1\fP: "mhdcheck", checks if MHD is running (used by MHD watchdog)
+.UNINDENT
+.UNINDENT
+.SS mhdcheck:
+.INDENT 0.0
+.INDENT 3.5
+\fBarg1\fP: "\fImhdcheck\fP", checks if MHD is running (used by MHD watchdog)
 \fIreturns\fP: "1" if MHD is running, "2" if MHD is not running
+.UNINDENT
+.UNINDENT
+.SS gatewaymac:
+.INDENT 0.0
+.INDENT 3.5
+\fBarg1\fP: "\fIgatewaymac\fP", finds the mac address of an interface.
+.INDENT 0.0
+.INDENT 3.5
+\fBarg2\fP: ifname
+.UNINDENT
+.UNINDENT
 .sp
-\fBarg1\fP: "?fas=<b64string>", generates ThemeSpec html using b64encoded data sent from openNDS
+\fIreturns\fP: mac address of the interface
+.UNINDENT
+.UNINDENT
+.SS gatewayroute:
+.INDENT 0.0
+.INDENT 3.5
+\fBarg1\fP: "\fIgatewayroute\fP", checks for a valid gateway route for an interface.
+.sp
+\fIreturns\fP: the ip gateway address and the ip gateway interface, or "offline" if the router is offline
+.UNINDENT
+.UNINDENT
+.SS ?fas:
+.INDENT 0.0
+.INDENT 3.5
+\fBarg1\fP: "\fI?fas=<b64string>\fP", generates ThemeSpec html using b64encoded data sent from openNDS
 .INDENT 0.0
 .INDENT 3.5
 \fBarg2\fP: urlencoded_useragent_string
@@ -2246,8 +2593,83 @@ Usage: libopennds arg1 arg2 ... argN
 \fIreturns\fP: html for the specified ThemeSpec.
 .UNINDENT
 .UNINDENT
+.SH USING NDSCTL
+.sp
+openNDS includes ndsctl, a separate utility application. Some command line options:
+.INDENT 0.0
+.IP \(bu 2
+To print to stdout the status of the openNDS daemon:
+.INDENT 2.0
+.INDENT 3.5
+\fB/usr/bin/ndsctl status\fP
 .UNINDENT
 .UNINDENT
+.IP \(bu 2
+To print to stdout the list of clients and trusted devices in json format:
+.INDENT 2.0
+.INDENT 3.5
+\fB/usr/bin/ndsctl json\fP
+.UNINDENT
+.UNINDENT
+.IP \(bu 2
+To print to stdout the details of a particular client in json format (This is particularly useful if called from a FAS or Binauth script.):
+.INDENT 2.0
+.INDENT 3.5
+\fB/usr/bin/ndsctl json [mac|ip|token|hid]\fP
+.sp
+\fINote: clients that are not in the preauthenticated state (ie CPD has not triggered redirection) will not be authenticated unless the configuration option "allow_preemptive_authentication" is enabled.\fP
+.UNINDENT
+.UNINDENT
+.IP \(bu 2
+To authenticate client given their IP or MAC address:
+.INDENT 2.0
+.INDENT 3.5
+\fB/usr/bin/ndsctl deauth IP|MAC\fP
+.UNINDENT
+.UNINDENT
+.IP \(bu 2
+To deauthenticate a currently authenticated client given their IP or MAC address:
+.INDENT 2.0
+.INDENT 3.5
+\fB/usr/bin/ndsctl deauth IP|MAC\fP
+.UNINDENT
+.UNINDENT
+.IP \(bu 2
+To b64encode a plain text string:
+.INDENT 2.0
+.INDENT 3.5
+\fB/usr/bin/ndsctl b64encode "character string"\fP
+.UNINDENT
+.UNINDENT
+.IP \(bu 2
+To b64decode a b64encoded string:
+.INDENT 2.0
+.INDENT 3.5
+\fB/usr/bin/ndsctl b64decode "b64encodedstring"\fP
+.UNINDENT
+.UNINDENT
+.IP \(bu 2
+To set the verbosity of logged messages to n:
+.INDENT 2.0
+.INDENT 3.5
+\fB/usr/bin/ndsctl debuglevel n\fP
+.UNINDENT
+.UNINDENT
+.INDENT 2.0
+.IP \(bu 2
+debuglevel 0 : Silent (only LOG_ERR and LOG_EMERG messages will be seen, otherwise there will be no logging.)
+.IP \(bu 2
+debuglevel 1 : LOG_ERR, LOG_EMERG, LOG_WARNING and LOG_NOTICE (this is the default level).
+.IP \(bu 2
+debuglevel 2 : debuglevel 1 + LOG_INFO
+.IP \(bu 2
+debuglevel 3 : debuglevel 2 + LOG_DEBUG
+.UNINDENT
+.sp
+All other levels are undefined and will result in debug level 3 being set.
+.UNINDENT
+.sp
+For details, run ndsctl \-h. (Note that the effect of ndsctl commands does not persist across openNDS restarts.)
 .SH DATA QUOTAS AND TRAFFIC SHAPING
 .SS Data volume and Rate Quotas
 .sp
@@ -2518,405 +2940,52 @@ Further details about SQM can be found at the following links:
 \fI\%https://openwrt.org/docs/guide\-user/network/traffic\-shaping/sqm\fP
 .sp
 \fI\%https://openwrt.org/docs/guide\-user/network/traffic\-shaping/sqm\-details\fP
-.SH WALLED GARDEN
-.SS Manual Walled Garden
+.SH THE ERROR511/CLIENT STATUS PAGE
 .sp
-Preauthenticated clients are, by default, blocked from all access to the Internet.
+From version 8.0.0 onwards, openNDS has a Client Status Page.
 .sp
-Access to certain web sites can be allowed. For example, clients will automatically be granted access to an external FAS server for the purpose of authentication.
+This page is accessible by any connected client by accessing the default url:
 .sp
-Access to other web sites may be manually granted so clients can be served content such as news, information, advertising, etc. This is achieved in openNDS by allowing access to the IP address of the web sites as required.
+\fI\%http://status.client\fP
 .sp
-A set of such web sites is referred to as a Walled Garden.
-.SS Autonomous Walled Garden
+If the client has been authenticated in the normal way by the client CPD process, a page is served displaying the Gatewayname and the Network Zone the client device is currently using.
 .sp
-Granting access by specifying the site IP address works well in the simplest of cases but the administrative overhead can rapidly become very difficult, for example with social media sites that load balance high volumes of traffic over many possible IP addresses.
+A list of allowed quotas and current usage is displayed along with "Refresh" and "Logout" buttons.
 .sp
-In addition, the IP address of any web site may change.
+If the client has not been authenticated, or has been deauthenticated due to timeout or quota usage, then a "\fIError 511 Network Authentication Required\fP" page is displayed with "Refresh" and "Portal Login" buttons.
 .sp
-Rather than using IP addresses, a much more efficient method of granting access would be by using the Fully Qualified Domain Name (FQDN) of each site and have a background process populate a database of allowed IP addresses.
+The "Portal Login" button allows the client to immediately attempt to login without waiting for the client CPD to trigger.
 .sp
-openNDS supports Autonomous Walled Garden by means of a simple configuration option. This does have additional dependencies but these only apply if the Autonomous Walled Garden is enabled.
-.SS OpenWrt Walled Garden
+The URL used to access this page can be changed by setting the config option gatewayfqdn.
 .sp
-The additional dependencies are the ipset and dnsmasq\-full packages.
-Install these by running the following commands:
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.nf
-.ft C
-opkg update
-opkg install ipset
-opkg remove dnsmasq
-opkg install dnsmasq\-full
-.ft P
-.fi
-.UNINDENT
-.UNINDENT
-.sp
-Configure as follows:
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.nf
-.ft C
-uci add_list opennds.@opennds[0].walledgarden_fqdn_list=\(aq<fqdn1> <fqdn2> <fqdn3> [......] <fqdnN>\(aq
-.ft P
-.fi
-.UNINDENT
-.UNINDENT
-.sp
-where <fqdn1> to <fqdnN> are the fully qualified domain names of the URLs you want to use to populate the ipset.
-.sp
-eg. For Facebook use facebook.com and fbcdn.net as fqdn1 and fqdn2
-.sp
-In addition you can limit access to the Walled Garden to a list of IP ports:
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.nf
-.ft C
-uci add_list opennds.@opennds[0].walledgarden_port_list=\(aq<port1> <port2> <port3> [......] <portN>\(aq
-.ft P
-.fi
-.UNINDENT
-.UNINDENT
-.sp
-Restart openNDS to activate the Walled Garden.
-.sp
-To make these changes permanent (eg survive a reboot), run the command:
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.nf
-.ft C
-uci commit opennds
-.ft P
-.fi
-.UNINDENT
-.UNINDENT
-.SS Generic Linux Walled Garden
-.sp
-On most generic Linux platforms the procedure is in principle the same as for OpenWrt.
-.sp
-The ipset and full dnasmasq packages are requirements.
-.sp
-You can check the compile time options of dnsmasq with the following command:
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.nf
-.ft C
-dnsmasq \-\-version | grep \-m1 \(aqCompile time options:\(aq | cut \-d: \-f2
-.ft P
-.fi
-.UNINDENT
-.UNINDENT
-.sp
-If the returned string contains "no\-ipset" then you will have to upgrade dnsmasq to the full version.
-.sp
-To enable Walled Garden, add the following to the /etc/opennds/opennds.conf file
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.nf
-.ft C
-walledgarden_fqdn_list <fqdn1> <fqdn2> <fqdn3> [......] <fqdnN>
-.ft P
-.fi
-.UNINDENT
-.UNINDENT
-.sp
-In addition you can specify a restricted set of ports for access to the walled garden by adding the line:
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.nf
-.ft C
-walledgarden_port_list <port1> <port2> <port3> [......] <portN>
-.ft P
-.fi
-.UNINDENT
-.UNINDENT
-.sp
-Restart openNDS to activate the Walled Garden.
-.SH USING NDSCTL
-.sp
-A openNDS install includes ndsctl, a separate application which provides some control over a running openNDS process by communicating with it over a unix socket. Some command line options:
-.INDENT 0.0
-.IP \(bu 2
-To print to stdout some information about your openNDS process:
-.INDENT 2.0
-.INDENT 3.5
-\fB/usr/bin/ndsctl status\fP
-.UNINDENT
-.UNINDENT
-.IP \(bu 2
-To print to stdout the list of clients in human readable format:
-.INDENT 2.0
-.INDENT 3.5
-\fB/usr/bin/ndsctl clients\fP
-.UNINDENT
-.UNINDENT
-.IP \(bu 2
-To print to stdout the list of clients and trusted devices in json format:
-.INDENT 2.0
-.INDENT 3.5
-\fB/usr/bin/ndsctl json\fP
-.UNINDENT
-.UNINDENT
-.IP \(bu 2
-To print to stdout the details of a particular client in json format (This is particularly useful if called from a FAS or Binauth script.):
-.INDENT 2.0
-.INDENT 3.5
-\fB/usr/bin/ndsctl json [mac|ip|token]\fP
-.UNINDENT
-.UNINDENT
-.IP \(bu 2
-To block a MAC address, when the MAC mechanism is block:
-.INDENT 2.0
-.INDENT 3.5
-\fB/usr/bin/ndsctl block MAC\fP
-.UNINDENT
-.UNINDENT
-.IP \(bu 2
-To unblock a MAC address, when the MAC mechanism is block:
-.INDENT 2.0
-.INDENT 3.5
-\fB/usr/bin/ndsctl unblock MAC\fP
-.UNINDENT
-.UNINDENT
-.IP \(bu 2
-To allow a MAC address, when the MAC mechanism is allow:
-.INDENT 2.0
-.INDENT 3.5
-\fB/usr/bin/ndsctl allow MAC\fP
-.UNINDENT
-.UNINDENT
-.IP \(bu 2
-To unallow a MAC address, when the MAC mechanism is allow:
-.INDENT 2.0
-.INDENT 3.5
-\fB/usr/bin/ndsctl unallow MAC\fP
-.UNINDENT
-.UNINDENT
-.IP \(bu 2
-To deauthenticate a currently authenticated user given their IP or MAC
-address:
-.INDENT 2.0
-.INDENT 3.5
-\fB/usr/bin/ndsctl deauth IP|MAC\fP
-.UNINDENT
-.UNINDENT
-.IP \(bu 2
-To set the verbosity of logged messages to n:
-.INDENT 2.0
-.INDENT 3.5
-\fB/usr/bin/ndsctl debuglevel n\fP
-.UNINDENT
-.UNINDENT
-.INDENT 2.0
-.IP \(bu 2
-debuglevel 0 : Silent (only LOG_ERR and LOG_EMERG messages will be seen, otherwise there will be no logging.)
-.IP \(bu 2
-debuglevel 1 : LOG_ERR, LOG_EMERG, LOG_WARNING and LOG_NOTICE (this is the default level).
-.IP \(bu 2
-debuglevel 2 : debuglevel 1 + LOG_INFO
-.IP \(bu 2
-debuglevel 3 : debuglevel 2 + LOG_DEBUG
-.UNINDENT
-.sp
-All other levels are undefined and will result in debug level 3 being set.
-.UNINDENT
-.sp
-For more options, run ndsctl \-h. (Note that if you want the effect of ndsctl commands to to persist across openNDS restarts, you have to edit the configuration file.)
-.SH CUSTOMISING OPENNDS
-.sp
-After initial installation, openNDS (NDS) should be working in its most basic mode and client Captive Portal Detection (CPD) should pop up the default Click to Continue page.
-.sp
-Before attempting to customise NDS you should ensure it is working in this basic mode before you start.
-.sp
-NDS reads its configuration file when it starts up but the location of this file varies depending on the operating system.
-.sp
-As NDS is a package that requires hardware configured as an IP router, perhaps the most common installation is using OpenWrt. However NDS can be compiled to run on most Linux distributions, the most common being Debian or one of its popular variants (eg Raspbian).
-.sp
-If NDS is working in the default, post installation mode, then you will have met the NDS dependencies and can now move on to your own customisation.
-.SS Rules for Customised Splash Pages
-.sp
-It should be noted when designing a custom splash page that for security reasons many client device CPD implementations:
+For best results it is recommended that gatewayfqdn is set to two words separated by a single period eg in OpenWrt:
 .INDENT 0.0
 .INDENT 3.5
 .INDENT 0.0
-.IP \(bu 2
-Immediately close the browser when the client has authenticated.
-.IP \(bu 2
-Prohibit the use of href links.
-.IP \(bu 2
-Prohibit downloading of external files (including .css and .js, even if they are allowed in NDS firewall settings).
-.IP \(bu 2
-Prohibit the execution of javascript.
-.UNINDENT
-.UNINDENT
-.UNINDENT
-.SS The Configuration File
-.sp
-In OpenWrt, or operating systems supporting UCI (such as LEDE) the configuration is kept in the file:
-.INDENT 0.0
 .INDENT 3.5
-\fB/etc/config/opennds\fP
+\fBoption gatewayfqdn \(aqmy.status\(aq\fP
 .UNINDENT
 .UNINDENT
 .sp
-In other operating systems the configuration is kept in the file:
-.INDENT 0.0
-.INDENT 3.5
-\fB/etc/opennds/opennds.conf\fP
+\fBWarning\fP \- if set, services on port 80 of the gateway will no longer be accessible (eg Luci AdminUI)
+.sp
+By default, the Error511/Status page will be found at \fBhttp://status.client/\fP by a redirection of port 80 to \fBhttp://gatewayaddress:gatewayport/\fP
+.sp
+\fB*Disable GatewayFQDN*\fP by setting the option to \(aqdisable\(aq
+ie:
+.sp
+\fBoption gatewayfqdn \(aqdisable\(aq\fP
 .UNINDENT
 .UNINDENT
 .sp
-Both of these files contain a full list of options and can be edited directly. A restart of NDS is required for any changes to take effect.
+An alternate Useful Example:
 .sp
-In the case of OpenWrt though, once you are confident in your configuration requirements you can use UCI to read and set any of the configuration options using simple commands, making this very convenient if making changes from scripts, such as those you may write to use with Binauth and FAS.
+\fBoption gatewayfqdn \(aqlogin.page\(aq\fP
+.SS Custom Status Page
 .sp
-For example, to list the full configuration, at the command line type:
-.INDENT 0.0
-.INDENT 3.5
+The default  client status page is generated dynamically by the script /usr/lib/opennds/client_params.sh
 .sp
-.nf
-.ft C
-uci show opennds
-.ft P
-.fi
-.UNINDENT
-.UNINDENT
-.sp
-To display the Gateway Name, type:
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.nf
-.ft C
-uci get opennds.@opennds[0].gatewayname
-.ft P
-.fi
-.UNINDENT
-.UNINDENT
-.sp
-To set the Gateway Name to a new value, type:
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.nf
-.ft C
-uci set opennds.@opennds[0].gatewayname=\(aqmy new gateway\(aq
-.ft P
-.fi
-.UNINDENT
-.UNINDENT
-.sp
-To add a new firewall rule allowing access to another service running on port 8888 on the router, type:
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.nf
-.ft C
-uci add_list opennds.@opennds[0].users_to_router=\(aqallow
-tcp port 8888\(aq
-.ft P
-.fi
-.UNINDENT
-.UNINDENT
-.sp
-Finally you must tell UCI to commit your changes to the configuration file:
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.nf
-.ft C
-uci commit opennds
-.ft P
-.fi
-.UNINDENT
-.UNINDENT
-.SS The Legacy Click and Go Splash Page
-.sp
-\fIThe legacy Click to Continue html splash page was deprecated and disabled at v8.0.0.\fP
-.sp
-\fBFrom v 9.0.0 it has been removed entirely.\fP
-.SS Dynamic Splash Pages
-.SS Default Dynamic Click to Continue
-.sp
-The pre\-installed dynamic click to continue page sequence is enabled by default using the ThemeSpec "theme_click\-to\-continue".
-The configuration default is equivalent to setting:
-.sp
-\fBoption login_option_enabled \(aq1\(aq\fP
-.sp
-It generates a Click to Continue page followed by Thankyou and Landing pages.
-.sp
-User clicks on "Continue" are recorded in the log file /[tmpfs_dir]/ndslog/ndslog.log
-.sp
-Where [tmpfs_dir] is the operating system "temporary" tmpfs mount point.
-This will be  /tmp /run or /var and is automatically detected.
-.sp
-Details of how the script works are contained in comments in the script theme_click\-to\-continue.sh
-.SS Pre\-Installed dynamic User/email Login page sequence
-.sp
-The pre\-installed dynamic login page is enabled by setting option:
-.sp
-\fBoption login_option_enabled \(aq2\(aq\fP
-.sp
-It generates a login page asking for username and email address.
-User logins are recorded in the log file /[tmpfs_dir]/ndslog/ndslog.log
-.sp
-Where [tmpfs_dir] is the operating system "temporary" tmpfs mount point.
-This will be  /tmp /run or /var and is automatically detected.
-.sp
-Details of how the script works are contained in comments in the script theme_user\-email\-login.sh
-.SS Custom Dynamic ThemeSpec Pages
-.sp
-Custom ThemeSpec page sequences can be added by setting option:
-.sp
-\fBoption login_option_enabled \(aq3\(aq\fP
-.sp
-and option
-.sp
-\fBoption themespecpath \(aq/path/to/themespec_script\(aq\fP
-.sp
-Two additional ThemeSpec files are included as examples:
-.sp
-/usr/lib/opennds/theme_click\-to\-continue\-custom\-placeholders.sh
-.sp
-and
-.sp
-/usr/lib/opennds/theme_user\-email\-login\-custom\-placeholders.sh
-.sp
-Both these also require custom parameter, variable, image and file lists:
-.sp
-\fBlist fas_custom_parameters_list \(aqlogo_message=openNDS:%20Perfect%20on%20OpenWrt!\(aq\fP
-.sp
-\fBlist fas_custom_parameters_list \(aqbanner1_message=BlueWave%20\-%20Wireless%20Network%20Specialists\(aq\fP
-.sp
-\fBlist fas_custom_parameters_list \(aqbanner2_message=HMS%20Pickle\(aq\fP
-.sp
-\fBlist fas_custom_parameters_list \(aqbanner3_message=SeaWolf%20Cruiser%20Racer\(aq\fP
-.sp
-\fBlist fas_custom_variables_list \(aqinput=phone:Phone%20Number:text;postcode:Home%20Post%20Code:text\(aq\fP
-.sp
-\fBlist fas_custom_images_list \(aqlogo_png=https://openwrt.org/_media/logo.png\(aq\fP
-.sp
-\fBlist fas_custom_images_list \(aqbanner1_jpg=https://raw.githubusercontent.com/openNDS/openNDS/9.0.0/resources/bannerbw.jpg\(aq\fP
-.sp
-\fBlist fas_custom_images_list \(aqbanner2_jpg=https://raw.githubusercontent.com/openNDS/openNDS/9.0.0/resources/bannerpickle.jpg\(aq\fP
-.sp
-\fBlist fas_custom_images_list \(aqbanner3_jpg=https://raw.githubusercontent.com/openNDS/openNDS/9.0.0/resources/bannerseawolf.jpg\(aq\fP
-.sp
-\fBlist fas_custom_files_list \(aqadvert1_htm=https://raw.githubusercontent.com/openNDS/openNDS/9.0.0/resources/bannerpickle.htm\(aq\fP
-.sp
-Once configured these two example ThemeSpec scripts will download custom image files, a custom html file and inject custom user input forms for phone number and home postcode.
-.SS Other Custom Designs
-.sp
-Custom designed dynamically generated ThemeSpec pages are supported using FAS and PreAuth. For details see the FAS and PreAuth chapters.
+An alternate Status page script can be used by setting the configuration option "statuspath" in the config file. Ensure the alternate script file is flagged as executable.
 .SH FREQUENTLY ASKED QUESTIONS
 .SS What\(aqs the difference between versions?
 .sp
@@ -3160,7 +3229,7 @@ cd libmicrohttpd\-0.9.71
 .UNINDENT
 .UNINDENT
 .sp
-where "0.9.71" is the MHD version number we are using in this example.
+where "0.9.71" is the MHD version number we are using in this example (use at least this version).
 .sp
 \fBNow configure and compile:\fP
 .INDENT 0.0
@@ -3189,8 +3258,8 @@ You can find a release version number for openNDS at \fI\%https://github.com/ope
 .nf
 .ft C
 wget https://codeload.github.com/opennds/opennds/tar.gz/v7.0.1
-tar \-xf v7.0.1
-cd openNDS\-7.0.1
+tar \-xf v9.1.0
+cd openNDS\-9.1.0
 make
 sudo make install
 sudo systemctl enable opennds
@@ -3199,7 +3268,7 @@ sudo systemctl enable opennds
 .UNINDENT
 .UNINDENT
 .sp
-Where "7.0.1" is the openNDS version we are using in this example.
+Where "9.1.0" is the openNDS version we are using in this example.
 .sp
 openNDS should now start automatically at boot time.
 .sp
@@ -3463,15 +3532,13 @@ Here is a list of things that should be done soon:
 .IP \(bu 2
 Use uci style config file for all OSes then remove opennds.conf
 .IP \(bu 2
-Add refresh interval for download of external files in ThemeSpec. This will enable automatic update of informational content, banner advertising etc.
-.IP \(bu 2
-Consider providing an openNDS\-mini package for OpenWrt \- for legacy devices with very restricted resources.
+Add support for definable language lookup files for otherwise hard coded text eg http error codes
 .UNINDENT
 .sp
 Here is a list of possible things TO DO
 .INDENT 0.0
 .IP \(bu 2
-Extend Status processing to display a page when a user\(aqs authentication is rejected, e.g. because the user exceeded a quota or is blocked etc.
+Consider providing an openNDS\-mini package for OpenWrt \- for legacy devices with very restricted resources.
 .IP \(bu 2
 ip version 6 is not currently supported by NDS. It is not essential or advantageous to have in the short term but should be added at some time in the future.
 .IP \(bu 2

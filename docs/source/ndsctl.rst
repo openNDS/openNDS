@@ -1,15 +1,11 @@
 Using ndsctl
 ############
 
-A openNDS install includes ndsctl, a separate application which provides some control over a running openNDS process by communicating with it over a unix socket. Some command line options:
+openNDS includes ndsctl, a separate utility application. Some command line options:
 
-* To print to stdout some information about your openNDS process:
+* To print to stdout the status of the openNDS daemon:
 
     ``/usr/bin/ndsctl status``
-
-* To print to stdout the list of clients in human readable format:
-
-    ``/usr/bin/ndsctl clients``
 
 * To print to stdout the list of clients and trusted devices in json format:
 
@@ -17,28 +13,25 @@ A openNDS install includes ndsctl, a separate application which provides some co
 
 * To print to stdout the details of a particular client in json format (This is particularly useful if called from a FAS or Binauth script.):
 
-    ``/usr/bin/ndsctl json [mac|ip|token]``
+    ``/usr/bin/ndsctl json [mac|ip|token|hid]``
 
-* To block a MAC address, when the MAC mechanism is block:
+    *Note: clients that are not in the preauthenticated state (ie CPD has not triggered redirection) will not be authenticated unless the configuration option "allow_preemptive_authentication" is enabled.*
 
-    ``/usr/bin/ndsctl block MAC``
-
-* To unblock a MAC address, when the MAC mechanism is block:
-
-    ``/usr/bin/ndsctl unblock MAC``
-
-* To allow a MAC address, when the MAC mechanism is allow:
-
-    ``/usr/bin/ndsctl allow MAC``
-
-* To unallow a MAC address, when the MAC mechanism is allow:
-
-    ``/usr/bin/ndsctl unallow MAC``
-
-* To deauthenticate a currently authenticated user given their IP or MAC
-  address:
+* To authenticate client given their IP or MAC address:
 
     ``/usr/bin/ndsctl deauth IP|MAC``
+
+* To deauthenticate a currently authenticated client given their IP or MAC address:
+
+    ``/usr/bin/ndsctl deauth IP|MAC``
+
+* To b64encode a plain text string:
+
+    ``/usr/bin/ndsctl b64encode "character string"``
+
+* To b64decode a b64encoded string:
+
+    ``/usr/bin/ndsctl b64decode "b64encodedstring"``
 
 * To set the verbosity of logged messages to n:
 
@@ -52,5 +45,5 @@ A openNDS install includes ndsctl, a separate application which provides some co
   All other levels are undefined and will result in debug level 3 being set.
 
 
-For more options, run ndsctl -h. (Note that if you want the effect of ndsctl commands to to persist across openNDS restarts, you have to edit the configuration file.)
+For details, run ndsctl -h. (Note that the effect of ndsctl commands does not persist across openNDS restarts.)
 

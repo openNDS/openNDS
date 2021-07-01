@@ -22,7 +22,7 @@ The version number for MHD must not exceed 0.9.70 for versions of openNDS less t
  tar  -xf libmicrohttpd-0.9.71.tar.gz
  cd libmicrohttpd-0.9.71
 
-where "0.9.71" is the MHD version number we are using in this example.
+where "0.9.71" is the MHD version number we are using in this example (use at least this version).
 
 **Now configure and compile:**
 
@@ -44,13 +44,13 @@ You can find a release version number for openNDS at https://github.com/openNDS/
 .. code::
 
  wget https://codeload.github.com/opennds/opennds/tar.gz/v7.0.1
- tar -xf v7.0.1
- cd openNDS-7.0.1
+ tar -xf v9.1.0
+ cd openNDS-9.1.0
  make
  sudo make install
  sudo systemctl enable opennds
 
-Where "7.0.1" is the openNDS version we are using in this example.
+Where "9.1.0" is the openNDS version we are using in this example.
 
 openNDS should now start automatically at boot time.
 

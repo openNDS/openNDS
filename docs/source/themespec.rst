@@ -34,17 +34,6 @@ Customisation should be carried out in a related Themespec file.
 
   Usage: libopennds arg1 arg2 ... argN
 
-    **arg1**: "clean", removes custom files, images and client data
-
-    *returns*: tmpfsmountpoint (the mountpoint of the tmpfs volatile storage of the router.
-
-    **arg1**: "tmpfs", finds the tmpfs mountpoint
-
-    *returns*: tmpfsmountpoint (the mountpoint of the tmpfs volatile storage of the router.
-
-    **arg1**: "mhdcheck", checks if MHD is running (used by MHD watchdog)
-    *returns*: "1" if MHD is running, "2" if MHD is not running
-
     **arg1**: "?fas=<b64string>", generates ThemeSpec html using b64encoded data sent from openNDS
 
         **arg2**: urlencoded_useragent_string

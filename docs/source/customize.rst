@@ -3,7 +3,7 @@ Customising openNDS
 
 After initial installation, openNDS (NDS) should be working in its most basic mode and client Captive Portal Detection (CPD) should pop up the default Click to Continue page.
 
-Before attempting to customise NDS you should ensure it is working in this basic mode before you start.
+Before attempting to customise NDS you should ensure it is working in this basic mode.
 
 NDS reads its configuration file when it starts up but the location of this file varies depending on the operating system.
 

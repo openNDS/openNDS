@@ -91,10 +91,13 @@ Method auth_client - arg[9] and ndsctl_auth - arg[8], contain the url-escaped cu
 It is provided for general unspecified use and is url-escaped.
 A typical example of its use is for a level 0, 1, or 2 FAS to communicate special values for individual clients, or groups of clients.
 
-Example BinAuth Scripts
-***********************
+Example BinAuth Script
+**********************
 An example BinAuth script is pre-installed.
 It provides a local NDS Access Log
+
+.. note::
+ Other example scripts from previous versions are no longer supported.
 
 FAS is often remote from the NDS router and this script provides a simple method of interacting directly with the local openNDS. FAS can send custom data to BinAuth as a payload in the custom variable string that is relayed to BinAuth.
 

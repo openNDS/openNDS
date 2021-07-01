@@ -13,8 +13,8 @@ By default, library utilities will be installed in the folder
 List of Library Utilities
 *************************
 
-get_client_token.sh
-###################
+get_client_token.sh (deprecated)
+################################
 This utility allows the unique token of a client to be determined from the client ip address.
 
 It can be used in PreAuth and local FAS scripts.
@@ -32,9 +32,7 @@ This utility allows the interface a client is using to be determined from the cl
 
 It can be used in PreAuth and local FAS scripts.
 
-It is used by NDS when fas secure levels 1 and 2 are set along with faskey also being set.
-
-Its output is sent to FAS in the encrypted query string as the variable "clientif"
+Its output is also sent to FAS in the encrypted query string as the variable "clientif"
 
   Usage: get_client_interface.sh [clientmac]
 
@@ -78,18 +76,40 @@ This utility controls many of the functions required for PreAuth/ThemeSpec scrip
 
   Usage: libopennds arg1 arg2 ... argN
 
-    **arg1**: "clean", removes custom files, images and client data
+clean:
+------
+    **arg1**: "*clean*", removes custom files, images and client data
 
     *returns*: tmpfsmountpoint (the mountpoint of the tmpfs volatile storage of the router.
 
-    **arg1**: "tmpfs", finds the tmpfs mountpoint
+tmpfs:
+------
+    **arg1**: "*tmpfs*", finds the tmpfs mountpoint
 
     *returns*: tmpfsmountpoint (the mountpoint of the tmpfs volatile storage of the router.
 
-    **arg1**: "mhdcheck", checks if MHD is running (used by MHD watchdog)
+mhdcheck:
+---------
+    **arg1**: "*mhdcheck*", checks if MHD is running (used by MHD watchdog)
     *returns*: "1" if MHD is running, "2" if MHD is not running
 
-    **arg1**: "?fas=<b64string>", generates ThemeSpec html using b64encoded data sent from openNDS
+gatewaymac:
+-----------
+    **arg1**: "*gatewaymac*", finds the mac address of an interface.
+
+        **arg2**: ifname
+
+    *returns*: mac address of the interface
+
+gatewayroute:
+-------------
+    **arg1**: "*gatewayroute*", checks for a valid gateway route for an interface.
+
+    *returns*: the ip gateway address and the ip gateway interface, or "offline" if the router is offline
+
+?fas:
+-----
+    **arg1**: "*?fas=<b64string>*", generates ThemeSpec html using b64encoded data sent from openNDS
 
         **arg2**: urlencoded_useragent_string
 

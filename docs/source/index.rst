@@ -30,20 +30,20 @@ Contents:
 
    overview
    changelog
-   install
    howitworks
+   install
    splash
-   clientstatus
+   customize
    customparams
    fas
    themespec
    preauth
    binauth
-   libraries
-   traffic
    walledgarden
+   libraries
    ndsctl
-   customize
+   traffic
+   clientstatus
    faq
    compile
    debug

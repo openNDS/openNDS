@@ -33,3 +33,9 @@ For best results it is recommended that gatewayfqdn is set to two words separate
 An alternate Useful Example:
 
 ``option gatewayfqdn 'login.page'``
+
+Custom Status Page
+******************
+The default  client status page is generated dynamically by the script /usr/lib/opennds/client_params.sh
+
+An alternate Status page script can be used by setting the configuration option "statuspath" in the config file. Ensure the alternate script file is flagged as executable.

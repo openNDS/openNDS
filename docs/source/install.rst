@@ -1,5 +1,5 @@
 Installing openNDS
-######################
+##################
 
 Prerequisites
 *************
@@ -18,6 +18,8 @@ openNDS is designed to run on a device configured as an IPv4 router and will hav
  * Provide DHCP services to connected clients
  * Provide DNS services to connected clients
  * Provide Network Address Translation (NAT) for all outgoing traffic directed to the WAN interface.
+
+If an improper routing configuration is detected, openNDS will shut down.
 
 Installing on OpenWrt
 *********************

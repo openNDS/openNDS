@@ -359,7 +359,7 @@ int ndsctl_lock(char *mountpoint, int *lockfd)
 
 	// Open or create the lock file
 	safe_asprintf(&lockfile, "%s/ndsctl.lock", mountpoint);
-	*lockfd = open(lockfile, O_RDWR | O_CREAT);
+	*lockfd = open(lockfile, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
 	free(lockfile);
 
 	if (*lockfd < 0) {
@@ -394,7 +394,8 @@ int ndsctl_lock(char *mountpoint, int *lockfd)
 
 void ndsctl_unlock(int *lockfd)
 {
-	lockf(*lockfd, F_ULOCK, 0);
+	int ret;
+	ret = lockf(*lockfd, F_ULOCK, 0);
 	close(*lockfd);
 }
 
@@ -469,12 +470,16 @@ main(int argc, char **argv)
 		exit(1);
 	}
 	free(cmd);
-	fgets(mountpoint, sizeof(mountpoint), fd);
+
+	if(fgets(mountpoint, sizeof(mountpoint), fd) == NULL) {
+		printf("Unable to get mountpoint - Terminating");
+		pclose(fd);
+		exit(1);
+	}
 	pclose(fd);
 
-
 	//Create lock
-	ret=ndsctl_lock(mountpoint, &lockfd);
+	ret = ndsctl_lock(mountpoint, &lockfd);
 
 	if (ret > 0) {
 		return ret;

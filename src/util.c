@@ -91,7 +91,7 @@ int ndsctl_lock()
 
 	// Open or create the lock file
 	safe_asprintf(&lockfile, "%s/ndsctl.lock", config->tmpfsmountpoint);
-	config->lockfd = open(lockfile, O_RDWR | O_CREAT);
+	config->lockfd = open(lockfile, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
 	free(lockfile);
 
 	if (config->lockfd < 0) {
@@ -118,8 +118,9 @@ int ndsctl_lock()
 
 void ndsctl_unlock()
 {
+	int ret;
 	s_config *config = config_get_config();
-	lockf(config->lockfd, F_ULOCK, 0);
+	ret = lockf(config->lockfd, F_ULOCK, 0);
 	close(config->lockfd);
 }
 
@@ -127,6 +128,7 @@ void ndsctl_unlock()
 int download_remotes(int refresh)
 {
 	char *cmd = NULL;
+	int ret;
 	s_config *config = config_get_config();
 
 	if(refresh == 0) {
@@ -148,7 +150,7 @@ int download_remotes(int refresh)
 		);
 	}
 
-	system(cmd);
+	ret = system(cmd);
 	free(cmd);
 	return 0;
 }
@@ -497,11 +499,15 @@ time_t get_system_uptime() {
 	pfp = fopen ("/proc/uptime", "r");
 
 	if (pfp != NULL) {
-		(void) fgets (buf, sizeof(buf), pfp);
-		sysuptime = atol(strtok(buf, "."));
-		debug(LOG_DEBUG, "Operating System Uptime: %li seconds ", sysuptime);
+
+		if(fgets (buf, sizeof(buf), pfp) != NULL) {
+			sysuptime = atol(strtok(buf, "."));
+			debug(LOG_DEBUG, "Operating System Uptime: %li seconds ", sysuptime);
+			fclose (pfp);
+			return sysuptime;
+		}
+
 		fclose (pfp);
-		return sysuptime;
 	}
 
 	debug(LOG_WARNING, "Unable to determine System Uptime.");

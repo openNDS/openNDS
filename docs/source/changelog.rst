@@ -1,6 +1,17 @@
 What's New? - ChangeLog
 #######################
 
+opennds (9.1.1)
+
+  * This version fixes a compiler error, some compiler warnings and mutes a debug message
+  * Fix - Compiler error, missing mode in call to open() [bluewave.net]
+  * Fix - Compiler warning, ignored return value from call to lockf() [bluewave.net]
+  * Fix - Compiler warning, ignored return value from call to system() [bluewave.net]
+  * Fix - Compiler warning, ignored return value from call to fgets() [bluewave.net]
+  * Fix - Remove debug message from call to get_client_interface library [bluewave.net]
+
+ -- Rob White <dot@blue-wave.net> Thu, 4 July 2021 21:07:21 +0000
+
 opennds (9.1.0)
 
   * This version introduces new functionality, some changes and fixes

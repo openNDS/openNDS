@@ -54,7 +54,8 @@ clientlocalif=$(ip -4 neigh | awk -F ' ' 'match($s,"'"$mac"' ")>0 {printf $3}')
 
 if [ -z "$clientlocalif" ]; then
 	# The client has gone offline eg battery saving or switched to another ssid
-	echo "Client $mac is not online" | logger -p "daemon.info" -s -t "NDS-Library[$pid]"
+	# Next line commented with #. Uncomment for debugging
+	#echo "Client $mac is not online" | logger -p "daemon.info" -s -t "NDS-Library[$pid]"
 	exit 1
 fi
 

@@ -8,15 +8,15 @@ When ready to do a release, do the following:
 6. docs/source/conf.py - update copyright notice eg current year, version and release numbers, files to copy etc as applicable
 7. openwrt/Makefile - update copyright notice eg current year, version and release numbers, files to copy etc as applicable
 8. /Makefile - update copyright notice eg current year, version and release numbers, files to copy etc as applicable
-9. resources/splash.html and resources/status.html - update copyright dates as required eg current year
+9. libraries - update copyright dates as required eg current year
 10. "cd docs" then "make man". Copy resulting docs/build/man/opennds.1 to overwrite old debian/doc/opennds.1
 11. remove /docs/build directory created in step 9
 12. Commit and Push to origin
 13. Github - Create Pull Request and Merge to master
 14. Github proceed to "Draft New Release"
-15. Github tag release as eg. v9.0.0 (remembering the leading "v"")
-	(or use git tag -a v9.0.0 -m "opennds release 9.0.0 " and git push --tags.)
+15. Github tag release as eg. v9.1.1 (remembering the leading "v"")
+	(or use git tag -a v9.1.1 -m "opennds release 9.0.0 " and git push --tags.)
 16. In your local repository, make a new branch called "stable"
 17. Push branch "stable" to origin, overwriting the existing "stable".
 	Note:Branch stable is the source for the readthedocs stable documentation at https://openndsdocs.readthedocs.io/en/stable/
-18. In Master, set version to eg -beta eg 9.0.1-beta in conf.h, conf.py, openwrt/Makefile
+18. In Master, set version to eg -beta eg 9.1.2-beta in conf.h, conf.py, openwrt/Makefile

@@ -7,7 +7,7 @@ opennds (9.1.1-1) stable; urgency=medium
   * Fix - Compiler warning, ignored return value from call to fgets() [bluewave.net]
   * Fix - Remove debug message from call to get_client_interface library [bluewave.net]
 
- -- Rob White <dot@blue-wave.net>  Thu, 4 July 2021 21:07:21 +0000
+ -- Rob White <dot@blue-wave.net>  Sun, 4 July 2021 21:07:21 +0000
 
 opennds (9.1.0-1) stable; urgency=medium
 

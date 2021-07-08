@@ -63,7 +63,10 @@ get_image_file() {
 
 	if [ ! -d "$mountpoint/ndsremote" ]; then
 		mkdir -p "$mountpoint/ndsremote"
-		ln -s "$mountpoint/ndsremote" "$customimagepath"
+
+		if [ ! -e "$customimagepath" ]; then
+			ln -s "$mountpoint/ndsremote" "$customimagepath"
+		fi
 	fi
 
 	# get image filename
@@ -766,10 +769,6 @@ if [ "$1" = "clean" ]; then
 	if [ -d "$mountpoint/ndscids" ]; then
 		rm -R "$mountpoint/ndscids"
 	fi
-
-	mkdir "$mountpoint/ndsremote"
-	mkdir "$mountpoint/ndsdata"
-	mkdir "$mountpoint/ndscids"
 
 	printf "$mountpoint"
 	exit 0

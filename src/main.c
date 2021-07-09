@@ -542,6 +542,7 @@ setup_from_config(void)
 	// Initialize the web server
 	start_mhd();
 	debug(LOG_NOTICE, "Created web server on %s", config->gw_address);
+	debug(LOG_NOTICE, "Maximum Html Page size is [ %llu ] Bytes", HTMLMAXSIZE);
 
 	// Get the ndsctl socket path/filename
 	if (strcmp(config->ndsctl_sock, DEFAULT_NDSCTL_SOCK) == 0) {

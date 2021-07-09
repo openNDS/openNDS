@@ -868,7 +868,7 @@ config_read(const char *filename)
 			}
 			break;
 		case oMaxPageSize:
-			if (sscanf(p1, "%d", &config.max_page_size) < 1) {
+			if (sscanf(p1, "%llu", &config.max_page_size) < 1) {
 				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
 				debug(LOG_ERR, "Exiting...");
 				exit(1);

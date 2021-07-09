@@ -865,7 +865,7 @@ iptables_download_ratelimit_enable(t_client *client, int enable)
 	int rc = 0;
 	unsigned long long int packets;
 
-	packets = client->download_rate * 1024 / 1500;
+	packets = (client->download_rate * 1000 / 1500) / 2;
 
 	if (enable == 1) {
 		debug(LOG_INFO, "Download Rate Limiting [%s] [%s]  to [%llu] packets per second", client->ip, client->mac, packets);
@@ -922,7 +922,7 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 	int rc = 0;
 	unsigned long long int packets;
 
-	packets = client->upload_rate * 1024 / 1500;
+	packets = (client->upload_rate * 1000 / 1500) / 2;
 
 	if (enable == 1) {
 		debug(LOG_INFO, "Upload Rate Limiting [%s] [%s]  to [%llu] packets per second", client->ip, client->mac, packets);

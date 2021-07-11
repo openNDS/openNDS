@@ -34,6 +34,7 @@ Contents:
    install
    splash
    customize
+   config
    customparams
    fas
    themespec

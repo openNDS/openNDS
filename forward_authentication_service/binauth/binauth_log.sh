@@ -73,7 +73,18 @@ write_log () {
 	fi
 }
 
-#Configure log location
+#### end of functions ####
+
+
+#########################################
+#					#
+#  Start - Main entry point		#
+#					#
+#  This script starts executing here	#
+#					#
+#					#
+#########################################
+
 configure_log_location
 
 #
@@ -94,26 +105,17 @@ configure_log_location
 action=$1
 
 if [ $action = "auth_client" ]; then
-	#
-	# The redir parameter is sent to this script as the fifth command line argument in url-encoded form.
-	#
-	# In the case of a simple splash.html login, redir is the URL originally requested by the client CPD.
-	#
-	# In the case of PreAuth or FAS it MAY contain not only the originally requested URL
-	# but also a payload of custom variables defined by Preauth or FAS.
-	#
-	# It may just be simply url-encoded (fas_secure_enabled 0 and 1), or
-	# aes encrypted (fas_secure_enabled 2)
-	#
-	# The username and password variables may be passed from splash.html, FAS or PreAuth and can be used
-	# not just as "username" and "password" but also as general purpose string variables to pass information to BinAuth.
-	#
-	# The client User Agent string is sent as the sixth command line argument.
-	# This can be used to determine much information about the capabilities of the client.
-	# In this case it will be added to the log.
-	#
-	# customdata is sent in argument nine
-	#
+	# Arguments passed are as follows
+	# $1 method
+	# $2 client mac
+	# $3 legacy1 (previously username)
+	# $4 legacy2 (previously password)
+	# $5 originurl (redir)
+	# $6 client useragent
+	# $7 client ip
+	# $8 client token
+	# $9 custom data string
+
 	# redir, useragent and customdata are url-encoded, so decode:
 	redir_enc=$5
 	redir=$(printf "${redir_enc//%/\\x}")
@@ -122,16 +124,72 @@ if [ $action = "auth_client" ]; then
 	customdata_enc=$9
 	customdata=$(printf "${customdata_enc//%/\\x}")
 
-	log_entry="method=$1, clientmac=$2, clientip=$7, username=$3, password=$4, redir=$redir, useragent=$useragent, token=$8, custom=$customdata"
+	log_entry="method=$1, clientmac=$2, clientip=$7, legacy1=$3, legacy2=$4, redir=$redir, useragent=$useragent, token=$8, custom=$customdata"
 
 elif [ $action = "ndsctl_auth" ]; then
-	# in the case of authmon (FAS level 3) or ndsctl authentication
+	# Arguments passed are as follows
+	# $1 method
+	# $2 client mac
+	# $3 bytes incoming
+	# $4 bytes outgoing
+	# $5 session start time
+	# $6 session end time
+	# $7 client token
+	# $8 custom data string
+
 	customdata_enc=$8
 	customdata=$(printf "${customdata_enc//%/\\x}")
 	log_entry="method=$1, clientmac=$2, bytes_incoming=$3, bytes_outgoing=$4, session_start=$5, session_end=$6, token=$7, custom=$customdata_enc"
 
 else
+	# All other methods
+	# Arguments passed are as follows
+	# $1 method
+	# $2 client mac
+	# $3 bytes incoming
+	# $4 bytes outgoing
+	# $5 session start time
+	# $6 session end time
+	# $7 client token
+
 	log_entry="method=$1, clientmac=$2, bytes_incoming=$3, bytes_outgoing=$4, session_start=$5, session_end=$6, token=$7"
+fi
+
+# In the case of ThemeSpec, get the client id information from the cid database
+# Client variables found in the database are:
+# 
+# clientip
+# clientmac
+# gatewayname
+# version
+# hid
+# gatewayaddress
+# gatewaymac
+# originurl
+# clientif
+
+# Additional data defined by custom parameters, images and files is included
+# For example ThemeSpec "theme_user-email-login-custom-placeholders.sh" config options include:
+# input
+# logo_message=
+# banner1_message
+# banner2_message
+# banner3_message
+# logo_png
+# banner1_jpg
+# banner2_jpg
+# banner3_jpg
+# advert1_htm
+
+# Parse the database by client mac ($2):
+cidfile=$(grep -r "$2" "$mountpoint/ndscids" | awk -F 'ndscids/' '{print $2}' | awk -F ':' '{printf $1}')
+
+if [ ! -z "$cidfile" ]; then
+	# populate the local variables:
+	. $mountpoint/ndscids/$cidfile
+
+	# Add a selection of client data variables to the log entry
+	log_entry="$log_entry, gatewayname=$gatewayname, ndsversion=$version, clientif=$clientif"
 fi
 
 # Append to the log.

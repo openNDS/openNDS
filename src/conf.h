@@ -29,7 +29,7 @@
 #ifndef _CONF_H_
 #define _CONF_H_
 
-#define VERSION "9.1.1"
+#define VERSION "9.2.0"
 
 /*
  * Defines how many times should we try detecting the interface with the default route (in seconds).
@@ -191,7 +191,7 @@ typedef struct {
 	unsigned int fas_port;				//@brief Port the fas server will run on
 	int login_option_enabled;			//@brief Use default PreAuth Login script
 	int use_outdated_mhd;				//@brief Use outdated libmicrohttpd
-	int max_page_size;				//@brief Max page size to be served by libmicrohttpd
+	unsigned long long int max_page_size;		//@brief Max page size to be served by libmicrohttpd
 	int allow_preemptive_authentication;		//@brief Allow Preemptive Authentication using the ndsctl utility
 	int unescape_callback_enabled;			//@brief Enable external MHD unescape callback script
 	int fas_secure_enabled;			//@brief Enable Secure FAS

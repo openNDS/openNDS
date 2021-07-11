@@ -1,3 +1,14 @@
+opennds (9.2.0)
+
+  * This version adds new functionality, improves performance, adds documentation and fixes an issue
+  * Add - Readthedocs / man documentation for configuration options [bluewave.net]
+  * Add - Faster convergence of average rates to configured rate quotas [bluewave.net]
+  * Add - BinAuth parse authenticated client database for client data [bluewave.net]
+  * Add - Use heap allocation for http page buffer allowing large page sizes [bluewave.net]
+  * Fix - fail to serve downloaded images on custom themespec [bluewave.net]
+
+ -- Rob White <dot@blue-wave.net> Sun, 11 July 2021 15:05:39 +0000
+
 opennds (9.1.1)
 
   * This version fixes a compiler error, some compiler warnings and mutes a debug message

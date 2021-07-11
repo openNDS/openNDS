@@ -98,7 +98,7 @@ static void binauth_action(t_client *client, const char *reason, char *customdat
 		}
 
 		// ndsctl will deadlock if run within the BinAuth script so lock it.
-		// But if a call to ndsctl auth or seauth brought us here then it is locked already.
+		// But if a call to ndsctl auth or deauth brought us here then it is locked already.
 		if (strstr(reason, deauth) == NULL && strstr(reason, ndsctl_auth) == NULL) {
 			ret=ndsctl_lock();
 		}

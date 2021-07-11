@@ -14,9 +14,9 @@ When ready to do a release, do the following:
 12. Commit and Push to origin
 13. Github - Create Pull Request and Merge to master
 14. Github proceed to "Draft New Release"
-15. Github tag release as eg. v9.1.1 (remembering the leading "v"")
-	(or use git tag -a v9.1.1 -m "opennds release 9.0.0 " and git push --tags.)
+15. Github tag release as eg. v9.2.0 (remembering the leading "v"")
+	(or use git tag -a v9.2.0 -m "opennds release 9.2.0 " and git push --tags.)
 16. In your local repository, make a new branch called "stable"
 17. Push branch "stable" to origin, overwriting the existing "stable".
 	Note:Branch stable is the source for the readthedocs stable documentation at https://openndsdocs.readthedocs.io/en/stable/
-18. In Master, set version to eg -beta eg 9.1.2-beta in conf.h, conf.py, openwrt/Makefile
+18. In Master, set version to eg -beta eg 9.2.1-beta in conf.h, conf.py, openwrt/Makefile

@@ -680,13 +680,11 @@ static int authenticated(struct MHD_Connection *connection,
 	char *fasurl = NULL;
 	char query_str[QUERYMAXLEN] = {0};
 	char *query = query_str;
-	char msg[HTMLMAXSIZE];
+	char *msg;
 	char clientif[64] = {0};
 	int rc;
 	int ret;
 	struct MHD_Response *response;
-
-	memset(msg, 0, sizeof(msg));
 
 	ret = MHD_get_connection_values(connection, MHD_HEADER_KIND, get_host_value_callback, &host);
 
@@ -768,6 +766,7 @@ static int authenticated(struct MHD_Connection *connection,
 
 	// User just entered gatewayaddress:gatewayport so give them the info page
 	if (strcmp(url, "/") == 0) {
+		msg = safe_malloc(HTMLMAXSIZE);
 		rc = execute_ret(msg, HTMLMAXSIZE - 1, "%s '%s'", config->status_path, client->ip);
 
 		if (rc != 0) {
@@ -776,7 +775,7 @@ static int authenticated(struct MHD_Connection *connection,
 		}
 
 		// serve the script output (in msg)
-		response = MHD_create_response_from_buffer(strlen(msg), (char *)msg, MHD_RESPMEM_MUST_COPY);
+		response = MHD_create_response_from_buffer(strlen(msg), (char *)msg, MHD_RESPMEM_MUST_FREE);
 
 		if (!response) {
 			return send_error(connection, 503);
@@ -798,7 +797,8 @@ static int authenticated(struct MHD_Connection *connection,
 static int show_preauthpage(struct MHD_Connection *connection, const char *query)
 {
 	s_config *config = config_get_config();
-	char msg[HTMLMAXSIZE];
+
+	char *msg;
 	const char *user_agent = NULL;
 	char enc_user_agent[256] = {0};
 	char *preauthpath = NULL;
@@ -810,12 +810,12 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 	int rc;
 	int ret;
 	struct MHD_Response *response;
-	memset(msg, 0, sizeof(msg));
 
 	safe_asprintf(&preauthpath, "/%s/", config->preauthdir);
 
 	if (strcmp(preauthpath, config->fas_path) == 0) {
 		free (preauthpath);
+
 		MHD_get_connection_values(connection, MHD_HEADER_KIND, get_user_agent_callback, &user_agent);
 		uh_urlencode(enc_user_agent, sizeof(enc_user_agent), user_agent, strlen(user_agent));
 		debug(LOG_DEBUG, "PreAuth: Encoded User Agent is [ %s ]", enc_user_agent);
@@ -823,17 +823,20 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 		uh_urlencode(enc_query, sizeof(enc_query), query, strlen(query));
 		debug(LOG_DEBUG, "PreAuth: Encoded query: %s", enc_query);
 
+		msg = safe_malloc(HTMLMAXSIZE);
+
 		safe_asprintf(&cmd, "%s '%s' '%s' '%d' '%s'", config->preauth, enc_query, enc_user_agent, config->login_option_enabled, config->themespec_path);
 		rc = execute_ret_url_encoded(msg, HTMLMAXSIZE - 1, cmd);
 		free(cmd);
 
 		if (rc != 0) {
 			debug(LOG_WARNING, "Preauth script - failed to execute: %s, Query[%s]", config->preauth, query);
+			free(msg);
 			return send_error(connection, 511);
 		}
 
 		// serve the script output (in msg)
-		response = MHD_create_response_from_buffer(strlen(msg), (char *)msg, MHD_RESPMEM_MUST_COPY);
+		response = MHD_create_response_from_buffer(strlen(msg), (char *)msg, MHD_RESPMEM_MUST_FREE);
 
 		if (!response) {
 			return send_error(connection, 503);
@@ -1398,42 +1401,42 @@ static int send_error(struct MHD_Connection *connection, int error)
 
 	switch (error) {
 	case 200:
-		response = MHD_create_response_from_buffer(strlen(page_200), (char *)page_200, MHD_RESPMEM_PERSISTENT);
+		response = MHD_create_response_from_buffer(strlen(page_200), (char *)page_200, MHD_RESPMEM_MUST_COPY);
 		MHD_add_response_header(response, "Content-Type", mimetype);
 		ret = MHD_queue_response(connection, error, response);
 		break;
 
 	case 400:
-		response = MHD_create_response_from_buffer(strlen(page_400), (char *)page_400, MHD_RESPMEM_PERSISTENT);
+		response = MHD_create_response_from_buffer(strlen(page_400), (char *)page_400, MHD_RESPMEM_MUST_COPY);
 		MHD_add_response_header(response, "Content-Type", mimetype);
 		ret = MHD_queue_response(connection, MHD_HTTP_BAD_REQUEST, response);
 		break;
 
 	case 403:
-		response = MHD_create_response_from_buffer(strlen(page_403), (char *)page_403, MHD_RESPMEM_PERSISTENT);
+		response = MHD_create_response_from_buffer(strlen(page_403), (char *)page_403, MHD_RESPMEM_MUST_COPY);
 		MHD_add_response_header(response, "Content-Type", mimetype);
 		ret = MHD_queue_response(connection, MHD_HTTP_FORBIDDEN, response);
 		break;
 
 	case 404:
-		response = MHD_create_response_from_buffer(strlen(page_404), (char *)page_404, MHD_RESPMEM_PERSISTENT);
+		response = MHD_create_response_from_buffer(strlen(page_404), (char *)page_404, MHD_RESPMEM_MUST_COPY);
 		MHD_add_response_header(response, "Content-Type", mimetype);
 		ret = MHD_queue_response(connection, MHD_HTTP_NOT_FOUND, response);
 		break;
 
 	case 500:
-		response = MHD_create_response_from_buffer(strlen(page_500), (char *)page_500, MHD_RESPMEM_PERSISTENT);
+		response = MHD_create_response_from_buffer(strlen(page_500), (char *)page_500, MHD_RESPMEM_MUST_COPY);
 		MHD_add_response_header(response, "Content-Type", mimetype);
 		ret = MHD_queue_response(connection, MHD_HTTP_INTERNAL_SERVER_ERROR, response);
 		break;
 
 	case 501:
-		response = MHD_create_response_from_buffer(strlen(page_501), (char *)page_501, MHD_RESPMEM_PERSISTENT);
+		response = MHD_create_response_from_buffer(strlen(page_501), (char *)page_501, MHD_RESPMEM_MUST_COPY);
 		MHD_add_response_header(response, "Content-Type", mimetype);
 		ret = MHD_queue_response(connection, MHD_HTTP_NOT_IMPLEMENTED, response);
 		break;
 	case 503:
-		response = MHD_create_response_from_buffer(strlen(page_503), (char *)page_503, MHD_RESPMEM_PERSISTENT);
+		response = MHD_create_response_from_buffer(strlen(page_503), (char *)page_503, MHD_RESPMEM_MUST_COPY);
 		MHD_add_response_header(response, "Content-Type", mimetype);
 		ret = MHD_queue_response(connection, MHD_HTTP_INTERNAL_SERVER_ERROR, response);
 		break;
@@ -1468,10 +1471,9 @@ static int send_error(struct MHD_Connection *connection, int error)
 			status_url
 		);
 
-		response = MHD_create_response_from_buffer(strlen(page_511), (char *)page_511, MHD_RESPMEM_MUST_COPY);
+		response = MHD_create_response_from_buffer(strlen(page_511), (char *)page_511, MHD_RESPMEM_MUST_FREE);
 		MHD_add_response_header(response, "Content-Type", mimetype);
 		ret = MHD_queue_response(connection, MHD_HTTP_NETWORK_AUTHENTICATION_REQUIRED, response);
-		free(page_511);
 		free(status_url);
 		break;
 	}

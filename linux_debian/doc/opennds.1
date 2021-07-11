@@ -1,6 +1,6 @@
 .\" Man page generated from reStructuredText.
 .
-.TH "OPENNDS" "1" "Jul 05, 2021" "9.1.1" "openNDS"
+.TH "OPENNDS" "1" "Jul 11, 2021" "9.2.0" "openNDS"
 .SH NAME
 opennds \- opennds Documentation
 .
@@ -1267,6 +1267,937 @@ Once configured these two example ThemeSpec scripts will download custom image f
 .SS Other Custom Designs
 .sp
 Custom designed dynamically generated ThemeSpec pages are supported using FAS and PreAuth. For details see the FAS and PreAuth chapters.
+.SH CONFIGURATION OPTIONS
+.SS Enable openNDS
+.sp
+Set to 0 to disable opennds
+.sp
+\fBoption enabled 1\fP
+.SS Use deprecated generic configuration file (not recommended)
+.sp
+\fBoption config \(aq/etc/opennds/opennds.conf\(aq\fP
+.SS Enable debug output (0\-3)
+.sp
+Default: 1
+.SS Level0
+.sp
+Silent (only initial startup, LOG_ERR and LOG_EMERG messages will be seen, otherwise there will be no logging.)
+.SS Level 1
+.sp
+LOG_ERR, LOG_EMERG, LOG_WARNING and LOG_NOTICE (this is the default level).
+.SS Level 2
+.sp
+debuglevel 1  + LOG_INFO
+.SS Level 3
+.sp
+debuglevel 2 + LOG_DEBUG
+.sp
+\fBoption debuglevel \(aq1\(aq\fP
+.SS Firewall Restart hook
+.sp
+Set to 0 to disable hook that makes opennds restart when the firewall restarts.
+.sp
+This hook is needed as a restart of Firewall overwrites opennds iptables entries.
+.sp
+\fBoption fwhook_enabled \(aq1\(aq\fP
+.SS Login Option
+.sp
+Default: 1
+.sp
+Integer value sent to PreAuth script as login mode
+.sp
+openNDS comes preconfigured for three basic modes of operation
+.SS Mode 0
+.sp
+If FAS is not enabled, then this functions as mode 1
+.SS Mode 1
+.sp
+Default Dynamic Click to Continue
+.sp
+The pre\-installed dynamic login page is enabled by setting option login_option_enabled = \(aq1\(aq
+.sp
+It generates a Click to Continue page followed by a info/advertising page.
+.sp
+User clicks on “Continue” are recorded in the log file /[tmpfs_dir]/ndslog/ndslog.log
+.SS Mode 2
+.sp
+Username/Emailaddress Dynamic Login
+.sp
+The pre\-installed dynamic login page is enabled by setting option login_option_enabled = \(aq2\(aq
+.sp
+It generates a login page asking for username and email address followed by an info/advertising page.
+.sp
+User logins are recorded in the log file /[tmpfs_dir]/ndslog/ndslog.log
+.SS Mode 3
+.sp
+Use Theme defined in ThemeSpec path (option themespec_path)
+.sp
+\fIoption login_option_enabled \(aq1\(aq\fP
+.SS Allow Preemptive Authentication
+.sp
+Default: 0 \- Disabled
+.sp
+Enable by setting to 1
+.sp
+This allows the ndsctl utility to preemptively authorise \fBconnected\fP clients that have not entered the preauthenticated state.
+.sp
+This is useful for example with IoT devices that do not have CPD (captive portal detection)
+.sp
+or for a FAS to manage inter\-captive\-portal roaming by making use of a centralised database of client validations.
+.sp
+\fBoption allow_preemptive_authentication \(aq1\(aq\fP
+.SS ThemeSpec Path
+.sp
+Default: None
+.sp
+Required when when login_option_enabled is set to \(aq3\(aq
+.sp
+Note: /usr/lib/opennds/theme_click\-to\-continue.sh is used for login_option_enabled \(aq1\(aq
+.sp
+and:  /usr/lib/opennds/theme_user_email_login.sh is used for login_option_enabled \(aq2\(aq
+.sp
+Sets the ThemeSpec file path to be used when login_option_enabled \(aq3\(aq
+.sp
+The ThemeSpec script makes use of lists of custom parameters, custom variables, custom image urls and custom files and is used to generate the dynamic splash page sequence.
+.sp
+The ThemeSpec file will normally reside in /usr/lib/opennds/ but can be anywhere accessible to openNDS.
+.sp
+The file must be flagged as executable and have the correct shebang for the default shell.
+.sp
+\fBoption themespec_path \(aq/usr/lib/opennds/<filename>\(aq\fP
+.SS Define Custom Parameters
+.sp
+Custom parameters are sent as fixed values to FAS
+.sp
+Default None
+.sp
+Custom Parameters listed in the form of param_name=param_value
+.sp
+param_name and param_value must be urlencoded if containing white space or single quotes
+.sp
+eg replace spaces with %20 \- replace single quotes with %27
+.sp
+Parameters should be configured one per line to prevent possible parsing errors.
+.sp
+eg:
+.sp
+\fBlist fas_custom_parameters_list \(aq<param_name1=param_value1>\(aq\fP
+.sp
+\fBlist fas_custom_parameters_list \(aq<param_name2=param_value2>\(aq\fP
+.sp
+etc.
+.SS Configuration for custom parameters in the installed ThemeSpec Files
+.sp
+The installed ThemeSpec files are:
+.sp
+theme_click\-to\-continue\-custom\-placeholders
+.sp
+and
+.sp
+theme_user\-email\-login\-custom\-placeholders
+.sp
+\fBlist fas_custom_parameters_list \(aqlogo_message=openNDS:%20Perfect%20on%20OpenWrt!\(aq\fP
+.sp
+\fBlist fas_custom_parameters_list \(aqbanner1_message=BlueWave%20\-%20Wireless%20Network%20Specialists\(aq\fP
+.sp
+\fBlist fas_custom_parameters_list \(aqbanner2_message=HMS%20Pickle\(aq\fP
+.sp
+\fBlist fas_custom_parameters_list \(aqbanner3_message=SeaWolf%20Cruiser%20Racer\(aq\fP
+.SS Define Custom Variables
+.sp
+Custom Variables are used by FAS to dynamically collect information from clients
+.sp
+Default None
+.sp
+Custom Variables are listed in the form of var_name=var_type
+.sp
+"var_name" and "var_type" must be urlencoded if containing white space or single quotes
+.sp
+eg replace spaces with %20 \- replace single quotes with %27
+.sp
+Variables should be configured one per line to prevent possible parsing errors.
+.sp
+eg:
+.sp
+\fBlist fas_custom_variables_list \(aq<var_name1=var_type1>\(aq\fP
+.sp
+\fBlist fas_custom_variables_list \(aq<var_name2=var_type2>\(aq\fP
+.sp
+etc.
+.SS FAS Generic Variables
+.sp
+A custom FAS or ThemeSpec must be written to make use of FAS Generic Variables
+.sp
+eg:
+.sp
+\fBlist fas_custom_variables_list \(aqmembership_number=number\(aq\fP
+.sp
+\fBlist fas_custom_variables_list \(aqaccess_code=password\(aq\fP
+.SS ThemeSpec Dynamically generated Form Fields
+.sp
+ThemeSpec scripts can dynamically generate Form Field html and inject into the dynamic splash page sequence.
+.sp
+This is achieved using a SINGLE line containing the keyword "input", in the form: fieldname:field\-description:fieldtype
+.sp
+Numerous fields can be defined in this single "input=" line, separated by a semicolon (;).
+.SS Configuration for custom variables in the installed ThemeSpec Files
+.sp
+theme_click\-to\-continue\-custom\-placeholders
+.sp
+and
+.sp
+theme_user\-email\-login\-custom\-placeholders
+.sp
+this example inserts Phone Number and Home Post Code fields:
+.sp
+\fBlist fas_custom_variables_list \(aqinput=phone:Phone%20Number:text;postcode:Home%20Post%20Code:text\(aq\fP
+.SS Define Custom Images
+.sp
+Custom Images are served by a local FAS where required in dynamic portal pages
+.sp
+Default None
+.sp
+Custom images will be copied from the URL to the openNDS router
+.sp
+Custom Images are listed in the form of image_name_type=image_url
+.sp
+image_name and image_url must be urlencoded if containing white space or single quotes
+.sp
+The image url must begin with \fI\%http://\fP \fI\%https://\fP or \fI\%file://\fP
+.sp
+Images should be configured one per line to prevent possible parsing errors.
+.sp
+\fBlist fas_custom_images_list \(aq<image_name1_[type]=image_url1>\(aq\fP
+.sp
+\fBlist fas_custom_images_list \(aq<image_name2_[type]=image_url2>\(aq\fP
+.sp
+etc.
+.sp
+"type" can be any recognised image file extension eg jpg, png, ico, etc.
+.SS Configuration for custom images in the installed ThemeSpec Files
+.sp
+theme_click\-to\-continue\-custom\-placeholders
+.sp
+and
+.sp
+theme_user\-email\-login\-custom\-placeholders
+.sp
+\fBlist fas_custom_images_list \(aqlogo_png=https://openwrt.org/_media/logo.png\(aq\fP
+.sp
+\fBlist fas_custom_images_list \(aqbanner1_jpg=https://raw.githubusercontent.com/openNDS/openNDS/v9.0.0/resources/bannerbw.jpg\(aq\fP
+.sp
+\fBlist fas_custom_images_list \(aqbanner2_jpg=https://raw.githubusercontent.com/openNDS/openNDS/v9.0.0/resources/bannerpickle.jpg\(aq\fP
+.sp
+\fBlist fas_custom_images_list \(aqbanner3_jpg=https://raw.githubusercontent.com/openNDS/openNDS/v9.0.0/resources/bannerseawolf.jpg\(aq\fP
+.SS Define Custom Files
+.sp
+Custom Files are served by a local FAS where required in dynamic portal pages
+Default None
+.sp
+Custom files will be copied from the URL to the openNDS router
+.sp
+Images should be configured one per line to prevent possible parsing errors.
+.sp
+Custom files are listed in the form of file_name_type=file_url
+.sp
+file_name and file_url must be urlencoded if containing white space or single quotes
+.sp
+The file url must begin with \fI\%http://\fP \fI\%https://\fP or \fI\%file://\fP
+.sp
+\fBlist fas_custom_files_list \(aq<file_name1_[type]=file_url1>\(aq\fP
+.sp
+\fBlist fas_custom_files_list \(aq<file_name2_[type]=file_url2>\(aq\fP
+.sp
+"type" can be any recognised file extension that can be used to display web content eg txt, htm etc.
+.SS Configuration for custom files in the installed ThemeSpec Files
+.sp
+theme_click\-to\-continue\-custom\-placeholders
+.sp
+and
+.sp
+theme_user\-email\-login\-custom\-placeholders
+.sp
+\fBlist fas_custom_files_list \(aqadvert1_htm=https://raw.githubusercontent.com/openNDS/openNDS/v9.0.0/resources/bannerpickle.htm\(aq\fP
+.SS Set refresh interval for downloaded remote files (in minutes)
+.sp
+Seting to 0 (zero) means refresh is disabled
+.sp
+Default 0
+.sp
+\fBoption remotes_refresh_interval \(aq720\(aq\fP
+.SS Use outdated libmicrohttpd (MHD)
+.sp
+Default 0
+.sp
+Warning, this may be unstable or fail entirely \- it would be better to upgrade MHD.
+.sp
+Use at your own risk
+.sp
+Older versions of MHD convert & and + characters to spaces when present in form data.
+.sp
+This can make a PreAuth or BinAuth impossible to use for a client if form data contains either of these characters
+.sp
+eg. in username or password
+.sp
+MHD versions earlier than 0.9.71 are detected.
+.sp
+If this option is set to 0 (default), NDS will terminate if MHD is earlier than 0.9.71
+.sp
+If this option is set to 1, NDS will attempt to start and log an error.
+.sp
+\fBoption use_outdated_mhd \(aq0\(aq\fP
+.SS Maximum Page Size to be served by MHD
+.sp
+Default 10240 bytes
+.sp
+Minimum value 1024 bytes
+.sp
+Maximum \- limited only by free RAM in the router
+.sp
+This sets the maximum number of bytes that will be served per page by the MHD web server.
+.sp
+Setting this option is useful:
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP 1. 3
+To reduce memory requirements on a resource constrained router
+.IP 2. 3
+To allow large pages to be served where memory usage is not a concern
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+\fBoption max_page_size \(aq4096\(aq\fP
+.SS MHD Unescape callback
+.sp
+Default 0
+.sp
+MHD has a built in unescape function that urldecodes incoming queries from browsers.
+.sp
+This option allows an external unescape script to be enabled and replace the built in decoder.
+.sp
+The script must be named unescape.sh, be present in /usr/lib/opennds/ and be executable.
+.sp
+A very simple standard unescape.sh script is installed by default.
+.sp
+Set to 1 to enable this option, 0 to disable.
+.sp
+Default is disabled
+.sp
+\fBoption unescape_callback_enabled \(aq0\(aq\fP
+.SS Set the MHD WebRoot
+.sp
+Default: /etc/opennds/htdocs
+.sp
+The local path where the system css file, and other static page content resides.
+.sp
+ie. Serve the file splash.css from this directory
+.sp
+\fBoption webroot \(aq/etc/opennds/htdocs\(aq\fP
+.SS Set the GateWayInterface
+.sp
+Default br\-lan
+.sp
+Use this option to set the device opennds will bind to.
+.sp
+The value may be an interface section in /etc/config/network or a device name such as br\-lan.
+.sp
+The selected interface must be allocated an IPv4 address.
+.sp
+In OpenWrt this is normally br\-lan, in generic Linux it might be wlan0
+.sp
+\fBoption gatewayinterface \(aqbr\-lan\(aq\fP
+.SS Set the GatewayPort
+.sp
+Default: 2050
+.sp
+openNDS\(aqs own http server uses gateway address as its IP address.
+.sp
+The port it listens to at that IP can be set here; default is 2050.
+.sp
+\fBoption gatewayport \(aq2050\(aq\fP
+.SS Set the GatewayName
+.sp
+Default: openNDS
+.sp
+gatewayname is used as an identifier for the instance of openNDS
+.sp
+It is displayed on the default static splash page and the default preauth login script.
+.sp
+It is particularly useful in the case of a single remote FAS server that serves multiple openNDS sites, allowing the FAS to customise its response for each site.
+.sp
+Note: The single quote (or apostrophe) character (\(aq), cannot be used in the gatewayname.
+.sp
+If it is required, use the htmlentity &#39; instead.
+.sp
+For example:
+.sp
+\fBoption gatewayname \(aqBill\(aqs WiFi\(aq\fP is invalid.
+.sp
+Instead use:
+.sp
+\fBoption gatewayname \(aqBill&#39;s WiFi\(aq\fP
+.sp
+Example:
+.sp
+\fBoption gatewayname \(aqOpenWrt openNDS\(aq\fP
+.SS Set GatewayFQDN
+.sp
+Default: status.client
+.sp
+This is the simulated FQDN used by a client to access the Client Status Page
+.sp
+If not set, the Status page can be accessed at: \fI\%http://gatewayaddress:gatewayport/\fP
+.sp
+Warning \- if set, services on port 80 of the gateway will no longer be accessible (eg Luci AdminUI)
+.sp
+By default, the Error511/Status page will be found at \fI\%http://status.client/\fP by a redirection of port 80 to \fI\%http://gatewayaddress:gatewayport/\fP
+.sp
+Disable GatewayFQDN by setting the option to \(aqdisable\(aq
+.sp
+ie:
+.sp
+\fBoption gatewayfqdn \(aqdisable\(aq\fP
+.sp
+Alternate Useful Example:
+.sp
+\fBoption gatewayfqdn \(aqlogin.page\(aq\fP
+.SS Set StatusPath
+.sp
+Default: /usr/lib/opennds/client_params.sh
+.sp
+This is the script used to generate the GatewayFQDN client status page.
+.sp
+\fBoption statuspath \(aq/mycustomscripts/custom_client_params.sh\(aq\fP
+.SS Set MaxClients
+.sp
+Default 250
+.sp
+The maximum number of clients allowed to connect.
+.sp
+This should be less than or equal to the number of allowed DHCP leases.
+.sp
+For example:
+.sp
+\fBoption maxclients \(aq250\(aq\fP
+.SS Client timeouts in minutes
+.SS Preauthidletimeout
+.sp
+This is the time in minutes after which a client is disconnected if not authenticated.
+.sp
+ie the client has not attempted to authenticate for this period.
+.sp
+Default 30 minutes
+.sp
+\fBoption preauthidletimeout \(aq30\(aq\fP
+.SS Authidletimeout
+.sp
+This is the time in minutes after which an idle client is disconnected
+ie the client has not used the network access for this period
+Default 120 minutes
+\fBoption authidletimeout \(aq120\(aq\fP
+.SS Session Timeout
+.sp
+This is the interval after which clients are forced out (a value of 0 means never).
+.sp
+Clients will be deauthenticated at the end of this period.
+.sp
+Default 1200 minutes (20 hours).
+.sp
+Example: Set to 24 hours (1440 minutes).
+.sp
+\fBoption sessiontimeout \(aq1440\(aq\fP
+.SS Set the Checkinterval
+.sp
+The interval in seconds at which opennds checks client timeout and quota status.
+.sp
+Default 60 seconds (1 minute).
+.sp
+Example: Set to 30 seconds.
+.sp
+\fBoption checkinterval \(aq30\(aq\fP
+.SS Set Rate Quotas
+.sp
+Note: upload means to the Internet, download means from the Internet.
+.sp
+Defaults 0
+.sp
+Integer values only.
+.sp
+If the client average data rate exceeds the value set here, the client will be rate limited.
+.sp
+Values are in kb/s.
+.sp
+If set to 0, there is no limit.
+.sp
+Quotas and rates can also be set by FAS via Authmon Daemon, ThemeSpec scripts, BinAuth, and ndsctl auth.
+.sp
+Values set by these methods, will override values set in this config file.
+.sp
+Rates:
+.sp
+\fBoption uploadrate \(aq0\(aq\fP
+.sp
+\fBoption downloadrate \(aq0\(aq\fP
+.SS Set RateCheckWindow
+.sp
+Default 2
+.sp
+The client data rate is calculated using a moving average.
+.sp
+This allows clients to burst at maximum possible rate, only blocking if the moving average exceeds the specified upload or download rate.
+.sp
+The moving average window size is equal to ratecheckwindow times checkinterval (seconds).
+.sp
+Example: Set to 3 checkinterval periods:
+.sp
+\fBoption ratecheckwindow \(aq3\(aq\fP
+.SS Disable Rate Quotas
+.sp
+All rate limits can be globally disabled by setting this option to 0 (zero).
+.sp
+Example: Disable all rate quotas for all clients, overriding settings made in FAS via Authmon Daemon, ThemeSpec scripts, BinAuth, and ndsctl auth:
+.sp
+\fBoption ratecheckwindow \(aq0\(aq\fP
+.SS Set Volume Quotas
+.sp
+If the client data quota exceeds the value set here, the client will be deauthenticated.
+.sp
+Defaults 0
+.sp
+Integer values only.
+.sp
+Values are in kB.
+.sp
+If set to 0, there is no limit.
+.sp
+\fBoption uploadquota \(aq0\(aq\fP
+.sp
+\fBoption downloadquota \(aq0\(aq\fP
+.SS Enable BinAuth Support.
+.sp
+BinAuth enables POST AUTHENTICATION PROCESSINGnd and is useful in particular when a FAS is configured remotely.
+.sp
+Default disabled
+.sp
+If set, a BinAuth program or script is triggered by several possible methods and is called with several arguments on both authentication and deauthentication.
+.SS Possible methods
+.sp
+Authentication:
+.INDENT 0.0
+.INDENT 3.5
+"auth_client": Request for authentication received from the captive portal splash page.
+.sp
+"client_auth": Acknowledgement that Client was authenticated via this script.
+.sp
+"ndsctl_auth": Client was authenticated by ndsctl auth command.
+.UNINDENT
+.UNINDENT
+.sp
+Deauthentication:
+.INDENT 0.0
+.INDENT 3.5
+"client_deauth": Client deauthenticated by the client via captive portal splash page.
+.sp
+"idle_deauth": Client was deauthenticated because of inactivity.
+.sp
+"timeout_deauth": Client was deauthenticated because the session timed out.
+.sp
+"ndsctl_deauth": Client was deauthenticated by ndsctl deauth command.
+.sp
+"uprate_deauth": Client was deauthenticated because its average upload rate exceeded the allowed value.
+.sp
+"downrate_deauth": Client was deauthenticated because its average download rate exceeded the allowed value.
+.sp
+"upquota_deauth": Client was deauthenticated because its upload quota exceeded the allowed value.
+.sp
+"downquota_deauth": Client was deauthenticated because its download quota exceeded the allowed value.
+.sp
+"shutdown_deauth": Client was deauthenticated by openNDS terminating.
+.UNINDENT
+.UNINDENT
+.sp
+A fully functional BinAuth script is pre\-installed and provides local logging of client activity.
+.sp
+This is enabled by the following option:
+.sp
+\fBoption binauth \(aq/usr/lib/opennds/binauth_log.sh\(aq\fP
+.SS Set Fasport
+.sp
+This is the Forwarding Authentication Service (FAS) port number.
+.sp
+Redirection is changed to the IP port of a FAS (provided by the system administrator).
+.sp
+Note: if FAS is running locally (ie fasremoteip is NOT set), port 80 cannot be used.
+.sp
+Typical Remote Shared Hosting Example:
+.sp
+\fBoption fasport \(aq80\(aq\fP
+.sp
+Typical Locally Hosted example (ie fasremoteip not set):
+.sp
+\fBoption fasport \(aq2080\(aq\fP
+.SS Set Fasremotefqdn
+.sp
+Default: Not set.
+.sp
+If set, this is the remote fully qualified domain name (FQDN) of the FAS.
+.sp
+The protocol must NOT be prepended to the FQDN (ie \fI\%http://\fP or \fI\%https://\fP).
+.sp
+To prevent CPD or browser security errors NDS prepends the required \fI\%http://\fP or \fI\%https://\fP before redirection, depending upon the fas_secure_enabled option.
+.sp
+If set, DNS MUST resolve fasremotefqdn to be the same ip address as fasremoteip.
+.SS Remote Shared Hosting
+.sp
+Typical Remote Shared Hosting Example (replace this with your own FAS FQDN):
+.sp
+\fBoption fasremotefqdn \(aqonboard\-wifi.net\(aq\fP
+.SS CDN (Content Delivery Network) hosted server
+.sp
+For a CDN (Content Delivery Network) hosted server, the configuration is the same as for Remote Shared Hosting but fasremotefqdn must also be added to the Walled Garden list of FQDNs
+.SS Set the Fasremoteip
+.sp
+Default: GatewayAddress (the IP of NDS)
+If set, this is the remote ip address of the FAS.
+.sp
+Typical Remote Shared Hosting Example (replace this with your own remote FAS IP):
+.sp
+\fBoption fasremoteip \(aq46.32.240.41\(aq\fP
+.SS Set the Faspath
+.sp
+Default: /
+.sp
+This is the path from the FAS Web Root to the FAS login page (not the file system root).
+.sp
+In the following examples, replace with your own values for faspath:
+.INDENT 0.0
+.INDENT 3.5
+Typical Remote Shared Hosting Example (if fasremotefqdn is not specified):
+.INDENT 0.0
+.INDENT 3.5
+\fBoption faspath \(aq/remote_host_fqdn/fas/fas\-hid.php\(aq\fP
+.UNINDENT
+.UNINDENT
+.sp
+Typical Remote Shared Hosting Example (ie BOTH fasremoteip AND fasremotefqdn set):
+.INDENT 0.0
+.INDENT 3.5
+\fBoption faspath \(aq/fas/fas\-hid.php\(aq\fP
+.UNINDENT
+.UNINDENT
+.sp
+Typical Locally Hosted Example (ie fasremoteip not set):
+.INDENT 0.0
+.INDENT 3.5
+\fBoption faspath \(aq/fas/fas\-hid.php\(aq\fP
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS Set the Faskey
+.sp
+Default: 1234567890
+.sp
+A key phrase for NDS to encrypt the query string sent to FAS.
+.sp
+Can be any text string with no white space.
+.sp
+Option faskey must be pre\-shared with FAS.
+.sp
+\fBoption faskey \(aq1234567890\(aq\fP
+.SS Set Security Level: fas_secure_enabled
+.sp
+Default: 1
+.SS Level set to "0"
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+The FAS is enforced by NDS to use http protocol.
+.IP \(bu 2
+The client token is sent to the FAS in clear text in the query string of the redirect along with authaction and redir.
+.UNINDENT
+.sp
+Note: This level is insecure and can be easily bypassed
+.UNINDENT
+.UNINDENT
+.SS Level set to "1"
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+The FAS is enforced by NDS to use http protocol.
+.IP \(bu 2
+The client token will be hashed and sent to the FAS along with other relevent information in a base 64 encoded string
+.UNINDENT
+.sp
+FAS must return the sha256sum of the concatenation of hid(the hashed original token), and faskey to be used by NDS for client authentication.
+This is returned to FAS for authentication
+.UNINDENT
+.UNINDENT
+.SS Level set to "2"
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+The FAS is enforced by NDS to use http protocol.
+.IP \(bu 2
+The parameters clientip, clientmac, gatewayname, hid(the hashed original token), gatewayaddress, authdir, originurl and clientif
+.IP \(bu 2
+are encrypted using faskey and passed to FAS in the query string.
+.IP \(bu 2
+The query string will also contain a randomly generated initialization vector to be used by the FAS for decryption.
+.IP \(bu 2
+The cipher used is "AES\-256\-CBC".
+.IP \(bu 2
+The "php\-cli" package and the "php\-openssl" module must both be installed for fas_secure level 2 and 3.
+.IP \(bu 2
+openNDS does not depend on this package and module, but will exit gracefully
+.IP \(bu 2
+if this package and module are not installed when this level is set.
+.IP \(bu 2
+The FAS must use the query string passed initialisation vector and the pre shared fas_key to decrypt the query string.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+An example FAS level 2 php script (fas\-aes.php) is included in the /etc/opennds directory and also supplied in the source code.
+.SS Level set to "3"
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+The FAS is enforced by NDS to use https protocol.
+.IP \(bu 2
+Level 3 is the same as level 2 except the use of https protocol is enforced for FAS.
+.IP \(bu 2
+In addition, the "authmon" daemon is loaded.
+.IP \(bu 2
+Level 3 allows the external FAS, after client verification, to effectively traverse inbound firewalls and address translation to achieve NDS authentication without generating browser security warnings or errors.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+An example FAS level 3 php script (fas\-aes\-https.php) is included in the /etc/opennds directory and also supplied in the source code.
+.sp
+Note: Option faskey must be pre shared with the FAs script in use (including any ThemeSpec local file) if fas secure is set to levels 1, 2 and 3.
+.sp
+Example:
+.sp
+\fBoption fas_secure_enabled \(aq1\(aq\fP
+.SS Set PreAuth
+.sp
+Default Not set, or automatically set by "option login_option_enabled".
+.sp
+PreAuth support allows FAS to call a local program or script with html served by the built in NDS web server.
+.sp
+If the option is set, it points to a program/script that is called by the NDS FAS handler.
+.sp
+All other FAS settings will be overidden.
+.sp
+Example:
+.sp
+\fBoption preauth \(aq/path/to/myscript/myscript.sh\(aq\fP
+.SS Block Private Subnets
+.sp
+Your router might have several private subnets on their own interfaces.
+.sp
+You will probably want to keep them private from the public gatewayinterface.
+.sp
+If so, you should block the entire subnets on those interfaces.
+.sp
+Examples:
+.sp
+\fBlist authenticated_users \(aqblock to 192.168.0.0/16\(aq\fP
+.sp
+\fBlist authenticated_users \(aqblock to 10.0.0.0/8\(aq\fP
+.SS Access For Authenticated Users
+.sp
+For authenticated users you will probably want to allow full access to the Internet, so use:
+.sp
+\fBlist authenticated_users \(aqallow all\(aq\fP
+.sp
+If you want to restrict access for authenticated users, then at minimum you should open the following ports:
+.sp
+\fBlist authenticated_users \(aqallow tcp port 53\(aq\fP Allow DNS
+.sp
+\fBlist authenticated_users \(aqallow udp port 53\(aq\fP Allow DNS
+.sp
+\fBlist authenticated_users \(aqallow tcp port 80\(aq\fP Allow standard http web sites
+.sp
+\fBlist authenticated_users \(aqallow tcp port 443\(aq\fP Allow standard https web sites
+.SS Access For Preauthenticated Users:
+.sp
+\fBIMPORTANT\fP
+.INDENT 0.0
+.INDENT 3.5
+Preauthenticated users do not require access to anything on the Internet for the Captive Portal to work.
+.sp
+In particular, to help prevent DNS tunnelling, DNS Hijacking and generally improve security, DO NOT allow access to external DNS.
+.UNINDENT
+.UNINDENT
+.SS Walled Garden Access For Preauthenticated Users
+.sp
+You can allow preauthenticated users to access external services
+This is commonly referred to as a Walled Garden.
+.INDENT 0.0
+.TP
+.B A Walled Garden can be configured either:
+.INDENT 7.0
+.IP \(bu 2
+Manually for known ip addresses
+.IP \(bu 2
+Autonomously from a list of FQDNs and ports
+.UNINDENT
+.UNINDENT
+.SS Manual Walled Garden configuration
+.sp
+Manual Walled Garden configuration requires research to determine the ip addresses of the Walled Garden site(s).
+.sp
+This can be problematic as sites can use many dynamic ip addresses.
+.sp
+However, manual configuration does not require any additional dependencies (ie additional installed packages).
+.sp
+Manual configuration example:
+.sp
+\fBlist preauthenticated_users \(aqallow tcp port 80 to 112.122.123.124\(aq\fP
+.sp
+\fBlist preauthenticated_users \(aqallow udp port 8020 to 112.122.123.124\(aq\fP
+.SS Autonomous Walled Garden configuration
+.sp
+Autonomous Walled Garden configuration is activated using a list of FQDNs and Ports.
+.sp
+This has the advantage of discovering all ip addresses used by the Walled Garden sites.
+.sp
+But it does require the ipset and dnsmasq\-full packages to be installed by running the following commands (on OpenWrt):
+.sp
+\fBopkg update\fP
+.sp
+\fBopkg install ipset\fP
+.sp
+\fBopkg remove dnsmasq\fP
+.sp
+\fBopkg install dnsmasq\-full\fP
+.sp
+Configuration is then a simple matter of adding two lists as follows:
+.sp
+\fBlist walledgarden_fqdn_list \(aqfqdn1 fqdn2 fqdn3 .... fqdnN\(aq\fP
+.sp
+\fBlist walledgarden_port_list \(aqport1 port2 port3 .... portN\(aq\fP
+.sp
+Note: If walledgarden_port_list is NOT specified, then Walled Garden access is granted for all protocols (tcp, udp, icmp) on ALL ports for each fqdn specified in walledgarden_fqdn_list.
+.sp
+Note: If walledgarden_port_list IS specified, then:
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+Specified port numbers apply to ALL FQDN\(aqs specified in walledgarden_fqdn_list.
+.IP \(bu 2
+Only tcp protocol Walled Garden access is granted.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS Add Facebook to the Walled Garden
+.sp
+To add Facebook to the Walled Garden, the list entries would be:
+.sp
+\fBlist walledgarden_fqdn_list \(aqfacebook.com fbcdn.net\(aq\fP
+\fBlist walledgarden_port_list \(aq443 80\(aq\fP
+.SS Add Paypal to the Walled Garden
+.sp
+To add Paypal to the Walled Garden, the list entries would be:
+.sp
+\fBlist walledgarden_fqdn_list \(aqpaypal.com paypalobjects.com\(aq\fP
+.sp
+\fBlist walledgarden_port_list \(aq443\(aq\fP
+.SS User Access to Services On the Router
+.sp
+Access to resources required for normal operation of the captive portal is automatically granted.
+.sp
+Additional access falls into two categories:
+.SS Essential Access
+.sp
+It is essential that you allow ports for DNS and DHCP (unless you have a very specific reason for doing so, disabling these will soft brick your router):
+.sp
+\fBlist users_to_router \(aqallow tcp port 53\(aq\fP
+.sp
+\fBlist users_to_router \(aqallow udp port 53\(aq\fP
+.sp
+\fBlist users_to_router \(aqallow udp port 67\(aq\fP
+.SS Optional Access
+.sp
+You may wish to allow access to specific services on the router.
+.sp
+For example \- Allow ports for SSH/Telnet/HTTP/HTTPS:
+.sp
+\fBlist users_to_router \(aqallow tcp port 22\(aq\fP
+.sp
+\fBlist users_to_router \(aqallow tcp port 23\(aq\fP
+.sp
+\fBlist users_to_router \(aqallow tcp port 80\(aq\fP
+.sp
+\fBlist users_to_router \(aqallow tcp port 443\(aq\fP
+.SS MAC Address Access Control List
+.sp
+A list of MAC addresses can be defined that are either allowed to use the system, or are blocked.
+.sp
+Note: This can easily be bypassed as a client MAC address can usually be easily changed.
+.sp
+The mechanism used is either \(aqallow\(aq or \(aqblock\(aq.
+.sp
+Examples:
+.sp
+\fBoption macmechanism \(aqallow\(aq\fP
+.sp
+\fBlist allowedmac \(aq00:00:C0:01:D0:0D\(aq\fP
+.sp
+\fBlist allowedmac \(aq00:00:C0:01:D0:1D\(aq\fP
+.sp
+or
+.sp
+\fBoption macmechanism \(aqblock\(aq\fP
+.sp
+\fBlist blockedmac \(aq00:00:C0:01:D0:2D\(aq\fP
+.SS Trusted Clients
+.sp
+A list of the MAC addresses of client devices that do not require authentication can be defined.
+.sp
+Note: This can easily be bypassed as a client MAC address can usually be easily changed.
+.sp
+Example:
+.sp
+\fBlist trustedmac \(aq00:00:C0:01:D0:0D\(aq\fP
+.sp
+\fBlist trustedmac \(aq00:00:C0:01:D0:1D\(aq\fP
+.SS Packet Marking Compatibility
+.sp
+openNDS uses specific HEXADECIMAL values to mark packets used by iptables as a bitwise mask.
+.sp
+This mask can conflict with the requirements of other packages.
+.sp
+However the defaults are fully compatible with the defaults used in mwan3 and sqm
+.sp
+Any values set here are interpreted as in hex format.
+.SS Option: fw_mark_authenticated
+.sp
+Default: 30000 (0011|0000|0000|0000|0000 binary)
+.SS Option: fw_mark_trusted
+.sp
+Default: 20000 (0010|0000|0000|0000|0000 binary)
+.SS Option: fw_mark_blocked
+.sp
+Default: 10000 (0001|0000|0000|0000|0000 binary)
+.sp
+Examples:
+.sp
+\fBoption fw_mark_authenticated \(aq30000\(aq\fP
+.sp
+\fBoption fw_mark_trusted \(aq20000\(aq\fP
+.sp
+\fBoption fw_mark_blocked \(aq10000\(aq\fP
 .SH CUSTOM PARAMETERS, VARIABLES, IMAGES AND FILES
 .sp
 Custom Parameters were first introduced in openNDS version 7.

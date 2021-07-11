@@ -420,7 +420,7 @@ setup_from_config(void)
 		debug(LOG_DEBUG, "Custom FAS images string [%s]", config->custom_images);
 	}
 
-	// Setup custom FAS images if configured
+	// Setup custom FAS files if configured
 	char fasfile[MAX_BUF] = {0};
 	t_FASFILE *fas_fasfile;
 	if (config->fas_custom_files_list) {
@@ -542,6 +542,7 @@ setup_from_config(void)
 	// Initialize the web server
 	start_mhd();
 	debug(LOG_NOTICE, "Created web server on %s", config->gw_address);
+	debug(LOG_NOTICE, "Maximum Html Page size is [ %llu ] Bytes", HTMLMAXSIZE);
 
 	// Get the ndsctl socket path/filename
 	if (strcmp(config->ndsctl_sock, DEFAULT_NDSCTL_SOCK) == 0) {
@@ -774,7 +775,9 @@ setup_from_config(void)
 
 	// Preload remote files defined in themespec
 	if (config->login_option_enabled == 3) {
-		download_remotes(0);
+		download_remotes(1);
+		// Initial download is in progress, so sleep for a while before starting watchdog thread.
+		sleep(2);
 		config->remotes_last_refresh = now;
 	}
 
@@ -796,7 +799,7 @@ main_loop(void)
 	// Set up everything we need based on the configuration
 	setup_from_config();
 
-	// Start client statistics and timeout clean-up thread
+	// Start watchdog, client statistics and timeout clean-up thread
 	result = pthread_create(&tid_client_check, NULL, thread_client_timeout_check, NULL);
 	if (result != 0) {
 		debug(LOG_ERR, "FATAL: Failed to create thread_client_timeout_check - exiting");

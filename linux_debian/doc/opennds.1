@@ -1,6 +1,6 @@
 .\" Man page generated from reStructuredText.
 .
-.TH "OPENNDS" "1" "Jul 11, 2021" "9.2.0" "openNDS"
+.TH "OPENNDS" "1" "Jul 12, 2021" "9.2.0" "openNDS"
 .SH NAME
 opennds \- opennds Documentation
 .
@@ -1273,7 +1273,9 @@ Custom designed dynamically generated ThemeSpec pages are supported using FAS an
 Set to 0 to disable opennds
 .sp
 \fBoption enabled 1\fP
-.SS Use deprecated generic configuration file (not recommended)
+.SS Use deprecated generic configuration file
+.sp
+Use of this setting is not recommended.
 .sp
 \fBoption config \(aq/etc/opennds/opennds.conf\(aq\fP
 .SS Enable debug output (0\-3)
@@ -1518,11 +1520,15 @@ and
 theme_user\-email\-login\-custom\-placeholders
 .sp
 \fBlist fas_custom_files_list \(aqadvert1_htm=https://raw.githubusercontent.com/openNDS/openNDS/v9.0.0/resources/bannerpickle.htm\(aq\fP
-.SS Set refresh interval for downloaded remote files (in minutes)
+.SS Set refresh interval for downloads
 .sp
-Seting to 0 (zero) means refresh is disabled
+Set refresh interval for downloaded remote files (in minutes)
 .sp
 Default 0
+.sp
+A setting of 0 (zero) means refresh is disabled
+.sp
+Example, set to twelve hours (720 minutes):
 .sp
 \fBoption remotes_refresh_interval \(aq720\(aq\fP
 .SS Use outdated libmicrohttpd (MHD)
@@ -1531,13 +1537,13 @@ Default 0
 .sp
 Warning, this may be unstable or fail entirely \- it would be better to upgrade MHD.
 .sp
-Use at your own risk
+Use at your own risk.
 .sp
-Older versions of MHD convert & and + characters to spaces when present in form data.
+Older versions of MHD use an older version of the MHD API and may fail.
 .sp
-This can make a PreAuth or BinAuth impossible to use for a client if form data contains either of these characters
+Older versions of MHD convert & and + characters to spaces when present in form data. This can make a PreAuth or BinAuth impossible to use for a client if form data contains either of these characters eg. in username or password.
 .sp
-eg. in username or password
+There may well be other issues with older versions.
 .sp
 MHD versions earlier than 0.9.71 are detected.
 .sp
@@ -1696,6 +1702,7 @@ Default 30 minutes
 This is the time in minutes after which an idle client is disconnected
 ie the client has not used the network access for this period
 Default 120 minutes
+.sp
 \fBoption authidletimeout \(aq120\(aq\fP
 .SS Session Timeout
 .sp

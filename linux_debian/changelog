@@ -2,6 +2,7 @@ opennds (9.2.0-1) stable; urgency=medium
 
   * This version adds new functionality, improves performance, adds documentation and fixes an issue
   * Add - Readthedocs / man documentation for configuration options [bluewave.net]
+  * Add - new config options to ndsctl status [bluewave.net]
   * Add - Faster convergence of average rates to configured rate quotas [bluewave.net]
   * Add - BinAuth parse authenticated client database for client data [bluewave.net]
   * Add - Use heap allocation for http page buffer allowing large page sizes [bluewave.net]

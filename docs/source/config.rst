@@ -8,8 +8,10 @@ Set to 0 to disable opennds
 
 ``option enabled 1``
 
-Use deprecated generic configuration file (not recommended)
-***********************************************************
+Use deprecated generic configuration file
+******************************************
+
+Use of this setting is not recommended.
 
 ``option config '/etc/opennds/opennds.conf'``
 
@@ -298,15 +300,18 @@ theme_user-email-login-custom-placeholders
 ``list fas_custom_files_list 'advert1_htm=https://raw.githubusercontent.com/openNDS/openNDS/v9.0.0/resources/bannerpickle.htm'``
 
 
-Set refresh interval for downloaded remote files (in minutes)
-*************************************************************
+Set refresh interval for downloads
+**********************************
 
-Seting to 0 (zero) means refresh is disabled
+Set refresh interval for downloaded remote files (in minutes)
 
 Default 0
 
-``option remotes_refresh_interval '720'``
+A setting of 0 (zero) means refresh is disabled
 
+Example, set to twelve hours (720 minutes):
+
+``option remotes_refresh_interval '720'``
 
 Use outdated libmicrohttpd (MHD)
 ********************************
@@ -315,13 +320,13 @@ Default 0
 
 Warning, this may be unstable or fail entirely - it would be better to upgrade MHD.
 
-Use at your own risk
+Use at your own risk.
 
-Older versions of MHD convert & and + characters to spaces when present in form data.
+Older versions of MHD use an older version of the MHD API and may fail.
 
-This can make a PreAuth or BinAuth impossible to use for a client if form data contains either of these characters
+Older versions of MHD convert & and + characters to spaces when present in form data. This can make a PreAuth or BinAuth impossible to use for a client if form data contains either of these characters eg. in username or password.
 
-eg. in username or password
+There may well be other issues with older versions.
 
 MHD versions earlier than 0.9.71 are detected.
 
@@ -405,7 +410,6 @@ The port it listens to at that IP can be set here; default is 2050.
 
 ``option gatewayport '2050'``
 
-
 Set the GatewayName
 *******************
 
@@ -465,8 +469,6 @@ This is the script used to generate the GatewayFQDN client status page.
 
 ``option statuspath '/mycustomscripts/custom_client_params.sh'``
 
-
-
 Set MaxClients
 **************
 
@@ -479,7 +481,6 @@ This should be less than or equal to the number of allowed DHCP leases.
 For example:
 
 ``option maxclients '250'``
-
 
 Client timeouts in minutes
 **************************
@@ -501,6 +502,7 @@ Authidletimeout
 This is the time in minutes after which an idle client is disconnected
 ie the client has not used the network access for this period
 Default 120 minutes
+
 ``option authidletimeout '120'``
 
 Session Timeout
@@ -551,7 +553,6 @@ Rates:
 ``option uploadrate '0'``
 
 ``option downloadrate '0'``
-
 
 Set RateCheckWindow
 *******************

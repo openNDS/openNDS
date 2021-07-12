@@ -60,6 +60,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <netdb.h>
+#include <microhttpd.h>
 
 #include "common.h"
 #include "client_list.h"
@@ -535,6 +536,7 @@ ndsctl_status(FILE *fp)
 	time_t sysuptime;
 	t_WGP *allowed_wgport;
 	t_WGFQDN *allowed_wgfqdn;
+	const char *mhdversion = MHD_get_version();
 
 	config = config_get_config();
 
@@ -555,10 +557,23 @@ ndsctl_status(FILE *fp)
 	format_duration(0, uptimesecs, durationbuf);
 
 	fprintf(fp, "Uptime: %s\n", durationbuf);
-	fprintf(fp, "Gateway Name: %s\n", config->gw_name);
-	fprintf(fp, "Managed interface: %s\n", config->gw_interface);
-	fprintf(fp, "Managed IP range: %s\n", config->gw_iprange);
-	fprintf(fp, "Server listening: http://%s\n", config->gw_address);
+	fprintf(fp, "Gateway Name: [ %s ]\n", config->gw_name);
+	fprintf(fp, "Gateway FQDN: [ %s ]\n", config->gw_fqdn);
+
+	if (strstr(config->gw_iprange, "0.0.0.0/0")) {
+		fprintf(fp, "Managed interface: %s\n", config->gw_interface);
+	} else {
+		fprintf(fp, "Managed interface: %s - IP address range: %s\n", config->gw_interface, config->gw_iprange);
+	}
+
+	fprintf(fp, "MHD Server [ version %s ] listening on: http://%s\n", mhdversion, config->gw_address);
+	fprintf(fp, "Maximum Html Page size is [ %llu ] Bytes\n", HTMLMAXSIZE);
+
+	if (config->allow_preemptive_authentication > 0) {
+		fprintf(fp, "Preemptive Authentication is Enabled\n");
+	} else {
+		fprintf(fp, "Preemptive Authentication is Disabled\n");
+	}
 
 	if (config->binauth) {
 		fprintf(fp, "Binauth Script: %s\n", config->binauth);

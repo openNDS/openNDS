@@ -36,6 +36,17 @@
 #include "safe.h"
 #include "debug.h"
 
+void * safe_calloc (size_t size)
+{
+	void * retval = NULL;
+	retval = calloc(1, size);
+	if (!retval) {
+		debug(LOG_CRIT, "Failed to calloc %d bytes of memory: %s. Bailing out.", size, strerror(errno));
+		exit(1);
+	}
+	return (retval);
+}
+
 void * safe_malloc (size_t size)
 {
 	void * retval = NULL;

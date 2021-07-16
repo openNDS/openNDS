@@ -31,6 +31,9 @@
 #include <sys/types.h> /* For fork */
 #include <unistd.h> /* For fork */
 
+/** @brief Safe version of calloc
+ */
+void * safe_calloc (size_t size);
 
 /** @brief Safe version of malloc
  */

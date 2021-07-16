@@ -766,7 +766,7 @@ static int authenticated(struct MHD_Connection *connection,
 
 	// User just entered gatewayaddress:gatewayport so give them the info page
 	if (strcmp(url, "/") == 0) {
-		msg = safe_malloc(HTMLMAXSIZE);
+		msg = safe_calloc(HTMLMAXSIZE);
 		rc = execute_ret(msg, HTMLMAXSIZE - 1, "%s '%s'", config->status_path, client->ip);
 
 		if (rc != 0) {
@@ -823,7 +823,7 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 		uh_urlencode(enc_query, sizeof(enc_query), query, strlen(query));
 		debug(LOG_DEBUG, "PreAuth: Encoded query: %s", enc_query);
 
-		msg = safe_malloc(HTMLMAXSIZE);
+		msg = safe_calloc(HTMLMAXSIZE);
 
 		safe_asprintf(&cmd, "%s '%s' '%s' '%d' '%s'", config->preauth, enc_query, enc_user_agent, config->login_option_enabled, config->themespec_path);
 		rc = execute_ret_url_encoded(msg, HTMLMAXSIZE - 1, cmd);

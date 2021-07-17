@@ -67,7 +67,7 @@ Default Dynamic Click to Continue
 
 The pre-installed dynamic login page is enabled by setting option login_option_enabled = '1'
 
-It generates a Click to Continue page followed by a info/advertising page.
+It generates a Click to Continue page followed by an info/advertising page.
 
 User clicks on “Continue” are recorded in the log file /[tmpfs_dir]/ndslog/ndslog.log
 
@@ -220,7 +220,7 @@ and
 
 theme_user-email-login-custom-placeholders
 
-this example inserts Phone Number and Home Post Code fields:
+This example inserts Phone Number and Home Post Code fields:
 
 ``list fas_custom_variables_list 'input=phone:Phone%20Number:text;postcode:Home%20Post%20Code:text'``
 
@@ -270,6 +270,7 @@ Define Custom Files
 *******************
 
 Custom Files are served by a local FAS where required in dynamic portal pages
+
 Default None
 
 Custom files will be copied from the URL to the openNDS router
@@ -287,6 +288,8 @@ The file url must begin with http:// https:// or file://
 ``list fas_custom_files_list '<file_name2_[type]=file_url2>'``
 
 "type" can be any recognised file extension that can be used to display web content eg txt, htm etc.
+
+URLs using the file:// protocol must point to a valid mountpoint accessible to openNDS, for example a usb storage device.
 
 Configuration for custom files in the installed ThemeSpec Files
 ----------------------------------------------------------------
@@ -307,7 +310,9 @@ Set refresh interval for downloaded remote files (in minutes)
 
 Default 0
 
-A setting of 0 (zero) means refresh is disabled
+A setting of 0 (zero) means refresh is disabled.
+
+This is useful for providing automated refreshing of informational or advertising content. Should the remote resources become unavailable, current versions will continue to be used.
 
 Example, set to twelve hours (720 minutes):
 
@@ -316,17 +321,17 @@ Example, set to twelve hours (720 minutes):
 Use outdated libmicrohttpd (MHD)
 ********************************
 
-Default 0
+Default 0 (Disabled)
 
-Warning, this may be unstable or fail entirely - it would be better to upgrade MHD.
+Warning, enabling this *may* cause instability or in the worst case total failure - it would be better to upgrade MHD.
 
-Use at your own risk.
+**Use at your own risk.**
 
-Older versions of MHD use an older version of the MHD API and may fail.
+Older versions of MHD use an older version of the MHD API and may not run correctly or fail.
 
 Older versions of MHD convert & and + characters to spaces when present in form data. This can make a PreAuth or BinAuth impossible to use for a client if form data contains either of these characters eg. in username or password.
 
-There may well be other issues with older versions.
+*There may well be other issues with older versions.*
 
 MHD versions earlier than 0.9.71 are detected.
 
@@ -334,7 +339,7 @@ If this option is set to 0 (default), NDS will terminate if MHD is earlier than 
 
 If this option is set to 1, NDS will attempt to start and log an error.
 
-``option use_outdated_mhd '0'``
+``option use_outdated_mhd '1'``
 
 Maximum Page Size to be served by MHD
 *************************************
@@ -352,16 +357,18 @@ Setting this option is useful:
 	1. To reduce memory requirements on a resource constrained router
 	2. To allow large pages to be served where memory usage is not a concern
 
+Example:
+
 ``option max_page_size '4096'``
 
 MHD Unescape callback
 *********************
 
-Default 0
+Default 0 (Disabled)
 
 MHD has a built in unescape function that urldecodes incoming queries from browsers.
 
-This option allows an external unescape script to be enabled and replace the built in decoder.
+This advanced option allows an external unescape script to replace the built in decoder.
 
 The script must be named unescape.sh, be present in /usr/lib/opennds/ and be executable.
 
@@ -369,9 +376,9 @@ A very simple standard unescape.sh script is installed by default.
 
 Set to 1 to enable this option, 0 to disable.
 
-Default is disabled
+Example:
 
-``option unescape_callback_enabled '0'``
+``option unescape_callback_enabled '1'``
 
 Set the MHD WebRoot
 *******************
@@ -404,11 +411,13 @@ Set the GatewayPort
 
 Default: 2050
 
-openNDS's own http server uses gateway address as its IP address.
+openNDS's own http server (MHD) uses the gateway address as its IP address.
 
-The port it listens to at that IP can be set here; default is 2050.
+This option sets the port it listens to.
 
-``option gatewayport '2050'``
+Example:
+
+``option gatewayport '2080'``
 
 Set the GatewayName
 *******************
@@ -467,6 +476,8 @@ Default: /usr/lib/opennds/client_params.sh
 
 This is the script used to generate the GatewayFQDN client status page.
 
+Example:
+
 ``option statuspath '/mycustomscripts/custom_client_params.sh'``
 
 Set MaxClients
@@ -476,11 +487,11 @@ Default 250
 
 The maximum number of clients allowed to connect.
 
-This should be less than or equal to the number of allowed DHCP leases.
+**This should be less than or equal to the number of allowed DHCP leases.** set for the router's dhcp server.
 
-For example:
+Example:
 
-``option maxclients '250'``
+``option maxclients '500'``
 
 Client timeouts in minutes
 **************************
@@ -488,31 +499,36 @@ Client timeouts in minutes
 Preauthidletimeout
 ------------------
 
+Default 30
+
 This is the time in minutes after which a client is disconnected if not authenticated.
 
 ie the client has not attempted to authenticate for this period.
 
-Default 30 minutes
+Example:
 
-``option preauthidletimeout '30'``
+``option preauthidletimeout '60'``
 
 Authidletimeout
 ---------------
 
+Default 120
+
 This is the time in minutes after which an idle client is disconnected
 ie the client has not used the network access for this period
-Default 120 minutes
 
-``option authidletimeout '120'``
+Example:
+
+``option authidletimeout '60'``
 
 Session Timeout
 ---------------
 
+Default 1200 minutes (20 hours).
+
 This is the interval after which clients are forced out (a value of 0 means never).
 
 Clients will be deauthenticated at the end of this period.
-
-Default 1200 minutes (20 hours).
 
 Example: Set to 24 hours (1440 minutes).
 
@@ -521,7 +537,7 @@ Example: Set to 24 hours (1440 minutes).
 Set the Checkinterval
 *********************
 
-The interval in seconds at which opennds checks client timeout and quota status.
+The interval in seconds at which openNDS checks client timeouts, quota usage and runs watchdog checks.
 
 Default 60 seconds (1 minute).
 
@@ -532,11 +548,12 @@ Example: Set to 30 seconds.
 Set Rate Quotas
 ***************
 
-Note: upload means to the Internet, download means from the Internet.
-
 Defaults 0
 
 Integer values only.
+
+.. note::
+ Upload means *to* the Internet, download means *from* the Internet.
 
 If the client average data rate exceeds the value set here, the client will be rate limited.
 
@@ -544,15 +561,13 @@ Values are in kb/s.
 
 If set to 0, there is no limit.
 
-Quotas and rates can also be set by FAS via Authmon Daemon, ThemeSpec scripts, BinAuth, and ndsctl auth.
-
-Values set by these methods, will override values set in this config file.
+Quotas and rates can also be set by FAS via Authmon Daemon, ThemeSpec scripts, BinAuth, and ndsctl auth. Values set by these methods, will override values set in the config file.
 
 Rates:
 
-``option uploadrate '0'``
+``option uploadrate '200'``
 
-``option downloadrate '0'``
+``option downloadrate '800'``
 
 Set RateCheckWindow
 *******************
@@ -561,7 +576,7 @@ Default 2
 
 The client data rate is calculated using a moving average.
 
-This allows clients to burst at maximum possible rate, only blocking if the moving average exceeds the specified upload or download rate.
+This allows clients to burst at maximum possible rate, only rate limiting if the moving average exceeds the specified upload or download rate.
 
 The moving average window size is equal to ratecheckwindow times checkinterval (seconds).
 
@@ -581,8 +596,6 @@ Example: Disable all rate quotas for all clients, overriding settings made in FA
 Set Volume Quotas
 *****************
 
-If the client data quota exceeds the value set here, the client will be deauthenticated.
-
 Defaults 0
 
 Integer values only.
@@ -591,17 +604,23 @@ Values are in kB.
 
 If set to 0, there is no limit.
 
-``option uploadquota '0'``
+If the client data quota exceeds the value set here, the client will be deauthenticated.
 
-``option downloadquota '0'``
+The client by default may re-authenticate. It is the responsibility of the FAS (whether Themespec, other local or remote) to restrict further authentication of the client if so desired.
+
+Example:
+
+``option uploadquota '1000'``
+
+``option downloadquota '10000'``
 
 
 Enable BinAuth Support.
 ***********************
 
-BinAuth enables POST AUTHENTICATION PROCESSINGnd and is useful in particular when a FAS is configured remotely.
-
 Default disabled
+
+BinAuth enables POST AUTHENTICATION PROCESSING and and is useful in particular when a FAS is configured remotely.
 
 If set, a BinAuth program or script is triggered by several possible methods and is called with several arguments on both authentication and deauthentication.
 
@@ -645,11 +664,14 @@ This is enabled by the following option:
 Set Fasport
 ***********
 
+Default: Not set.
+
 This is the Forwarding Authentication Service (FAS) port number.
 
 Redirection is changed to the IP port of a FAS (provided by the system administrator).
 
-Note: if FAS is running locally (ie fasremoteip is NOT set), port 80 cannot be used.
+.. note::
+ If FAS is running locally (ie fasremoteip is NOT set), port 80 cannot be used.
 
 Typical Remote Shared Hosting Example:
 
@@ -657,9 +679,7 @@ Typical Remote Shared Hosting Example:
 
 Typical Locally Hosted example (ie fasremoteip not set):
 
-``option fasport '2080'``
-
-
+``option fasport '2090'``
 
 Set Fasremotefqdn
 *****************
@@ -690,6 +710,7 @@ Set the Fasremoteip
 *******************
 
 Default: GatewayAddress (the IP of NDS)
+
 If set, this is the remote ip address of the FAS.
 
 Typical Remote Shared Hosting Example (replace this with your own remote FAS IP):
@@ -726,9 +747,9 @@ A key phrase for NDS to encrypt the query string sent to FAS.
 
 Can be any text string with no white space.
 
-Option faskey must be pre-shared with FAS.
+Option faskey must be pre-shared with FAS. (It is automatically pre-shared with Themespec files)
 
-``option faskey '1234567890'``
+``option faskey 'mysecretopenNDSfaskey'``
 
 Set Security Level: fas_secure_enabled
 **************************************
@@ -746,15 +767,14 @@ Level set to "0"
 Level set to "1"
 ----------------
 	* The FAS is enforced by NDS to use http protocol.
-	* The client token will be hashed and sent to the FAS along with other relevent information in a base 64 encoded string
-	
-	FAS must return the sha256sum of the concatenation of hid(the hashed original token), and faskey to be used by NDS for client authentication.
-	This is returned to FAS for authentication
+	* The client token will be hashed and sent to the FAS along with other relevant information in a base 64 encoded string
+
+	FAS must return the sha256sum of the concatenation of hid (the hashed original token), and faskey to be used by openNDS for client authentication.
 
 Level set to "2"
 ----------------
 	* The FAS is enforced by NDS to use http protocol.
-	
+
 	* The parameters clientip, clientmac, gatewayname, hid(the hashed original token), gatewayaddress, authdir, originurl and clientif
 
 	* are encrypted using faskey and passed to FAS in the query string.
@@ -763,11 +783,7 @@ Level set to "2"
 
 	* The cipher used is "AES-256-CBC".
 
-	* The "php-cli" package and the "php-openssl" module must both be installed for fas_secure level 2 and 3.
-
-	* openNDS does not depend on this package and module, but will exit gracefully
-
-	* if this package and module are not installed when this level is set.
+	* The "php-cli" package and the "php-openssl" module must both be installed for fas_secure level 2 and 3. openNDS does not depend on this package and module, but will exit gracefully not installed when this level is set.
 
 	* The FAS must use the query string passed initialisation vector and the pre shared fas_key to decrypt the query string.
 
@@ -785,11 +801,11 @@ Level set to "3"
 
 An example FAS level 3 php script (fas-aes-https.php) is included in the /etc/opennds directory and also supplied in the source code.
 
-Note: Option faskey must be pre shared with the FAs script in use (including any ThemeSpec local file) if fas secure is set to levels 1, 2 and 3.
+Note: Option faskey must be pre shared with the FAS script in use (including any ThemeSpec local file) if fas secure is set to levels 1, 2 and 3.
 
 Example:
 
-``option fas_secure_enabled '1'``
+``option fas_secure_enabled '3'``
 
 
 Set PreAuth
@@ -812,7 +828,7 @@ Block Private Subnets
 
 Your router might have several private subnets on their own interfaces.
 
-You will probably want to keep them private from the public gatewayinterface.
+You will probably want to keep them private from clients using the public gatewayinterface.
 
 If so, you should block the entire subnets on those interfaces.
 
@@ -929,14 +945,14 @@ To add Paypal to the Walled Garden, the list entries would be:
 User Access to Services On the Router
 *************************************
 
-Access to resources required for normal operation of the captive portal is automatically granted.
+Access is automatically granted to resources required for normal operation of the captive portal.
 
 Additional access falls into two categories:
 
 Essential Access
 ----------------
 
-It is essential that you allow ports for DNS and DHCP (unless you have a very specific reason for doing so, disabling these will soft brick your router):
+It is essential that you allow ports for DNS and DHCP (unless you have a very specific reason for doing so, **disabling these will soft brick your router!**):
 
 ``list users_to_router 'allow tcp port 53'``
 
@@ -966,7 +982,7 @@ A list of MAC addresses can be defined that are either allowed to use the system
 
 Note: This can easily be bypassed as a client MAC address can usually be easily changed.
 
-The mechanism used is either 'allow' or 'block'.
+The mechanism used is either 'allow' or 'block' (It cannot be both).
 
 Examples:
 
@@ -988,7 +1004,8 @@ Trusted Clients
 
 A list of the MAC addresses of client devices that do not require authentication can be defined.
 
-Note: This can easily be bypassed as a client MAC address can usually be easily changed.
+.. note::
+ This can easily be be used to allow unauthorised access as a client MAC address can be changed. For a potentially more secure alternative, see "option allow_preemptive_authentication"
 
 Example:
 

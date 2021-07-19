@@ -139,11 +139,12 @@ int download_remotes(int refresh)
 	}
 
 	safe_asprintf(&cmd,
-		"/usr/lib/opennds/libopennds.sh download \"%s\" \"%s\" \"%s\" \"%d\" &",
+		"/usr/lib/opennds/libopennds.sh download \"%s\" \"%s\" \"%s\" \"%d\" \"%s\" &",
 		config->themespec_path,
 		config->custom_images,
 		config->custom_files,
-		refresh
+		refresh,
+		config->webroot
 	);
 
 	debug(LOG_DEBUG, "Executing system command: %s\n", cmd);

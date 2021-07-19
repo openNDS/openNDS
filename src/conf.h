@@ -51,6 +51,7 @@
 #define DEFAULT_DAEMON 1
 #define DEFAULT_DEBUGLEVEL 1
 #define DEFAULT_MAXCLIENTS 250
+#define DEFAULT_ONLINE_STATUS 0
 #define DEFAULT_GATEWAYINTERFACE "br-lan"
 #define DEFAULT_GATEWAY_IPRANGE "0.0.0.0/0"
 #define DEFAULT_GATEWAYNAME "openNDS"
@@ -177,6 +178,7 @@ typedef struct {
 	int daemon;					//@brief if daemon > 0, use daemon mode
 	int debuglevel;				//@brief Debug information verbosity
 	int maxclients;				//@brief Maximum number of clients allowed
+	int online_status;				//@brief Online status of the router, 1=online, 0=offline
 	char *gw_name;					//@brief Name of the gateway; e.g. its SSID or a unique identifier for use in a remote FAS
 	char *http_encoded_gw_name;			//@brief http encoded name of the gateway, used as a templated variable in splash.htm
 	char *url_encoded_gw_name;			//@brief url encoded name of the gateway used as variable in Preauth

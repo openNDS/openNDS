@@ -68,6 +68,7 @@ typedef enum {
 	oDaemon,
 	oDebugLevel,
 	oMaxClients,
+	oOnlineStatus,
 	oGatewayName,
 	oGatewayInterface,
 	oGatewayIPRange,
@@ -137,6 +138,7 @@ static const struct {
 	{ "daemon", oDaemon },
 	{ "debuglevel", oDebugLevel },
 	{ "maxclients", oMaxClients },
+	{ "online_status", oOnlineStatus },
 	{ "gatewayname", oGatewayName },
 	{ "gatewayinterface", oGatewayInterface },
 	{ "gatewayiprange", oGatewayIPRange },
@@ -228,6 +230,7 @@ config_init(void)
 	config.session_timeout = DEFAULT_SESSION_TIMEOUT;
 	config.debuglevel = DEFAULT_DEBUGLEVEL;
 	config.maxclients = DEFAULT_MAXCLIENTS;
+	config.online_status = DEFAULT_ONLINE_STATUS;
 	config.gw_name = safe_strdup(DEFAULT_GATEWAYNAME);
 	config.http_encoded_gw_name = NULL;
 	config.url_encoded_gw_name = NULL;

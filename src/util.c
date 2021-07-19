@@ -85,6 +85,45 @@ extern unsigned int authenticated_since_start;
 extern int created_httpd_threads;
 extern int current_httpd_threads;
 
+int check_routing(int watchdog)
+{
+	// Check routing configuration
+	char rtest[32] = {0};
+	char *rcmd;
+	const char rtr_fail[] = "-";
+	const char rtr_offline[] = "offline";
+	s_config *config = config_get_config();
+
+	safe_asprintf(&rcmd,
+		"/usr/lib/opennds/libopennds.sh gatewayroute \"%s\"",
+		config->gw_interface
+	);
+
+	if (execute_ret_url_encoded(rtest, sizeof(rtest) - 1, rcmd) == 0) {
+		free (rcmd);
+
+		if (strcmp(rtest, rtr_fail) == 0) {
+			debug(LOG_ERR, "Routing configuration is not valid for openNDS, exiting ...");
+			exit(1);
+		} else if (strcmp(rtest, rtr_offline) == 0) {
+			// offline
+			config->online_status = 0;
+			debug(LOG_WARNING, "Upstream gateway is not connected or is offline");
+		} else {
+			// online
+			if (watchdog == 0 || config->online_status == 0) {
+				config->online_status = 1;
+				debug(LOG_NOTICE, "Upstream gateway [ address / via interface ] [ %s ] is online", rtest);
+			}
+		}
+		return config->online_status;
+	} else {
+		debug(LOG_ERR, "Unable to get routing configuration, exiting ...");
+		exit(1);
+	}
+}
+
+
 int ndsctl_lock()
 {
 	char *lockfile;

@@ -336,25 +336,10 @@ setup_from_config(void)
 	debug(LOG_NOTICE, "Interface %s is at %s (%s)", config->gw_interface, config->gw_ip, config->gw_mac);
 
 	// Check routing configuration
-	safe_asprintf(&rcmd,
-		"/usr/lib/opennds/libopennds.sh gatewayroute \"%s\"",
-		config->gw_interface
-	);
+	int watchdog = 0;
+	int routercheck;
 
-	if (execute_ret_url_encoded(rtest, sizeof(rtest) - 1, rcmd) == 0) {
-		if (strcmp(rtest, rtr_fail) == 0) {
-			debug(LOG_ERR, "Routing configuration is not valid for openNDS, exiting ...");
-			exit(1);
-		} else if (strcmp(rtest, rtr_offline) == 0) {
-			debug(LOG_WARNING, "Upstream gateway is not connected or offline");
-		} else {
-			debug(LOG_NOTICE, "Upstream gateway address/via interface [ %s ]", rtest);
-		}
-	} else {
-		debug(LOG_ERR, "Unable to get routing configuration, exiting ...");
-		exit(1);
-	}
-
+	routercheck = check_routing(watchdog);
 
 	// Warn if Preemptive Authentication is enabled
 	if (config->allow_preemptive_authentication == 1) {

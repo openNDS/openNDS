@@ -113,7 +113,11 @@ int check_routing(int watchdog)
 			// online
 			if (watchdog == 0 || config->online_status == 0) {
 				config->online_status = 1;
-				debug(LOG_NOTICE, "Upstream gateway [ address / via interface ] [ %s ] is online", rtest);
+				config->ext_gateway = strdup(strtok(rtest, " "));
+				config->ext_interface = strdup(strtok(NULL, " "));
+				debug(LOG_NOTICE, "Upstream gateway [ %s ] via interface [ %s ] is online", config->ext_gateway, config->ext_interface);
+
+				//debug(LOG_NOTICE, "Upstream gateway [ address / via interface ] [ %s ] is online", rtest);
 			}
 		}
 		return config->online_status;
@@ -554,6 +558,17 @@ ndsctl_status(FILE *fp)
 		fprintf(fp, "Managed interface: %s\n", config->gw_interface);
 	} else {
 		fprintf(fp, "Managed interface: %s - IP address range: %s\n", config->gw_interface, config->gw_iprange);
+	}
+
+	// Check if router is online
+	int watchdog = 0;
+	int routercheck;
+	routercheck = check_routing(watchdog);
+
+	if (routercheck == 1) {
+		fprintf(fp, "Upstream gateway [ %s ] via interface [ %s ] is online\n", config->ext_gateway, config->ext_interface);
+	} else {
+		fprintf(fp, "Upstream gateway is offline or not connected\n");
 	}
 
 	fprintf(fp, "MHD Server [ version %s ] listening on: http://%s\n", mhdversion, config->gw_address);

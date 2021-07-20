@@ -417,56 +417,6 @@ get_iface_mac(const char ifname[])
 	return safe_strdup(addrbuf);
 }
 
-/** Get name of external interface (the one with default route to the net).
- *  Caller must free.
- */
-char *
-get_ext_iface(void)
-{
-#ifdef __linux__
-	FILE *input;
-	char device[16] = {0};
-	char gw[16] = {0};
-	int i = 1;
-	pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
-	pthread_mutex_t cond_mutex = PTHREAD_MUTEX_INITIALIZER;
-	struct timespec timeout;
-
-	debug(LOG_DEBUG, "get_ext_iface(): Autodectecting the external interface from routing table");
-	for (i = 1; i <= NUM_EXT_INTERFACE_DETECT_RETRY; i += 1) {
-		input = fopen("/proc/net/route", "r");
-		while (!feof(input)) {
-			int rc = fscanf(input, "%s %s %*s %*s %*s %*s %*s %*s %*s %*s %*s\n", device, gw);
-			if (rc == 2 && strcmp(gw, "00000000") == 0) {
-				fclose(input);
-				debug(LOG_INFO, "get_ext_iface(): Detected %s as the default interface after try %d", device, i);
-				return strdup(device);
-			}
-		}
-		fclose(input);
-		debug(LOG_ERR, "get_ext_iface(): Failed to detect the external interface after try %d (maybe the interface is not up yet?).  Retry limit: %d",
-			i,
-			NUM_EXT_INTERFACE_DETECT_RETRY
-		);
-
-		// Sleep for EXT_INTERFACE_DETECT_RETRY_INTERVAL seconds
-		timeout.tv_sec = time(NULL) + EXT_INTERFACE_DETECT_RETRY_INTERVAL;
-		timeout.tv_nsec = 0;
-
-		// Mutex must be locked for pthread_cond_timedwait...
-		pthread_mutex_lock(&cond_mutex);
-		// Thread safe "sleep"
-		pthread_cond_timedwait(&cond, &cond_mutex, &timeout);
-		// No longer needs to be locked
-		pthread_mutex_unlock(&cond_mutex);
-	}
-
-	debug(LOG_ERR, "get_ext_iface(): Failed to detect the external interface after %d tries, aborting", i);
-	exit(1);
-#endif
-	return NULL;
-}
-
 char *
 format_duration(time_t from, time_t to, char buf[64])
 {

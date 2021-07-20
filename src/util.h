@@ -40,9 +40,6 @@ char *get_iface_ip(const char ifname[], int ip6);
 /* @brief Get MAC address of an interface */
 char *get_iface_mac(const char ifname[]);
 
-// @brief Get interface name of default gateway (currently unused)
-//char *get_ext_iface (void);
-
 /* @brief Online/offline checking */
 int check_routing(int watchdog);
 

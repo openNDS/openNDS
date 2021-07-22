@@ -162,9 +162,12 @@ int ndsctl_lock()
 
 void ndsctl_unlock()
 {
-	int ret;
 	s_config *config = config_get_config();
-	ret = lockf(config->lockfd, F_ULOCK, 0);
+
+	if (lockf(config->lockfd, F_ULOCK, 0) < 0) {
+		debug(LOG_ERR, "Unable to Unlock ndsctl");
+	}
+
 	close(config->lockfd);
 }
 
@@ -172,7 +175,6 @@ void ndsctl_unlock()
 int download_remotes(int refresh)
 {
 	char *cmd = NULL;
-	int ret;
 	s_config *config = config_get_config();
 
 	if(refresh == 0) {
@@ -191,7 +193,11 @@ int download_remotes(int refresh)
 	);
 
 	debug(LOG_DEBUG, "Executing system command: %s\n", cmd);
-	ret = system(cmd);
+
+	if (system(cmd) < 0) {
+		debug(LOG_ERR, "Unable to start remote download - Continuing");
+	}
+
 	free(cmd);
 	return 0;
 }

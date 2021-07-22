@@ -135,7 +135,6 @@ termination_handler(int s)
 {
 	static pthread_mutex_t sigterm_mutex = PTHREAD_MUTEX_INITIALIZER;
 	char *fasssl = NULL;
-	int ret;
 
 	debug(LOG_INFO, "Handler for termination caught signal %d", s);
 
@@ -150,7 +149,11 @@ termination_handler(int s)
 	// Check if authmon is already running and if it is, kill it
 	debug(LOG_INFO, "Explicitly killing the authmon daemon");
 	safe_asprintf(&fasssl, "kill $(pgrep -f \"usr/lib/opennds/authmon.sh\") > /dev/null 2>&1");
-	ret = system(fasssl);
+
+	if (system(fasssl) < 0) {
+		debug(LOG_ERR, "Error returned from system call - Continuing");
+	}
+
 	free(fasssl);
 
 	auth_client_deauth_all();
@@ -239,10 +242,6 @@ setup_from_config(void)
 	char protocol[8] = {0};
 	char port[8] = {0};
 	char msg[256] = {0};
-	char rtest[32] = {0};
-	char *rcmd;
-	const char rtr_fail[] = "-";
-	const char rtr_offline[] = "offline";
 	char gwhash[256] = {0};
 	char authmonpid[16] = {0};
 	char *socket;

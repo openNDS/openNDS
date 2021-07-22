@@ -394,8 +394,10 @@ int ndsctl_lock(char *mountpoint, int *lockfd)
 
 void ndsctl_unlock(int *lockfd)
 {
-	int ret;
-	ret = lockf(*lockfd, F_ULOCK, 0);
+	if (lockf(*lockfd, F_ULOCK, 0) < 0) {
+		printf(" Error - Unable to Unlock ndsctl/n");
+	}
+
 	close(*lockfd);
 }
 

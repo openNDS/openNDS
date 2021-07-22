@@ -6,7 +6,7 @@ Overview
 openNDS (NDS) has the ability to forward requests to a third party authentication service (FAS). This is enabled via simple configuration options.
 
 These options are:
- 1. **fasport**. This enables Forwarding Authentication Service (FAS). Redirection is changed from the default login.sh to a separate FAS. The value is the IP port number of the FAS.
+ 1. **fasport**. This enables Forwarding Authentication Service (FAS). Redirection is changed from the default ThemeSpec to a separate FAS. The value is the IP port number of the FAS.
  2. **fasremoteip**. If set, this is the remote ip address of the FAS, if not set it will take the value of the NDS gateway address.
  3. **fasremotefqdn** If set, this is the remote fully qualified domain name (FQDN) of the FAS
  4. **faspath**. This is the path from the FAS Web Root (not the file system root) to the FAS login page.
@@ -24,7 +24,7 @@ All addresses (with the exception of fasremoteip) are relative to the *client* d
 
 When FAS is enabled, openNDS automatically configures firewall access to the FAS service.
 
-The FAS service must serve a splash page of its own to replace the openNDS served output of the default login.sh script. For fas_secure_enable "0", "1", and "2" this is enforced as http. For fas_secure_enable level "3", it is enforced as https.
+The FAS service must serve a splash page of its own to replace the openNDS served output of the default ThemeSpec script. For fas_secure_enable "0", "1", and "2" this is enforced as http. For fas_secure_enable level "3", it is enforced as https.
 
 Typically, the FAS service will be written in PHP or any other language that can provide dynamic web content.
 
@@ -117,7 +117,7 @@ Example FAS Query strings
 Example scripts
 ---------------
 
-Full details of how to use FAS query strings can be seen in the example scripts, login.sh, fas-hid.php, fas-aes.php and fas-aes-https.php
+Full details of how to use FAS query strings can be seen in the example scripts, fas-hid.php, fas-aes.php and fas-aes-https.php
 
 Custom Parameters
 *****************
@@ -129,7 +129,7 @@ Once a custom parameter is defined in the configuration, its value will be fixed
 
 Parameters must be of the form param_name=param_value and may not contain white space or single quote characters.
 
-Custom parameters are added to the base64 encoded query string when FAS level 1 is set or the basic login option is used. Note the basic login option is a special case of FAS level 1 running the login.sh script.
+Custom parameters are added to the base64 encoded query string when FAS level 1 is set or the basic login option is used. Note the basic login option is a special case of FAS level 1 running a ThemeSpec script.
 
 Custom parameters are added to the encrypted query string when FAS levels 1, 2 and 3 are set.
 
@@ -160,7 +160,7 @@ For all other levels of fas_secure_enabled, PreAuth and BinAuth, the library uti
 Working examples can be found in the included scripts:
 
  * fas-aes.php
- * login.sh
+ * ThemeSpec
  * demo-preauth.sh
  * demo-preauth-remote-image.sh
 

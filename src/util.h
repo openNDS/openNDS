@@ -40,22 +40,8 @@ char *get_iface_ip(const char ifname[], int ip6);
 /* @brief Get MAC address of an interface */
 char *get_iface_mac(const char ifname[]);
 
-// @brief Get interface name of default gateway (currently unused)
-//char *get_ext_iface (void);
-
-// TODO online/offline checking
-// @brief Sets hint that an online action (dns/connect/etc using WAN) succeeded
-//void mark_online();
-// @brief Sets hint that an online action (dns/connect/etc using WAN) failed
-//void mark_offline();
-// @brief Returns a guess (true or false) on whether we're online or not based on previous calls to mark_online and mark_offline
-//int is_online();
-// @brief Sets hint that an auth server online action succeeded
-//void mark_auth_online();
-// @brief Sets hint that an auth server online action failed
-//void mark_auth_offline();
-// @brief Returns a guess (true or false) on whether we're an auth server is online or not based on previous calls to mark_auth_online and mark_auth_offline
-//int is_auth_online();
+/* @brief Online/offline checking */
+int check_routing(int watchdog);
 
 /* @brief Format a time_t value to 'Fri Jul 27 18:52:22 2018' */
 char *format_time(time_t time, char buf[64]);

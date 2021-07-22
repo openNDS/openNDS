@@ -59,13 +59,13 @@ get_image_file() {
 	setcontents=""
 
 	customimageroot="/ndsremote"
-	customimagepath="/etc/opennds/htdocs$customimageroot"
+	customimagepath="$webroot$customimageroot"
 
 	if [ ! -d "$mountpoint/ndsremote" ]; then
-		mkdir -p "$mountpoint/ndsremote"
+		mkdir -p "$mountpoint$customimageroot"
 
 		if [ ! -e "$customimagepath" ]; then
-			ln -s "$mountpoint/ndsremote" "$customimagepath"
+			ln -s "$mountpoint$customimageroot" "$customimagepath"
 		fi
 	fi
 
@@ -867,6 +867,13 @@ elif [ "$1" = "download" ]; then
 	# $3 contains the image list
 	# $4 contains the file list
 	# $5 contains the refresh flag, set to 1 to refresh downloads
+	# $6 contains the webroot
+
+	if [ -z "$6" ]; then
+		webroot="/etc/opennds/htdocs"
+	else
+		webroot=$6
+	fi
 
 	refresh=$5
 	configure_log_location

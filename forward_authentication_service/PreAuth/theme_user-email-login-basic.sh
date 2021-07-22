@@ -418,7 +418,7 @@ display_terms() {
 #  Start - Main entry point for this Theme	#
 #						#
 #  Parameters set here overide those		#
-#  set in login.sh				#
+#  set in libopennds.sh			#
 #						#
 #################################################
 

@@ -135,7 +135,6 @@ termination_handler(int s)
 {
 	static pthread_mutex_t sigterm_mutex = PTHREAD_MUTEX_INITIALIZER;
 	char *fasssl = NULL;
-	int ret;
 
 	debug(LOG_INFO, "Handler for termination caught signal %d", s);
 
@@ -150,7 +149,11 @@ termination_handler(int s)
 	// Check if authmon is already running and if it is, kill it
 	debug(LOG_INFO, "Explicitly killing the authmon daemon");
 	safe_asprintf(&fasssl, "kill $(pgrep -f \"usr/lib/opennds/authmon.sh\") > /dev/null 2>&1");
-	ret = system(fasssl);
+
+	if (system(fasssl) < 0) {
+		debug(LOG_ERR, "Error returned from system call - Continuing");
+	}
+
 	free(fasssl);
 
 	auth_client_deauth_all();
@@ -239,10 +242,6 @@ setup_from_config(void)
 	char protocol[8] = {0};
 	char port[8] = {0};
 	char msg[256] = {0};
-	char rtest[32] = {0};
-	char *rcmd;
-	const char rtr_fail[] = "-";
-	const char rtr_offline[] = "offline";
 	char gwhash[256] = {0};
 	char authmonpid[16] = {0};
 	char *socket;
@@ -336,25 +335,10 @@ setup_from_config(void)
 	debug(LOG_NOTICE, "Interface %s is at %s (%s)", config->gw_interface, config->gw_ip, config->gw_mac);
 
 	// Check routing configuration
-	safe_asprintf(&rcmd,
-		"/usr/lib/opennds/libopennds.sh gatewayroute \"%s\"",
-		config->gw_interface
-	);
+	int watchdog = 0;
+	int routercheck;
 
-	if (execute_ret_url_encoded(rtest, sizeof(rtest) - 1, rcmd) == 0) {
-		if (strcmp(rtest, rtr_fail) == 0) {
-			debug(LOG_ERR, "Routing configuration is not valid for openNDS, exiting ...");
-			exit(1);
-		} else if (strcmp(rtest, rtr_offline) == 0) {
-			debug(LOG_WARNING, "Upstream gateway is not connected or offline");
-		} else {
-			debug(LOG_NOTICE, "Upstream gateway address/via interface [ %s ]", rtest);
-		}
-	} else {
-		debug(LOG_ERR, "Unable to get routing configuration, exiting ...");
-		exit(1);
-	}
-
+	routercheck = check_routing(watchdog);
 
 	// Warn if Preemptive Authentication is enabled
 	if (config->allow_preemptive_authentication == 1) {
@@ -774,7 +758,7 @@ setup_from_config(void)
 	}
 
 	// Preload remote files defined in themespec
-	if (config->login_option_enabled == 3) {
+	if (config->login_option_enabled == 3 && routercheck == 1) {
 		download_remotes(1);
 		// Initial download is in progress, so sleep for a while before starting watchdog thread.
 		sleep(2);

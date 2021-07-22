@@ -29,7 +29,7 @@
 #ifndef _CONF_H_
 #define _CONF_H_
 
-#define VERSION "9.2.1beta"
+#define VERSION "9.3.0beta"
 
 /*
  * Defines how many times should we try detecting the interface with the default route (in seconds).
@@ -51,6 +51,7 @@
 #define DEFAULT_DAEMON 1
 #define DEFAULT_DEBUGLEVEL 1
 #define DEFAULT_MAXCLIENTS 250
+#define DEFAULT_ONLINE_STATUS 0
 #define DEFAULT_GATEWAYINTERFACE "br-lan"
 #define DEFAULT_GATEWAY_IPRANGE "0.0.0.0/0"
 #define DEFAULT_GATEWAYNAME "openNDS"
@@ -177,10 +178,13 @@ typedef struct {
 	int daemon;					//@brief if daemon > 0, use daemon mode
 	int debuglevel;				//@brief Debug information verbosity
 	int maxclients;				//@brief Maximum number of clients allowed
+	int online_status;				//@brief Online status of the router, 1=online, 0=offline
 	char *gw_name;					//@brief Name of the gateway; e.g. its SSID or a unique identifier for use in a remote FAS
 	char *http_encoded_gw_name;			//@brief http encoded name of the gateway, used as a templated variable in splash.htm
 	char *url_encoded_gw_name;			//@brief url encoded name of the gateway used as variable in Preauth
 	char *gw_interface;				//@brief Interface we will manage
+	char *ext_interface;				//@brief Interface of this router which has the routed upstream connection
+	char *ext_gateway;				//@brief The IP address of the upstream gateway
 	char *gw_iprange;				//@brief IP range on gw_interface we will manage
 	char *gw_ip;					//@brief Internal IP (v4 or v6) for our web server
 	char *gw_address;				//@brief Internal IP with port for our web server

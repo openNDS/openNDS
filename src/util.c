@@ -85,6 +85,49 @@ extern unsigned int authenticated_since_start;
 extern int created_httpd_threads;
 extern int current_httpd_threads;
 
+int check_routing(int watchdog)
+{
+	// Check routing configuration
+	char rtest[32] = {0};
+	char *rcmd;
+	const char rtr_fail[] = "-";
+	const char rtr_offline[] = "offline";
+	s_config *config = config_get_config();
+
+	safe_asprintf(&rcmd,
+		"/usr/lib/opennds/libopennds.sh gatewayroute \"%s\"",
+		config->gw_interface
+	);
+
+	if (execute_ret_url_encoded(rtest, sizeof(rtest) - 1, rcmd) == 0) {
+		free (rcmd);
+
+		if (strcmp(rtest, rtr_fail) == 0) {
+			debug(LOG_ERR, "Routing configuration is not valid for openNDS, exiting ...");
+			exit(1);
+		} else if (strcmp(rtest, rtr_offline) == 0) {
+			// offline
+			config->online_status = 0;
+			debug(LOG_WARNING, "Upstream gateway is not connected or is offline");
+		} else {
+			// online
+			if (watchdog == 0 || config->online_status == 0) {
+				config->online_status = 1;
+				config->ext_gateway = strdup(strtok(rtest, " "));
+				config->ext_interface = strdup(strtok(NULL, " "));
+				debug(LOG_NOTICE, "Upstream gateway [ %s ] via interface [ %s ] is online", config->ext_gateway, config->ext_interface);
+
+				//debug(LOG_NOTICE, "Upstream gateway [ address / via interface ] [ %s ] is online", rtest);
+			}
+		}
+		return config->online_status;
+	} else {
+		debug(LOG_ERR, "Unable to get routing configuration, exiting ...");
+		exit(1);
+	}
+}
+
+
 int ndsctl_lock()
 {
 	char *lockfile;
@@ -119,9 +162,12 @@ int ndsctl_lock()
 
 void ndsctl_unlock()
 {
-	int ret;
 	s_config *config = config_get_config();
-	ret = lockf(config->lockfd, F_ULOCK, 0);
+
+	if (lockf(config->lockfd, F_ULOCK, 0) < 0) {
+		debug(LOG_ERR, "Unable to Unlock ndsctl");
+	}
+
 	close(config->lockfd);
 }
 
@@ -129,7 +175,6 @@ void ndsctl_unlock()
 int download_remotes(int refresh)
 {
 	char *cmd = NULL;
-	int ret;
 	s_config *config = config_get_config();
 
 	if(refresh == 0) {
@@ -139,15 +184,20 @@ int download_remotes(int refresh)
 	}
 
 	safe_asprintf(&cmd,
-		"/usr/lib/opennds/libopennds.sh download \"%s\" \"%s\" \"%s\" \"%d\" &",
+		"/usr/lib/opennds/libopennds.sh download \"%s\" \"%s\" \"%s\" \"%d\" \"%s\" &",
 		config->themespec_path,
 		config->custom_images,
 		config->custom_files,
-		refresh
+		refresh,
+		config->webroot
 	);
 
 	debug(LOG_DEBUG, "Executing system command: %s\n", cmd);
-	ret = system(cmd);
+
+	if (system(cmd) < 0) {
+		debug(LOG_ERR, "Unable to start remote download - Continuing");
+	}
+
 	free(cmd);
 	return 0;
 }
@@ -377,56 +427,6 @@ get_iface_mac(const char ifname[])
 	return safe_strdup(addrbuf);
 }
 
-/** Get name of external interface (the one with default route to the net).
- *  Caller must free.
- */
-char *
-get_ext_iface(void)
-{
-#ifdef __linux__
-	FILE *input;
-	char device[16] = {0};
-	char gw[16] = {0};
-	int i = 1;
-	pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
-	pthread_mutex_t cond_mutex = PTHREAD_MUTEX_INITIALIZER;
-	struct timespec timeout;
-
-	debug(LOG_DEBUG, "get_ext_iface(): Autodectecting the external interface from routing table");
-	for (i = 1; i <= NUM_EXT_INTERFACE_DETECT_RETRY; i += 1) {
-		input = fopen("/proc/net/route", "r");
-		while (!feof(input)) {
-			int rc = fscanf(input, "%s %s %*s %*s %*s %*s %*s %*s %*s %*s %*s\n", device, gw);
-			if (rc == 2 && strcmp(gw, "00000000") == 0) {
-				fclose(input);
-				debug(LOG_INFO, "get_ext_iface(): Detected %s as the default interface after try %d", device, i);
-				return strdup(device);
-			}
-		}
-		fclose(input);
-		debug(LOG_ERR, "get_ext_iface(): Failed to detect the external interface after try %d (maybe the interface is not up yet?).  Retry limit: %d",
-			i,
-			NUM_EXT_INTERFACE_DETECT_RETRY
-		);
-
-		// Sleep for EXT_INTERFACE_DETECT_RETRY_INTERVAL seconds
-		timeout.tv_sec = time(NULL) + EXT_INTERFACE_DETECT_RETRY_INTERVAL;
-		timeout.tv_nsec = 0;
-
-		// Mutex must be locked for pthread_cond_timedwait...
-		pthread_mutex_lock(&cond_mutex);
-		// Thread safe "sleep"
-		pthread_cond_timedwait(&cond, &cond_mutex, &timeout);
-		// No longer needs to be locked
-		pthread_mutex_unlock(&cond_mutex);
-	}
-
-	debug(LOG_ERR, "get_ext_iface(): Failed to detect the external interface after %d tries, aborting", i);
-	exit(1);
-#endif
-	return NULL;
-}
-
 char *
 format_duration(time_t from, time_t to, char buf[64])
 {
@@ -564,6 +564,17 @@ ndsctl_status(FILE *fp)
 		fprintf(fp, "Managed interface: %s\n", config->gw_interface);
 	} else {
 		fprintf(fp, "Managed interface: %s - IP address range: %s\n", config->gw_interface, config->gw_iprange);
+	}
+
+	// Check if router is online
+	int watchdog = 0;
+	int routercheck;
+	routercheck = check_routing(watchdog);
+
+	if (routercheck == 1) {
+		fprintf(fp, "Upstream gateway [ %s ] via interface [ %s ] is online\n", config->ext_gateway, config->ext_interface);
+	} else {
+		fprintf(fp, "Upstream gateway is offline or not connected\n");
 	}
 
 	fprintf(fp, "MHD Server [ version %s ] listening on: http://%s\n", mhdversion, config->gw_address);

@@ -58,9 +58,11 @@
 #define DEFAULT_GATEWAYPORT 2050
 #define DEFAULT_GATEWAYFQDN "status.client"
 #define DEFAULT_STATUSPATH "/usr/lib/opennds/client_params.sh"
+#define DEFAULT_LOG_MOUNTPOINT "/tmp"
 #define DEFAULT_MAX_PAGE_SIZE 10240
 #define DEFAULT_FASPORT 0
 #define DEFAULT_LOGIN_OPTION_ENABLED 0
+#define DEFAULT_MAX_LOG_ENTRIES 100
 #define DEFAULT_USE_OUTDATED_MHD 0
 #define DEFAULT_ALLOW_PREEMPTIVE_AUTHENTICATION 0
 #define DEFAULT_UNESCAPE_CALLBACK_ENABLED 0
@@ -194,6 +196,7 @@ typedef struct {
 	unsigned int gw_port;				//@brief Port the webserver will run on
 	unsigned int fas_port;				//@brief Port the fas server will run on
 	int login_option_enabled;			//@brief Use default PreAuth Login script
+	unsigned long long int max_log_entries;	//@brief set the maximum number of log entries
 	int use_outdated_mhd;				//@brief Use outdated libmicrohttpd
 	unsigned long long int max_page_size;		//@brief Max page size to be served by libmicrohttpd
 	int allow_preemptive_authentication;		//@brief Allow Preemptive Authentication using the ndsctl utility
@@ -208,6 +211,7 @@ typedef struct {
 	char *fas_hid;					//@brief Hash provider for FAS
 	char *themespec_path;				//@brief Path to the ThemeSpec file to use for login_option_enabled = 3
 	char *tmpfsmountpoint;				//@brief Mountpoint of the tmpfs drive eg /tmp etc.
+	char *log_mountpoint;				//@brief Mountpoint of the log drive eg a USB drive mounted at /logs
 	char *webroot;					//@brief Directory containing splash pages, etc.
 	char *authdir;					//@brief Notional relative dir for authentication URL
 	char *denydir;					//@brief Notional relative dir for denial URL

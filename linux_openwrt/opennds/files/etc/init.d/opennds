@@ -115,9 +115,9 @@ generate_uci_config() {
 
   for option in preauth binauth fasport faskey fasremotefqdn fasremoteip faspath fas_secure_enabled \
     walledgarden_fqdn_list walledgarden_port_list fas_custom_parameters_list fas_custom_variables_list \
-    fas_custom_images_list fas_custom_files_list themespec_path remotes_refresh_interval max_page_size\
+    fas_custom_images_list fas_custom_files_list themespec_path remotes_refresh_interval max_page_size max_log_entries \
     login_option_enabled use_outdated_mhd allow_preemptive_authentication unescape_callback_enabled daemon \
-    debuglevel maxclients gatewayname gatewayinterface gatewayiprange statuspath \
+    log_mountpoint debuglevel maxclients gatewayname gatewayinterface gatewayiprange statuspath \
     gatewayaddress gatewayport gatewayfqdn webroot \
     sessiontimeout preauthidletimeout authidletimeout checkinterval \
     setmss mssvalue ratecheckwindow downloadrate uploadrate downloadquota uploadquota \

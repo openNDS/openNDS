@@ -288,7 +288,6 @@ get_theme_environment() {
 	if [ -e "$ciddir/$cid" ]; then
 		# We have it already so include the data
 		. $ciddir/$cid
-
 	else
 
 		# Fragment and decode:
@@ -486,7 +485,7 @@ get_client_zone () {
 	# This zone name is only displayed here but could be used to customise the login form for each zone
 
 	if [ -z "$client_zone" ]; then
-		client_mac=$(ip -4 neigh |grep "$clientip" | awk '{print $5}')
+		client_mac=$clientmac
 		client_if_string=$(/usr/lib/opennds/get_client_interface.sh $client_mac)
 		failcheck=$(echo "$client_if_string" | grep "get_client_interface")
 
@@ -496,7 +495,7 @@ get_client_zone () {
 			local_mesh_if=$(echo "$client_if_string" | awk '{printf $3}')
 
 			if [ ! -z "$client_meshnode" ]; then
-				client_zone="MeshZone:$client_meshnode"
+				client_zone="MeshZone:$client_meshnode LocalInterface:$local_mesh_if"
 			else
 				client_zone="LocalZone:$client_if"
 			fi

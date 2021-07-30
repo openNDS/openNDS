@@ -277,6 +277,8 @@ if [ ! -z "$cidfile" ]; then
 
 	# Add a selection of client data variables to the log entry
 	log_entry="$log_entry, gatewayname=$gatewayname, ndsversion=$version, originurl=$originurl"
+else
+	clientmac=$2
 fi
 
 # Get the client zone (the network zone the client is connected to

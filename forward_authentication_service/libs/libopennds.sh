@@ -33,9 +33,9 @@ webget() {
 	fetch=$(type -t uclient-fetch)
 
 	if [ -z "$fetch" ]; then
-		wret="wget -t 1 -T 1"
+		wret="wget -t 1 -T 4"
 	else
-		wret="uclient-fetch -T 1"
+		wret="uclient-fetch -T 4"
 	fi
 }
 

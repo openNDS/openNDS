@@ -4,19 +4,11 @@
 #This software is released under the GNU GPL license.
 
 # This is an example script for BinAuth
-# It can set the session duration per client and writes a local log.
+# It writes a local log and can override authentication requests and quotas.
 #
-# It retrieves redir, a variable that either contains the originally requested url
-# or a url-encoded or aes-encrypted payload of custom variables sent from FAS or PreAuth.
+# The client User Agent string is forwarded to this script.
 #
-# The client User Agent string is also forwarded to this script.
-#
-# If BinAuth is enabled, NDS will call this script as soon as it has received an authentication request
-# from the web page served to the client's CPD (Captive Portal Detection) Browser by one of the following:
-#
-# 1. splash.html
-# 2. PreAuth
-# 3. FAS
+# If BinAuth is enabled, NDS will call this script as soon as it has received an authentication, deauthentication or shutdown request
 #
 
 ##################
@@ -282,7 +274,7 @@ else
 fi
 
 # Get the client zone (the network zone the client is connected to
-# This might be a logal wireless interface, a remote mesh node, or a cable connected wireless access point
+# This might be a local wireless interface, a remote mesh node, or a cable connected wireless access point
 get_client_zone
 
 # Add client_zone to the log entry
@@ -291,21 +283,24 @@ log_entry="$log_entry, client_zone=$client_zone"
 # Append to the log.
 write_log
 
-# Set length of session in seconds (eg 24 hours is 86400 seconds - if set to 0 then defaults to global sessiontimeout value):
+#Quotas and session length set elsewhere can be overridden here if action=auth_client, otherwise will be ignored.
+# Set length of session in seconds (eg 24 hours is 86400 seconds - if set to 0 then defaults to global or FAS sessiontimeout value):
 session_length=0
 
 # Set Rate and Quota values for the client
-# The session length, rate and quota values could be determined by FAS or PreAuth, on a per client basis, and embedded in the customdata variable payload.
+# The session length, rate and quota values are determined globaly or by FAS/PreAuth on a per client basis.
 # rates are in kb/s, quotas are in kB. Setting to 0 means no limit
 upload_rate=0
 download_rate=0
 upload_quota=0
 download_quota=0
 
-# Finally before exiting, output the session length, upload rate, download rate, upload quota and download quota.
+# Finally before exiting, output the session length, upload rate, download rate, upload quota and download quota (only effective for auth_client).
 
 echo "$session_length $upload_rate $download_rate $upload_quota $download_quota"
 
+# Exit, setting level (only effective for auth_client)
+#
 # exit 0 tells NDS it is ok to allow the client to have access.
 # exit 1 would tell NDS to deny access.
 exit 0

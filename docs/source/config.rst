@@ -389,9 +389,49 @@ The local path where the system css file, and other static page content resides.
 
 ie. Serve the file splash.css from this directory
 
+Example:
+
 ``option webroot '/etc/opennds/htdocs'``
 
-Set the GateWayInterface
+Set Maximum number of Local Log Entries
+***************************************
+
+Default: 100
+
+Minimum value 0 (no limit)
+
+Maximum value - limited only be free storage space on the logging mountpoint
+
+    If set to '0' there is no limit
+
+    This is the maximum number of local log entries allowed before log rotation begins
+
+    Both ThemeSpec and Binauth log locally if they are enabled
+
+    **WARNING** - local logging is by default written to the tmpfs volatile storage
+
+    If this option were to be set too high the router could run out of tmpfs storage and/or free RAM
+
+    Non-volatile storage, such as a USB storage device may be defined using the log_mountpoint option
+
+Example:
+
+``option max_log_entries '1000'``
+
+Set Local Log Mountpoint
+************************
+
+Default: router's volatile tmpfs storage eg on OpenWrt '/tmp'
+
+Local logging can be directed to any storage accessible to the router eg USB drive, SSD etc
+
+    **WARNING** - you cannot use the router's built in flash storage as this would cause excessive wear and eventual flash failure
+
+Example:
+
+``option log_mountpoint '/logs'``
+
+Set the GatewayInterface
 ************************
 
 Default br-lan
@@ -426,7 +466,7 @@ Default: openNDS
 
 gatewayname is used as an identifier for the instance of openNDS
 
-It is displayed on the default static splash page and the default preauth login script.
+It is displayed on the default splash page sequence for ThemeSpec and the example php scripts.
 
 It is particularly useful in the case of a single remote FAS server that serves multiple openNDS sites, allowing the FAS to customise its response for each site.
 

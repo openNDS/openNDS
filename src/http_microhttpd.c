@@ -1441,7 +1441,7 @@ static int send_error(struct MHD_Connection *connection, int error)
 		ret = MHD_queue_response(connection, MHD_HTTP_INTERNAL_SERVER_ERROR, response);
 		break;
 	case 511:
-		if (config->gw_fqdn) {
+		if (strcmp(config->gw_fqdn, "disable") != 0) {
 			safe_asprintf(&status_url, "http://%s/", config->gw_fqdn);
 		} else {
 			safe_asprintf(&status_url, "http://%s/", config->gw_ip);

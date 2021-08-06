@@ -422,13 +422,9 @@ setup_from_config(void)
 		debug(LOG_DEBUG, "Custom FAS files string [%s]", config->custom_files);
 	}
 
-	if (strcmp(config->gw_fqdn, "disable") == 0) {
-		config->gw_fqdn = NULL;
-	}
-
-	if (config->gw_fqdn || config->walledgarden_fqdn_list) {
+	if (strcmp(config->gw_fqdn, "disable") != 0 || config->walledgarden_fqdn_list) {
 		// For Client status Page - configure the hosts file
-		if (config->gw_fqdn) {
+		if (strcmp(config->gw_fqdn, "disable") != 0) {
 			safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"hostconf\" \"%s\" \"%s\"",
 				config->gw_ip,
 				config->gw_fqdn

@@ -553,13 +553,15 @@ _parse_firewall_rule(t_firewall_ruleset *ruleset, char *leftover)
 		target = TARGET_DROP;
 	} else if (!strcasecmp(token, "allow")) {
 		target = TARGET_ACCEPT;
+	} else if (!strcasecmp(token, "passthrough")) {
+		target = TARGET_RETURN;
 	} else if (!strcasecmp(token, "log")) {
 		target = TARGET_LOG;
 	} else if (!strcasecmp(token, "ulog")) {
 		target = TARGET_ULOG;
 	} else {
 		debug(LOG_ERR, "Invalid rule type %s, expecting "
-			  "\"block\",\"drop\",\"allow\",\"log\" or \"ulog\"", token);
+			  "\"block\",\"drop\",\"allow\",\"passthrough\",\"log\" or \"ulog\"", token);
 		exit(1);
 	}
 

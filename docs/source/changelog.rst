@@ -4,6 +4,7 @@ What's New? - ChangeLog
 opennds (9.3.0)
 
   * This version adds new functionality, and fixes some issues
+  * Add - Add - firewall passthrough mode for authenticated users [bluewave.net]
   * Add - Add - use configured debuglevel in authmon [bluewave.net]
   * Add - automated log rotation and client_zone to binauth_log [bluewave.net]
   * Add - increased timeout interval for file downloads [bluewave.net]
@@ -12,6 +13,7 @@ opennds (9.3.0)
   * Add - config variables ext_interface and ext_gateway [bluewave.net]
   * Add - Start initial download of remotes only if online [bluewave.net]
   * Add - Router online/offline watchdog [bluewave.net]
+  * Fix - Segfault when gatewayfqdn is disabled [bluewave.net]
   * Fix - missing clientmac when not using themespec [bluewave.net]
   * Fix - some compiler warnings [bluewave.net]
   * Fix - use configured value for webroot for remote image symlink to images folder [bluewave.net]
@@ -19,7 +21,7 @@ opennds (9.3.0)
   * Fix - Prevent potential read overrun within the MHD page buffer [bluewave.net]
   * Remove - legacy get_ext_iface() function [bluewave.net]
 
- -- Rob White <dot@blue-wave.net> Sun, 1 Aug 2021 09:58:02 +0000
+ -- Rob White <dot@blue-wave.net> Sun, 8 Aug 2021 09:58:02 +0000
 
 opennds (9.2.0)
 

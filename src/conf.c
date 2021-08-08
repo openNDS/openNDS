@@ -381,7 +381,7 @@ add_ruleset(const char rulesetname[])
 		return ruleset;
 	}
 
-	debug(LOG_DEBUG, "add_ruleset(): Creating FirewallRuleSet %s.", rulesetname);
+	debug(LOG_DEBUG, "add_ruleset(): Creating FirewallRuleSet %s ruleset [%s].", rulesetname, ruleset);
 
 	// Create and place at head of config.rulesets
 	ruleset = safe_malloc(sizeof(t_firewall_ruleset));

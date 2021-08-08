@@ -1,6 +1,6 @@
 .\" Man page generated from reStructuredText.
 .
-.TH "OPENNDS" "1" "Aug 05, 2021" "9.3.0" "openNDS"
+.TH "OPENNDS" "1" "Aug 08, 2021" "9.3.0" "openNDS"
 .SH NAME
 opennds \- opennds Documentation
 .
@@ -111,6 +111,8 @@ opennds (9.3.0)
 .IP \(bu 2
 This version adds new functionality, and fixes some issues
 .IP \(bu 2
+Add \- Add \- firewall passthrough mode for authenticated users [bluewave.net]
+.IP \(bu 2
 Add \- Add \- use configured debuglevel in authmon [bluewave.net]
 .IP \(bu 2
 Add \- automated log rotation and client_zone to binauth_log [bluewave.net]
@@ -127,6 +129,8 @@ Add \- Start initial download of remotes only if online [bluewave.net]
 .IP \(bu 2
 Add \- Router online/offline watchdog [bluewave.net]
 .IP \(bu 2
+Fix \- Segfault when gatewayfqdn is disabled [bluewave.net]
+.IP \(bu 2
 Fix \- missing clientmac when not using themespec [bluewave.net]
 .IP \(bu 2
 Fix \- some compiler warnings [bluewave.net]
@@ -141,7 +145,7 @@ Remove \- legacy get_ext_iface() function [bluewave.net]
 .UNINDENT
 .UNINDENT
 .UNINDENT
-\(em Rob White <\fI\%dot@blue\-wave.net\fP> Sun, 1 Aug 2021 09:58:02 +0000
+\(em Rob White <\fI\%dot@blue\-wave.net\fP> Sun, 8 Aug 2021 09:58:02 +0000
 .UNINDENT
 .UNINDENT
 .sp
@@ -2145,35 +2149,87 @@ All other FAS settings will be overidden.
 Example:
 .sp
 \fBoption preauth \(aq/path/to/myscript/myscript.sh\(aq\fP
-.SS Block Private Subnets
+.SS Access Control For Authenticated Users
+.SS Block Access For Authenticated Users (block)
 .sp
-Your router might have several private subnets on their own interfaces.
+Default: None
 .sp
-You will probably want to keep them private from clients using the public gatewayinterface.
-.sp
-If so, you should block the entire subnets on those interfaces.
+If Block Access is specified, an allow or passthrough must be specified afterwards as any entries set here will override the access default.
 .sp
 Examples:
+.INDENT 0.0
+.INDENT 3.5
+You might want to block entire IP subnets. e.g.:
 .sp
-\fBlist authenticated_users \(aqblock to 192.168.0.0/16\(aq\fP
+\fBlist authenticated_users \(aqblock to 123.2.3.0/24\(aq\fP
 .sp
-\fBlist authenticated_users \(aqblock to 10.0.0.0/8\(aq\fP
-.SS Access For Authenticated Users
+\fBlist authenticated_users \(aqblock to 123.2.0.0/16\(aq\fP
 .sp
-For authenticated users you will probably want to allow full access to the Internet, so use:
+\fBlist authenticated_users \(aqblock to 123.0.0.0/8\(aq\fP
+.UNINDENT
+.UNINDENT
 .sp
+or block access to a single IP address. e.g.:
+.INDENT 0.0
+.INDENT 3.5
+\fBlist authenticated_users \(aqblock to 123.2.3.4\(aq\fP
+.UNINDENT
+.UNINDENT
+.sp
+Do not forget to add an allow or passthrough if the default only is assumed (see Grant Access)
+.SS Grant Access For Authenticated Users (allow and passthrough)
+.INDENT 0.0
+.IP \(bu 2
+Access can be allowed by openNDS directly, overriding the operating system firewall rules
+.UNINDENT
+.sp
+or
+.INDENT 0.0
+.IP \(bu 2
+Access can be allowed by openNDS but the final decision can be passed on to the operating system firewall.
+.UNINDENT
+.sp
+Default:
+.sp
+No Entry, equivalent to
+.INDENT 0.0
+.INDENT 3.5
+\fBlist authenticated_users \(aqpassthrough all\(aq\fP
+.UNINDENT
+.UNINDENT
+.sp
+Any entries set here, or above in Block Access, will override the default
+.sp
+Example:
+.INDENT 0.0
+.TP
+.B Grant access overriding operating system firewall
 \fBlist authenticated_users \(aqallow all\(aq\fP
+.UNINDENT
 .sp
-If you want to restrict access for authenticated users, then at minimum you should open the following ports:
+Example:
 .sp
-\fBlist authenticated_users \(aqallow tcp port 53\(aq\fP Allow DNS
+Grant access to https web sites, subject to the operating system\(aqs firewall rules
+.INDENT 0.0
+.INDENT 3.5
+\fBlist authenticated_users \(aqpassthrough tcp port 443\(aq\fP
+.UNINDENT
+.UNINDENT
 .sp
-\fBlist authenticated_users \(aqallow udp port 53\(aq\fP Allow DNS
+Grant access to http web sites, overriding the operating system firewall rules.
+.INDENT 0.0
+.INDENT 3.5
+\fBlist authenticated_users \(aqallow tcp port 80\(aq\fP
+.UNINDENT
+.UNINDENT
 .sp
-\fBlist authenticated_users \(aqallow tcp port 80\(aq\fP Allow standard http web sites
-.sp
-\fBlist authenticated_users \(aqallow tcp port 443\(aq\fP Allow standard https web sites
-.SS Access For Preauthenticated Users:
+Grant access to udp services at address 123.1.1.1, on port 5000, overriding the operating system firewall rules.
+.INDENT 0.0
+.INDENT 3.5
+\fBlist authenticated_users \(aqallow udp port 5000 to 123.1.1.1\(aq\fP
+.UNINDENT
+.UNINDENT
+.SS Access Control For Preauthenticated Users:
 .sp
 \fBIMPORTANT\fP
 .INDENT 0.0

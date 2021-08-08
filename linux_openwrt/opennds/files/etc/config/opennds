@@ -593,22 +593,49 @@ config opennds
 	#option preauth '/path/to/myscript/myscript.sh'
 	###########################################################################################
 
-	# Your router may have several interfaces, and you
-	# probably want to keep them private from the gatewayinterface.
-	# If so, you should block the entire subnets on those interfaces, e.g.:
-	#list authenticated_users 'block to 192.168.0.0/16'
-	#list authenticated_users 'block to 10.0.0.0/8'
+	# Block Access For Authenticated Users (block):
+	# Default: None
+	#
+	# If Block Access is specified, an allow or passthrough must be specified afterwards
+	#	as any entries set here will override the access default
+	#
+	# Examples:
+	#
+	# You might want to block entire IP subnets. e.g.:
+	#list authenticated_users 'block to 123.2.3.0/24'
+	#list authenticated_users 'block to 123.2.0.0/16'
+	#list authenticated_users 'block to 123.0.0.0/8'
+	#
+	# or block access to a single IP address. e.g.:
+	#
+	#list authenticated_users 'block to 123.2.3.4'
+	#
+	# Do not forget to add an allow or passthrough if the default only is assumed (see Grant Access)
+	#
 	###########################################################################################
 
-	# For authenticated users:
-	# Typical ports you will probably want to open up.
-	#list authenticated_users 'allow tcp port 22'
-	#list authenticated_users 'allow tcp port 53'
-	#list authenticated_users 'allow udp port 53'
+	# Grant Access For Authenticated Users (allow and passthrough):
+	#
+	# Access can be allowed by openNDS directly, overriding the operating system firewall rules
+	# or Access can be allowed by openNDS but the final decision can be passed on to the operating system firewall.
+	#
+	# Default: list authenticated_users 'passthrough all'
+	#
+	# Any entries set here, or above in Block Access, will override the default
+	#
+	# Example: Grant access overriding operating system firewall
+	#list authenticated_users 'allow all'
+	#
+	# Example: 
+	# Grant access to https web sites, subject to the operating system firewall rules
+	#list authenticated_users 'passthrough tcp port 443'
+	#
+	# Grant access to http web sites, overriding the operating system firewall rules.
 	#list authenticated_users 'allow tcp port 80'
-	#list authenticated_users 'allow tcp port 443'
-	# Or for happy customers allow all
-	list authenticated_users 'allow all'
+	#
+	# Grant access to udp services at address 123.1.1.1, on port 5000, overriding the operating system firewall rules.
+	#list authenticated_users 'allow udp port 5000 to 123.1.1.1'
+	#
 	###########################################################################################
 
 	# For preauthenticated users:

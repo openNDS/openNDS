@@ -124,7 +124,9 @@ typedef enum {
 	oFasCustomParametersList,
 	oFasCustomVariablesList,
 	oFasCustomImagesList,
-	oFasCustomFilesList
+	oFasCustomFilesList,
+	oLogMountpoint,
+	oMaxLogEntries
 } OpCodes;
 
 /** @internal
@@ -194,6 +196,8 @@ static const struct {
 	{ "fas_custom_variables_list", oFasCustomVariablesList },
 	{ "fas_custom_images_list", oFasCustomImagesList },
 	{ "fas_custom_files_list", oFasCustomFilesList },
+	{ "max_log_entries", oMaxLogEntries },
+	{ "log_mountpoint", oLogMountpoint },
 	{ NULL, oBadOption },
 };
 
@@ -247,6 +251,7 @@ config_init(void)
 	config.themespec_path = NULL;
 	config.use_outdated_mhd = DEFAULT_USE_OUTDATED_MHD;
 	config.max_page_size = DEFAULT_MAX_PAGE_SIZE;
+	config.max_log_entries = DEFAULT_MAX_LOG_ENTRIES;
 	config.allow_preemptive_authentication = DEFAULT_ALLOW_PREEMPTIVE_AUTHENTICATION;
 	config.unescape_callback_enabled = DEFAULT_UNESCAPE_CALLBACK_ENABLED;
 	config.fas_secure_enabled = DEFAULT_FAS_SECURE_ENABLED;
@@ -260,6 +265,7 @@ config_init(void)
 	config.custom_images = NULL;
 	config.custom_files = NULL;
 	config.tmpfsmountpoint = NULL;
+	config.log_mountpoint = safe_strdup(DEFAULT_LOG_MOUNTPOINT);
 	config.fas_path = DEFAULT_FASPATH;
 	config.webroot = safe_strdup(DEFAULT_WEBROOT);
 	config.authdir = safe_strdup(DEFAULT_AUTHDIR);
@@ -375,7 +381,7 @@ add_ruleset(const char rulesetname[])
 		return ruleset;
 	}
 
-	debug(LOG_DEBUG, "add_ruleset(): Creating FirewallRuleSet %s.", rulesetname);
+	debug(LOG_DEBUG, "add_ruleset(): Creating FirewallRuleSet %s ruleset [%s].", rulesetname, ruleset);
 
 	// Create and place at head of config.rulesets
 	ruleset = safe_malloc(sizeof(t_firewall_ruleset));
@@ -547,13 +553,15 @@ _parse_firewall_rule(t_firewall_ruleset *ruleset, char *leftover)
 		target = TARGET_DROP;
 	} else if (!strcasecmp(token, "allow")) {
 		target = TARGET_ACCEPT;
+	} else if (!strcasecmp(token, "passthrough")) {
+		target = TARGET_RETURN;
 	} else if (!strcasecmp(token, "log")) {
 		target = TARGET_LOG;
 	} else if (!strcasecmp(token, "ulog")) {
 		target = TARGET_ULOG;
 	} else {
 		debug(LOG_ERR, "Invalid rule type %s, expecting "
-			  "\"block\",\"drop\",\"allow\",\"log\" or \"ulog\"", token);
+			  "\"block\",\"drop\",\"allow\",\"passthrough\",\"log\" or \"ulog\"", token);
 		exit(1);
 	}
 
@@ -876,6 +884,16 @@ config_read(const char *filename)
 				debug(LOG_ERR, "Exiting...");
 				exit(1);
 			}
+			break;
+		case oMaxLogEntries:
+			if (sscanf(p1, "%llu", &config.max_log_entries) < 1) {
+				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+				debug(LOG_ERR, "Exiting...");
+				exit(1);
+			}
+			break;
+		case oLogMountpoint:
+			config.log_mountpoint = safe_strdup(p1);
 			break;
 		case oAllowPreemptiveAuthentication:
 			if (sscanf(p1, "%d", &config.allow_preemptive_authentication) < 1) {

@@ -237,6 +237,37 @@ config opennds
 	#option max_page_size '4096'
 	###########################################################################################
 
+	# Maximum number of Local Log Entries
+	# Default 100
+	# Minimum value 0
+	# Maximum value - limited only be free storage space on the logging mountpoint
+	#
+	# If set to '0' there is no limit
+	#
+	# This is the maximum number of local log entries allowed before log rotation begins
+	# Both ThemeSpec and Binauth log locally if they are enabled
+	#
+	# **WARNING** - local logging is by default written to the tmpfs volatile storage
+	# If this option were to be set too high the router could run out of tmpfs storage and/or free RAM
+	#
+	# Non-volatile storage, such as a USB storage device may be defined using the log_mountpoint option
+	#
+	# Example:
+	#option max_log_entries '1000'
+	###########################################################################################
+
+	# Local Log Mountpoint
+	# Default: router's volatile tmpfs storage eg on OpenWrt '/tmp'
+	#
+	# Local logging can be directed to any storage accessible to the router eg USB drive, SSD etc
+	#
+	# **WARNING** - you cannot use the router's built in flash storage as this would cause
+	# excessive wear and eventual flash failure
+	#
+	# Example:
+	#option log_mountpoint '/logs'
+	###########################################################################################
+
 	# MHD Unescape callback - This is an advanced option
 	# Default 0
 	#
@@ -562,22 +593,49 @@ config opennds
 	#option preauth '/path/to/myscript/myscript.sh'
 	###########################################################################################
 
-	# Your router may have several interfaces, and you
-	# probably want to keep them private from the gatewayinterface.
-	# If so, you should block the entire subnets on those interfaces, e.g.:
-	#list authenticated_users 'block to 192.168.0.0/16'
-	#list authenticated_users 'block to 10.0.0.0/8'
+	# Block Access For Authenticated Users (block):
+	# Default: None
+	#
+	# If Block Access is specified, an allow or passthrough must be specified afterwards
+	#	as any entries set here will override the access default
+	#
+	# Examples:
+	#
+	# You might want to block entire IP subnets. e.g.:
+	#list authenticated_users 'block to 123.2.3.0/24'
+	#list authenticated_users 'block to 123.2.0.0/16'
+	#list authenticated_users 'block to 123.0.0.0/8'
+	#
+	# or block access to a single IP address. e.g.:
+	#
+	#list authenticated_users 'block to 123.2.3.4'
+	#
+	# Do not forget to add an allow or passthrough if the default only is assumed (see Grant Access)
+	#
 	###########################################################################################
 
-	# For authenticated users:
-	# Typical ports you will probably want to open up.
-	#list authenticated_users 'allow tcp port 22'
-	#list authenticated_users 'allow tcp port 53'
-	#list authenticated_users 'allow udp port 53'
+	# Grant Access For Authenticated Users (allow and passthrough):
+	#
+	# Access can be allowed by openNDS directly, overriding the operating system firewall rules
+	# or Access can be allowed by openNDS but the final decision can be passed on to the operating system firewall.
+	#
+	# Default: list authenticated_users 'passthrough all'
+	#
+	# Any entries set here, or above in Block Access, will override the default
+	#
+	# Example: Grant access overriding operating system firewall
+	#list authenticated_users 'allow all'
+	#
+	# Example: 
+	# Grant access to https web sites, subject to the operating system firewall rules
+	#list authenticated_users 'passthrough tcp port 443'
+	#
+	# Grant access to http web sites, overriding the operating system firewall rules.
 	#list authenticated_users 'allow tcp port 80'
-	#list authenticated_users 'allow tcp port 443'
-	# Or for happy customers allow all
-	list authenticated_users 'allow all'
+	#
+	# Grant access to udp services at address 123.1.1.1, on port 5000, overriding the operating system firewall rules.
+	#list authenticated_users 'allow udp port 5000 to 123.1.1.1'
+	#
 	###########################################################################################
 
 	# For preauthenticated users:

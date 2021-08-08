@@ -33,9 +33,9 @@ webget() {
 	fetch=$(type -t uclient-fetch)
 
 	if [ -z "$fetch" ]; then
-		wret="wget -t 1 -T 1"
+		wret="wget -t 1 -T 4"
 	else
-		wret="uclient-fetch -T 1"
+		wret="uclient-fetch -T 4"
 	fi
 }
 
@@ -288,7 +288,6 @@ get_theme_environment() {
 	if [ -e "$ciddir/$cid" ]; then
 		# We have it already so include the data
 		. $ciddir/$cid
-
 	else
 
 		# Fragment and decode:
@@ -403,7 +402,18 @@ configure_log_location() {
 		fi
 	done
 
-	#For syslog
+	# Check if config overrides mountpoint for logdir
+	log_mountpoint=""
+	option="log_mountpoint"
+	get_option_from_config
+
+	if [ ! -z "$log_mountpoint" ]; then
+		logdir="$log_mountpoint/ndslog/"
+	else
+		log_mountpoint="$mountpoint"
+	fi
+
+	# Get PID For syslog
 	ndspid=$(pgrep '/usr/bin/opennds')
 }
 
@@ -475,7 +485,7 @@ get_client_zone () {
 	# This zone name is only displayed here but could be used to customise the login form for each zone
 
 	if [ -z "$client_zone" ]; then
-		client_mac=$(ip -4 neigh |grep "$clientip" | awk '{print $5}')
+		client_mac=$clientmac
 		client_if_string=$(/usr/lib/opennds/get_client_interface.sh $client_mac)
 		failcheck=$(echo "$client_if_string" | grep "get_client_interface")
 
@@ -485,7 +495,7 @@ get_client_zone () {
 			local_mesh_if=$(echo "$client_if_string" | awk '{printf $3}')
 
 			if [ ! -z "$client_meshnode" ]; then
-				client_zone="MeshZone:$client_meshnode"
+				client_zone="MeshZone:$client_meshnode LocalInterface:$local_mesh_if"
 			else
 				client_zone="LocalZone:$client_if"
 			fi
@@ -507,7 +517,7 @@ auth_log () {
 	authstat=$ndsctlout
 	# $authstat contains the response from do_ndsctl
 
-	mountcheck=$(df | grep "$mountpoint")
+	mountcheck=$(df | grep "$log_mountpoint")
 	clientinfo="status=$authstat, mac=$clientmac, ip=$clientip, zone=$client_zone, ua=$user_agent"
 
 	if [ ! -z "$logname" ]; then
@@ -517,8 +527,7 @@ auth_log () {
 		fi
 
 		logfile="$logdir""$logname"
-		awkcmd="awk ""'\$6==""\"$mountpoint\"""{print \$4}'"
-		min_freespace_to_log_ratio=10
+		awkcmd="awk ""'\$6==""\"$log_mountpoint\"""{print \$4}'"
 		datetime=$(date)
 
 		if [ ! -f "$logfile" ]; then
@@ -526,14 +535,36 @@ auth_log () {
 		fi
 
 		if [ ! -z "$mountcheck" ]; then
-			filesize=$(ls -s -1 $logfile | awk -F' ' '{print $1}')
-			available=$(df | grep "$mountpoint" | eval "$awkcmd")
-			sizeratio=$(($available/$filesize))
+			# Truncate the log file if max_log_entries is set
+			max_log_entries=""
+			option="max_log_entries"
+			get_option_from_config
 
-			if [ $sizeratio -ge $min_freespace_to_log_ratio ]; then
-				echo "$datetime, $userinfo, $clientinfo" >> $logfile
+			if [ ! -z "$max_log_entries" ]; then
+				mv "$logfile" "$logfile.cut"
+				tail -n "$max_log_entries" "$logfile.cut" >> "$logfile"
+				rm "$logfile.cut"
+			fi
+
+			available=$(df | grep "$log_mountpoint" | eval "$awkcmd")
+
+			if [ "$log_mountpoint" = "$mountpoint" ]; then
+				# Check the logfile is not too big
+				min_freespace_to_log_ratio=10
+				filesize=$(ls -s -1 $logfile | awk -F' ' '{print $1}')
+				sizeratio=$(($available/$filesize))
+
+				if [ $sizeratio -ge $min_freespace_to_log_ratio ]; then
+					echo "$datetime, $userinfo, $clientinfo" >> $logfile
+				else
+					echo "Log file too big, please archive contents and reduce max_log_entries" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
+				fi
 			else
-				echo "PreAuth - log file too big, please archive contents" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
+				if [ "$available" > 10 ];then
+					echo "$datetime, $userinfo, $clientinfo" >> $logfile
+				else
+					echo "Log file too big, please archive contents and reduce max_log_entries" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
+				fi
 			fi
 		else
 			echo "Log location is NOT a mountpoint - logs would fill storage space - logging disabled" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
@@ -712,15 +743,22 @@ mhd_get_status() {
 	fi
 }
 
-get_key_from_config() {
-	faskey=""
+get_option_from_config() {
+	local param=""
 
 	if [ -e "/etc/config/opennds" ]; then
-		faskey=$(uci -q get opennds.@opennds[0].faskey | awk '{printf("%s", $0)}')
+		param=$(uci -q get opennds.@opennds[0].$option | awk '{printf("%s", $0)}')
 
 	elif [ -e "/etc/opennds/opennds.conf" ]; then
-		faskey=$(cat "/etc/opennds/opennds.conf" | awk -F'faskey ' '{printf("%s", $2)}')
+		param=$(cat "/etc/opennds/opennds.conf" | awk -F"$option" '{printf("%s", $2)}')
 	fi
+
+	eval $option=$param
+}
+
+get_key_from_config() {
+	option="faskey"
+	get_option_from_config
 
 	if [ -z "$faskey" ]; then
 		faskey="1234567890"

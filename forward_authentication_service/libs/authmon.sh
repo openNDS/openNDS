@@ -2,18 +2,21 @@
 #Copyright (C) BlueWave Projects and Services 2015-2021
 #This software is released under the GNU GPL license.
 
-#wait a while for openNDS to get started
-sleep 5
+# functions:
 
-#get arguments and set variables
-url=$1
-gatewayhash=$2
-phpcli=$3
-loopinterval=10
-postrequest="/usr/lib/opennds/post-request.php"
+# Get configured option
+get_option_from_config() {
+	local param=""
 
-#action can be "list" (list and delete from FAS auth log), "view" (view and leave in FAS auth log) or "clear" (clear any stale FAS auth log entries)
-#
+	if [ -e "/etc/config/opennds" ]; then
+		param=$(uci -q get opennds.@opennds[0].$option | awk '{printf("%s", $0)}')
+
+	elif [ -e "/etc/opennds/opennds.conf" ]; then
+		param=$(cat "/etc/opennds/opennds.conf" | awk -F"$option" '{printf("%s", $2)}')
+	fi
+
+	eval $option=$param
+}
 
 # Function to send commands to openNDS:
 do_ndsctl () {
@@ -57,16 +60,50 @@ do_ndsctl () {
 	done
 }
 
+#### end of functions ####
+
+#########################################
+#					#
+#  Start - Main entry point		#
+#					#
+#  This script starts executing here	#
+#					#
+#					#
+#########################################
+
+#wait a while for openNDS to get started
+sleep 5
+
+#get arguments and set variables
+url=$1
+gatewayhash=$2
+phpcli=$3
+loopinterval=10
+postrequest="/usr/lib/opennds/post-request.php"
+
 # Construct our user agent string:
 ndsctlcmd="status 2>/dev/null"
 do_ndsctl
 version=$(echo "$ndsctlout" | grep Version | awk '{printf $2}')
 user_agent="openNDS(authmon;NDS:$version;)"
 
+# Call postrequest with action.
+# Action can be "list" (list and delete from FAS auth log), "view" (view and leave in FAS auth log) or "clear" (clear any stale FAS auth log entries)
 # Initialise by clearing stale FAS auth log entries
 action="clear"
 payload="none"
 ret=$($phpcli -f "$postrequest" "$url" "$action" "$gatewayhash" "$user_agent" "$payload")
+
+# Get the configured debuglevel
+option="debuglevel"
+get_option_from_config
+
+if [ -z "$debuglevel" ]; then
+	$debuglevel="1"
+fi
+
+# Get PID For syslog
+ndspid=$(pgrep '/usr/bin/opennds')
 
 # Main loop:
 while true; do
@@ -84,12 +121,15 @@ while true; do
 		if [ ${#authlist} -ge 3 ]; then
 
 			# Set the maximum number of clients to authenticate in one go
-			# (This is necessary due to string length limits in some shell implementations eg Busybox ash)
+			# (This is necessary due to argument string length limits in some shell implementations eg Busybox ash)
 			authcount=4
 
 			for authparams_enc in $authlist; do
 				authparams=$(printf "${authparams_enc//%/\\x}")
-				logger -s -p daemon.notice -t "authmon" "authentication parameters $authparams"
+
+				if [ "$debuglevel" -ge 2 ]; then
+					echo "authmon - authentication parameters $authparams" | logger -p "daemon.info" -s -t "opennds[$ndspid]: "
+				fi
 
 				ndsctlcmd="auth $authparams 2>/dev/null"
 				do_ndsctl

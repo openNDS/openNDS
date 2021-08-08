@@ -231,6 +231,9 @@ _iptables_compile(const char table[], const char chain[], t_firewall_rule *rule)
 	case TARGET_ACCEPT:
 		mode = "ACCEPT";
 		break;
+	case TARGET_RETURN:
+		mode = "RETURN";
+		break;
 	case TARGET_LOG:
 		mode = "LOG";
 		break;
@@ -240,29 +243,39 @@ _iptables_compile(const char table[], const char chain[], t_firewall_rule *rule)
 	}
 
 	snprintf(command, sizeof(command),  "-t %s -A %s ", table, chain);
+
 	if (rule->mask != NULL) {
 		snprintf((command + strlen(command)),
-				 (sizeof(command) - strlen(command)),
-				 "-d %s ", rule->mask);
+			 (sizeof(command) - strlen(command)),
+			 "-d %s ", rule->mask
+		);
 	}
+
 	if (rule->protocol != NULL) {
 		snprintf((command + strlen(command)),
-				 (sizeof(command) - strlen(command)),
-				 "-p %s ", rule->protocol);
+			 (sizeof(command) - strlen(command)),
+			 "-p %s ", rule->protocol)
+		;
 	}
+
 	if (rule->port != NULL) {
 		snprintf((command + strlen(command)),
-				 (sizeof(command) - strlen(command)),
-				 "--dport %s ", rule->port);
+			 (sizeof(command) - strlen(command)),
+			 "--dport %s ", rule->port
+		);
 	}
+
 	if (rule->ipset != NULL) {
 		snprintf((command + strlen(command)),
-				 (sizeof(command) - strlen(command)),
-				 "-m set --match-set %s dst ", rule->ipset);
-	}
-	snprintf((command + strlen(command)),
 			 (sizeof(command) - strlen(command)),
-			 "-j %s", mode);
+			 "-m set --match-set %s dst ", rule->ipset
+		);
+	}
+
+	snprintf((command + strlen(command)),
+		 (sizeof(command) - strlen(command)),
+		 "-j %s", mode
+	);
 
 	debug(LOG_DEBUG, "Compiled Command for IPtables: [ %s ]", command);
 
@@ -662,7 +675,11 @@ iptables_fw_init(void)
 			get_empty_ruleset_policy("trusted-users")
 		);
 	} else {
-		rc |= iptables_do_command("-t filter -A " CHAIN_TO_INTERNET " -m mark --mark 0x%x%s -j " CHAIN_TRUSTED, FW_MARK_TRUSTED, markmask);
+		rc |= iptables_do_command("-t filter -A " CHAIN_TO_INTERNET " -m mark --mark 0x%x%s -j " CHAIN_TRUSTED,
+			FW_MARK_TRUSTED,
+			markmask
+		);
+
 		// CHAIN_TRUSTED, related and established packets ACCEPT
 		rc |= iptables_do_command("-t filter -A " CHAIN_TRUSTED " -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT");
 		// CHAIN_TRUSTED, append the "trusted-users" ruleset
@@ -688,7 +705,7 @@ iptables_fw_init(void)
 			get_empty_ruleset_policy("authenticated-users")
 		);
 	} else {
-		rc |= iptables_do_command("-t filter -A " CHAIN_TO_INTERNET " -m mark --mark 0x%x%s -j " CHAIN_AUTHENTICATED,
+		rc |= iptables_do_command("-t filter -A " CHAIN_TO_INTERNET " -m mark --mark 0x%x%s -g " CHAIN_AUTHENTICATED,
 			FW_MARK_AUTHENTICATED,
 			markmask
 		);
@@ -709,11 +726,13 @@ iptables_fw_init(void)
 	 * else:
 	 *    load and use authenticated-users ruleset
 	 */
+
 	if (is_empty_ruleset("preauthenticated-users")) {
 		rc |= iptables_do_command("-t filter -A " CHAIN_TO_INTERNET " -j %s ", get_empty_ruleset_policy("preauthenticated-users"));
 	} else {
 		rc |= _iptables_append_ruleset("filter", "preauthenticated-users", CHAIN_TO_INTERNET);
 	}
+
 	// CHAIN_TO_INTERNET, all other packets REJECT
 	rc |= iptables_do_command("-t filter -A " CHAIN_TO_INTERNET " -j REJECT --reject-with %s-port-unreachable", ICMP_TYPE);
 

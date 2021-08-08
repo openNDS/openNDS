@@ -4,23 +4,57 @@
 #This software is released under the GNU GPL license.
 
 # This is an example script for BinAuth
-# It can set the session duration per client and writes a local log.
+# It writes a local log and can override authentication requests and quotas.
 #
-# It retrieves redir, a variable that either contains the originally requested url
-# or a url-encoded or aes-encrypted payload of custom variables sent from FAS or PreAuth.
+# The client User Agent string is forwarded to this script.
 #
-# The client User Agent string is also forwarded to this script.
-#
-# If BinAuth is enabled, NDS will call this script as soon as it has received an authentication request
-# from the web page served to the client's CPD (Captive Portal Detection) Browser by one of the following:
-#
-# 1. splash.html
-# 2. PreAuth
-# 3. FAS
+# If BinAuth is enabled, NDS will call this script as soon as it has received an authentication, deauthentication or shutdown request
 #
 
 ##################
 # functions:
+
+get_client_zone () {
+	# Gets the client zone, (if we don't already have it) ie the connection the client is using, such as:
+	# local interface (br-lan, wlan0, wlan0-1 etc.,
+	# or remote mesh node mac address
+	# This zone name is only displayed here but could be used to customise the login form for each zone
+
+	if [ -z "$client_zone" ]; then
+		client_mac=$clientmac
+		client_if_string=$(/usr/lib/opennds/get_client_interface.sh $client_mac)
+		failcheck=$(echo "$client_if_string" | grep "get_client_interface")
+
+		if [ -z $failcheck ]; then
+			client_if=$(echo "$client_if_string" | awk '{printf $1}')
+			client_meshnode=$(echo "$client_if_string" | awk '{printf $2}' | awk -F ':' '{print $1$2$3$4$5$6}')
+			local_mesh_if=$(echo "$client_if_string" | awk '{printf $3}')
+
+			if [ ! -z "$client_meshnode" ]; then
+				client_zone="MeshZone:$client_meshnode LocalInterface:$local_mesh_if"
+			else
+				client_zone="LocalZone:$client_if"
+			fi
+		else
+			client_zone=""
+		fi
+	else
+		client_zone=$(printf "${client_zone//%/\\x}")
+	fi
+}
+
+get_option_from_config() {
+	local param=""
+
+	if [ -e "/etc/config/opennds" ]; then
+		param=$(uci -q get opennds.@opennds[0].$option | awk '{printf("%s", $0)}')
+
+	elif [ -e "/etc/opennds/opennds.conf" ]; then
+		param=$(cat "/etc/opennds/opennds.conf" | awk -F"$option" '{printf("%s", $2)}')
+	fi
+
+	eval $option=$param
+}
 
 configure_log_location() {
 	# Generate the Logfile location; use the tmpfs "temporary" directory to prevent flash wear.
@@ -29,7 +63,9 @@ configure_log_location() {
 	#
 	# DEFAULT Location depends upon OS distro in use:
 	tempdir="/tmp /run /var"
-	mountpoint=""
+
+	# set default values
+	mountpoint="/tmp"
 	logdir="/tmp/ndslog/"
 	logname="binauthlog.log"
 
@@ -42,34 +78,77 @@ configure_log_location() {
 		fi
 	done
 
-	#For syslog
+	# Check if config overrides mountpoint for logdir
+	log_mountpoint=""
+	option="log_mountpoint"
+	get_option_from_config
+
+	if [ ! -z "$log_mountpoint" ]; then
+		logdir="$log_mountpoint/ndslog/"
+	else
+		log_mountpoint="$mountpoint"
+	fi
+
+	# Get PID For syslog
 	ndspid=$(pgrep '/usr/bin/opennds')
 }
 
 write_log () {
+	mountcheck=$(df | grep "$log_mountpoint")
 
-	if [ ! -d "$logdir" ]; then
-		mkdir -p "$logdir"
-	fi
+	if [ ! -z "$logname" ]; then
 
-	logfile="$logdir""$logname"
-	awkcmd="awk ""'\$6==""\"$mountpoint\"""{print \$4}'"
-	min_freespace_to_log_ratio=10
-	datetime=$(date)
+		if [ ! -d "$logdir" ]; then
+			mkdir -p "$logdir"
+		fi
 
-	if [ ! -f "$logfile" ]; then
-		echo "$datetime, New log file created" > $logfile
-	fi
+		logfile="$logdir""$logname"
+		awkcmd="awk ""'\$6==""\"$log_mountpoint\"""{print \$4}'"
+		datetime=$(date)
 
-	ndspid=$(ps | grep opennds | awk -F ' ' 'NR==2 {print $1}')
-	filesize=$(ls -s -1 $logfile | awk -F' ' '{print $1}')
-	available=$(df | grep "$mountpoint" | eval "$awkcmd")
-	sizeratio=$(($available/$filesize))
+		if [ ! -f "$logfile" ]; then
+			echo "$datetime, New log file created" > $logfile
+		fi
 
-	if [ $sizeratio -ge $min_freespace_to_log_ratio ]; then
-		echo "$datetime, $log_entry" >> $logfile
-	else
-		echo "BinAuth - log file too big, please archive contents" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
+		if [ ! -z "$mountcheck" ]; then
+			# Truncate the log file if max_log_entries is set
+			max_log_entries=""
+			option="max_log_entries"
+			get_option_from_config
+
+			if [ ! -z "$max_log_entries" ]; then
+				mv "$logfile" "$logfile.cut"
+				tail -n "$max_log_entries" "$logfile.cut" >> "$logfile"
+				rm "$logfile.cut"
+			fi
+
+			available=$(df | grep "$log_mountpoint" | eval "$awkcmd")
+
+			if [ "$log_mountpoint" = "$mountpoint" ]; then
+				# Logging to tmpfs, so dynamically adjust max log size
+				# then check the logfile is not too big
+				min_freespace_to_log_ratio=10
+				filesize=$(ls -s -1 $logfile | awk -F' ' '{print $1}')
+				sizeratio=$(($available/$filesize))
+
+				if [ $sizeratio -ge $min_freespace_to_log_ratio ]; then
+					echo "$datetime, $log_entry" >> $logfile
+				else
+					echo "Log file too big, please archive contents and reduce max_log_entries" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
+				fi
+			else
+				# Logging to dedicated storage eg usb drive
+				# so just check for free space and let the log file grow
+
+				if [ "$available" > 10 ];then
+					echo "$datetime, $log_entry" >> $logfile
+				else
+					echo "Log file too big, please archive contents and reduce max_log_entries" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
+				fi
+			fi
+		else
+			echo "Log location is NOT a mountpoint - logging disabled" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
+		fi
 	fi
 }
 
@@ -171,7 +250,7 @@ fi
 # Additional data defined by custom parameters, images and files is included
 # For example ThemeSpec "theme_user-email-login-custom-placeholders.sh" config options include:
 # input
-# logo_message=
+# logo_message
 # banner1_message
 # banner2_message
 # banner3_message
@@ -189,27 +268,39 @@ if [ ! -z "$cidfile" ]; then
 	. $mountpoint/ndscids/$cidfile
 
 	# Add a selection of client data variables to the log entry
-	log_entry="$log_entry, gatewayname=$gatewayname, ndsversion=$version, clientif=$clientif"
+	log_entry="$log_entry, gatewayname=$gatewayname, ndsversion=$version, originurl=$originurl"
+else
+	clientmac=$2
 fi
+
+# Get the client zone (the network zone the client is connected to
+# This might be a local wireless interface, a remote mesh node, or a cable connected wireless access point
+get_client_zone
+
+# Add client_zone to the log entry
+log_entry="$log_entry, client_zone=$client_zone"
 
 # Append to the log.
 write_log
 
-# Set length of session in seconds (eg 24 hours is 86400 seconds - if set to 0 then defaults to global sessiontimeout value):
+#Quotas and session length set elsewhere can be overridden here if action=auth_client, otherwise will be ignored.
+# Set length of session in seconds (eg 24 hours is 86400 seconds - if set to 0 then defaults to global or FAS sessiontimeout value):
 session_length=0
 
 # Set Rate and Quota values for the client
-# The session length, rate and quota values could be determined by FAS or PreAuth, on a per client basis, and embedded in the customdata variable payload.
+# The session length, rate and quota values are determined globaly or by FAS/PreAuth on a per client basis.
 # rates are in kb/s, quotas are in kB. Setting to 0 means no limit
 upload_rate=0
 download_rate=0
 upload_quota=0
 download_quota=0
 
-# Finally before exiting, output the session length, upload rate, download rate, upload quota and download quota.
+# Finally before exiting, output the session length, upload rate, download rate, upload quota and download quota (only effective for auth_client).
 
 echo "$session_length $upload_rate $download_rate $upload_quota $download_quota"
 
+# Exit, setting level (only effective for auth_client)
+#
 # exit 0 tells NDS it is ok to allow the client to have access.
 # exit 1 would tell NDS to deny access.
 exit 0

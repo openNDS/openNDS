@@ -389,9 +389,49 @@ The local path where the system css file, and other static page content resides.
 
 ie. Serve the file splash.css from this directory
 
+Example:
+
 ``option webroot '/etc/opennds/htdocs'``
 
-Set the GateWayInterface
+Set Maximum number of Local Log Entries
+***************************************
+
+Default: 100
+
+Minimum value 0 (no limit)
+
+Maximum value - limited only be free storage space on the logging mountpoint
+
+    If set to '0' there is no limit
+
+    This is the maximum number of local log entries allowed before log rotation begins
+
+    Both ThemeSpec and Binauth log locally if they are enabled
+
+    **WARNING** - local logging is by default written to the tmpfs volatile storage
+
+    If this option were to be set too high the router could run out of tmpfs storage and/or free RAM
+
+    Non-volatile storage, such as a USB storage device may be defined using the log_mountpoint option
+
+Example:
+
+``option max_log_entries '1000'``
+
+Set Local Log Mountpoint
+************************
+
+Default: router's volatile tmpfs storage eg on OpenWrt '/tmp'
+
+Local logging can be directed to any storage accessible to the router eg USB drive, SSD etc
+
+    **WARNING** - you cannot use the router's built in flash storage as this would cause excessive wear and eventual flash failure
+
+Example:
+
+``option log_mountpoint '/logs'``
+
+Set the GatewayInterface
 ************************
 
 Default br-lan
@@ -426,7 +466,7 @@ Default: openNDS
 
 gatewayname is used as an identifier for the instance of openNDS
 
-It is displayed on the default static splash page and the default preauth login script.
+It is displayed on the default splash page sequence for ThemeSpec and the example php scripts.
 
 It is particularly useful in the case of a single remote FAS server that serves multiple openNDS sites, allowing the FAS to customise its response for each site.
 
@@ -823,41 +863,71 @@ Example:
 
 ``option preauth '/path/to/myscript/myscript.sh'``
 
-Block Private Subnets
-*********************
+Access Control For Authenticated Users
+**************************************
 
-Your router might have several private subnets on their own interfaces.
+Block Access For Authenticated Users (block)
+--------------------------------------------
 
-You will probably want to keep them private from clients using the public gatewayinterface.
+Default: None
 
-If so, you should block the entire subnets on those interfaces.
+If Block Access is specified, an allow or passthrough must be specified afterwards as any entries set here will override the access default.
 
 Examples:
 
-``list authenticated_users 'block to 192.168.0.0/16'``
+ You might want to block entire IP subnets. e.g.:
 
-``list authenticated_users 'block to 10.0.0.0/8'``
+ ``list authenticated_users 'block to 123.2.3.0/24'``
+
+ ``list authenticated_users 'block to 123.2.0.0/16'``
+
+ ``list authenticated_users 'block to 123.0.0.0/8'``
+
+or block access to a single IP address. e.g.:
+
+ ``list authenticated_users 'block to 123.2.3.4'``
+
+Do not forget to add an allow or passthrough if the default only is assumed (see Grant Access)
 
 
-Access For Authenticated Users
-******************************
+Grant Access For Authenticated Users (allow and passthrough)
+------------------------------------------------------------
 
-For authenticated users you will probably want to allow full access to the Internet, so use:
+* Access can be allowed by openNDS directly, overriding the operating system firewall rules
 
-``list authenticated_users 'allow all'``
+or
 
-If you want to restrict access for authenticated users, then at minimum you should open the following ports:
+* Access can be allowed by openNDS but the final decision can be passed on to the operating system firewall.
 
-``list authenticated_users 'allow tcp port 53'`` Allow DNS
+Default:
 
-``list authenticated_users 'allow udp port 53'`` Allow DNS
+No Entry, equivalent to
 
-``list authenticated_users 'allow tcp port 80'`` Allow standard http web sites
+ ``list authenticated_users 'passthrough all'``
 
-``list authenticated_users 'allow tcp port 443'`` Allow standard https web sites
+Any entries set here, or above in Block Access, will override the default
 
-Access For Preauthenticated Users:
-**********************************
+Example:
+
+Grant access overriding operating system firewall
+ ``list authenticated_users 'allow all'``
+
+Example:
+
+Grant access to https web sites, subject to the operating system's firewall rules
+
+ ``list authenticated_users 'passthrough tcp port 443'``
+
+Grant access to http web sites, overriding the operating system firewall rules.
+
+ ``list authenticated_users 'allow tcp port 80'``
+
+Grant access to udp services at address 123.1.1.1, on port 5000, overriding the operating system firewall rules.
+
+ ``list authenticated_users 'allow udp port 5000 to 123.1.1.1'``
+
+Access Control For Preauthenticated Users:
+******************************************
 
 **IMPORTANT**
 

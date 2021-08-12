@@ -650,12 +650,16 @@ iptables_fw_init(void)
 	// Allow access to Walled Garden ipset - CHAIN_TO_INTERNET packets for Walled Garden, ACCEPT
 	if (config->walledgarden_fqdn_list != NULL && config->walledgarden_port_list == NULL) {
 		rc |= iptables_do_command("-t filter -I " CHAIN_TO_INTERNET " -m set --match-set walledgarden dst -j ACCEPT");
+		rc |= iptables_do_command("-t nat -I " CHAIN_OUTGOING " -m set --match-set walledgarden dst -j ACCEPT");
 	}
 
 	if (config->walledgarden_fqdn_list != NULL && config->walledgarden_port_list != NULL) {
 		for (allowed_wgport = config->walledgarden_port_list; allowed_wgport != NULL; allowed_wgport = allowed_wgport->next) {
 			debug(LOG_INFO, "Iptables: walled garden port [%u]", allowed_wgport->wgport);
 			rc |= iptables_do_command("-t filter -I " CHAIN_TO_INTERNET " -p tcp --dport %u -m set --match-set walledgarden dst -j ACCEPT",
+				allowed_wgport->wgport
+			);
+			rc |= iptables_do_command("-t nat -I " CHAIN_OUTGOING " -p tcp --dport %u -m set --match-set walledgarden dst -j ACCEPT",
 				allowed_wgport->wgport
 			);
 		}

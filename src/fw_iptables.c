@@ -650,12 +650,23 @@ iptables_fw_init(void)
 	// Allow access to Walled Garden ipset - CHAIN_TO_INTERNET packets for Walled Garden, ACCEPT
 	if (config->walledgarden_fqdn_list != NULL && config->walledgarden_port_list == NULL) {
 		rc |= iptables_do_command("-t filter -I " CHAIN_TO_INTERNET " -m set --match-set walledgarden dst -j ACCEPT");
+		rc |= iptables_do_command("-t nat -I " CHAIN_OUTGOING " -m set --match-set walledgarden dst -j ACCEPT");
+		debug(LOG_WARNING, "No Walled Garden Ports are specified - ALL ports are allowed - this may break some client CPDs.");
+		debug(LOG_WARNING, "No Walled Garden Ports are specified - eg. if apple.com is added, Apple devices will not trigger the portal.");
 	}
 
 	if (config->walledgarden_fqdn_list != NULL && config->walledgarden_port_list != NULL) {
 		for (allowed_wgport = config->walledgarden_port_list; allowed_wgport != NULL; allowed_wgport = allowed_wgport->next) {
 			debug(LOG_INFO, "Iptables: walled garden port [%u]", allowed_wgport->wgport);
+
+			if (allowed_wgport->wgport == 80) {
+				debug(LOG_WARNING, "Walled Garden Port 80 specified - this may break some client CPDs.");
+				debug(LOG_WARNING, "Walled Garden Port 80 specified - eg. if apple.com is added, Apple devices will not trigger the portal.");
+			}
 			rc |= iptables_do_command("-t filter -I " CHAIN_TO_INTERNET " -p tcp --dport %u -m set --match-set walledgarden dst -j ACCEPT",
+				allowed_wgport->wgport
+			);
+			rc |= iptables_do_command("-t nat -I " CHAIN_OUTGOING " -p tcp --dport %u -m set --match-set walledgarden dst -j ACCEPT",
 				allowed_wgport->wgport
 			);
 		}
@@ -884,7 +895,7 @@ iptables_download_ratelimit_enable(t_client *client, int enable)
 	int rc = 0;
 	unsigned long long int packets;
 
-	packets = (client->download_rate * 1000 / 1500) / 2;
+	packets = (client->download_rate * 1000 / 1500) / 8;
 
 	if (enable == 1) {
 		debug(LOG_INFO, "Download Rate Limiting [%s] [%s]  to [%llu] packets per second", client->ip, client->mac, packets);
@@ -941,7 +952,7 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 	int rc = 0;
 	unsigned long long int packets;
 
-	packets = (client->upload_rate * 1000 / 1500) / 2;
+	packets = (client->upload_rate * 1000 / 1500) / 8;
 
 	if (enable == 1) {
 		debug(LOG_INFO, "Upload Rate Limiting [%s] [%s]  to [%llu] packets per second", client->ip, client->mac, packets);

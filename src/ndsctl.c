@@ -311,7 +311,7 @@ ndsctl_do(const char *socket, const struct argument *arg, const char *param)
 		return 3;
 	}
 
-	if (param) {
+	if (*param) {
 		snprintf(request, sizeof(request), "%s %s\r\n\r\n", arg->cmd, param);
 	} else {
 		snprintf(request, sizeof(request), "%s\r\n\r\n", arg->cmd);

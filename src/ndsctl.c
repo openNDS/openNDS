@@ -428,7 +428,10 @@ main(int argc, char **argv)
 	}
 
 	if (strcmp(argv[1], "-s") == 0) {
-		if (argc >= 2) {
+		// "ndsctl -s <mysock> cmd" => (argc == 4)
+		// check for "cmd", too, to avoid a segfault in
+		// find_argument() later
+		if (argc >= 4) {
 			socket = strdup(argv[2]);
 			i = 3;
 		} else {

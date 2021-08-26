@@ -311,7 +311,7 @@ ndsctl_do(const char *socket, const struct argument *arg, const char *param)
 		return 3;
 	}
 
-	if (param) {
+	if (strlen(param) > 0) {
 		snprintf(request, sizeof(request), "%s %s\r\n\r\n", arg->cmd, param);
 	} else {
 		snprintf(request, sizeof(request), "%s\r\n\r\n", arg->cmd);
@@ -428,7 +428,7 @@ main(int argc, char **argv)
 	}
 
 	if (strcmp(argv[1], "-s") == 0) {
-		if (argc >= 2) {
+		if (argc >= 4) {
 			socket = strdup(argv[2]);
 			i = 3;
 		} else {
@@ -504,9 +504,9 @@ main(int argc, char **argv)
 	}
 
 	// Collect command line arguments then send the command
-	snprintf(args, sizeof(args), "%s", argv[i+1]);
+	if (argc > i+1) {
+		snprintf(args, sizeof(args), "%s", argv[i+1]);
 
-	if (argc > i) {
 		for (counter=i+2; counter < argc; counter++) {
 			snprintf(argi, sizeof(argi), ",%s", argv[counter]);
 			strncat(args, argi, sizeof(args)-1);

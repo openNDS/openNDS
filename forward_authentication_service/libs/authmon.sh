@@ -128,7 +128,7 @@ while true; do
 				authparams=$(printf "${authparams_enc//%/\\x}")
 
 				if [ "$debuglevel" -ge 2 ]; then
-					echo "authmon - authentication parameters $authparams" | logger -p "daemon.info" -s -t "opennds[$ndspid]: "
+					echo "authmon - authentication parameters $authparams" | logger -p "daemon.info" -s -t "opennds[$ndspid]"
 				fi
 
 				ndsctlcmd="auth $authparams 2>/dev/null"
@@ -141,7 +141,7 @@ while true; do
 				fi
 
 				if [ "$ndsstatus" = "busy" ]; then
-					logger -s -p daemon.err -t "authmon" "ERROR: ndsctl is in use by another process"
+					echo "authmon - ERROR: ndsctl is in use by another process" | logger -p "daemon.err" -s -t "opennds[$ndspid]"
 				fi
 
 				if [ "$authcount" < 1 ]; then
@@ -153,7 +153,9 @@ while true; do
 		for keyword in $authlist; do
 
 			if [ $keyword = "ERROR:" ]; then
-				logger -s -p daemon.err -t "authmon" "[$authlist]"
+				echo "authmon - [$authlist]" | logger -p "daemon.err" -s -t "opennds[$ndspid]"
+				echo "authmon - Check Internet connection, FAS url, and package ca-bundle installation" |
+					logger -p "daemon.err" -s -t "opennds[$ndspid]"
 				break
 			fi
 		done

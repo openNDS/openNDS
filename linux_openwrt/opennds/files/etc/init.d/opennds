@@ -125,9 +125,14 @@ generate_uci_config() {
     fw_mark_blocked fw_mark_trusted
   do
     config_get val "$cfg" "$option"
-
-    if [ -n "$val" ]; then
-      addline "$option $val"
+    
+    if [ "$option" = "gatewayname" && "$val" = 'openNDS' ]; then
+      gatewayname = `ifconfig | grep HWaddr | awk -F" " '{print $5}' | awk '$1~//{print;exit}' | sed 's/://g'`
+      addline "$option $gatewayname"
+    else
+      if [ -n "$val" ]; then
+        addline "$option $val"
+      fi
     fi
   done
 

@@ -78,9 +78,9 @@
 #define MIN_MHD_MINOR 9
 #define MIN_MHD_PATCH 71
 
-/** XXX Ugly hack
- * We need to remember the thread IDs of threads that simulate wait with pthread_cond_timedwait
- * so we can explicitly kill them in the termination handler
+/** 
+ * Remember the thread IDs of threads that simulate wait with pthread_cond_timedwait
+ * in case we need them
  */
 static pthread_t tid_client_check = 0;
 
@@ -135,6 +135,8 @@ termination_handler(int s)
 {
 	static pthread_mutex_t sigterm_mutex = PTHREAD_MUTEX_INITIALIZER;
 	char *fasssl = NULL;
+	s_config *config;
+	config = config_get_config();
 
 	debug(LOG_INFO, "Handler for termination caught signal %d", s);
 
@@ -146,31 +148,22 @@ termination_handler(int s)
 		debug(LOG_INFO, "Cleaning up and exiting");
 	}
 
-	// Check if authmon is already running and if it is, kill it
-	debug(LOG_INFO, "Explicitly killing the authmon daemon");
-	safe_asprintf(&fasssl, "kill $(pgrep -f \"usr/lib/opennds/authmon.sh\") > /dev/null 2>&1");
+	// If authmon is running, kill it
+	if (config->fas_secure_enabled == 3) {
+		debug(LOG_INFO, "Explicitly killing the authmon daemon");
+		safe_asprintf(&fasssl, "kill $(pgrep -f \"usr/lib/opennds/authmon.sh\") > /dev/null 2>&1");
 
-	if (system(fasssl) < 0) {
-		debug(LOG_ERR, "Error returned from system call - Continuing");
+		if (system(fasssl) < 0) {
+			debug(LOG_ERR, "Error returned from system call - Continuing");
+		}
+
+		free(fasssl);
 	}
-
-	free(fasssl);
 
 	auth_client_deauth_all();
 
 	debug(LOG_INFO, "Flushing firewall rules...");
 	iptables_fw_destroy();
-
-	/* XXX Hack
-	 * Aparently pthread_cond_timedwait under openwrt prevents signals (and therefore
-	 * termination handler) from happening so we need to explicitly kill the threads
-	 * that use that
-	 */
-
-	if (tid_client_check) {
-		debug(LOG_INFO, "Explicitly killing the fw_counter thread");
-		pthread_kill(tid_client_check, SIGKILL);
-	}
 
 	debug(LOG_NOTICE, "Exiting...");
 	exit(s == 0 ? 1 : 0);

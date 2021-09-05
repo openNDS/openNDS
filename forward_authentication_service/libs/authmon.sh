@@ -74,6 +74,17 @@ do_ndsctl () {
 #wait a while for openNDS to get started
 sleep 5
 
+# Get the configured debuglevel
+option="debuglevel"
+get_option_from_config
+
+if [ -z "$debuglevel" ]; then
+	debuglevel="1"
+fi
+
+# Get PID For syslog
+ndspid=$(pgrep '/usr/bin/opennds')
+
 #get arguments and set variables
 url=$1
 gatewayhash=$2
@@ -87,6 +98,19 @@ do_ndsctl
 version=$(echo "$ndsctlout" | grep Version | awk '{printf $2}')
 user_agent="openNDS(authmon;NDS:$version;)"
 
+# If we are on OpenWrt, check if ca-bundle is installed
+owrt=$(type "opkg" 2>/dev/null | grep "/")
+
+if [ ! -z "$owrt" ]; then
+	cabundle=$(opkg list-installed | grep "ca-bundle")
+
+	if [ -z "$cabundle" ]; then
+		echo "authmon - FATAL ERROR: ca-bundle not installed - Terminating" | logger -p "daemon.err" -s -t "opennds[$ndspid]"
+		ndsctl stop
+		exit 1
+	fi
+fi
+
 # Call postrequest with action.
 # Action can be "list" (list and delete from FAS auth log), "view" (view and leave in FAS auth log) or "clear" (clear any stale FAS auth log entries)
 # Initialise by clearing stale FAS auth log entries
@@ -94,16 +118,6 @@ action="clear"
 payload="none"
 ret=$($phpcli -f "$postrequest" "$url" "$action" "$gatewayhash" "$user_agent" "$payload")
 
-# Get the configured debuglevel
-option="debuglevel"
-get_option_from_config
-
-if [ -z "$debuglevel" ]; then
-	$debuglevel="1"
-fi
-
-# Get PID For syslog
-ndspid=$(pgrep '/usr/bin/opennds')
 
 # Main loop:
 while true; do

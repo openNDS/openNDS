@@ -941,11 +941,6 @@ elif [ "$1" = "download" ]; then
 
 	exit 0
 
-elif [ "$1" = "certcheck" ]; then
-	# Check if ca-bundle is installed
-
-	exit 0
-
 elif [ "$1" = "get_option_from_config" ]; then
 	# Get the config option value
 	# $2 contains the option to get

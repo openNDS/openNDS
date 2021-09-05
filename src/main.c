@@ -618,6 +618,11 @@ setup_from_config(void)
 				debug(LOG_DEBUG, "SSL Provider: %s FAS key is: %s\n", &msg, config->fas_key);
 			} else {
 				debug(LOG_ERR, "PHP packages PHP CLI and PHP OpenSSL are required");
+
+				if (config->fas_secure_enabled >= 3) {
+					debug(LOG_ERR, "Package ca-bundle is required for level 3 (https)");
+				}
+
 				debug(LOG_ERR, "Exiting...");
 				exit(1);
 			}

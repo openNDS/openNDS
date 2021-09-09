@@ -417,7 +417,7 @@ enum MHD_Result libmicrohttpd_cb(
 	// only allow get
 	if (0 != strcmp(method, "GET")) {
 		debug(LOG_DEBUG, "Unsupported http method %s", method);
-		return send_error(connection, 403);
+		return send_error(connection, 511);
 	}
 
 	// block path traversal

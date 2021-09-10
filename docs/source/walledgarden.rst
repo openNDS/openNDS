@@ -89,3 +89,11 @@ In addition you can specify a restricted set of ports for access to the walled g
 
 Restart openNDS to activate the Walled Garden.
 
+Warning When Port 80 is Enabled
+*******************************
+
+Port 80 is used by all devices to detect Captive Portals.
+
+If port 80 is enabled in the Walled Garden configuration (either implicitly by adding to the ports list, or explicitly by not defining a ports list) then any Captive Portal Detection attempted by a device using a Walled Garden FQDN will fail.
+
+For example if the FQDN "apple.com" is defined in the Walled Garden list, then Apple devices will fail to trigger the Portal Splash Page sequence (login page) if port 80 is enabled.

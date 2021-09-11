@@ -912,26 +912,7 @@ static int preauthenticated(struct MHD_Connection *connection,
 		return send_error(connection, 511);
 	}
 
-
-	debug(LOG_DEBUG, "preauthenticated: Requested Host is [ %s ]", host);
-	debug(LOG_DEBUG, "preauthenticated: Requested url is [ %s ]", url);
-
-	// check if this is an attempt to directly access the basic splash page when FAS is enabled
-	if (config->fas_port) {
-		snprintf(portstr, MAX_HOSTPORTLEN, ":%u", config->gw_port);
-
-		debug(LOG_DEBUG, "preauthenticated: FAS is enabled");
-
-		if (check_authdir_match(url, config->authdir) || strstr(host, "/splash.css") == NULL) {
-			debug(LOG_DEBUG, "preauthenticated: splash.css or authdir detected");
-		} else {
-			if (strstr(host, portstr) != NULL) {
-				debug(LOG_DEBUG, "preauthenticated:  403 Direct Access Forbidden");
-				ret = send_error(connection, 403);
-				return ret;
-			}
-		}
-	}
+	debug(LOG_DEBUG, "preauthenticated: Requested Host is [ %s ], url is [%s]", host, url);
 
 	// check if this is a redirect query with a foreign host as target
 	if (is_foreign_hosts(connection, host)) {
@@ -939,9 +920,13 @@ static int preauthenticated(struct MHD_Connection *connection,
 		return redirect_to_splashpage(connection, client, host, url);
 	}
 
-	/* request is directed to us
-	 * check if client wants to be authenticated
-	 */
+	// check if this is an RFC8910 login request
+	if (strcmp(url, "/login") == 0) {
+		debug(LOG_DEBUG, "preauthenticated: RFC8910 login request detected - host [%s] url [%s]", host, url);
+		return redirect_to_splashpage(connection, client, host, "/");
+	}
+
+	// request is directed to us, check if client wants to be authenticated
 	if (check_authdir_match(url, config->authdir)) {
 		debug(LOG_DEBUG, "authdir url detected: %s", url);
 		redirect_url = get_redirect_url(connection);

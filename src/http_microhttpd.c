@@ -504,10 +504,6 @@ static int try_to_authenticate(struct MHD_Connection *connection, t_client *clie
 	char rhid[128] = {0};
 	char *rhidraw = NULL;
 
-	/* a successful auth looks like
-	 * http://192.168.42.1:2050/opennds_auth/?redir=http%3A%2F%2Fberlin.freifunk.net%2F&tok=94c4cdd2
-	 * when authaction -> http://192.168.42.1:2050/opennds_auth/
-	 */
 	config = config_get_config();
 
 	// Check for authdir
@@ -765,7 +761,7 @@ static int authenticated(struct MHD_Connection *connection,
 	}
 
 	// User just entered gatewayaddress:gatewayport so give them the info page
-	if (strcmp(url, "/") == 0) {
+	if (strcmp(url, "/") == 0 || strcmp(url, "/login") == 0) {
 		msg = safe_calloc(HTMLMAXSIZE);
 		rc = execute_ret(msg, HTMLMAXSIZE - 1, "%s '%s'", config->status_path, client->ip);
 
@@ -1585,6 +1581,7 @@ static int serve_file(struct MHD_Connection *connection, t_client *client, const
 	ret = stat(filename, &stat_buf);
 	if (ret) {
 		// stat failed
+		debug(LOG_DEBUG, "File %s could not be found", filename);
 		return send_error(connection, 404);
 	}
 

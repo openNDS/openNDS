@@ -1445,10 +1445,11 @@ static int send_error(struct MHD_Connection *connection, int error)
 			<input type=\"submit\" value=\"Refresh\">\n\
 			</form>\n\
 			<br>\n\
-			<form action=\"http://detectportal.firefox.com/success.txt\" method=\"get\" target=\"_blank\">\n\
+			<form action=\"%slogin\" method=\"get\" target=\"_blank\">\n\
 			<input type=\"submit\" value=\"Portal Login\" >\n\
 			</form>\n\
 			</body></html>\n",
+			status_url,
 			status_url
 		);
 

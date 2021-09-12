@@ -415,7 +415,9 @@ setup_from_config(void)
 		debug(LOG_DEBUG, "Custom FAS files string [%s]", config->custom_files);
 	}
 
-	if (strcmp(config->gw_fqdn, "disable") != 0 || config->walledgarden_fqdn_list) {
+	// Do any required dnsmasq configurations and restart it
+	if (strcmp(config->gw_fqdn, "disable") != 0 || config->walledgarden_fqdn_list || config->dhcp_default_url_enable == 1) {
+
 		// For Client status Page - configure the hosts file
 		if (strcmp(config->gw_fqdn, "disable") != 0) {
 			safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"hostconf\" \"%s\" \"%s\"",
@@ -424,7 +426,7 @@ setup_from_config(void)
 			);
 
 			if (execute_ret_url_encoded(msg, sizeof(msg) - 1, dnscmd) == 0) {
-				debug(LOG_INFO, "Dnsmasq configured for Walled Garden");
+				debug(LOG_INFO, "Client status Page: Configured");
 			} else {
 				debug(LOG_ERR, "Client Status Page: Hosts setup script failed to execute");
 			}
@@ -486,6 +488,24 @@ setup_from_config(void)
 			free(dnscmd);
 		}
 
+		if (config->dhcp_default_url_enable == 1) {
+			debug(LOG_DEBUG, "Enabling RFC8910 support");
+
+			if (strcmp(config->gw_fqdn, "disable") != 0) {
+				safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"cpidconf\" \"%s\"", config->gw_fqdn);
+			} else {
+				safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"cpidconf\" \"%s\"", config->gw_ip);
+			}
+
+			if (execute_ret_url_encoded(msg, sizeof(msg) - 1, dnscmd) == 0) {
+				debug(LOG_INFO, "RFC8910 support is enabled");
+			} else {
+				debug(LOG_ERR, "RFC8910 setup script failed to execute");
+			}
+			free(dnscmd);
+		}
+
+		// Restart dnsmasq
 		safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" &");
 		debug(LOG_DEBUG, "restart command [ %s ]", dnscmd);
 		system(dnscmd);

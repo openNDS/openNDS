@@ -78,6 +78,7 @@ typedef enum {
 	oGatewayPort,
 	oGatewayFQDN,
 	oStatusPath,
+	oDhcpDefaultUrlEnable,
 	oFasPort,
 	oFasKey,
 	oFasPath,
@@ -150,6 +151,7 @@ static const struct {
 	{ "gatewayport", oGatewayPort },
 	{ "gatewayfqdn", oGatewayFQDN },
 	{ "statuspath", oStatusPath },
+	{ "dhcp_default_url_enable",oDhcpDefaultUrlEnable },
 	{ "fasport", oFasPort },
 	{ "faskey", oFasKey },
 	{ "fasremoteip", oFasRemoteIP },
@@ -240,6 +242,7 @@ config_init(void)
 	config.url_encoded_gw_name = NULL;
 	config.gw_fqdn = safe_strdup(DEFAULT_GATEWAYFQDN);
 	config.status_path = safe_strdup(DEFAULT_STATUSPATH);
+	config.dhcp_default_url_enable = DEFAULT_DHCP_DEFAULT_URL_ENABLE;
 	config.gw_interface = safe_strdup(DEFAULT_GATEWAYINTERFACE);;
 	config.gw_iprange = safe_strdup(DEFAULT_GATEWAY_IPRANGE);
 	config.gw_address = NULL;
@@ -829,6 +832,13 @@ config_read(const char *filename)
 			break;
 		case oStatusPath:
 			config.status_path = safe_strdup(p1);
+			break;
+		case oDhcpDefaultUrlEnable:
+			if (sscanf(p1, "%d", &config.login_option_enabled) < 1) {
+				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+				debug(LOG_ERR, "Exiting...");
+				exit(1);
+			}
 			break;
 		case oGatewayInterface:
 			config.gw_interface = safe_strdup(p1);

@@ -498,8 +498,8 @@ main(int argc, char **argv)
 	free(cmd);
 
 	if(fgets(socket_file, sizeof(socket_file), fd) == NULL) {
+		// Using default socket
 		socket = strdup(DEFAULT_SOCKET_FILENAME);
-		printf("Using default socket");
 		pclose(fd);
 	} else {
 		socket = strdup(socket_file);

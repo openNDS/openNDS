@@ -35,7 +35,7 @@ function SendPostData($_p, $remote_url, $user_agent) {
 	$context = stream_context_create($context_options);
 
 	//open the stream and get the response
-	$fp = @fopen($remote_url, 'r', false, $context);
+	$fp = fopen($remote_url, 'r', false, $context);
 	$response = "";
 
 	if ($fp == TRUE) {

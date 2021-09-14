@@ -763,7 +763,7 @@ static int authenticated(struct MHD_Connection *connection,
 	// User just entered gatewayaddress:gatewayport so give them the info page
 	if (strcmp(url, "/") == 0 || strcmp(url, "/login") == 0) {
 		msg = safe_calloc(HTMLMAXSIZE);
-		rc = execute_ret(msg, HTMLMAXSIZE - 1, "%s '%s'", config->status_path, client->ip);
+		rc = execute_ret(msg, HTMLMAXSIZE - 1, "%s status '%s'", config->status_path, client->ip);
 
 		if (rc != 0) {
 			debug(LOG_WARNING, "Script: %s - failed to execute", config->status_path);

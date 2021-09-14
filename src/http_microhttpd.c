@@ -417,7 +417,7 @@ enum MHD_Result libmicrohttpd_cb(
 	// only allow get
 	if (0 != strcmp(method, "GET")) {
 		debug(LOG_DEBUG, "Unsupported http method %s", method);
-		return send_error(connection, 403);
+		return send_error(connection, 511);
 	}
 
 	// block path traversal
@@ -504,10 +504,6 @@ static int try_to_authenticate(struct MHD_Connection *connection, t_client *clie
 	char rhid[128] = {0};
 	char *rhidraw = NULL;
 
-	/* a successful auth looks like
-	 * http://192.168.42.1:2050/opennds_auth/?redir=http%3A%2F%2Fberlin.freifunk.net%2F&tok=94c4cdd2
-	 * when authaction -> http://192.168.42.1:2050/opennds_auth/
-	 */
 	config = config_get_config();
 
 	// Check for authdir
@@ -765,9 +761,9 @@ static int authenticated(struct MHD_Connection *connection,
 	}
 
 	// User just entered gatewayaddress:gatewayport so give them the info page
-	if (strcmp(url, "/") == 0) {
+	if (strcmp(url, "/") == 0 || strcmp(url, "/login") == 0) {
 		msg = safe_calloc(HTMLMAXSIZE);
-		rc = execute_ret(msg, HTMLMAXSIZE - 1, "%s '%s'", config->status_path, client->ip);
+		rc = execute_ret(msg, HTMLMAXSIZE - 1, "%s status '%s'", config->status_path, client->ip);
 
 		if (rc != 0) {
 			debug(LOG_WARNING, "Script: %s - failed to execute", config->status_path);
@@ -912,26 +908,7 @@ static int preauthenticated(struct MHD_Connection *connection,
 		return send_error(connection, 511);
 	}
 
-
-	debug(LOG_DEBUG, "preauthenticated: Requested Host is [ %s ]", host);
-	debug(LOG_DEBUG, "preauthenticated: Requested url is [ %s ]", url);
-
-	// check if this is an attempt to directly access the basic splash page when FAS is enabled
-	if (config->fas_port) {
-		snprintf(portstr, MAX_HOSTPORTLEN, ":%u", config->gw_port);
-
-		debug(LOG_DEBUG, "preauthenticated: FAS is enabled");
-
-		if (check_authdir_match(url, config->authdir) || strstr(host, "/splash.css") == NULL) {
-			debug(LOG_DEBUG, "preauthenticated: splash.css or authdir detected");
-		} else {
-			if (strstr(host, portstr) != NULL) {
-				debug(LOG_DEBUG, "preauthenticated:  403 Direct Access Forbidden");
-				ret = send_error(connection, 403);
-				return ret;
-			}
-		}
-	}
+	debug(LOG_DEBUG, "preauthenticated: Requested Host is [ %s ], url is [%s]", host, url);
 
 	// check if this is a redirect query with a foreign host as target
 	if (is_foreign_hosts(connection, host)) {
@@ -939,9 +916,13 @@ static int preauthenticated(struct MHD_Connection *connection,
 		return redirect_to_splashpage(connection, client, host, url);
 	}
 
-	/* request is directed to us
-	 * check if client wants to be authenticated
-	 */
+	// check if this is an RFC8910 login request
+	if (strcmp(url, "/login") == 0) {
+		debug(LOG_DEBUG, "preauthenticated: RFC8910 login request detected - host [%s] url [%s]", host, url);
+		return redirect_to_splashpage(connection, client, host, "/");
+	}
+
+	// request is directed to us, check if client wants to be authenticated
 	if (check_authdir_match(url, config->authdir)) {
 		debug(LOG_DEBUG, "authdir url detected: %s", url);
 		redirect_url = get_redirect_url(connection);
@@ -1464,10 +1445,11 @@ static int send_error(struct MHD_Connection *connection, int error)
 			<input type=\"submit\" value=\"Refresh\">\n\
 			</form>\n\
 			<br>\n\
-			<form action=\"http://detectportal.firefox.com/success.txt\" method=\"get\" target=\"_blank\">\n\
+			<form action=\"%slogin\" method=\"get\" target=\"_blank\">\n\
 			<input type=\"submit\" value=\"Portal Login\" >\n\
 			</form>\n\
 			</body></html>\n",
+			status_url,
 			status_url
 		);
 
@@ -1600,6 +1582,7 @@ static int serve_file(struct MHD_Connection *connection, t_client *client, const
 	ret = stat(filename, &stat_buf);
 	if (ret) {
 		// stat failed
+		debug(LOG_DEBUG, "File %s could not be found", filename);
 		return send_error(connection, 404);
 	}
 

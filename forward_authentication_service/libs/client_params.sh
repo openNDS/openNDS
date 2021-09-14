@@ -2,7 +2,8 @@
 #Copyright (C) BlueWave Projects and Services 2015-2021
 #This software is released under the GNU GPL license.
 #
-clientip=$1
+status=$1
+clientip=$2
 
 do_ndsctl () {
 	local timeout=4
@@ -59,6 +60,7 @@ htmlentityencode() {
 
 parse_parameters() {
 	ndsctlcmd="json $clientip"
+
 	do_ndsctl
 
 	if [ "$ndsstatus" = "ready" ]; then
@@ -151,7 +153,7 @@ body() {
 				<input type=\"button\" VALUE=\"Refresh\" onClick=\"history.go(0);return true;\">
 			</form>
 		"
-	else
+	elif [ "$status" = "status" ]; then
 		pagebody="
 			<b>IP address:</b> $ip<br>
 			<b>MAC address:</b> $mac<br>
@@ -176,13 +178,39 @@ body() {
 				<input type=\"submit\" value=\"Logout\" >
 			</form>
 		"
+	elif [ "$status" = "err511" ]; then
+		gatewayfqdn=$(/usr/lib/opennds/libopennds.sh "get_option_from_config" "gatewayfqdn")
+
+		if [ -z "$gatewayfqdn" ]; then
+			url=$(ndsctl status | grep "MHD Server" | awk '{printf "%s", $9}')
+		else
+			url="http://$gatewayfqdn"
+		fi
+
+		pagebody="
+			<h1>Network Authentication Required</h1>
+			<form action=\"%s\" method=\"get\">
+			<input type=\"submit\" value=\"Refresh\">
+			</form>
+			<br>
+			<form action=\"$url/login\" method=\"get\" target=\"_blank\">
+			<input type=\"submit\" value=\"Portal Login\" >
+			</form>
+		"
+
+	else
+		exit 1
 	fi
+
 	echo "$pagebody"
 }
 
 # Start generating the html:
-parse_parameters
-header
-body
-footer
-
+if [ "$status" = "status" ] || [ "$status" = "err511" ]; then
+	parse_parameters
+	header
+	body
+	footer
+else
+	exit 1
+fi

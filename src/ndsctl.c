@@ -170,7 +170,7 @@ usage(void)
 		"Usage: ndsctl [options] command [arguments]\n"
 		"\n"
 		"options:\n"
-		"  -s <path>           Path to the socket\n"
+		"  -s <path>           Deprecated and ignored - Path to the socket, config setting is used instead\n"
 		"  -h                  Print usage\n"
 		"\n"
 		"commands:\n"
@@ -413,12 +413,11 @@ main(int argc, char **argv)
 	char argi[128] = {0};
 	char str_b64[QUERYMAXLEN] = {0};
 	char mountpoint[128] = {0};
+	char socket_file[128] = {0};
 	char *cmd;
 	int ret;
 	int lockfd;
 	FILE *fd;
-
-	socket = strdup(DEFAULT_SOCKET_FILENAME);
 
 	// check arguments and take action:
 
@@ -429,7 +428,8 @@ main(int argc, char **argv)
 
 	if (strcmp(argv[1], "-s") == 0) {
 		if (argc >= 4) {
-			socket = strdup(argv[2]);
+			// -s option is deprecated - using config setting instead
+			//socket = strdup(argv[2]);
 			i = 3;
 		} else {
 			usage();
@@ -487,7 +487,26 @@ main(int argc, char **argv)
 		return ret;
 	} 
 
-	// Get the socket path/filename
+	// Get the configured socket filename if there is one
+	safe_asprintf(&cmd, "/usr/lib/opennds/libopennds.sh get_option_from_config ndsctlsocket");
+	fd = popen(cmd, "r");
+	if (fd == NULL) {
+		printf("Unable to open library - Terminating");
+		pclose(fd);
+		exit(1);
+	}
+	free(cmd);
+
+	if(fgets(socket_file, sizeof(socket_file), fd) == NULL) {
+		// Using default socket
+		socket = strdup(DEFAULT_SOCKET_FILENAME);
+		pclose(fd);
+	} else {
+		socket = strdup(socket_file);
+	}
+	pclose(fd);
+
+	// Get the socket path/filename if default
 	if (strcmp(socket, DEFAULT_SOCKET_FILENAME) == 0) {
 		free(socket);
 		safe_asprintf(&socket, "%s/%s", mountpoint, DEFAULT_SOCKET_FILENAME);

@@ -78,9 +78,9 @@
 #define MIN_MHD_MINOR 9
 #define MIN_MHD_PATCH 71
 
-/** XXX Ugly hack
- * We need to remember the thread IDs of threads that simulate wait with pthread_cond_timedwait
- * so we can explicitly kill them in the termination handler
+/** 
+ * Remember the thread IDs of threads that simulate wait with pthread_cond_timedwait
+ * in case we need them
  */
 static pthread_t tid_client_check = 0;
 
@@ -135,6 +135,8 @@ termination_handler(int s)
 {
 	static pthread_mutex_t sigterm_mutex = PTHREAD_MUTEX_INITIALIZER;
 	char *fasssl = NULL;
+	s_config *config;
+	config = config_get_config();
 
 	debug(LOG_INFO, "Handler for termination caught signal %d", s);
 
@@ -146,31 +148,22 @@ termination_handler(int s)
 		debug(LOG_INFO, "Cleaning up and exiting");
 	}
 
-	// Check if authmon is already running and if it is, kill it
-	debug(LOG_INFO, "Explicitly killing the authmon daemon");
-	safe_asprintf(&fasssl, "kill $(pgrep -f \"usr/lib/opennds/authmon.sh\") > /dev/null 2>&1");
+	// If authmon is running, kill it
+	if (config->fas_secure_enabled == 3) {
+		debug(LOG_INFO, "Explicitly killing the authmon daemon");
+		safe_asprintf(&fasssl, "kill $(pgrep -f \"usr/lib/opennds/authmon.sh\") > /dev/null 2>&1");
 
-	if (system(fasssl) < 0) {
-		debug(LOG_ERR, "Error returned from system call - Continuing");
+		if (system(fasssl) < 0) {
+			debug(LOG_ERR, "Error returned from system call - Continuing");
+		}
+
+		free(fasssl);
 	}
-
-	free(fasssl);
 
 	auth_client_deauth_all();
 
 	debug(LOG_INFO, "Flushing firewall rules...");
 	iptables_fw_destroy();
-
-	/* XXX Hack
-	 * Aparently pthread_cond_timedwait under openwrt prevents signals (and therefore
-	 * termination handler) from happening so we need to explicitly kill the threads
-	 * that use that
-	 */
-
-	if (tid_client_check) {
-		debug(LOG_INFO, "Explicitly killing the fw_counter thread");
-		pthread_kill(tid_client_check, SIGKILL);
-	}
 
 	debug(LOG_NOTICE, "Exiting...");
 	exit(s == 0 ? 1 : 0);
@@ -422,7 +415,9 @@ setup_from_config(void)
 		debug(LOG_DEBUG, "Custom FAS files string [%s]", config->custom_files);
 	}
 
-	if (strcmp(config->gw_fqdn, "disable") != 0 || config->walledgarden_fqdn_list) {
+	// Do any required dnsmasq configurations and restart it
+	if (strcmp(config->gw_fqdn, "disable") != 0 || config->walledgarden_fqdn_list || config->dhcp_default_url_enable == 1) {
+
 		// For Client status Page - configure the hosts file
 		if (strcmp(config->gw_fqdn, "disable") != 0) {
 			safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"hostconf\" \"%s\" \"%s\"",
@@ -431,7 +426,7 @@ setup_from_config(void)
 			);
 
 			if (execute_ret_url_encoded(msg, sizeof(msg) - 1, dnscmd) == 0) {
-				debug(LOG_INFO, "Dnsmasq configured for Walled Garden");
+				debug(LOG_INFO, "Client status Page: Configured");
 			} else {
 				debug(LOG_ERR, "Client Status Page: Hosts setup script failed to execute");
 			}
@@ -493,6 +488,24 @@ setup_from_config(void)
 			free(dnscmd);
 		}
 
+		if (config->dhcp_default_url_enable == 1) {
+			debug(LOG_DEBUG, "Enabling RFC8910 support");
+
+			if (strcmp(config->gw_fqdn, "disable") != 0) {
+				safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"cpidconf\" \"%s\"", config->gw_fqdn);
+			} else {
+				safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"cpidconf\" \"%s\"", config->gw_ip);
+			}
+
+			if (execute_ret_url_encoded(msg, sizeof(msg) - 1, dnscmd) == 0) {
+				debug(LOG_INFO, "RFC8910 support is enabled");
+			} else {
+				debug(LOG_ERR, "RFC8910 setup script failed to execute");
+			}
+			free(dnscmd);
+		}
+
+		// Restart dnsmasq
 		safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" &");
 		debug(LOG_DEBUG, "restart command [ %s ]", dnscmd);
 		system(dnscmd);
@@ -625,6 +638,11 @@ setup_from_config(void)
 				debug(LOG_DEBUG, "SSL Provider: %s FAS key is: %s\n", &msg, config->fas_key);
 			} else {
 				debug(LOG_ERR, "PHP packages PHP CLI and PHP OpenSSL are required");
+
+				if (config->fas_secure_enabled >= 3) {
+					debug(LOG_ERR, "Package ca-bundle is required for level 3 (https)");
+				}
+
 				debug(LOG_ERR, "Exiting...");
 				exit(1);
 			}

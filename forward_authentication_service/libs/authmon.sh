@@ -74,6 +74,17 @@ do_ndsctl () {
 #wait a while for openNDS to get started
 sleep 5
 
+# Get the configured debuglevel
+option="debuglevel"
+get_option_from_config
+
+if [ -z "$debuglevel" ]; then
+	debuglevel="1"
+fi
+
+# Get PID For syslog
+ndspid=$(pgrep '/usr/bin/opennds')
+
 #get arguments and set variables
 url=$1
 gatewayhash=$2
@@ -87,6 +98,19 @@ do_ndsctl
 version=$(echo "$ndsctlout" | grep Version | awk '{printf $2}')
 user_agent="openNDS(authmon;NDS:$version;)"
 
+# If we are on OpenWrt, check if ca-bundle is installed
+owrt=$(type "opkg" 2>/dev/null | grep "/")
+
+if [ ! -z "$owrt" ]; then
+	cabundle=$(opkg list-installed | grep "ca-bundle")
+
+	if [ -z "$cabundle" ]; then
+		echo "authmon - FATAL ERROR: ca-bundle not installed - Terminating" | logger -p "daemon.err" -s -t "opennds[$ndspid]"
+		ndsctl stop
+		exit 1
+	fi
+fi
+
 # Call postrequest with action.
 # Action can be "list" (list and delete from FAS auth log), "view" (view and leave in FAS auth log) or "clear" (clear any stale FAS auth log entries)
 # Initialise by clearing stale FAS auth log entries
@@ -94,16 +118,6 @@ action="clear"
 payload="none"
 ret=$($phpcli -f "$postrequest" "$url" "$action" "$gatewayhash" "$user_agent" "$payload")
 
-# Get the configured debuglevel
-option="debuglevel"
-get_option_from_config
-
-if [ -z "$debuglevel" ]; then
-	$debuglevel="1"
-fi
-
-# Get PID For syslog
-ndspid=$(pgrep '/usr/bin/opennds')
 
 # Main loop:
 while true; do
@@ -128,7 +142,7 @@ while true; do
 				authparams=$(printf "${authparams_enc//%/\\x}")
 
 				if [ "$debuglevel" -ge 2 ]; then
-					echo "authmon - authentication parameters $authparams" | logger -p "daemon.info" -s -t "opennds[$ndspid]: "
+					echo "authmon - authentication parameters $authparams" | logger -p "daemon.info" -s -t "opennds[$ndspid]"
 				fi
 
 				ndsctlcmd="auth $authparams 2>/dev/null"
@@ -141,7 +155,7 @@ while true; do
 				fi
 
 				if [ "$ndsstatus" = "busy" ]; then
-					logger -s -p daemon.err -t "authmon" "ERROR: ndsctl is in use by another process"
+					echo "authmon - ERROR: ndsctl is in use by another process" | logger -p "daemon.err" -s -t "opennds[$ndspid]"
 				fi
 
 				if [ "$authcount" < 1 ]; then
@@ -153,7 +167,9 @@ while true; do
 		for keyword in $authlist; do
 
 			if [ $keyword = "ERROR:" ]; then
-				logger -s -p daemon.err -t "authmon" "[$authlist]"
+				echo "authmon - [$authlist]" | logger -p "daemon.err" -s -t "opennds[$ndspid]"
+				echo "authmon - Check Internet connection, FAS url, and package ca-bundle installation" |
+					logger -p "daemon.err" -s -t "opennds[$ndspid]"
 				break
 			fi
 		done

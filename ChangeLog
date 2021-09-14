@@ -1,8 +1,23 @@
+opennds (9.4.0)
+
+  * This version adds new functionality, and fixes some issues
+  * Add - Check for ca-bundle on OpenWrt, if not installed, add syslog messages and terminate [bluewave.net]
+  * Add - Make ndsctl use the configured value for socket path if set and deprecate -s option [bluewave.net]
+  * Add - Warning message when Walled Garden port 80 is allowed [bluewave.net]
+  * Fix - remove un-needed pthread_kill in termination_handler() [bluewave.net] [T-X]
+  * Fix - debug messages from authmon.sh [bluewave.net]
+  * Fix - Allow disabling gateway fqdn, facilitating access to router port 80 [bluewave.net]
+  * Fix - Segfault in ndsctl when -s option is used incorrectly [bluewave.net] [T-X]
+  * Fix - Typo making calculation of ul/dl rates incorrect [bluewave.net]
+  * Fix - Allow port 80 to be configured in the Walled Garden [bluewave.net]
+
+ -- Rob White <dot@blue-wave.net>  Sun, 5 Sep 2021 12:09:36 +0000
+
 opennds (9.3.0)
 
   * This version adds new functionality, and fixes some issues
-  * Add - Add - firewall passthrough mode for authenticated users [bluewave.net]
-  * Add - Add - use configured debuglevel in authmon [bluewave.net]
+  * Add - firewall passthrough mode for authenticated users [bluewave.net]
+  * Add - use configured debuglevel in authmon [bluewave.net]
   * Add - automated log rotation and client_zone to binauth_log [bluewave.net]
   * Add - increased timeout interval for file downloads [bluewave.net]
   * Add - local interface to MeshZone and remove unneeded call to ip utility [bluewave.net]

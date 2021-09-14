@@ -528,7 +528,7 @@ iptables_fw_init(void)
 		// CHAIN_OUTGOING, other packets ACCEPT
 		rc |= iptables_do_command("-t nat -A " CHAIN_OUTGOING " -j ACCEPT");
 
-		if (config->gw_fqdn) {
+		if (strcmp(config->gw_fqdn, "disable") != 0) {
 			rc |= iptables_do_command("-t nat -I " CHAIN_OUTGOING " -p tcp --destination %s --dport 80 -j REDIRECT --to-port %d",
 				config->gw_ip,
 				config->gw_port

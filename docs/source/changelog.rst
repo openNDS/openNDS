@@ -1,6 +1,16 @@
 What's New? - ChangeLog
 #######################
 
+opennds (9.3.1)
+
+  * This version fixes some issues
+  * Fix - Segfault in ndsctl when -s option is used incorrectly [bluewave.net] [T-X]
+  * Fix - Typo making calculation of ul/dl rates incorrect [bluewave.net]
+  * Fix - Allow port 80 to be configured in the Walled Garden [bluewave.net]
+  * Add - Warning message when Walled Garden port 80 is allowed [bluewave.net]
+
+ -- Rob White <dot@blue-wave.net> Thu, 26 Aug 2021 12:09:36 +0000
+
 opennds (9.3.0)
 
   * This version adds new functionality, and fixes some issues

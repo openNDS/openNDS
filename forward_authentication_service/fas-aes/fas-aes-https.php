@@ -41,10 +41,10 @@
 
  This script requests the client CPD to display the NDS avatar image directly from Github.
 
- This script displays an example Terms of Service. You should modify this for your local legal juristiction.
+ This script displays an example Terms of Service. **You should modify this for your local legal juristiction**.
 
- The script is provided as a fully functional alternative to the basic NDS splash page.
- In its present trivial form it does not do any verification, but serves as an example for customisation projects.
+ The script is provided as a fully functional https splash page sequence.
+ In its present form it does not do any verification, but serves as an example for customisation projects.
 
  The script retreives the clientif string sent from NDS and displays it on the login form.
  "clientif" is of the form [client_local_interface] [remote_meshnode_mac] [local_mesh_if]
@@ -53,6 +53,9 @@
  eg. The login form can be different for an ethernet connection, a private wifi, a public wifi or a remote mesh network zone.
 
 */
+
+// Set the pre-shared key. This **MUST** be the same as faskey in the openNDS config:
+$key="1234567890";
 
 // Allow immediate flush to browser
 if (ob_get_level()){ob_end_clean();}
@@ -65,12 +68,12 @@ if(empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == "off"){
     exit();
 }
 
-// setup some defaults
+// setup basic defaults
 date_default_timezone_set("UTC");
 $client_zone=$fullname=$email=$invalid="";
-$cipher="AES-256-CBC";
 $me=$_SERVER['SCRIPT_NAME'];
 
+// Set logpath
 if (file_exists("/etc/config/opennds")) {
 	$logpath="/tmp/";
 } elseif (file_exists("/etc/opennds/opennds.conf")) {
@@ -79,137 +82,48 @@ if (file_exists("/etc/config/opennds")) {
 	$logpath="";
 }
 
-###############################################################################
-#
-# Set the pre-shared key. This MUST be the same as faskey in the openNDS config
-#
-$key="1234567890";
-#
-###############################################################################
 
-#############################################################################################################
-#
-# Configure Quotas - Time, Data and Data Rate
-#
-#############################################################################################################
-# Set the session length(minutes), upload/download quotas(kBytes), upload/download rates(kbits/s)
-# and custom string to be sent to the BinAuth script.
-# Upload and download quotas are in kilobytes.
-# If a client exceeds its upload or download quota it will be deauthenticated on the next cycle of the client checkinterval.
-# (see openNDS config for checkinterval)
+/*Configure Quotas - Time, Data and Data Rate - Override global settings (openNDS config values or defaults)
 
-# Client Upload and Download Rates are the average rates a client achieves since authentication 
-# If a client exceeds its set upload or download rate it will be deauthenticated on the next cycle of the client checkinterval.
+	Description of values that can be set:
+	1. Set the session length(minutes), upload/download quotas(kBytes), upload/download rates(kbits/s)
+		and custom string to be sent to the BinAuth script.
+	2. Upload and download quotas are in kilobytes.
+		If a client exceeds its upload or download quota it will be deauthenticated on the next cycle of the client checkinterval.
+		(see openNDS config for checkinterval)
 
-# The following variables are set on a client by client basis. If a more sophisticated client credential verification was implemented,
-# these variables could be set dynamically.
-#
-# In addition, choice of the values of these variables can be determined, based on the interface used by the client
-# (as identified by the clientif parsed variable). For example, a system with two wireless interfaces such as "members" and "guests". 
+	3. Client Upload and Download Rates are the average rates a client achieves since authentication
+		If a client exceeds its set upload or download rate it will be deauthenticated on the next cycle of the client checkinterval.
 
-# A value of 0 means no limit
+	**Note** - The following variables are set on a client by client basis. If a more sophisticated client credential verification was implemented,
+		these variables could be set dynamically.
+
+	In addition, choice of the values of these variables can be determined, based on the interface used by the client
+		(as identified by the clientif parsed variable). For example, a system with two wireless interfaces such as "members" and "guests".
+
+	A value of 0 means no limit
+*/
 $sessionlength=0; // minutes (1440 minutes = 24 hours)
 $uploadrate=0; // kbits/sec (500 kilobits/sec = 0.5 Megabits/sec)
 $downloadrate=0; // kbits/sec (1000 kilobits/sec = 1.0 Megabits/sec)
 $uploadquota=0; // kBytes (500000 kiloBytes = 500 MegaBytes)
 $downloadquota=0; // kBytes (1000000 kiloBytes = 1 GigaByte)
 
-#############################################################################################################
-#
-# Custom string to be sent to Binauth
-#
-# Define a custom string that will be sent to BunAuth for additional local post authentication processing.
-# Binauth is most useful for writing a local log on the openNDS router
-$custom="Optional Custom data for BinAuth";
+/* define a remote image to display
+	eg. https://avatars1.githubusercontent.com/u/62547912 is the openNDS Portal Lens Flare
+	$imagepath is used function footer()
+*/
+$imageurl="https://avatars1.githubusercontent.com/u/62547912";
+$imagetype="png";
+$scriptname=basename($_SERVER['SCRIPT_NAME']);
+$imagepath=htmlentities("$scriptname?get_image=$imageurl&imagetype=$imagetype");
 
-#############################################################################################################
-#
-# Send The Auth List when requested by openNDS
-#
-# When a client was verified, their parameters were added to the "auth list"
-# The auth list is sent to NDS when it authmon requests it.
-#
-# auth_get:
-#
-# value "list" sends the list and deletes each client entry that it finds
-#
-# value "view" just sends the list, this is the default value for authmon and allows upstream processing here
-#
-#############################################################################################################
+###################################
+#Begin processing inbound requests:
+###################################
 
-if (isset($_POST["auth_get"])) {
-
-	$acklist=base64_decode($_POST["payload"]);
-
-	if (isset($_POST["gatewayhash"])) {
-		$gatewayhash=$_POST["gatewayhash"];
-	} else {
-		# invalid call, so:
-		exit(0);
-	}
-
-	if (! file_exists("$logpath"."$gatewayhash")) {
-		# no clients waiting, so:
-		exit(0);
-	}
-
-	if ($_POST["auth_get"] == "clear") {
-		$auth_list=scandir("$logpath"."$gatewayhash");
-		array_shift($auth_list);
-		array_shift($auth_list);
-
-		foreach ($auth_list as $client) {
-			unlink("$logpath"."$gatewayhash/$client");
-		}
-		# Stale entries cleared, so:
-		exit(0);
-	}
-
-	# Set default empty authlist:
-	$authlist="*";
-
-	if ($_POST["auth_get"] == "list") {
-		$auth_list=scandir("$logpath"."$gatewayhash");
-		array_shift($auth_list);
-		array_shift($auth_list);
-
-		foreach ($auth_list as $client) {
-			$clientauth=file("$logpath"."$gatewayhash/$client");
-			$authlist=$authlist." ".rawurlencode(trim($clientauth[0]));
-			unlink("$logpath"."$gatewayhash/$client");
-		}
-		echo trim("$authlist");
-
-	} else if ($_POST["auth_get"] == "view") {
-
-		if ($acklist != "none") {
-			$acklist_r=explode("\n",$acklist);
-
-			foreach ($acklist_r as $client) {
-				$client=ltrim($client, "* ");
-
-				if ($client != "") {
-					if (file_exists("$logpath"."$gatewayhash/$client")) {
-						unlink("$logpath"."$gatewayhash/$client");
-					}
-				}
-			}
-			echo "ack";
-		} else {
-			$auth_list=scandir("$logpath"."$gatewayhash");
-			array_shift($auth_list);
-			array_shift($auth_list);
-
-			foreach ($auth_list as $client) {
-				$clientauth=file("$logpath"."$gatewayhash/$client");
-				$authlist=$authlist." ".rawurlencode(trim($clientauth[0]));
-			}
-		echo trim("$authlist");
-		}
-	}
-	exit(0);
-}
-#############################################################################################################
+// Send The Auth List when requested by openNDS
+auth_get();
 
 // Service requests for remote image
 if (isset($_GET["get_image"])) {
@@ -218,13 +132,6 @@ if (isset($_GET["get_image"])) {
 	get_image($url, $imagetype);
 	exit(0);
 }
-
-// define the image to display
-// eg. https://avatars1.githubusercontent.com/u/62547912 is the openNDS Portal Lens Flare
-$imageurl="https://avatars1.githubusercontent.com/u/62547912";
-$imagetype="png";
-$scriptname=basename($_SERVER['SCRIPT_NAME']);
-$imagepath=htmlentities("$scriptname?get_image=$imageurl&imagetype=$imagetype");
 
 // Get the query string components
 if (isset($_GET['status'])) {
@@ -239,38 +146,10 @@ if (isset($_GET['status'])) {
 	exit(0);
 }
 
-####################################################################################################################################
-#
-#	Decrypt and Parse the querystring
-#
-#	Note: $ndsparamlist is an array of parameter names to parse for.
-#		Add your own custom parameters to this array as well as to the config file.
-#		"admin_email" and "location" are examples of custom parameters.
-#
-####################################################################################################################################
+//Decrypt and Parse the querystring
+decrypt_parse();
 
-$ndsparamlist=explode(" ", "clientip clientmac gatewayname version hid gatewayaddress gatewaymac authdir originurl clientif admin_email location");
-
-if (isset($_GET['fas']) and isset($_GET['iv']))  {
-	$string=$_GET['fas'];
-	$iv=$_GET['iv'];
-	$decrypted=openssl_decrypt( base64_decode( $string ), $cipher, $key, 0, $iv );
-	$dec_r=explode(", ",$decrypted);
-
-	foreach ($ndsparamlist as $ndsparm) {
-		foreach ($dec_r as $dec) {
-			@list($name,$value)=explode("=",$dec);
-			if ($name == $ndsparm) {
-				$$name = $value;
-				break;
-			}
-		}
-	}
-}
-####################################################################################################################################
-####################################################################################################################################
-
-// Work out the client zone:
+// Extract the client zone:
 $client_zone_r=explode(" ",trim($clientif));
 
 if ( ! isset($client_zone_r[1])) {
@@ -279,11 +158,9 @@ if ( ! isset($client_zone_r[1])) {
 	$client_zone="MeshZone:".str_replace(":","",$client_zone_r[1]);
 }
 
-#################################################################################
-# Create auth list directory for this gateway
-# This list will be sent to NDS when it requests it.
-#################################################################################
-
+/* Create auth list directory for this gateway
+	This list will be sent to NDS when it requests it.
+*/
 $gwname=hash('sha256', trim($gatewayname));
 
 if (!file_exists("$logpath"."$gwname")) {
@@ -291,7 +168,7 @@ if (!file_exists("$logpath"."$gwname")) {
 }
 
 #######################################################
-//Start Outputting the requested responsive page:
+//Start Outputing the requested responsive page:
 #######################################################
 
 splash_header();
@@ -309,7 +186,7 @@ if (isset($_GET["terms"])) {
 	authenticate_page();
 	footer();
 } elseif (isset($_GET["landing"])) {
-	// The landing page is served to the client immediately after openNDS authentication, but many CPDs will immediately close
+	// The landing page is served to the client after openNDS authentication, but many CPDs will immediately close so this page might not be seen
 	landing_page();
 	footer();
 } else {
@@ -317,144 +194,129 @@ if (isset($_GET["terms"])) {
 	footer();
 }
 
-#############################################################################################################
 // Functions:
 
+function decrypt_parse() {
+	/*
+	Decrypt and Parse the querystring
+		Note: $ndsparamlist is an array of parameter names to parse for.
+			Add your own custom parameters to **this array** as well as to the **config file**.
+			"admin_email" and "location" are examples of custom parameters.
+	*/
+
+	$cipher="AES-256-CBC";
+	$ndsparamlist=explode(" ", "clientip clientmac gatewayname version hid gatewayaddress gatewaymac authdir originurl clientif admin_email location");
+
+	if (isset($_GET['fas']) and isset($_GET['iv']))  {
+		$string=$_GET['fas'];
+		$iv=$_GET['iv'];
+		$decrypted=openssl_decrypt( base64_decode( $string ), $cipher, $GLOBALS["key"], 0, $iv );
+		$dec_r=explode(", ",$decrypted);
+
+		foreach ($ndsparamlist as $ndsparm) {
+			foreach ($dec_r as $dec) {
+				@list($name,$value)=explode("=",$dec);
+				if ($name == $ndsparm) {
+					$GLOBALS["$name"] = $value;
+					break;
+				}
+			}
+		}
+	}
+}
+
 function get_image($url, $imagetype) {
+	// download the requested remote image
 	header("Content-type: image/$imagetype");
 	readfile($url);
 }
 
-function authenticate_page() {
-	# Display a "logged in" landing page once NDS has authenticated the client.
-	# or a timed out error if we do not get authenticated by NDS
-	$me=$_SERVER['SCRIPT_NAME'];
-	$host=$_SERVER['HTTP_HOST'];
-	$clientip=$GLOBALS["clientip"];
-	$gatewayname=$GLOBALS["gatewayname"];
-	$gatewayaddress=$GLOBALS["gatewayaddress"];
-	$gatewaymac=$GLOBALS["gatewaymac"];
-	$hid=$GLOBALS["hid"];
-	$key=$GLOBALS["key"];
-	$clientif=$GLOBALS["clientif"];
-	$originurl=$GLOBALS["originurl"];
-	$redir=rawurldecode($originurl);
-	$sessionlength=$GLOBALS["sessionlength"];
-	$uploadrate=$GLOBALS["uploadrate"];
-	$downloadrate=$GLOBALS["downloadrate"];
-	$uploadquota=$GLOBALS["uploadquota"];
-	$downloadquota=$GLOBALS["downloadquota"];
-	$gwname=$GLOBALS["gwname"];
+function auth_get() {
+	/* Send The Auth List when requested by openNDS
+		When a client was verified, their parameters were added to the "auth list"
+		The auth list is sent to NDS when it authmon requests it.
+
+		auth_get:
+
+		value "list" sends the list and deletes each client entry that it finds
+
+		value "view" just sends the list, this is the default value for authmon and allows upstream processing here
+	*/
+
 	$logpath=$GLOBALS["logpath"];
-	$custom=$GLOBALS["custom"];
 
-	$rhid=hash('sha256', trim($hid).trim($key));
+	if (isset($_POST["auth_get"])) {
 
-	# Construct the client authentication string or "log"
-	# Note: override values set earlier if required, for example by testing clientif 
-	$log="$rhid $sessionlength $uploadrate $downloadrate $uploadquota $downloadquota ".rawurlencode($custom)."\n";
+		$acklist=base64_decode($_POST["payload"]);
 
-	$logfile="$logpath"."$gwname/$rhid";
-
-	if (!file_exists($logfile)) {
-		file_put_contents("$logfile", "$log");
-	}
-
-	echo "Waiting for link to establish....<br>";
-	flush();
-	$count=0;
-	$maxcount=30;
-
-	for ($i=1; $i<=$maxcount; $i++) {
-		$count++;
-		sleep(1);
-		echo "<b style=\"color:red;\">*</b>";
-
-		if ($count == 10) {echo "<br>"; $count=0;}
-
-		flush();
-
-		if (file_exists("$logfile")) {
-			$authed="no";
+		if (isset($_POST["gatewayhash"])) {
+			$gatewayhash=$_POST["gatewayhash"];
 		} else {
-			//no list so must be authed
-			$authed="yes";
-			write_log();
+			# invalid call, so:
+			exit(0);
 		}
 
-		if ($authed == "yes") {
-			echo "<br><b>Authenticated</b><br>";
-			landing_page();
-			flush();
-			break;
+		if (! file_exists("$logpath"."$gatewayhash")) {
+			# no clients waiting, so:
+			exit(0);
 		}
+
+		if ($_POST["auth_get"] == "clear") {
+			$auth_list=scandir("$logpath"."$gatewayhash");
+			array_shift($auth_list);
+			array_shift($auth_list);
+
+			foreach ($auth_list as $client) {
+				unlink("$logpath"."$gatewayhash/$client");
+			}
+			# Stale entries cleared, so:
+			exit(0);
+		}
+
+		# Set default empty authlist:
+		$authlist="*";
+
+		if ($_POST["auth_get"] == "list") {
+			$auth_list=scandir("$logpath"."$gatewayhash");
+			array_shift($auth_list);
+			array_shift($auth_list);
+
+			foreach ($auth_list as $client) {
+				$clientauth=file("$logpath"."$gatewayhash/$client");
+				$authlist=$authlist." ".rawurlencode(trim($clientauth[0]));
+				unlink("$logpath"."$gatewayhash/$client");
+			}
+			echo trim("$authlist");
+
+		} else if ($_POST["auth_get"] == "view") {
+
+			if ($acklist != "none") {
+				$acklist_r=explode("\n",$acklist);
+
+				foreach ($acklist_r as $client) {
+					$client=ltrim($client, "* ");
+
+					if ($client != "") {
+						if (file_exists("$logpath"."$gatewayhash/$client")) {
+							unlink("$logpath"."$gatewayhash/$client");
+						}
+					}
+				}
+				echo "ack";
+			} else {
+				$auth_list=scandir("$logpath"."$gatewayhash");
+				array_shift($auth_list);
+				array_shift($auth_list);
+
+				foreach ($auth_list as $client) {
+					$clientauth=file("$logpath"."$gatewayhash/$client");
+					$authlist=$authlist." ".rawurlencode(trim($clientauth[0]));
+				}
+			echo trim("$authlist");
+			}
+		}
+		exit(0);
 	}
-
-	if ($i > $maxcount) {
-		unlink("$logfile");
-		echo "
-			<br>The Portal has timed out<br>You may have to turn your WiFi off and on to reconnect.<br>
-			<p>
-			Click or tap Continue to try again.
-			</p>
-			<form>
-				<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='".$redir."'\" >
-			</form>
-		";
-	}
-}
-
-function thankyou_page() {
-	# Output the "Thankyou page" with a continue button
-	# You could include information or advertising on this page
-	# Be aware that many devices will close the login browser as soon as
-	# the client taps continue, so now is the time to deliver your message.
-
-	# You can also send a custom data string to BinAuth. Set the variable $custom to the desired value
-	# Max length 256 characters
-	$custom="Custom data sent to BinAuth";
-	$custom=base64_encode($custom);
-
-	$me=$_SERVER['SCRIPT_NAME'];
-	$host=$_SERVER['HTTP_HOST'];
-	$fas=$GLOBALS["fas"];
-	$iv=$GLOBALS["iv"];
-	$clientip=$GLOBALS["clientip"];
-	$gatewayname=$GLOBALS["gatewayname"];
-	$gatewayaddress=$GLOBALS["gatewayaddress"];
-	$gatewaymac=$GLOBALS["gatewaymac"];
-	$key=$GLOBALS["key"];
-	$hid=$GLOBALS["hid"];
-	$clientif=$GLOBALS["clientif"];
-	$originurl=$GLOBALS["originurl"];
-	$fullname=$_GET["fullname"];
-	$email=$_GET["email"];
-	$fullname_url=rawurlencode($fullname);
-	$auth="yes";
-
-	echo "
-		<big-red>
-			Thankyou!
-		</big-red>
-		<br>
-		<b>Welcome $fullname</b>
-		<br>
-		<italic-black>
-			Your News or Advertising could be here, contact the owners of this Hotspot to find out how!
-		</italic-black>
-		<form action=\"$me\" method=\"get\">
-			<input type=\"hidden\" name=\"fas\" value=\"$fas\">
-			<input type=\"hidden\" name=\"iv\" value=\"$iv\">
-			<input type=\"hidden\" name=\"auth\" value=\"$auth\">
-			<input type=\"hidden\" name=\"fullname\" value=\"$fullname_url\">
-			<input type=\"hidden\" name=\"email\" value=\"$email\">
-			<input type=\"submit\" value=\"Continue\" >
-		</form>
-		<hr>
-	";
-
-	read_terms();
-	flush();
 }
 
 function write_log() {
@@ -463,13 +325,7 @@ function write_log() {
 	# By default $logpath is null so the logfile will be written to the folder this script resides in,
 	# or the /tmp directory if on the NDS router
 
-	if (file_exists("/etc/config/opennds")) {
-		$logpath="/tmp/";
-	} elseif (file_exists("/etc/opennds/opennds.conf")) {
-		$logpath="/run/";
-	} else {
-		$logpath="";
-	}
+	$logpath=$GLOBALS["logpath"];
 
 	if (!file_exists("$logpath"."ndslog")) {
 		mkdir("$logpath"."ndslog", 0700);
@@ -513,6 +369,153 @@ function write_log() {
 	}
 
 	@file_put_contents($logfile, $log,  FILE_APPEND );
+}
+
+###################################
+// Functions used to generate html:
+###################################
+
+function authenticate_page() {
+	# Display a "logged in" landing page once NDS has authenticated the client.
+	# or a timed out error if we do not get authenticated by NDS
+	$me=$_SERVER['SCRIPT_NAME'];
+	$host=$_SERVER['HTTP_HOST'];
+	$clientip=$GLOBALS["clientip"];
+	$gatewayname=$GLOBALS["gatewayname"];
+	$gatewayaddress=$GLOBALS["gatewayaddress"];
+	$gatewaymac=$GLOBALS["gatewaymac"];
+	$hid=$GLOBALS["hid"];
+	$key=$GLOBALS["key"];
+	$clientif=$GLOBALS["clientif"];
+	$originurl=$GLOBALS["originurl"];
+	$redir=rawurldecode($originurl);
+	$sessionlength=$GLOBALS["sessionlength"];
+	$uploadrate=$GLOBALS["uploadrate"];
+	$downloadrate=$GLOBALS["downloadrate"];
+	$uploadquota=$GLOBALS["uploadquota"];
+	$downloadquota=$GLOBALS["downloadquota"];
+	$gwname=$GLOBALS["gwname"];
+	$logpath=$GLOBALS["logpath"];
+
+
+	/*	You can also send a custom data string to BinAuth. Set the variable $custom to the desired value
+		Max length 256 characters
+		It can contain any information that could be used for post authentication processing
+		eg. the values set per client for Time, Data and Data Rate quotas can be sent to BinAuth
+		This string will be b64 encoded before sending
+	*/
+
+	$custom="Custom data sent to BinAuth";
+	$custom=base64_encode($custom);
+
+
+	$rhid=hash('sha256', trim($hid).trim($key));
+
+	# Construct the client authentication string or "log"
+	# Note: override values set earlier if required, for example by testing clientif 
+	$log="$rhid $sessionlength $uploadrate $downloadrate $uploadquota $downloadquota $custom \n";
+
+	$logfile="$logpath"."$gwname/$rhid";
+
+	# Request authentication by openNDS
+	if (!file_exists($logfile)) {
+		file_put_contents("$logfile", "$log");
+	}
+
+	echo "Waiting for link to establish....<br>";
+	flush();
+
+	# Display "waiting" ticker, then log authentication if successful:
+	$count=0;
+	$maxcount=30;
+
+	for ($i=1; $i<=$maxcount; $i++) {
+		$count++;
+		sleep(1);
+		echo "<b style=\"color:red;\">*</b>";
+
+		if ($count == 10) {echo "<br>"; $count=0;}
+
+		flush();
+
+		if (file_exists("$logfile")) {
+			$authed="no";
+		} else {
+			//no list so must be authed
+			$authed="yes";
+			write_log();
+		}
+
+		if ($authed == "yes") {
+			echo "<br><b>Authenticated</b><br>";
+			landing_page();
+			flush();
+			break;
+		}
+	}
+
+	// Serve warning to client if authentication failed/timed out:
+	if ($i > $maxcount) {
+		unlink("$logfile");
+		echo "
+			<br>The Portal has timed out<br>You may have to turn your WiFi off and on to reconnect.<br>
+			<p>
+			Click or tap Continue to try again.
+			</p>
+			<form>
+				<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='".$redir."'\" >
+			</form>
+		";
+	}
+}
+
+function thankyou_page() {
+	/* Output the "Thankyou page" with a continue button
+		You could include information or advertising on this page
+		Be aware that many devices will close the login browser as soon as
+		the client taps continue, so now is the time to deliver your message.
+	*/
+
+	$me=$_SERVER['SCRIPT_NAME'];
+	$host=$_SERVER['HTTP_HOST'];
+	$fas=$GLOBALS["fas"];
+	$iv=$GLOBALS["iv"];
+	$clientip=$GLOBALS["clientip"];
+	$gatewayname=$GLOBALS["gatewayname"];
+	$gatewayaddress=$GLOBALS["gatewayaddress"];
+	$gatewaymac=$GLOBALS["gatewaymac"];
+	$key=$GLOBALS["key"];
+	$hid=$GLOBALS["hid"];
+	$clientif=$GLOBALS["clientif"];
+	$originurl=$GLOBALS["originurl"];
+	$fullname=$_GET["fullname"];
+	$email=$_GET["email"];
+	$fullname_url=rawurlencode($fullname);
+	$auth="yes";
+
+	echo "
+		<big-red>
+			Thankyou!
+		</big-red>
+		<br>
+		<b>Welcome $fullname</b>
+		<br>
+		<italic-black>
+			Your News or Advertising could be here, contact the owners of this Hotspot to find out how!
+		</italic-black>
+		<form action=\"$me\" method=\"get\">
+			<input type=\"hidden\" name=\"fas\" value=\"$fas\">
+			<input type=\"hidden\" name=\"iv\" value=\"$iv\">
+			<input type=\"hidden\" name=\"auth\" value=\"$auth\">
+			<input type=\"hidden\" name=\"fullname\" value=\"$fullname_url\">
+			<input type=\"hidden\" name=\"email\" value=\"$email\">
+			<input type=\"submit\" value=\"Continue\" >
+		</form>
+		<hr>
+	";
+
+	read_terms();
+	flush();
 }
 
 function login_page() {

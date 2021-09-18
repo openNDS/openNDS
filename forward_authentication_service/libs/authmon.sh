@@ -71,17 +71,25 @@ do_ndsctl () {
 #					#
 #########################################
 
+# Get tmpfs mountpoint
+mountpoint=$(/usr/lib/opennds/libopennds.sh tmpfs)
+
+# Clean up any previous ndsctl debuglevel setting
+if [ -e "$mountpoint/ndsdebuglevel" ]; then
+	rm $mountpoint/ndsdebuglevel
+fi
+
 #wait a while for openNDS to get started
 sleep 5
 
-# Get the configured debuglevel
-option="debuglevel"
-get_option_from_config
+# Get status as ndsctlout
+ndsctlcmd="status 2>/dev/null"
+do_ndsctl
 
-if [ -z "$debuglevel" ]; then
-	debuglevel="1"
-fi
-
+# Get the configured debuglevel and version
+debuglevel=$(echo "$ndsctlout" | grep "Debug Level" | awk '{printf $4}')
+version=$(echo "$ndsctlout" | grep "Version" | awk '{printf $2}')
+echo "debuglevel=$debuglevel"
 # Get PID For syslog
 ndspid=$(pgrep '/usr/bin/opennds')
 
@@ -93,9 +101,6 @@ loopinterval=10
 postrequest="/usr/lib/opennds/post-request.php"
 
 # Construct our user agent string:
-ndsctlcmd="status 2>/dev/null"
-do_ndsctl
-version=$(echo "$ndsctlout" | grep Version | awk '{printf $2}')
 user_agent="openNDS(authmon;NDS:$version;)"
 
 # If we are on OpenWrt, check if ca-bundle is installed
@@ -121,12 +126,24 @@ ret=$($phpcli -f "$postrequest" "$url" "$action" "$gatewayhash" "$user_agent" "$
 
 # Main loop:
 while true; do
+	# Check if debuglevel has been changed by ndsctl
+
+	if [ -e "$mountpoint/ndsdebuglevel" ]; then
+		debuglevel=$(cat $mountpoint/ndsdebuglevel)
+		echo "debuglevel=$debuglevel"
+	fi
+
 	# Get remote authlist from the FAS:
 	action="view"
 	payload="none"
 	acklist="*"
 
 	authlist=$($phpcli -f "$postrequest" "$url" "$action" "$gatewayhash" "$user_agent" "$payload")
+
+	if [ $debuglevel -ge 3 ]; then
+		echo "authmon - authlist $authlist" | logger -p "daemon.debug" -s -t "opennds[$ndspid]"
+	fi
+
 	validator=${authlist:0:1}
 
 	if [ "$validator" = "*" ]; then
@@ -141,7 +158,7 @@ while true; do
 			for authparams_enc in $authlist; do
 				authparams=$(printf "${authparams_enc//%/\\x}")
 
-				if [ "$debuglevel" -ge 2 ]; then
+				if [ $debuglevel -ge 2 ]; then
 					echo "authmon - authentication parameters $authparams" | logger -p "daemon.info" -s -t "opennds[$ndspid]"
 				fi
 
@@ -178,6 +195,9 @@ while true; do
 	# acklist is a space separated list of the rhid's of sucessfully authenticated clients.
 	# Send acklist to the FAS for upstream processing:
 	ackresponse=$($phpcli -f "$postrequest" "$url" "$action" "$gatewayhash" "$user_agent" "$acklist")
+	if [ $debuglevel -ge 3 ]; then
+		echo "authmon - remote FAS response [$ackresponse]" | logger -p "daemon.debug" -s -t "opennds[$ndspid]"
+	fi
 
 	# Sleep for a while:
 	sleep $loopinterval

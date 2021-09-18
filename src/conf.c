@@ -1884,6 +1884,9 @@ void parse_fas_custom_files_list(const char ptr[])
 int set_debuglevel(const char opt[])
 {
 	char *end;
+	char *libcmd;
+	char msg[4] = {0};
+	int ret;
 
 	if (opt == NULL || strlen(opt) == 0) {
 		return 1;
@@ -1897,6 +1900,16 @@ int set_debuglevel(const char opt[])
 
 	if (level >= DEBUGLEVEL_MIN && level <= DEBUGLEVEL_MAX) {
 		config.debuglevel = level;
+		safe_asprintf(&libcmd, "/usr/lib/opennds/libopennds.sh \"debuglevel\" \"%d\"", level);
+		debug(LOG_DEBUG, "Library command: [%s]", libcmd);
+
+		if (execute_ret_url_encoded(msg, sizeof(msg) - 1, libcmd) == 0) {
+			debug(LOG_NOTICE, "debuglevel [%d] signaled to externals - [%s] acknowledged", level, msg);
+		} else {
+			debug(LOG_ERR, "debuglevel [%d] signaled to externals - unable to set", level);
+		}
+
+		free(libcmd);
 		return 0;
 	} else {
 		return 1;

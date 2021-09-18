@@ -302,7 +302,9 @@ static int _execute_ret(char* msg, int msg_len, const char *cmd)
 	}
 
 	if (msg && msg_len > 0) {
+		debug(LOG_DEBUG, "Reading command output");
 		rc = fread(msg, msg_len - 1, 1, fp);
+		debug(LOG_DEBUG, "command output: [%s]", msg);
 	}
 
 	rc = pclose(fp);
@@ -558,6 +560,7 @@ ndsctl_status(FILE *fp)
 
 	fprintf(fp, "Uptime: %s\n", durationbuf);
 	fprintf(fp, "Gateway Name: [ %s ]\n", config->gw_name);
+	fprintf(fp, "Debug Level: [ %d ]\n", config->debuglevel);
 	fprintf(fp, "Gateway FQDN: [ %s ]\n", config->gw_fqdn);
 
 	if (strstr(config->gw_iprange, "0.0.0.0/0")) {

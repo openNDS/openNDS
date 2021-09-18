@@ -949,6 +949,30 @@ elif [ "$1" = "get_option_from_config" ]; then
 	printf "%s" $param
 	exit 0
 
+elif [ "$1" = "debuglevel" ]; then
+	# $2 contains the debuglevel
+	debuglevel=$2
+	configure_log_location
+	printf %d "$debuglevel" > "$mountpoint/ndsdebuglevel"
+	setlevel=$(cat "$mountpoint/ndsdebuglevel")
+	printf %d "$setlevel"
+	exit 0
+
+elif [ "$1" = "daemon" ]; then
+	# $2 contains the b64 encoded daemon startup command
+	ndsctlcmd="b64decode $2"
+	do_ndsctl
+
+	if [ "$ndsstatus" = "ready" ]; then
+		#command -p $ndsctlout &
+		exec $ndsctlout
+		echo "ack"
+		exit 0
+	else
+		printf %s "$ndsstatus"
+		exit 1
+	fi
+
 else
 	#Display a splash page sequence using a Themespec
 

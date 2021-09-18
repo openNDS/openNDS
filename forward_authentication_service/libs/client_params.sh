@@ -189,7 +189,7 @@ body() {
 
 		pagebody="
 			<h1>Network Authentication Required</h1>
-			<form action=\"%s\" method=\"get\">
+			<form action=\"$url\" method=\"get\">
 			<input type=\"submit\" value=\"Refresh\">
 			</form>
 			<br>

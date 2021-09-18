@@ -416,7 +416,7 @@ enum MHD_Result libmicrohttpd_cb(
 
 	// only allow get
 	if (0 != strcmp(method, "GET")) {
-		debug(LOG_DEBUG, "Unsupported http method %s", method);
+		debug(LOG_DEBUG, "Unsupported http method %s, Network Authentication required (Error 511)", method);
 		return send_error(connection, 511);
 	}
 
@@ -1373,9 +1373,11 @@ static int send_error(struct MHD_Connection *connection, int error)
 	const char *page_500 = "<html><head><title>Error 500</title></head><body><h1>Error 500 - Internal Server Error. Oh no!</h1></body></html>";
 	const char *page_501 = "<html><head><title>Error 501</title></head><body><h1>Error 501 - Not Implemented</h1></body></html>";
 	const char *page_503 = "<html><head><title>Error 503</title></head><body><h1>Error 503 - Internal Server Error</h1></body></html>";
-	char *page_511 = NULL;
+	char *page_511;
 	char *status_url = NULL;
+	char *cmd = NULL;
 	const char *mimetype = lookup_mimetype("foo.html");
+	char ip[INET6_ADDRSTRLEN+1];
 
 	int ret = MHD_NO;
 	s_config *config = config_get_config();
@@ -1422,40 +1424,26 @@ static int send_error(struct MHD_Connection *connection, int error)
 		ret = MHD_queue_response(connection, MHD_HTTP_INTERNAL_SERVER_ERROR, response);
 		break;
 	case 511:
-		if (strcmp(config->gw_fqdn, "disable") != 0) {
-			safe_asprintf(&status_url, "http://%s/", config->gw_fqdn);
-		} else {
-			safe_asprintf(&status_url, "http://%s/", config->gw_ip);
+		get_client_ip(ip, connection);
+
+		page_511 = safe_calloc(HTMLMAXSIZE);
+		safe_asprintf(&cmd, "/usr/lib/opennds/client_params.sh err511 '%s'", ip);
+
+		if (execute_ret_url_encoded(page_511, HTMLMAXSIZE - 1, cmd) == 0) {
+			debug(LOG_INFO, "Network Authentication Required - page_511 html generated for [%s]", ip);
 		}
-		safe_asprintf(&page_511,
-			"<!DOCTYPE html>\n\
-			<html>\n\
-			<head>\n\
-			<meta http-equiv=\"Cache-Control\" content=\"no-cache, no-store, must-revalidate\">\n\
-			<meta http-equiv=\"Pragma\" content=\"no-cache\">\n\
-			<meta http-equiv=\"Expires\" content=\"0\">\n\
-			<meta charset=\"utf-8\">\n\
-			<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n\
-			<link rel=\"shortcut icon\" href=\"/images/splash.jpg\" type=\"image/x-icon\">\n\
-			<link rel=\"stylesheet\" type=\"text/css\" href=\"/splash.css\">\n\
-			<title>Error 511 Network Authentication Required</title></head>\n\
-			<body>\n\
-			<h1>Network Authentication Required</h1>\n\
-			<form action=\"%s\" method=\"get\">\n\
-			<input type=\"submit\" value=\"Refresh\">\n\
-			</form>\n\
-			<br>\n\
-			<form action=\"%slogin\" method=\"get\" target=\"_blank\">\n\
-			<input type=\"submit\" value=\"Portal Login\" >\n\
-			</form>\n\
-			</body></html>\n",
-			status_url,
-			status_url
-		);
+		free(cmd);
 
 		response = MHD_create_response_from_buffer(strlen(page_511), (char *)page_511, MHD_RESPMEM_MUST_FREE);
 		MHD_add_response_header(response, "Content-Type", mimetype);
 		ret = MHD_queue_response(connection, MHD_HTTP_NETWORK_AUTHENTICATION_REQUIRED, response);
+
+		if (ret == MHD_NO) {
+			debug(LOG_ERR, "send_error 511: Error queueing response");
+		} else {
+			debug(LOG_DEBUG, "send_error 511: Response is Queued");
+		}
+
 		free(status_url);
 		break;
 	}

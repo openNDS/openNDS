@@ -729,15 +729,15 @@ check_mhd() {
 mhd_get_status() {
 
 	if [ -z "$fetch" ]; then
-		mhdtest=$(wget -t 1 -T 1 -O - "http://$gw_address/mhdstatus" 2>&1 | awk -F'ERROR 511: ' '{printf("%s", $2)}')
+		mhdtest=$(wget -t 1 -T 1 -O - "http://$gw_address/mhdstatus" 2>&1 | grep "<br>OK<br>")
 
-		if [ "$mhdtest" = "Network Authentication Required." ]; then
+		if [ ! -z "$mhdtest" ]; then
 			mhdstatus="1"
 		fi
 	else
-		mhdtest=$(uclient-fetch -T 1 -O - "http://$gw_address/mhdstatus" 2>&1 | awk -F'error ' '{printf("%s", $2)}')
+		mhdtest=$(uclient-fetch -T 1 -O - "http://$gw_address/mhdstatus" 2>&1 | grep "<br>OK<br>")
 
-		if [ "$mhdtest" = "511" ]; then
+		if [ ! -z "$mhdtest" ]; then
 			mhdstatus="1"
 		fi
 	fi

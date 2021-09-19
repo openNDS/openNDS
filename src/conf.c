@@ -1886,7 +1886,6 @@ int set_debuglevel(const char opt[])
 	char *end;
 	char *libcmd;
 	char msg[4] = {0};
-	int ret;
 
 	if (opt == NULL || strlen(opt) == 0) {
 		return 1;

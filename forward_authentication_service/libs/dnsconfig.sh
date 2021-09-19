@@ -94,10 +94,10 @@ elif [ "$setconf" = "cpidconf" ]; then
 
 	if [ "$uciconfig" = "" ]; then
 		# Generic Linux
-		sed -i '/System\|lan,114,http:/d' $conflocation
+		sed -i '/System\|114,http:/d' $conflocation
 
 		if [ ! -z "$gatewayfqdn" ]; then
-			echo "dhcp-option-force=lan,114,http://$gatewayfqdn" >> $conflocation
+			echo "dhcp-option-force=114,http://$gatewayfqdn" >> $conflocation
 		fi
 	else
 		# OpenWrt

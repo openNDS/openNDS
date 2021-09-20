@@ -365,7 +365,7 @@ config opennds
 
 	# StatusPath
 	# Default: /usr/lib/opennds/client_params.sh
-	# This is the script used to generate the GatewayFQDN client status page
+	# This is the script used to generate the GatewayFQDN client status and Error511 pages
 	#
 	#option statuspath '/mycustomscripts/custom_client_params.sh'
 	###########################################################################################
@@ -653,12 +653,13 @@ config opennds
 
 	# For preauthenticated users:
 	#
-	# *****IMPORTANT*****
+	#	*****IMPORTANT*****
 	#
-	# To help prevent DNS tunnelling, DNS Hijacking and generally improve security,
-	# DO NOT UNCOMMENT THE FOLLOWING TWO LINES:
-	#list preauthenticated_users 'allow tcp port 53'
-	#list preauthenticated_users 'allow udp port 53'
+	# To support RFC8910 Captive Portal Identification
+	#	AND to help prevent DNS tunnelling, DNS Hijacking and generally improve security,
+	#
+	# 	****DO NOT ALLOW ACCESS TO EXTERNAL DNS SERVICES****
+	#
 	###########################################################################################
 
 	# Walled Garden
@@ -709,7 +710,7 @@ config opennds
 	#
 	# 1. To add Facebook to the Walled Garden, the list entries would be:
 	# 	list walledgarden_fqdn_list 'facebook.com fbcdn.net'
-	# 	list walledgarden_port_list '443 80'
+	# 	list walledgarden_port_list '443'
 	#
 	# 2. To add Paypal to the Walled Garden, the list entries would be:
 	# 	list walledgarden_fqdn_list 'paypal.com paypalobjects.com'
@@ -724,9 +725,8 @@ config opennds
 	list users_to_router 'allow udp port 53'
 	list users_to_router 'allow udp port 67'
 
-	# Optional - Allow ports for SSH/Telnet/HTTP/HTTPS:
+	# Optional - Allow ports for SSH/HTTP/HTTPS:
 	list users_to_router 'allow tcp port 22'
-	#list users_to_router 'allow tcp port 23'
 	list users_to_router 'allow tcp port 80'
 	list users_to_router 'allow tcp port 443'
 	###########################################################################################
@@ -748,6 +748,14 @@ config opennds
 
 	# MAC addresses that do not need to authenticate
 	#list trustedmac '00:00:C0:01:D0:1D'
+	###########################################################################################
+
+	# dhcp_default_url_enable
+	# Sends "default_url" (dhcp option 114) with all replies to dhcp requests
+	# Required for RFC8910 Captive Portal Identification
+	# Default 1 (enabled)
+	# To disable, set to 0
+	#option dhcp_default_url_enable '1'
 	###########################################################################################
 
 	# openNDS uses specific HEXADECIMAL values to mark packets used by iptables as a bitwise mask.

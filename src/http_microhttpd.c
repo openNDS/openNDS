@@ -429,7 +429,7 @@ enum MHD_Result libmicrohttpd_cb(
 	// check for mhdstatus request
 	if (strstr(url, mhdstatus) != NULL) {
 		debug(LOG_DEBUG, "MHD Status Request - %s", url);
-		return send_error(connection, 511);
+		return send_error(connection, 200);
 	}
 
 
@@ -865,7 +865,6 @@ static int preauthenticated(struct MHD_Connection *connection,
 	char query_str[QUERYMAXLEN] = {0};
 	char *query = query_str;
 	char *querystr = query_str;
-	char portstr[MAX_HOSTPORTLEN] = {0};
 	char originurl[QUERYMAXLEN] = {0};
 
 	int ret;
@@ -1366,7 +1365,7 @@ static int send_error(struct MHD_Connection *connection, int error)
 	/* cannot automate since cannot translate automagically between error number and MHD's status codes
 	 * -- and cannot rely on MHD_HTTP_ values to provide an upper bound for an array
 	 */
-	const char *page_200 = "<html><header><title>Authenticated</title><body><h1>Authenticated</h1></body></html>";
+	const char *page_200 = "<br>OK<br>";
 	const char *page_400 = "<html><head><title>Error 400</title></head><body><h1>Error 400 - Bad Request</h1></body></html>";
 	const char *page_403 = "<html><head><title>Error 403</title></head><body><h1>Error 403 - Forbidden</h1></body></html>";
 	const char *page_404 = "<html><head><title>Error 404</title></head><body><h1>Error 404 - Not Found</h1></body></html>";
@@ -1374,7 +1373,6 @@ static int send_error(struct MHD_Connection *connection, int error)
 	const char *page_501 = "<html><head><title>Error 501</title></head><body><h1>Error 501 - Not Implemented</h1></body></html>";
 	const char *page_503 = "<html><head><title>Error 503</title></head><body><h1>Error 503 - Internal Server Error</h1></body></html>";
 	char *page_511;
-	char *status_url = NULL;
 	char *cmd = NULL;
 	const char *mimetype = lookup_mimetype("foo.html");
 	char ip[INET6_ADDRSTRLEN+1];
@@ -1444,7 +1442,6 @@ static int send_error(struct MHD_Connection *connection, int error)
 			debug(LOG_DEBUG, "send_error 511: Response is Queued");
 		}
 
-		free(status_url);
 		break;
 	}
 

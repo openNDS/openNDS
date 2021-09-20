@@ -463,6 +463,7 @@ main(int argc, char **argv)
 		return 0;
 	}
 
+
 	// Get the tempfs mountpoint
 	safe_asprintf(&cmd, "/usr/lib/opennds/libopennds.sh tmpfs");
 	fd = popen(cmd, "r");
@@ -492,25 +493,18 @@ main(int argc, char **argv)
 	fd = popen(cmd, "r");
 	if (fd == NULL) {
 		printf("Unable to open library - Terminating");
-		pclose(fd);
 		exit(1);
 	}
 	free(cmd);
 
 	if(fgets(socket_file, sizeof(socket_file), fd) == NULL) {
-		// Using default socket
-		socket = strdup(DEFAULT_SOCKET_FILENAME);
-		pclose(fd);
-	} else {
-		socket = strdup(socket_file);
+		// Not set in config, so using default socket
+		strcat(socket_file, DEFAULT_SOCKET_FILENAME);
 	}
 	pclose(fd);
 
-	// Get the socket path/filename if default
-	if (strcmp(socket, DEFAULT_SOCKET_FILENAME) == 0) {
-		free(socket);
-		safe_asprintf(&socket, "%s/%s", mountpoint, DEFAULT_SOCKET_FILENAME);
-	}
+	// Construct the full socket path/filename
+	safe_asprintf(&socket, "%s/%s", mountpoint, socket_file);
 
 	// check arguments that need socket access and take action:
 	arg = find_argument(argv[i]);

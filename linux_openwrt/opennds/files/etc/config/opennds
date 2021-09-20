@@ -2,6 +2,7 @@
 # The options available here are an adaptation of the settings used in the legacy opennds.conf.
 
 config opennds
+	# enabled
 	# Set to 0 to disable opennds
 	option enabled 1
 	###########################################################################################
@@ -10,6 +11,7 @@ config opennds
 	#option config '/etc/opennds/opennds.conf'
 	###########################################################################################
 
+	# debuglevel
 	# Set Debug Level (0-3)
 	# Default: 1
 	# 0 : Silent (only initial startup, LOG_ERR and LOG_EMERG LOG_CRIT messages will be seen, otherwise there will be no logging.)
@@ -19,10 +21,33 @@ config opennds
 	#option debuglevel '1'
 	###########################################################################################
 
+	# fwhook_enabled
 	# Firewall Restart hook
 	# Set to 0 to disable hook that makes opennds restart when the firewall restarts.
 	# This hook is needed as a restart of Firewall overwrites opennds iptables entries.
 	option fwhook_enabled '1'
+	###########################################################################################
+
+	# ndsctlsocket
+	# The socket name to use for ndsctl socket access, relative to the tmpfs mountpoint.
+	# Any directory/folder specified must exist.
+	# Default: ndsctl.sock (Do not add a leading "/")
+	# Full default socket path would be /tmp/ndsctl.sock in OpenWrt
+	# In the following example, the socket path would be /tmp/sockets/ndsctl.sock
+	#option ndsctlsocket 'sockets/ndsctl.sock'
+	###########################################################################################
+
+	# log_mountpoint
+	# Local Log Mountpoint
+	# Default: router's volatile tmpfs storage eg on OpenWrt '/tmp'
+	#
+	# Local logging can be directed to any storage accessible to the router eg USB drive, SSD etc
+	#
+	# **WARNING** - you cannot use the router's built in flash storage as this would cause
+	# excessive wear and eventual flash failure
+	#
+	# Example:
+	#option log_mountpoint '/logs'
 	###########################################################################################
 
 	# Login Option
@@ -254,18 +279,6 @@ config opennds
 	#
 	# Example:
 	#option max_log_entries '1000'
-	###########################################################################################
-
-	# Local Log Mountpoint
-	# Default: router's volatile tmpfs storage eg on OpenWrt '/tmp'
-	#
-	# Local logging can be directed to any storage accessible to the router eg USB drive, SSD etc
-	#
-	# **WARNING** - you cannot use the router's built in flash storage as this would cause
-	# excessive wear and eventual flash failure
-	#
-	# Example:
-	#option log_mountpoint '/logs'
 	###########################################################################################
 
 	# MHD Unescape callback - This is an advanced option

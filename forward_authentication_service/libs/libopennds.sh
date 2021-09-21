@@ -750,7 +750,7 @@ get_option_from_config() {
 		param=$(uci -q get opennds.@opennds[0].$option | awk '{printf("%s", $0)}')
 
 	elif [ -e "/etc/opennds/opennds.conf" ]; then
-		param=$(cat "/etc/opennds/opennds.conf" | awk -F"$option" '{printf("%s", $2)}')
+		param=$(cat "/etc/opennds/opennds.conf" | awk -F"$option " '{printf("%s", $2)}')
 	fi
 
 	eval $option=$param

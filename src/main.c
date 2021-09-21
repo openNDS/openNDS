@@ -135,6 +135,8 @@ termination_handler(int s)
 {
 	static pthread_mutex_t sigterm_mutex = PTHREAD_MUTEX_INITIALIZER;
 	char *fasssl = NULL;
+	char *dnscmd;
+	char msg[256] = {0};
 	s_config *config;
 	config = config_get_config();
 
@@ -159,6 +161,24 @@ termination_handler(int s)
 
 		free(fasssl);
 	}
+
+	// If RFC8910 support is enabled, disable it
+	debug(LOG_DEBUG, "Disabling RFC8910 support");
+	safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"cpidconf\"");
+
+	if (execute_ret_url_encoded(msg, sizeof(msg) - 1, dnscmd) == 0) {
+		debug(LOG_INFO, "RFC8910 support is disabled");
+	} else {
+		debug(LOG_ERR, "RFC8910 setup script failed to execute");
+	}
+	free(dnscmd);
+
+	// Restart dnsmasq
+	safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" &");
+	debug(LOG_DEBUG, "restart command [ %s ]", dnscmd);
+	system(dnscmd);
+	debug(LOG_INFO, "Dnsmasq restarted");
+	free(dnscmd);
 
 	auth_client_deauth_all();
 
@@ -416,7 +436,10 @@ setup_from_config(void)
 	}
 
 	// Do any required dnsmasq configurations and restart it
-	if (strcmp(config->gw_fqdn, "disable") != 0 || config->walledgarden_fqdn_list || config->dhcp_default_url_enable == 1) {
+	if (strcmp(config->gw_fqdn, "disable") != 0
+		|| strcmp(config->gw_fqdn, "disabled") != 0
+		|| config->walledgarden_fqdn_list
+		|| config->dhcp_default_url_enable == 1) {
 
 		// For Client status Page - configure the hosts file
 		if (strcmp(config->gw_fqdn, "disable") != 0) {
@@ -491,7 +514,7 @@ setup_from_config(void)
 		if (config->dhcp_default_url_enable == 1) {
 			debug(LOG_DEBUG, "Enabling RFC8910 support");
 
-			if (strcmp(config->gw_fqdn, "disable") != 0) {
+			if (strcmp(config->gw_fqdn, "disable") != 0 && strcmp(config->gw_fqdn, "disabled") != 0) {
 				safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"cpidconf\" \"%s\"", config->gw_fqdn);
 			} else {
 				safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"cpidconf\" \"%s\"", config->gw_ip);
@@ -499,6 +522,17 @@ setup_from_config(void)
 
 			if (execute_ret_url_encoded(msg, sizeof(msg) - 1, dnscmd) == 0) {
 				debug(LOG_INFO, "RFC8910 support is enabled");
+			} else {
+				debug(LOG_ERR, "RFC8910 setup script failed to execute");
+			}
+			free(dnscmd);
+		} else {
+			debug(LOG_DEBUG, "Disabling RFC8910 support");
+
+			safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"cpidconf\"");
+
+			if (execute_ret_url_encoded(msg, sizeof(msg) - 1, dnscmd) == 0) {
+				debug(LOG_INFO, "RFC8910 support is disabled");
 			} else {
 				debug(LOG_ERR, "RFC8910 setup script failed to execute");
 			}

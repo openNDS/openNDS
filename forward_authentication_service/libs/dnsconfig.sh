@@ -114,12 +114,12 @@ elif [ "$setconf" = "cpidconf" ]; then
 
 		if [ -z "$cpidconfig" ]; then
 			echo $addlist | uci batch
-			uci commit dhcp
+			# Note we do not commit here so that the config changes do NOT survive a reboot
 
 		elif [ "$cpidconfig" != "114,http://$gatewayfqdn" ]; then
 			delete_114s
 			echo $addlist | uci batch
-			uci commit dhcp
+			# Note we do not commit here so that the config changes do NOT survive a reboot
 		fi
 	fi
 

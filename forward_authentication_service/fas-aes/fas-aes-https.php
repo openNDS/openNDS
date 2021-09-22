@@ -65,7 +65,7 @@ if(empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == "off"){
     $redirect = 'https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
     header('HTTP/1.1 301 Moved Permanently');
     header('Location: ' . $redirect);
-    exit();
+    exit(0);
 }
 
 // setup basic defaults
@@ -148,6 +148,12 @@ if (isset($_GET['status'])) {
 
 //Decrypt and Parse the querystring
 decrypt_parse();
+
+if ( ! isset($clientmac) ) {
+	//Encryption error
+	err403();
+	exit(0);
+}
 
 // Extract the client zone:
 $client_zone_r=explode(" ",trim($clientif));
@@ -689,9 +695,47 @@ function splash_header() {
 	flush();
 }
 
+function err403() {
+	$imagepath=$GLOBALS["imagepath"];
+	// Add headers to stop browsers from cacheing
+	header('HTTP/1.1 403 Forbidden');
+	header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
+	header("Cache-Control: no-cache");
+	header("Pragma: no-cache");
+
+
+	echo "<!DOCTYPE html>\n<html>\n<head>
+		<meta charset=\"utf-8\" />
+		<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+		<link rel=\"shortcut icon\" href=$imagepath type=\"image/x-icon\">
+		<title>Forbidden</title>
+		<style>
+	";
+	flush();
+	insert_css();
+	flush();
+	echo "
+		</style>
+		</head>
+		<body>
+		<div class=\"offset\">
+		<div class=\"insert\">
+		<hr>
+		<b style=\"color:red; font-size:1.5em;\">Encryption Error <br> Access Forbidden</b><br>
+	";
+	flush();
+	footer();
+}
+
 function footer() {
 	$imagepath=$GLOBALS["imagepath"];
-	$version=$GLOBALS["version"];
+
+	if (isset($GLOBALS["version"])) {
+		$version=$GLOBALS["version"];
+	} else {
+		$version="";
+	}
+
 	$year=date("Y");
 	echo "
 		<hr>

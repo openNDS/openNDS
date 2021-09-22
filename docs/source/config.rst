@@ -47,6 +47,60 @@ This hook is needed as a restart of Firewall overwrites opennds iptables entries
 
 ``option fwhook_enabled '1'``
 
+Ndsctl Socket Access
+********************
+
+Set the socket name to use for ndsctl socket access, relative to the tmpfs mountpoint.
+
+Any directory/folder specified must exist.
+Default: ndsctl.sock (Do not add a leading "/")
+
+Full default socket path would be /tmp/ndsctl.sock in OpenWrt
+In the following example, the socket path would be /tmp/sockets/ndsctl.sock
+
+Example:
+
+``option ndsctlsocket 'sockets/ndsctl.sock'``
+
+Local Log Mountpoint
+********************
+
+Default: router's volatile tmpfs storage eg on OpenWrt '/tmp'
+
+Local logging can be directed to any storage accessible to the router eg USB drive, SSD etc
+
+**WARNING** - you cannot use the router's built in flash storage as this would cause
+excessive wear and eventual flash failure
+
+Example:
+
+``option log_mountpoint '/logs'``
+
+Maximum number of Local Log Entries
+***********************************
+
+Set the maximum number of local log entries to be kept.
+Default 100
+
+Minimum value 0 (no limit)
+
+Maximum value - limited only be free storage space on the logging mountpoint
+
+If set to '0' there is no limit
+
+This is the maximum number of local log entries allowed before log rotation begins
+
+Both ThemeSpec and Binauth log locally if they are enabled
+
+**WARNING** - local logging is by default written to the tmpfs volatile storage
+
+If this option were to be set too high the router could run out of tmpfs storage and/or free RAM
+
+Non-volatile storage, such as a USB storage device may be defined using the log_mountpoint option
+
+Example:
+
+``option max_log_entries '1000'``
 
 Login Option
 ************
@@ -100,8 +154,9 @@ This is useful for example with IoT devices that do not have CPD (captive portal
 
 or for a FAS to manage inter-captive-portal roaming by making use of a centralised database of client validations.
 
-``option allow_preemptive_authentication '1'``
+Example:
 
+``option allow_preemptive_authentication '1'``
 
 ThemeSpec Path
 **************
@@ -166,8 +221,6 @@ theme_user-email-login-custom-placeholders
 ``list fas_custom_parameters_list 'banner2_message=HMS%20Pickle'``
 
 ``list fas_custom_parameters_list 'banner3_message=SeaWolf%20Cruiser%20Racer'``
-
-
 
 Define Custom Variables
 ***********************
@@ -392,44 +445,6 @@ ie. Serve the file splash.css from this directory
 Example:
 
 ``option webroot '/etc/opennds/htdocs'``
-
-Set Maximum number of Local Log Entries
-***************************************
-
-Default: 100
-
-Minimum value 0 (no limit)
-
-Maximum value - limited only be free storage space on the logging mountpoint
-
-    If set to '0' there is no limit
-
-    This is the maximum number of local log entries allowed before log rotation begins
-
-    Both ThemeSpec and Binauth log locally if they are enabled
-
-    **WARNING** - local logging is by default written to the tmpfs volatile storage
-
-    If this option were to be set too high the router could run out of tmpfs storage and/or free RAM
-
-    Non-volatile storage, such as a USB storage device may be defined using the log_mountpoint option
-
-Example:
-
-``option max_log_entries '1000'``
-
-Set Local Log Mountpoint
-************************
-
-Default: router's volatile tmpfs storage eg on OpenWrt '/tmp'
-
-Local logging can be directed to any storage accessible to the router eg USB drive, SSD etc
-
-    **WARNING** - you cannot use the router's built in flash storage as this would cause excessive wear and eventual flash failure
-
-Example:
-
-``option log_mountpoint '/logs'``
 
 Set the GatewayInterface
 ************************
@@ -929,12 +944,13 @@ Grant access to udp services at address 123.1.1.1, on port 5000, overriding the 
 Access Control For Preauthenticated Users:
 ******************************************
 
-**IMPORTANT**
+	*****IMPORTANT*****
 
-	Preauthenticated users do not require access to anything on the Internet for the Captive Portal to work.
+    To support RFC8910 Captive Portal Identification
 
-	In particular, to help prevent DNS tunnelling, DNS Hijacking and generally improve security, DO NOT allow access to external DNS.
+    AND to help prevent DNS tunnelling, DNS Hijacking and generally improve security,
 
+ 	*****DO NOT ALLOW ACCESS TO EXTERNAL DNS SERVICES*****
 
 Walled Garden Access For Preauthenticated Users
 ***********************************************
@@ -1000,7 +1016,7 @@ Add Facebook to the Walled Garden
 To add Facebook to the Walled Garden, the list entries would be:
 
 ``list walledgarden_fqdn_list 'facebook.com fbcdn.net'``
-``list walledgarden_port_list '443 80'``
+``list walledgarden_port_list '443'``
 
 
 Add Paypal to the Walled Garden
@@ -1082,6 +1098,21 @@ Example:
 ``list trustedmac '00:00:C0:01:D0:0D'``
 
 ``list trustedmac '00:00:C0:01:D0:1D'``
+
+Dhcp option 114 Enable - RFC8910
+********************************
+
+Sends "default_url" (dhcp option 114) with all replies to dhcp requests
+
+Required for RFC8910 Captive Portal Identification
+
+Default 1 (enabled)
+
+To disable, set to 0
+
+Example:
+
+``option dhcp_default_url_enable '0'``
 
 Packet Marking Compatibility
 ****************************

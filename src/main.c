@@ -135,6 +135,8 @@ termination_handler(int s)
 {
 	static pthread_mutex_t sigterm_mutex = PTHREAD_MUTEX_INITIALIZER;
 	char *fasssl = NULL;
+	char *dnscmd;
+	char msg[256] = {0};
 	s_config *config;
 	config = config_get_config();
 
@@ -159,6 +161,24 @@ termination_handler(int s)
 
 		free(fasssl);
 	}
+
+	// If RFC8910 support is enabled, disable it
+	debug(LOG_DEBUG, "Disabling RFC8910 support");
+	safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"cpidconf\"");
+
+	if (execute_ret_url_encoded(msg, sizeof(msg) - 1, dnscmd) == 0) {
+		debug(LOG_INFO, "RFC8910 support is disabled");
+	} else {
+		debug(LOG_ERR, "RFC8910 setup script failed to execute");
+	}
+	free(dnscmd);
+
+	// Restart dnsmasq
+	safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" &");
+	debug(LOG_DEBUG, "restart command [ %s ]", dnscmd);
+	system(dnscmd);
+	debug(LOG_INFO, "Dnsmasq restarted");
+	free(dnscmd);
 
 	auth_client_deauth_all();
 
@@ -416,102 +436,111 @@ setup_from_config(void)
 	}
 
 	// Do any required dnsmasq configurations and restart it
-	if (strcmp(config->gw_fqdn, "disable") != 0 || config->walledgarden_fqdn_list || config->dhcp_default_url_enable == 1) {
 
-		// For Client status Page - configure the hosts file
-		if (strcmp(config->gw_fqdn, "disable") != 0) {
-			safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"hostconf\" \"%s\" \"%s\"",
-				config->gw_ip,
-				config->gw_fqdn
-			);
+	// For Client status Page - configure the hosts file
+	if (strcmp(config->gw_fqdn, "disable") != 0 && strcmp(config->gw_fqdn, "disabled") != 0) {
+		safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"hostconf\" \"%s\" \"%s\"",
+			config->gw_ip,
+			config->gw_fqdn
+		);
 
-			if (execute_ret_url_encoded(msg, sizeof(msg) - 1, dnscmd) == 0) {
-				debug(LOG_INFO, "Client status Page: Configured");
-			} else {
-				debug(LOG_ERR, "Client Status Page: Hosts setup script failed to execute");
-			}
-			free(dnscmd);
+		if (execute_ret_url_encoded(msg, sizeof(msg) - 1, dnscmd) == 0) {
+			debug(LOG_INFO, "Client status Page: Configured");
+		} else {
+			debug(LOG_ERR, "Client Status Page: Hosts setup script failed to execute");
 		}
-
-		// For Walled Garden - Check we have ipset support and if we do, set it up
-		if (config->walledgarden_fqdn_list) {
-			// Check ipset command is available
-			if (execute_ret_url_encoded(msg, sizeof(msg) - 1, "ipset -v") == 0) {
-				debug(LOG_NOTICE, "ipset support is available");
-			} else {
-				debug(LOG_ERR, "ipset support not available - please install package to provide it");
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-
-			// Check we have dnsmasq ipset compile option
-			if (execute_ret_url_encoded(msg, sizeof(msg) - 1, "dnsmasq --version | grep ' ipset '") == 0) {
-				debug(LOG_NOTICE, "dnsmasq ipset support is available");
-			} else {
-				debug(LOG_ERR, "Please install dnsmasq full version with ipset compile option");
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-
-			// If Walled Garden ipset exists, destroy it.
-			execute_ret_url_encoded(msg, sizeof(msg) - 1, "ipset destroy walledgarden");
-
-			// Set up the Walled Garden
-			if (execute_ret_url_encoded(msg, sizeof(msg) - 1, "ipset create walledgarden hash:ip") == 0) {
-				debug(LOG_INFO, "Walled Garden ipset created");
-			} else {
-				debug(LOG_ERR, "Failed to create Walled Garden");
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-
-			// Configure dnsmasq
-			for (allowed_wgfqdn = config->walledgarden_fqdn_list; allowed_wgfqdn != NULL; allowed_wgfqdn = allowed_wgfqdn->next) {
-
-				// Make sure we don't have a buffer overflow
-				if ((sizeof(wgfqdns) - strlen(wgfqdns)) > (strlen(allowed_wgfqdn->wgfqdn) + 15)) {
-					strcat(wgfqdns, "/");
-					strcat(wgfqdns, allowed_wgfqdn->wgfqdn);
-				} else {
-					break;
-				}
-			}
-
-			strcat(wgfqdns, "/walledgarden");
-			debug(LOG_DEBUG, "Dnsmasq Walled Garden config [%s]", wgfqdns);
-			safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"ipsetconf\" \"%s\"", wgfqdns);
-			if (execute_ret_url_encoded(msg, sizeof(msg) - 1, dnscmd) == 0) {
-				debug(LOG_INFO, "Dnsmasq configured for Walled Garden");
-			} else {
-				debug(LOG_ERR, "Walled Garden Dnsmasq setup script failed to execute");
-			}
-			free(dnscmd);
-		}
-
-		if (config->dhcp_default_url_enable == 1) {
-			debug(LOG_DEBUG, "Enabling RFC8910 support");
-
-			if (strcmp(config->gw_fqdn, "disable") != 0) {
-				safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"cpidconf\" \"%s\"", config->gw_fqdn);
-			} else {
-				safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"cpidconf\" \"%s\"", config->gw_ip);
-			}
-
-			if (execute_ret_url_encoded(msg, sizeof(msg) - 1, dnscmd) == 0) {
-				debug(LOG_INFO, "RFC8910 support is enabled");
-			} else {
-				debug(LOG_ERR, "RFC8910 setup script failed to execute");
-			}
-			free(dnscmd);
-		}
-
-		// Restart dnsmasq
-		safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" &");
-		debug(LOG_DEBUG, "restart command [ %s ]", dnscmd);
-		system(dnscmd);
-		debug(LOG_INFO, "Dnsmasq restarted");
 		free(dnscmd);
 	}
+
+	// For Walled Garden - Check we have ipset support and if we do, set it up
+	if (config->walledgarden_fqdn_list) {
+		// Check ipset command is available
+		if (execute_ret_url_encoded(msg, sizeof(msg) - 1, "ipset -v") == 0) {
+			debug(LOG_NOTICE, "ipset support is available");
+		} else {
+			debug(LOG_ERR, "ipset support not available - please install package to provide it");
+			debug(LOG_ERR, "Exiting...");
+			exit(1);
+		}
+
+		// Check we have dnsmasq ipset compile option
+		if (execute_ret_url_encoded(msg, sizeof(msg) - 1, "dnsmasq --version | grep ' ipset '") == 0) {
+			debug(LOG_NOTICE, "dnsmasq ipset support is available");
+		} else {
+			debug(LOG_ERR, "Please install dnsmasq full version with ipset compile option");
+			debug(LOG_ERR, "Exiting...");
+			exit(1);
+		}
+
+		// If Walled Garden ipset exists, destroy it.
+		execute_ret_url_encoded(msg, sizeof(msg) - 1, "ipset destroy walledgarden");
+
+		// Set up the Walled Garden
+		if (execute_ret_url_encoded(msg, sizeof(msg) - 1, "ipset create walledgarden hash:ip") == 0) {
+			debug(LOG_INFO, "Walled Garden ipset created");
+		} else {
+			debug(LOG_ERR, "Failed to create Walled Garden");
+			debug(LOG_ERR, "Exiting...");
+			exit(1);
+		}
+
+		// Configure dnsmasq
+		for (allowed_wgfqdn = config->walledgarden_fqdn_list; allowed_wgfqdn != NULL; allowed_wgfqdn = allowed_wgfqdn->next) {
+
+			// Make sure we don't have a buffer overflow:
+			if ((sizeof(wgfqdns) - strlen(wgfqdns)) > (strlen(allowed_wgfqdn->wgfqdn) + 15)) {
+				strcat(wgfqdns, "/");
+				strcat(wgfqdns, allowed_wgfqdn->wgfqdn);
+			} else {
+				break;
+			}
+		}
+
+		strcat(wgfqdns, "/walledgarden");
+		debug(LOG_DEBUG, "Dnsmasq Walled Garden config [%s]", wgfqdns);
+		safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"ipsetconf\" \"%s\"", wgfqdns);
+		if (execute_ret_url_encoded(msg, sizeof(msg) - 1, dnscmd) == 0) {
+			debug(LOG_INFO, "Dnsmasq configured for Walled Garden");
+		} else {
+			debug(LOG_ERR, "Walled Garden Dnsmasq setup script failed to execute");
+		}
+		free(dnscmd);
+	}
+
+	if (config->dhcp_default_url_enable == 1) {
+		debug(LOG_DEBUG, "Enabling RFC8910 support");
+
+		if (strcmp(config->gw_fqdn, "disable") != 0 && strcmp(config->gw_fqdn, "disabled") != 0) {
+			safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"cpidconf\" \"%s\"", config->gw_fqdn);
+		} else {
+			safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"cpidconf\" \"%s\"", config->gw_address);
+		}
+
+		if (execute_ret_url_encoded(msg, sizeof(msg) - 1, dnscmd) == 0) {
+			debug(LOG_INFO, "RFC8910 support is enabled");
+		} else {
+			debug(LOG_ERR, "RFC8910 setup script failed to execute");
+		}
+		free(dnscmd);
+	} else {
+		debug(LOG_DEBUG, "Disabling RFC8910 support");
+
+		safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"cpidconf\"");
+
+		if (execute_ret_url_encoded(msg, sizeof(msg) - 1, dnscmd) == 0) {
+			debug(LOG_INFO, "RFC8910 support is disabled");
+		} else {
+			debug(LOG_ERR, "RFC8910 setup script failed to execute");
+		}
+		free(dnscmd);
+	}
+
+	// Restart dnsmasq
+	safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" &");
+	debug(LOG_DEBUG, "restart command [ %s ]", dnscmd);
+	system(dnscmd);
+	debug(LOG_INFO, "Dnsmasq restarted");
+	free(dnscmd);
 
 	// Encode gatewayname
 	htmlentityencode(gw_name_entityencoded, sizeof(gw_name_entityencoded), config->gw_name, strlen(config->gw_name));

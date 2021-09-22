@@ -813,6 +813,8 @@ ndsctl_json_client(FILE *fp, const t_client *client, time_t now, char *indent)
 	get_client_interface(clientif, sizeof(clientif), client->mac);
 
 	fprintf(fp, "  %s\"gatewayname\":\"%s\",\n", indent, config->url_encoded_gw_name);
+	fprintf(fp, "  %s\"gatewayaddress\":\"%s\",\n", indent, config->gw_address);
+	fprintf(fp, "  %s\"gatewayfqdn\":\"%s\",\n", indent, config->gw_fqdn);
 	fprintf(fp, "  %s\"version\":\"%s\",\n", indent, VERSION);
 	fprintf(fp, "  %s\"mac\":\"%s\",\n", indent, client->mac);
 	fprintf(fp, "  %s\"ip\":\"%s\",\n", indent, client->ip);

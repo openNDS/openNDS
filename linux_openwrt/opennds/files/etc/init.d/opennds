@@ -113,30 +113,28 @@ generate_uci_config() {
      addline "GatewayInterface $ifname"
   fi
 
-  for option in preauth binauth fasport faskey fasremotefqdn fasremoteip faspath fas_secure_enabled \
-    walledgarden_fqdn_list walledgarden_port_list fas_custom_parameters_list fas_custom_variables_list \
-    fas_custom_images_list fas_custom_files_list themespec_path remotes_refresh_interval max_page_size max_log_entries \
-    login_option_enabled use_outdated_mhd allow_preemptive_authentication unescape_callback_enabled daemon \
-    log_mountpoint debuglevel maxclients gatewayname gatewayinterface gatewayiprange statuspath \
-    gatewayaddress gatewayport gatewayfqdn webroot \
-    sessiontimeout preauthidletimeout authidletimeout checkinterval \
-    setmss mssvalue ratecheckwindow downloadrate uploadrate downloadquota uploadquota \
-    syslogfacility ndsctlsocket fw_mark_authenticated \
-    fw_mark_blocked fw_mark_trusted
+  for option in \
+	gatewayname gatewayinterface gatewayaddress gatewayport gatewayfqdn \
+	use_outdated_mhd allow_preemptive_authentication unescape_callback_enabled \
+	log_mountpoint max_log_entries debuglevel maxclients max_page_size webroot statuspath \
+	login_option_enabled preauth binauth themespec_path remotes_refresh_interval \
+	fasport faskey fasremotefqdn fasremoteip faspath fas_secure_enabled \
+	fas_custom_parameters_list fas_custom_variables_list \
+	fas_custom_images_list fas_custom_files_list \
+	walledgarden_fqdn_list walledgarden_port_list \
+	sessiontimeout preauthidletimeout authidletimeout checkinterval \
+	ratecheckwindow downloadrate uploadrate downloadquota uploadquota \
+	syslogfacility ndsctlsocket \
+	dhcp_default_url_enable \
+	fw_mark_authenticated fw_mark_blocked fw_mark_trusted
   do
+
     config_get val "$cfg" "$option"
 
     if [ -n "$val" ]; then
       addline "$option $val"
     fi
   done
-
-  config_get download "$cfg" downloadlimit
-  config_get upload "$cfg" uploadlimit
-
-  if [ -n "$upload" -o -n "$download" ]; then
-    addline "TrafficControl yes"
-  fi
 
   setup_mac_lists "$cfg" || return 1
   setup_firewall "$cfg"

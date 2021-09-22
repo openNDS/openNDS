@@ -66,7 +66,7 @@ parse_parameters() {
 	if [ "$ndsstatus" = "ready" ]; then
 		param_str=$ndsctlout
 
-		for param in gatewayname mac version ip clientif session_start session_end last_active token state upload_rate_limit \
+		for param in gatewayname gatewayaddress gatewayfqdn mac version ip clientif session_start session_end last_active token state upload_rate_limit \
 			download_rate_limit upload_quota download_quota upload_this_session download_this_session  \
 			upload_session_avg  download_session_avg
 		do
@@ -179,10 +179,9 @@ body() {
 			</form>
 		"
 	elif [ "$status" = "err511" ]; then
-		gatewayfqdn=$(/usr/lib/opennds/libopennds.sh "get_option_from_config" "gatewayfqdn")
 
-		if [ -z "$gatewayfqdn" ]; then
-			url=$(ndsctl status | grep "MHD Server" | awk '{printf "%s", $9}')
+		if [ -z "$gatewayfqdn" ] || [ "$gatewayfqdn" = "disable" ] || [ "$gatewayfqdn" = "disabled" ]; then
+			url="http://$gatewayaddress"
 		else
 			url="http://$gatewayfqdn"
 		fi

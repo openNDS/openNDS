@@ -1,6 +1,41 @@
 What's New? - ChangeLog
 #######################
 
+opennds (9.4.0)
+
+  * This version adds new functionality, and fixes some issues
+  * Add - Error message in fas-aes-https if shared key is mismatched [bluewave.net]
+  * Fix - and refactor error 511 page generation[bluewave.net]
+  * Fix - and refactor dnsmasq configuration [bluewave.net]
+  * Fix - Typographic error preventing RFC8910 disable [bluewave.net]
+  * Add - gateway address and gatewayfqdn to ndsctl json output [bluewave.net]
+  * Add - RFC8910 housekeeping on startup and shutdown [bluewave.net]
+  * Add - correctly apply dhcp option 114 for generic Linux [bluewave.net]
+  * Add - reading of configured ndsctlsocket in ndsctl utility[bluewave.net]
+  * Add - use send_error 200 for MHD watchdog [bluewave.net]
+  * Add - generation of page_511 html by library script [bluewave.net]
+  * Add - extend debuglevel support to library scripts [bluewave.net]
+  * Refactor - fas-aes-https to simplify and make customisation of http easier [bluewave.net]
+  * Add - library script for error 511 page, allowing customisation [bluewave.net]
+  * Add - make authmon report connection error details [bluewave.net]
+  * Fix- remove unwanted debug message in ndsctl [bluewave.net]
+  * Add - RFC8910 support by default [bluewave.net]
+  * Add - display status page when accessing /login when authenticated [bluewave.net]
+  * Add - MHD response to RFC8910 requests [bluewave.net]
+  * Add - Dnsmasq RFC8910 configuration [bluewave.net]
+  * Add - send error 511 in response to unsupported http method [bluewave.net]
+  * Add - Check for ca-bundle on OpenWrt, if not installed, add syslog messages and terminate [bluewave.net]
+  * Add - Make ndsctl use the configured value for socket path if set and deprecate -s option [bluewave.net]
+  * Add - Warning message when Walled Garden port 80 is allowed [bluewave.net]
+  * Fix - remove un-needed pthread_kill in termination_handler() [bluewave.net] [T-X]
+  * Fix - debug messages from authmon.sh [bluewave.net]
+  * Fix - Allow disabling gateway fqdn, facilitating access to router port 80 [bluewave.net]
+  * Fix - Segfault in ndsctl when -s option is used incorrectly [bluewave.net] [T-X]
+  * Fix - Typo making calculation of ul/dl rates incorrect [bluewave.net]
+  * Fix - Allow port 80 to be configured in the Walled Garden [bluewave.net]
+
+ -- Rob White <dot@blue-wave.net>  Wed, 22 Sep 2021 19:39:08 +0000
+
 opennds (9.3.1)
 
   * This version fixes some issues

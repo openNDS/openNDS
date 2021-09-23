@@ -1,6 +1,6 @@
 .\" Man page generated from reStructuredText.
 .
-.TH "OPENNDS" "1" "Aug 08, 2021" "9.3.0" "openNDS"
+.TH "OPENNDS" "1" "Sep 23, 2021" "9.4.0" "openNDS"
 .SH NAME
 opennds \- opennds Documentation
 .
@@ -101,6 +101,102 @@ NDS can be used as the "Engine" behind the most sophisticated Captive Portal sys
 .UNINDENT
 .UNINDENT
 .SH WHAT'S NEW? - CHANGELOG
+.sp
+opennds (9.4.0)
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+This version adds new functionality, and fixes some issues
+.IP \(bu 2
+Add \- Error message in fas\-aes\-https if shared key is mismatched [bluewave.net]
+.IP \(bu 2
+Fix \- and refactor error 511 page generation[bluewave.net]
+.IP \(bu 2
+Fix \- and refactor dnsmasq configuration [bluewave.net]
+.IP \(bu 2
+Fix \- Typographic error preventing RFC8910 disable [bluewave.net]
+.IP \(bu 2
+Add \- gateway address and gatewayfqdn to ndsctl json output [bluewave.net]
+.IP \(bu 2
+Add \- RFC8910 housekeeping on startup and shutdown [bluewave.net]
+.IP \(bu 2
+Add \- correctly apply dhcp option 114 for generic Linux [bluewave.net]
+.IP \(bu 2
+Add \- reading of configured ndsctlsocket in ndsctl utility[bluewave.net]
+.IP \(bu 2
+Add \- use send_error 200 for MHD watchdog [bluewave.net]
+.IP \(bu 2
+Add \- generation of page_511 html by library script [bluewave.net]
+.IP \(bu 2
+Add \- extend debuglevel support to library scripts [bluewave.net]
+.IP \(bu 2
+Refactor \- fas\-aes\-https to simplify and make customisation of http easier [bluewave.net]
+.IP \(bu 2
+Add \- library script for error 511 page, allowing customisation [bluewave.net]
+.IP \(bu 2
+Add \- make authmon report connection error details [bluewave.net]
+.IP \(bu 2
+Fix\- remove unwanted debug message in ndsctl [bluewave.net]
+.IP \(bu 2
+Add \- RFC8910 support by default [bluewave.net]
+.IP \(bu 2
+Add \- display status page when accessing /login when authenticated [bluewave.net]
+.IP \(bu 2
+Add \- MHD response to RFC8910 requests [bluewave.net]
+.IP \(bu 2
+Add \- Dnsmasq RFC8910 configuration [bluewave.net]
+.IP \(bu 2
+Add \- send error 511 in response to unsupported http method [bluewave.net]
+.IP \(bu 2
+Add \- Check for ca\-bundle on OpenWrt, if not installed, add syslog messages and terminate [bluewave.net]
+.IP \(bu 2
+Add \- Make ndsctl use the configured value for socket path if set and deprecate \-s option [bluewave.net]
+.IP \(bu 2
+Add \- Warning message when Walled Garden port 80 is allowed [bluewave.net]
+.IP \(bu 2
+Fix \- remove un\-needed pthread_kill in termination_handler() [bluewave.net] [T\-X]
+.IP \(bu 2
+Fix \- debug messages from authmon.sh [bluewave.net]
+.IP \(bu 2
+Fix \- Allow disabling gateway fqdn, facilitating access to router port 80 [bluewave.net]
+.IP \(bu 2
+Fix \- Segfault in ndsctl when \-s option is used incorrectly [bluewave.net] [T\-X]
+.IP \(bu 2
+Fix \- Typo making calculation of ul/dl rates incorrect [bluewave.net]
+.IP \(bu 2
+Fix \- Allow port 80 to be configured in the Walled Garden [bluewave.net]
+.UNINDENT
+.UNINDENT
+.UNINDENT
+\(em Rob White <\fI\%dot@blue\-wave.net\fP>  Wed, 22 Sep 2021 19:39:08 +0000
+.UNINDENT
+.UNINDENT
+.sp
+opennds (9.3.1)
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+This version fixes some issues
+.IP \(bu 2
+Fix \- Segfault in ndsctl when \-s option is used incorrectly [bluewave.net] [T\-X]
+.IP \(bu 2
+Fix \- Typo making calculation of ul/dl rates incorrect [bluewave.net]
+.IP \(bu 2
+Fix \- Allow port 80 to be configured in the Walled Garden [bluewave.net]
+.IP \(bu 2
+Add \- Warning message when Walled Garden port 80 is allowed [bluewave.net]
+.UNINDENT
+.UNINDENT
+.UNINDENT
+\(em Rob White <\fI\%dot@blue\-wave.net\fP> Thu, 26 Aug 2021 12:09:36 +0000
+.UNINDENT
+.UNINDENT
 .sp
 opennds (9.3.0)
 .INDENT 0.0
@@ -925,6 +1021,17 @@ This IS how it is supposed to work, but does involve some compromises.
 The best solution is to set the session timeout to a value greater than the expected length of time a client device is likely to be present. Experience shows a limit of 24 hours covers most situations eg bars, clubs, coffee shops, motels etc. If for example an hotel has guests regularly staying for a few days, then increase the session timeout as required.
 .sp
 Staff at the venue could have their devices added to the Trusted List if appropriate, but experience shows, it is better not to do this as they very soon learn what to do and can help guests who encounter the issue. (Anything that reduces support calls is good!)
+.SS Captive Portal Identification (RFC8910)
+.sp
+Captive Portal Identification is an alternative method of triggering the Portal "Splash" page without having to capture the attempted port 80 access that CPD does.
+.sp
+Instead of waiting for the client to test for Internet access using its vendor specified detection URL, openNDS sends the end point URL of its own Portal using DHCP option 114 (default\-url).
+.sp
+Any clients supporting this method will open their CPD browser pointing at the specified URL instead of waiting for a redirection.
+.sp
+This is a new and somewhat experimental standard with very few clients supporting it, but this is likely to change rapidly as the standard matures.
+.sp
+This method is enabled in openNDS by default, but can be disabled (see "Dhcp option 114 Enable \- RFC8910" in the Configuration Options section).
 .SS Network Zone Detection (Where is the Client Connected?)
 .sp
 Client devices can be connected to one of a number of local WiFi SSIDs, connected directly or indirectly by ethernet, or connected via a wireless mesh network. Each connection type available is considered as a Network Zone.
@@ -1376,6 +1483,55 @@ Set to 0 to disable hook that makes opennds restart when the firewall restarts.
 This hook is needed as a restart of Firewall overwrites opennds iptables entries.
 .sp
 \fBoption fwhook_enabled \(aq1\(aq\fP
+.SS Ndsctl Socket Access
+.sp
+Set the socket name to use for ndsctl socket access, relative to the tmpfs mountpoint.
+.sp
+Any directory/folder specified must exist.
+Default: ndsctl.sock (Do not add a leading "/")
+.sp
+Full default socket path would be /tmp/ndsctl.sock in OpenWrt
+In the following example, the socket path would be /tmp/sockets/ndsctl.sock
+.sp
+Example:
+.sp
+\fBoption ndsctlsocket \(aqsockets/ndsctl.sock\(aq\fP
+.SS Local Log Mountpoint
+.sp
+Default: router\(aqs volatile tmpfs storage eg on OpenWrt \(aq/tmp\(aq
+.sp
+Local logging can be directed to any storage accessible to the router eg USB drive, SSD etc
+.sp
+\fBWARNING\fP \- you cannot use the router\(aqs built in flash storage as this would cause
+excessive wear and eventual flash failure
+.sp
+Example:
+.sp
+\fBoption log_mountpoint \(aq/logs\(aq\fP
+.SS Maximum number of Local Log Entries
+.sp
+Set the maximum number of local log entries to be kept.
+Default 100
+.sp
+Minimum value 0 (no limit)
+.sp
+Maximum value \- limited only be free storage space on the logging mountpoint
+.sp
+If set to \(aq0\(aq there is no limit
+.sp
+This is the maximum number of local log entries allowed before log rotation begins
+.sp
+Both ThemeSpec and Binauth log locally if they are enabled
+.sp
+\fBWARNING\fP \- local logging is by default written to the tmpfs volatile storage
+.sp
+If this option were to be set too high the router could run out of tmpfs storage and/or free RAM
+.sp
+Non\-volatile storage, such as a USB storage device may be defined using the log_mountpoint option
+.sp
+Example:
+.sp
+\fBoption max_log_entries \(aq1000\(aq\fP
 .SS Login Option
 .sp
 Default: 1
@@ -1420,6 +1576,8 @@ This allows the ndsctl utility to preemptively authorise \fBconnected\fP clients
 This is useful for example with IoT devices that do not have CPD (captive portal detection)
 .sp
 or for a FAS to manage inter\-captive\-portal roaming by making use of a centralised database of client validations.
+.sp
+Example:
 .sp
 \fBoption allow_preemptive_authentication \(aq1\(aq\fP
 .SS ThemeSpec Path
@@ -1684,46 +1842,6 @@ ie. Serve the file splash.css from this directory
 Example:
 .sp
 \fBoption webroot \(aq/etc/opennds/htdocs\(aq\fP
-.SS Set Maximum number of Local Log Entries
-.sp
-Default: 100
-.sp
-Minimum value 0 (no limit)
-.sp
-Maximum value \- limited only be free storage space on the logging mountpoint
-.INDENT 0.0
-.INDENT 3.5
-If set to \(aq0\(aq there is no limit
-.sp
-This is the maximum number of local log entries allowed before log rotation begins
-.sp
-Both ThemeSpec and Binauth log locally if they are enabled
-.sp
-\fBWARNING\fP \- local logging is by default written to the tmpfs volatile storage
-.sp
-If this option were to be set too high the router could run out of tmpfs storage and/or free RAM
-.sp
-Non\-volatile storage, such as a USB storage device may be defined using the log_mountpoint option
-.UNINDENT
-.UNINDENT
-.sp
-Example:
-.sp
-\fBoption max_log_entries \(aq1000\(aq\fP
-.SS Set Local Log Mountpoint
-.sp
-Default: router\(aqs volatile tmpfs storage eg on OpenWrt \(aq/tmp\(aq
-.sp
-Local logging can be directed to any storage accessible to the router eg USB drive, SSD etc
-.INDENT 0.0
-.INDENT 3.5
-\fBWARNING\fP \- you cannot use the router\(aqs built in flash storage as this would cause excessive wear and eventual flash failure
-.UNINDENT
-.UNINDENT
-.sp
-Example:
-.sp
-\fBoption log_mountpoint \(aq/logs\(aq\fP
 .SS Set the GatewayInterface
 .sp
 Default br\-lan
@@ -2230,13 +2348,22 @@ Grant access to udp services at address 123.1.1.1, on port 5000, overriding the 
 .UNINDENT
 .UNINDENT
 .SS Access Control For Preauthenticated Users:
-.sp
-\fBIMPORTANT\fP
 .INDENT 0.0
 .INDENT 3.5
-Preauthenticated users do not require access to anything on the Internet for the Captive Portal to work.
+.INDENT 0.0
+.INDENT 3.5
+\fB***IMPORTANT***\fP
+.UNINDENT
+.UNINDENT
 .sp
-In particular, to help prevent DNS tunnelling, DNS Hijacking and generally improve security, DO NOT allow access to external DNS.
+To support RFC8910 Captive Portal Identification
+.sp
+AND to help prevent DNS tunnelling, DNS Hijacking and generally improve security,
+.INDENT 0.0
+.INDENT 3.5
+\fB***DO NOT ALLOW ACCESS TO EXTERNAL DNS SERVICES***\fP
+.UNINDENT
+.UNINDENT
 .UNINDENT
 .UNINDENT
 .SS Walled Garden Access For Preauthenticated Users
@@ -2306,7 +2433,7 @@ Only tcp protocol Walled Garden access is granted.
 To add Facebook to the Walled Garden, the list entries would be:
 .sp
 \fBlist walledgarden_fqdn_list \(aqfacebook.com fbcdn.net\(aq\fP
-\fBlist walledgarden_port_list \(aq443 80\(aq\fP
+\fBlist walledgarden_port_list \(aq443\(aq\fP
 .SS Add Paypal to the Walled Garden
 .sp
 To add Paypal to the Walled Garden, the list entries would be:
@@ -2378,6 +2505,19 @@ Example:
 \fBlist trustedmac \(aq00:00:C0:01:D0:0D\(aq\fP
 .sp
 \fBlist trustedmac \(aq00:00:C0:01:D0:1D\(aq\fP
+.SS Dhcp option 114 Enable \- RFC8910
+.sp
+Sends "default_url" (dhcp option 114) with all replies to dhcp requests
+.sp
+Required for RFC8910 Captive Portal Identification
+.sp
+Default 1 (enabled)
+.sp
+To disable, set to 0
+.sp
+Example:
+.sp
+\fBoption dhcp_default_url_enable \(aq0\(aq\fP
 .SS Packet Marking Compatibility
 .sp
 openNDS uses specific HEXADECIMAL values to mark packets used by iptables as a bitwise mask.
@@ -3602,6 +3742,13 @@ walledgarden_port_list <port1> <port2> <port3> [......] <portN>
 .UNINDENT
 .sp
 Restart openNDS to activate the Walled Garden.
+.SS Warning When Port 80 is Enabled
+.sp
+Port 80 is used by all devices to detect Captive Portals.
+.sp
+If port 80 is enabled in the Walled Garden configuration (either implicitly by adding to the ports list, or explicitly by not defining a ports list) then any Captive Portal Detection attempted by a device using a Walled Garden FQDN will fail.
+.sp
+For example if the FQDN "apple.com" is defined in the Walled Garden list, then Apple devices will fail to trigger the Portal Splash Page sequence (login page) if port 80 is enabled.
 .SH LIBRARY UTILITIES
 .SS Overview
 .sp

@@ -103,26 +103,30 @@ if (file_exists("/etc/config/opennds")) {
 
 	A value of 0 means no limit
 */
+
 $sessionlength=0; // minutes (1440 minutes = 24 hours)
 $uploadrate=0; // kbits/sec (500 kilobits/sec = 0.5 Megabits/sec)
 $downloadrate=0; // kbits/sec (1000 kilobits/sec = 1.0 Megabits/sec)
 $uploadquota=0; // kBytes (500000 kiloBytes = 500 MegaBytes)
 $downloadquota=0; // kBytes (1000000 kiloBytes = 1 GigaByte)
 
+
 /* define a remote image to display
 	eg. https://avatars1.githubusercontent.com/u/62547912 is the openNDS Portal Lens Flare
 	$imagepath is used function footer()
 */
+
 $imageurl="https://avatars1.githubusercontent.com/u/62547912";
 $imagetype="png";
 $scriptname=basename($_SERVER['SCRIPT_NAME']);
 $imagepath=htmlentities("$scriptname?get_image=$imageurl&imagetype=$imagetype");
 
+
 ###################################
 #Begin processing inbound requests:
 ###################################
 
-// Send The Auth List when requested by openNDS
+// Send The Auth List when requested by openNDS (authmon daemon)
 auth_get();
 
 // Service requests for remote image
@@ -238,15 +242,22 @@ function get_image($url, $imagetype) {
 }
 
 function auth_get() {
-	/* Send The Auth List when requested by openNDS
+	/* Send and/or clear the Auth List when requested by openNDS
 		When a client was verified, their parameters were added to the "auth list"
-		The auth list is sent to NDS when it authmon requests it.
+		The auth list is sent to openNDS when authmon requests it.
 
 		auth_get:
+		auth_get is sent by authmon in a POST request and can have the following values:
 
-		value "list" sends the list and deletes each client entry that it finds
+		1. Value "list" sends the auth list and deletes each client entry currently on that list.
 
-		value "view" just sends the list, this is the default value for authmon and allows upstream processing here
+		2. Value "view" sends the auth list and checks for an ack list of successfully authenticated clients from previous auth lists.
+		Clients on the auth list are only deleted if they are in a received ack list.
+		Authmon sends the ack list as acknowledgement of all clients in the previous auth list that were successfully authenticated.
+		"view" is the default method used by authmon.
+
+		3. Value "clear" is a housekeeping function and is called by authmon on startup of openNDS.
+		The auth list is cleared as any entries held by this FAS at the time of openNDS startup will be stale.
 	*/
 
 	$logpath=$GLOBALS["logpath"];

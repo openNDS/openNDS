@@ -731,21 +731,6 @@ config opennds
 	list users_to_router 'allow tcp port 443'
 	###########################################################################################
 
-	# MAC addresses that are/are-not allowed to access the splash page
-	# Value is either 'allow' or 'block'. The allowedmac or blockedmac list is used.
-	#
-	# Examples:
-	#
-	#option macmechanism 'allow'
-	#list allowedmac '00:00:C0:01:D0:0D'
-	#list allowedmac '00:00:C0:01:D0:1D'
-	#
-	# or
-	#
-	#option macmechanism 'block'
-	#list blockedmac '00:00:C0:01:D0:2D'
-	###########################################################################################
-
 	# MAC addresses that do not need to authenticate
 	#list trustedmac '00:00:C0:01:D0:1D'
 	###########################################################################################

@@ -32,31 +32,6 @@ setup_mac_lists() {
     append macs "$1" ","
   }
 
-  config_get val "$cfg" macmechanism
-  if [ -z "$val" ]; then
-    # Check if we have AllowedMACList or BlockedMACList defined they will be ignored
-    config_get val "$cfg" allowedmac
-    if [ -n "$val" ]; then
-      echo "Ignoring allowedmac - macmechanism not \"allow\"" >&2
-    fi
-
-    config_get val "$cfg" blockedmac
-    if [ -n "$val" ]; then
-      echo "Ignoring blockedmac - macmechanism not \"block\"" >&2
-    fi
-  elif [ "$val" = "allow" ]; then
-    config_list_foreach "$cfg" allowedmac append_mac
-    addline "MACmechanism allow"
-    addline "AllowedMACList $macs"
-  elif [ "$val" = "block" ]; then
-    config_list_foreach "$cfg" blockedmac append_mac
-    addline "MACmechanism block"
-    addline "BlockedMACList $macs"
-  else
-    echo "Invalid macmechanism '$val' - allow or block are valid." >&2
-    return 1
-  fi
-
   macs=""
   config_list_foreach "$cfg" trustedmac append_mac
   if [ -n "$macs" ]; then

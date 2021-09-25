@@ -739,32 +739,6 @@ ndsctl_status(FILE *fp)
 
 	fprintf(fp, "====\n");
 
-	fprintf(fp, "Blocked MAC addresses:");
-
-	if (config->macmechanism == MAC_ALLOW) {
-		fprintf(fp, " N/A\n");
-	} else  if (config->blockedmaclist != NULL) {
-		fprintf(fp, "\n");
-		for (block_mac = config->blockedmaclist; block_mac != NULL; block_mac = block_mac->next) {
-			fprintf(fp, "  %s\n", block_mac->mac);
-		}
-	} else {
-		fprintf(fp, " none\n");
-	}
-
-	fprintf(fp, "Allowed MAC addresses:");
-
-	if (config->macmechanism == MAC_BLOCK) {
-		fprintf(fp, " N/A\n");
-	} else  if (config->allowedmaclist != NULL) {
-		fprintf(fp, "\n");
-		for (allow_mac = config->allowedmaclist; allow_mac != NULL; allow_mac = allow_mac->next) {
-			fprintf(fp, "  %s\n", allow_mac->mac);
-		}
-	} else {
-		fprintf(fp, " none\n");
-	}
-
 	fprintf(fp, "Trusted MAC addresses:");
 
 	if (config->trustedmaclist != NULL) {

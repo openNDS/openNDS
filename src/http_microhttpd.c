@@ -36,7 +36,7 @@
 #include "auth.h"
 #include "http_microhttpd.h"
 #include "http_microhttpd_utils.h"
-#include "fw_iptables.h"
+#include "fw.h"
 #include "mimetypes.h"
 #include "safe.h"
 #include "util.h"

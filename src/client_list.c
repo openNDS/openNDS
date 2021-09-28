@@ -41,7 +41,7 @@
 #include "conf.h"
 #include "client_list.h"
 #include "http_microhttpd.h"
-#include "fw_iptables.h"
+#include "fw.h"
 #include "util.h"
 
 

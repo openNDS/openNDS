@@ -49,7 +49,7 @@
 #include "auth.h"
 #include "safe.h"
 #include "client_list.h"
-#include "fw_iptables.h"
+#include "fw.h"
 #include "main.h"
 
 #include "ndsctl_thread.h"

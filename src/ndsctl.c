@@ -343,7 +343,7 @@ ndsctl_do(const char *socket, const struct argument *arg, const char *param)
 	} else {
 		while ((len = read(sock, buffer, sizeof(buffer) - 1)) > 0) {
 			buffer[len] = '\0';
-			printf("%s", buffer);
+			printf("%d: %s", len, buffer);
 		}
 		ret = 0;
 	}

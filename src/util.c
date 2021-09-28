@@ -68,7 +68,7 @@
 #include "util.h"
 #include "conf.h"
 #include "debug.h"
-#include "fw_iptables.h"
+#include "fw.h"
 #include "http_microhttpd_utils.h"
 
 // Defined in main.c
@@ -102,6 +102,7 @@ int check_routing(int watchdog)
 	if (execute_ret_url_encoded(rtest, sizeof(rtest) - 1, rcmd) == 0) {
 		free (rcmd);
 
+		printf("%s %s\n", rtest, rtr_fail);
 		if (strcmp(rtest, rtr_fail) == 0) {
 			debug(LOG_ERR, "Routing configuration is not valid for openNDS, exiting ...");
 			exit(1);
@@ -637,18 +638,18 @@ ndsctl_status(FILE *fp)
 	}
 
 
-	download_bytes = iptables_fw_total_download();
+	download_bytes = fw_total_download();
 	fprintf(fp, "Total download: %llu kByte", download_bytes / 1000);
 	fprintf(fp, "; avg: %.2f kbit/s\n", ((double) download_bytes) / 125 / uptimesecs);
 
-	upload_bytes = iptables_fw_total_upload();
+	upload_bytes = fw_total_upload();
 	fprintf(fp, "Total upload: %llu kByte", upload_bytes / 1000);
 	fprintf(fp, "; avg: %.2f kbit/s\n", ((double) upload_bytes) / 125 / uptimesecs);
 	fprintf(fp, "====\n");
 	fprintf(fp, "Client authentications since start: %u\n", authenticated_since_start);
 
 	// Update the client's counters so info is current
-	iptables_fw_counters_update();
+	fw_counters_update();
 
 	LOCK_CLIENT_LIST();
 
@@ -893,7 +894,7 @@ ndsctl_json_one(FILE *fp, const char *arg, char *indent)
 	now = time(NULL);
 
 	// Update the client's counters so info is current
-	iptables_fw_counters_update();
+	fw_counters_update();
 
 	LOCK_CLIENT_LIST();
 
@@ -924,7 +925,7 @@ ndsctl_json_all(FILE *fp, char *indent)
 	config = config_get_config();
 
 	// Update the client's counters so info is current
-	iptables_fw_counters_update();
+	fw_counters_update();
 
 	LOCK_CLIENT_LIST();
 

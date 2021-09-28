@@ -24,27 +24,11 @@
     @author Copyright (C) 2007 Paul Kube <nodogsplash@kokoro.ucsd.edu>
 */
 
-#ifndef _FW_IPTABLES_H_
-#define _FW_IPTABLES_H_
+#ifndef _FW_H_
+#define _FW_H_
 
 #include "auth.h"
 #include "client_list.h"
-
-/*@{*/
-/**Iptable chain names used by opennds */
-#define CHAIN_TO_INTERNET "ndsNET"
-#define CHAIN_TO_ROUTER "ndsRTR"
-#define CHAIN_TRUSTED_TO_ROUTER "ndsTRT"
-#define CHAIN_OUTGOING  "ndsOUT"
-#define CHAIN_INCOMING  "ndsINC"
-#define CHAIN_UPLOAD_RATE  "ndsULR"
-#define CHAIN_AUTHENTICATED     "ndsAUT"
-#define CHAIN_PREAUTHENTICATED   "ndsPRE"
-#define CHAIN_BLOCKED    "ndsBLK"
-#define CHAIN_ALLOWED    "ndsALW"
-#define CHAIN_TRUSTED    "ndsTRU"
-/*@}*/
-
 
 /** Used to mark packets, and characterize client state.  Unmarked packets are considered 'preauthenticated' */
 extern unsigned int  FW_MARK_PREAUTHENTICATED; /**< @brief 0: Actually not used as a packet mark */
@@ -55,46 +39,45 @@ extern unsigned int  FW_MARK_MASK;             /**< @brief Iptables mask: bitwis
 
 
 /** @brief Initialize the firewall */
-int iptables_fw_init(void);
+int fw_init(void);
 
 /** @brief Destroy the firewall */
-int iptables_fw_destroy(void);
+int fw_destroy(void);
 
-/** @brief Helper function for iptables_fw_destroy */
-int iptables_fw_destroy_mention( const char table[], const char chain[], const char mention[]);
+/** @brief Helper function for fw_destroy */
+int fw_destroy_mention( const char table[], const char chain[], const char mention[]);
 
 /** @brief Define the access of a specific client */
-int iptables_fw_authenticate(t_client *client);
-int iptables_fw_deauthenticate(t_client *client);
+int fw_authenticate(t_client *client);
+int fw_deauthenticate(t_client *client);
 
 /** @brief Enable/Disable Upload Rate Limiting of a specific client */
-int iptables_upload_ratelimit_enable(t_client *client, int enable);
+int fw_upload_ratelimit_enable(t_client *client, int enable);
 
 /** @brief Enable/Disable Download Rate Limiting of a specific client */
-int iptables_download_ratelimit_enable(t_client *client, int enable);
+int fw_download_ratelimit_enable(t_client *client, int enable);
 
 /** @brief Return the total download usage in bytes */
-unsigned long long int iptables_fw_total_download();
+unsigned long long int fw_total_download();
 
 /** @brief Return the total upload usage in bytes */
-unsigned long long int iptables_fw_total_upload();
+unsigned long long int fw_total_upload();
 
 /** @brief All counters in the client list */
-int iptables_fw_counters_update(void);
+int fw_counters_update(void);
 
 /** @brief Return a string representing a connection state */
 const char *fw_connection_state_as_string(int mark);
 
 /** @brief Fork an iptables command */
-int iptables_do_command(const char format[], ...);
 
-int iptables_block_mac(const char mac[]);
-int iptables_unblock_mac(const char mac[]);
+int fw_block_mac(const char mac[]);
+int fw_unblock_mac(const char mac[]);
 
-int iptables_allow_mac(const char mac[]);
-int iptables_unallow_mac(const char mac[]);
+int fw_allow_mac(const char mac[]);
+int fw_unallow_mac(const char mac[]);
 
-int iptables_trust_mac(const char mac[]);
-int iptables_untrust_mac(const char mac[]);
+int fw_trust_mac(const char mac[]);
+int fw_untrust_mac(const char mac[]);
 
 #endif /* _IPTABLES_H_ */

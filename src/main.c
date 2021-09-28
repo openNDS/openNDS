@@ -60,7 +60,7 @@
 #include "auth.h"
 #include "client_list.h"
 #include "ndsctl_thread.h"
-#include "fw_iptables.h"
+#include "fw.h"
 #include "util.h"
 
 #include <microhttpd.h>
@@ -142,7 +142,7 @@ termination_handler(int s)
 
 	debug(LOG_INFO, "Handler for termination caught signal %d", s);
 
-	// Makes sure we only call iptables_fw_destroy() once.
+	// Makes sure we only call fw_destroy() once.
 	if (pthread_mutex_trylock(&sigterm_mutex)) {
 		debug(LOG_INFO, "Another thread already began global termination handler. I'm exiting");
 		pthread_exit(NULL);
@@ -183,7 +183,7 @@ termination_handler(int s)
 	auth_client_deauth_all();
 
 	debug(LOG_INFO, "Flushing firewall rules...");
-	iptables_fw_destroy();
+	fw_destroy();
 
 	debug(LOG_NOTICE, "Exiting...");
 	exit(s == 0 ? 1 : 0);
@@ -286,7 +286,7 @@ setup_from_config(void)
 
 	debug(LOG_INFO, "tmpfs mountpoint is [%s]", config->tmpfsmountpoint);
 	// Before we do anything else, reset the firewall (cleans it, in case we are restarting after opennds crash)
-	iptables_fw_destroy();
+	fw_destroy();
 
 	// Check for libmicrohttp version at runtime, ie actual installed version
 	int major = 0;
@@ -793,9 +793,9 @@ setup_from_config(void)
 	}
 
 	// Now initialize the firewall
-	if (iptables_fw_init() != 0) {
+	if (fw_init() != 0) {
 		debug(LOG_ERR, "Error initializing firewall rules! Cleaning up");
-		iptables_fw_destroy();
+		fw_destroy();
 		debug(LOG_ERR, "Exiting because of error initializing firewall rules");
 		exit(1);
 	}

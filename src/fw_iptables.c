@@ -44,16 +44,28 @@
 #include "conf.h"
 #include "auth.h"
 #include "client_list.h"
-#include "fw_iptables.h"
+#include "fw.h"
 #include "debug.h"
 #include "util.h"
 
 // iptables v1.4.17
 #define MIN_IPTABLES_VERSION (1 * 10000 + 4 * 100 + 17)
 
-static char *_iptables_compile(const char[], const char[], t_firewall_rule *);
-static int _iptables_append_ruleset(const char[], const char[], const char[]);
-static int _iptables_init_marks(void);
+/*@{*/
+/**Iptable chain names used by opennds */
+#define CHAIN_TO_INTERNET "ndsNET"
+#define CHAIN_TO_ROUTER "ndsRTR"
+#define CHAIN_TRUSTED_TO_ROUTER "ndsTRT"
+#define CHAIN_OUTGOING  "ndsOUT"
+#define CHAIN_INCOMING  "ndsINC"
+#define CHAIN_UPLOAD_RATE  "ndsULR"
+#define CHAIN_AUTHENTICATED     "ndsAUT"
+#define CHAIN_PREAUTHENTICATED   "ndsPRE"
+#define CHAIN_BLOCKED    "ndsBLK"
+#define CHAIN_ALLOWED    "ndsALW"
+#define CHAIN_TRUSTED    "ndsTRU"
+/*@}*/
+
 
 // Used to mark packets, and characterize client state.  Unmarked packets are considered 'preauthenticated'
 unsigned int FW_MARK_PREAUTHENTICATED; // @brief 0: Actually not used as a packet mark
@@ -74,97 +86,8 @@ static const char* markop = "--set-mark";
 // Used to configure use of mark mask, or not
 static const char* markmask = "";
 
-// Return a string representing a connection state
-const char *
-fw_connection_state_as_string(int mark)
-{
-	if (mark == FW_MARK_PREAUTHENTICATED)
-		return "Preauthenticated";
-	if (mark == FW_MARK_AUTHENTICATED)
-		return "Authenticated";
-	if (mark == FW_MARK_TRUSTED)
-		return "Trusted";
-	if (mark == FW_MARK_BLOCKED)
-		return "Blocked";
-	return "ERROR: unrecognized mark";
-}
-
 // @internal
-int
-_iptables_init_marks()
-{
-	// Check FW_MARK values are distinct.
-	if (FW_MARK_BLOCKED == FW_MARK_TRUSTED ||
-			FW_MARK_TRUSTED == FW_MARK_AUTHENTICATED ||
-			FW_MARK_AUTHENTICATED == FW_MARK_BLOCKED) {
-		debug(LOG_ERR, "FW_MARK_BLOCKED, FW_MARK_TRUSTED, FW_MARK_AUTHENTICATED not distinct values.");
-		return -1;
-	}
-
-	// Check FW_MARK values nonzero.
-	if (FW_MARK_BLOCKED == 0 ||
-			FW_MARK_TRUSTED == 0 ||
-			FW_MARK_AUTHENTICATED == 0) {
-		debug(LOG_ERR, "FW_MARK_BLOCKED, FW_MARK_TRUSTED, FW_MARK_AUTHENTICATED not all nonzero.");
-		return -1;
-	}
-
-	FW_MARK_PREAUTHENTICATED = 0;  // always 0
-	// FW_MARK_MASK is bitwise OR of other marks
-	FW_MARK_MASK = FW_MARK_BLOCKED | FW_MARK_TRUSTED | FW_MARK_AUTHENTICATED;
-
-	debug(LOG_DEBUG,"Iptables mark %s: 0x%x",
-		fw_connection_state_as_string(FW_MARK_PREAUTHENTICATED),
-		FW_MARK_PREAUTHENTICATED);
-	debug(LOG_DEBUG,"Iptables mark %s: 0x%x",
-		fw_connection_state_as_string(FW_MARK_AUTHENTICATED),
-		FW_MARK_AUTHENTICATED);
-	debug(LOG_DEBUG,"Iptables mark %s: 0x%x",
-		fw_connection_state_as_string(FW_MARK_TRUSTED),
-		FW_MARK_TRUSTED);
-	debug(LOG_DEBUG,"Iptables mark %s: 0x%x",
-		fw_connection_state_as_string(FW_MARK_BLOCKED),
-		FW_MARK_BLOCKED);
-
-	return 0;
-}
-
-// @internal
-int
-_iptables_check_mark_masking()
-{
-	// See if kernel supports mark or-ing
-	fw_quiet = 1; // do it quietly
-	if (0 == iptables_do_command("-t mangle -I PREROUTING 1 -j MARK --or-mark 0x%x", FW_MARK_BLOCKED)) {
-		iptables_do_command("-t mangle -D PREROUTING 1"); // delete test rule we just inserted
-		debug(LOG_DEBUG, "Kernel supports --or-mark.");
-		markop = "--or-mark";
-	} else {
-		debug(LOG_INFO,"Kernel does not support iptables --or-mark. Using --set-mark instead.");
-		markop = "--set-mark";
-	}
-
-	// See if kernel supports mark masking
-	if (0 == iptables_do_command("-t filter -I FORWARD 1 -m mark --mark 0x%x/0x%x -j REJECT", FW_MARK_BLOCKED, FW_MARK_MASK)) {
-		iptables_do_command("-t filter -D FORWARD 1"); // delete test rule we just inserted
-		debug(LOG_DEBUG, "Kernel supports mark masking.");
-		char *tmp = NULL;
-		safe_asprintf(&tmp,"/0x%x",FW_MARK_MASK);
-		markmask = tmp;
-	} else {
-		debug(LOG_INFO, "Kernel does not support iptables mark masking. Using empty mask.");
-		markmask = "";
-	}
-
-	debug(LOG_DEBUG, "Iptables mark op \"%s\" and mark mask \"%s\".", markop, markmask);
-
-	fw_quiet = 0; // restore verbosity
-
-	return 0;
-}
-
-// @internal
-int
+static int
 iptables_do_command(const char *format, ...)
 {
 	va_list vlist;
@@ -204,6 +127,95 @@ iptables_do_command(const char *format, ...)
 	return rc;
 }
 
+// Return a string representing a connection state
+const char *
+fw_connection_state_as_string(int mark)
+{
+	if (mark == FW_MARK_PREAUTHENTICATED)
+		return "Preauthenticated";
+	if (mark == FW_MARK_AUTHENTICATED)
+		return "Authenticated";
+	if (mark == FW_MARK_TRUSTED)
+		return "Trusted";
+	if (mark == FW_MARK_BLOCKED)
+		return "Blocked";
+	return "ERROR: unrecognized mark";
+}
+
+// @internal
+static int
+_fw_init_marks()
+{
+	// Check FW_MARK values are distinct.
+	if (FW_MARK_BLOCKED == FW_MARK_TRUSTED ||
+			FW_MARK_TRUSTED == FW_MARK_AUTHENTICATED ||
+			FW_MARK_AUTHENTICATED == FW_MARK_BLOCKED) {
+		debug(LOG_ERR, "FW_MARK_BLOCKED, FW_MARK_TRUSTED, FW_MARK_AUTHENTICATED not distinct values.");
+		return -1;
+	}
+
+	// Check FW_MARK values nonzero.
+	if (FW_MARK_BLOCKED == 0 ||
+			FW_MARK_TRUSTED == 0 ||
+			FW_MARK_AUTHENTICATED == 0) {
+		debug(LOG_ERR, "FW_MARK_BLOCKED, FW_MARK_TRUSTED, FW_MARK_AUTHENTICATED not all nonzero.");
+		return -1;
+	}
+
+	FW_MARK_PREAUTHENTICATED = 0;  // always 0
+	// FW_MARK_MASK is bitwise OR of other marks
+	FW_MARK_MASK = FW_MARK_BLOCKED | FW_MARK_TRUSTED | FW_MARK_AUTHENTICATED;
+
+	debug(LOG_DEBUG,"Iptables mark %s: 0x%x",
+		fw_connection_state_as_string(FW_MARK_PREAUTHENTICATED),
+		FW_MARK_PREAUTHENTICATED);
+	debug(LOG_DEBUG,"Iptables mark %s: 0x%x",
+		fw_connection_state_as_string(FW_MARK_AUTHENTICATED),
+		FW_MARK_AUTHENTICATED);
+	debug(LOG_DEBUG,"Iptables mark %s: 0x%x",
+		fw_connection_state_as_string(FW_MARK_TRUSTED),
+		FW_MARK_TRUSTED);
+	debug(LOG_DEBUG,"Iptables mark %s: 0x%x",
+		fw_connection_state_as_string(FW_MARK_BLOCKED),
+		FW_MARK_BLOCKED);
+
+	return 0;
+}
+
+// @internal
+static int
+_fw_check_mark_masking()
+{
+	// See if kernel supports mark or-ing
+	fw_quiet = 1; // do it quietly
+	if (0 == iptables_do_command("-t mangle -I PREROUTING 1 -j MARK --or-mark 0x%x", FW_MARK_BLOCKED)) {
+		iptables_do_command("-t mangle -D PREROUTING 1"); // delete test rule we just inserted
+		debug(LOG_DEBUG, "Kernel supports --or-mark.");
+		markop = "--or-mark";
+	} else {
+		debug(LOG_INFO,"Kernel does not support iptables --or-mark. Using --set-mark instead.");
+		markop = "--set-mark";
+	}
+
+	// See if kernel supports mark masking
+	if (0 == iptables_do_command("-t filter -I FORWARD 1 -m mark --mark 0x%x/0x%x -j REJECT", FW_MARK_BLOCKED, FW_MARK_MASK)) {
+		iptables_do_command("-t filter -D FORWARD 1"); // delete test rule we just inserted
+		debug(LOG_DEBUG, "Kernel supports mark masking.");
+		char *tmp = NULL;
+		safe_asprintf(&tmp,"/0x%x",FW_MARK_MASK);
+		markmask = tmp;
+	} else {
+		debug(LOG_INFO, "Kernel does not support iptables mark masking. Using empty mask.");
+		markmask = "";
+	}
+
+	debug(LOG_DEBUG, "Iptables mark op \"%s\" and mark mask \"%s\".", markop, markmask);
+
+	fw_quiet = 0; // restore verbosity
+
+	return 0;
+}
+
 /**
  * @internal
  * Compiles a struct definition of a firewall rule into a valid iptables
@@ -213,7 +225,7 @@ iptables_do_command(const char *format, ...)
  * @arg rule Definition of a rule into a struct, from conf.c.
  */
 static char *
-_iptables_compile(const char table[], const char chain[], t_firewall_rule *rule)
+_fw_compile(const char table[], const char chain[], t_firewall_rule *rule)
 {
 	char command[MAX_BUF];
 	char *mode;
@@ -292,7 +304,7 @@ _iptables_compile(const char table[], const char chain[], t_firewall_rule *rule)
  * @arg chain IPTables chain the rules go into
  */
 static int
-_iptables_append_ruleset(const char table[], const char ruleset[], const char chain[])
+_fw_append_ruleset(const char table[], const char ruleset[], const char chain[])
 {
 	t_firewall_rule *rule;
 	char *cmd;
@@ -301,7 +313,7 @@ _iptables_append_ruleset(const char table[], const char ruleset[], const char ch
 	debug(LOG_DEBUG, "Loading ruleset %s into table %s, chain %s", ruleset, table, chain);
 
 	for (rule = get_ruleset_list(ruleset); rule != NULL; rule = rule->next) {
-		cmd = _iptables_compile(table, chain, rule);
+		cmd = _fw_compile(table, chain, rule);
 		debug(LOG_DEBUG, "Loading rule \"%s\" into table %s, chain %s", cmd, table, chain);
 		ret |= iptables_do_command(cmd);
 		free(cmd);
@@ -312,42 +324,42 @@ _iptables_append_ruleset(const char table[], const char ruleset[], const char ch
 }
 
 int
-iptables_block_mac(const char mac[])
+fw_block_mac(const char mac[])
 {
 	return iptables_do_command("-t mangle -A " CHAIN_BLOCKED " -m mac --mac-source %s -j MARK %s 0x%x", mac, markop, FW_MARK_BLOCKED);
 }
 
 int
-iptables_unblock_mac(const char mac[])
+fw_unblock_mac(const char mac[])
 {
 	return iptables_do_command("-t mangle -D " CHAIN_BLOCKED " -m mac --mac-source %s -j MARK %s 0x%x", mac, markop, FW_MARK_BLOCKED);
 }
 
 int
-iptables_allow_mac(const char mac[])
+fw_allow_mac(const char mac[])
 {
 	return iptables_do_command("-t mangle -I " CHAIN_BLOCKED " -m mac --mac-source %s -j RETURN", mac);
 }
 
 int
-iptables_unallow_mac(const char mac[])
+fw_unallow_mac(const char mac[])
 {
 	return iptables_do_command("-t mangle -D " CHAIN_BLOCKED " -m mac --mac-source %s -j RETURN", mac);
 }
 
 int
-iptables_trust_mac(const char mac[])
+fw_trust_mac(const char mac[])
 {
 	return iptables_do_command("-t mangle -A " CHAIN_TRUSTED " -m mac --mac-source %s -j MARK %s 0x%x", mac, markop, FW_MARK_TRUSTED);
 }
 
 int
-iptables_untrust_mac(const char mac[])
+fw_untrust_mac(const char mac[])
 {
 	return iptables_do_command("-t mangle -D " CHAIN_TRUSTED " -m mac --mac-source %s -j MARK %s 0x%x", mac, markop, FW_MARK_TRUSTED);
 }
 
-int get_iptables_version()
+int get_fw_version()
 {
 	char buf[256];
 	int minor;
@@ -366,10 +378,10 @@ int get_iptables_version()
 
 // Initialize the firewall rules.
 int
-iptables_fw_init(void)
+fw_init(void)
 {
 	s_config *config;
-	int iptables_version;
+	int fw_version;
 	char *gw_interface = NULL;
 	char *gw_ip = NULL;
 	char *gw_address = NULL;
@@ -421,17 +433,17 @@ iptables_fw_init(void)
 	FW_MARK_AUTHENTICATED = config->fw_mark_authenticated;
 	UNLOCK_CONFIG();
 
-	iptables_version = get_iptables_version();
-	if (iptables_version < 0) {
+	fw_version = get_fw_version();
+	if (fw_version < 0) {
 		debug(LOG_ERR, "Cannot get iptables version.");
 		return -1;
 	}
 
-	if (iptables_version < MIN_IPTABLES_VERSION) {
+	if (fw_version < MIN_IPTABLES_VERSION) {
 		debug(LOG_ERR, "Unsupported iptables version v%d.%d.%d, needs at least v%d.%d.%d.",
-			(iptables_version / 10000),
-			(iptables_version % 10000) / 100,
-			(iptables_version % 100),
+			(fw_version / 10000),
+			(fw_version % 10000) / 100,
+			(fw_version % 100),
 			(MIN_IPTABLES_VERSION / 10000),
 			(MIN_IPTABLES_VERSION % 10000) / 100,
 			(MIN_IPTABLES_VERSION % 100)
@@ -440,8 +452,8 @@ iptables_fw_init(void)
 	}
 
 	// Set up packet marking methods
-	rc |= _iptables_init_marks();
-	rc |= _iptables_check_mark_masking();
+	rc |= _fw_init_marks();
+	rc |= _fw_check_mark_masking();
 
 	/*
 	 *
@@ -465,7 +477,7 @@ iptables_fw_init(void)
 
 	// Rules to mark as trusted MAC address packets in mangle PREROUTING
 	for (; pt != NULL; pt = pt->next) {
-		rc |= iptables_trust_mac(pt->mac);
+		rc |= fw_trust_mac(pt->mac);
 	}
 
 	// Rules to mark as blocked MAC address packets in mangle PREROUTING
@@ -474,7 +486,7 @@ iptables_fw_init(void)
 		 * MAC's on the block list are marked as blocked;
 		 * everything else passes */
 		for (; pb != NULL; pb = pb->next) {
-			rc |= iptables_block_mac(pb->mac);
+			rc |= fw_block_mac(pb->mac);
 		}
 	} else if (MAC_ALLOW == macmechanism) {
 		/* with the MAC_ALLOW mechanism,
@@ -485,7 +497,7 @@ iptables_fw_init(void)
 		rc |= iptables_do_command("-t mangle -A " CHAIN_BLOCKED " -j MARK %s 0x%x", markop, FW_MARK_BLOCKED);
 		// But insert at beginning of chain rules to pass allowed MAC's
 		for (; pa != NULL; pa = pa->next) {
-			rc |= iptables_allow_mac(pa->mac);
+			rc |= fw_allow_mac(pa->mac);
 		}
 	} else {
 		debug(LOG_ERR, "Unknown MAC mechanism: %d", macmechanism);
@@ -593,7 +605,7 @@ iptables_fw_init(void)
 		// CHAIN_TRUSTED_TO_ROUTER, related and established packets ACCEPT
 		rc |= iptables_do_command("-t filter -A " CHAIN_TRUSTED_TO_ROUTER " -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT");
 		// CHAIN_TRUSTED_TO_ROUTER, append the "trusted-users-to-router" ruleset
-		rc |= _iptables_append_ruleset("filter", "trusted-users-to-router", CHAIN_TRUSTED_TO_ROUTER);
+		rc |= _fw_append_ruleset("filter", "trusted-users-to-router", CHAIN_TRUSTED_TO_ROUTER);
 		// CHAIN_TRUSTED_TO_ROUTER, any packets not matching that ruleset REJECT
 		rc |= iptables_do_command("-t filter -A " CHAIN_TRUSTED_TO_ROUTER " -j REJECT --reject-with %s-port-unreachable", ICMP_TYPE);
 	}
@@ -609,7 +621,7 @@ iptables_fw_init(void)
 		rc |= iptables_do_command("-t filter -A " CHAIN_TO_ROUTER " -j %s", get_empty_ruleset_policy("users-to-router"));
 	} else {
 		// CHAIN_TO_ROUTER, append the "users-to-router" ruleset
-		rc |= _iptables_append_ruleset("filter", "users-to-router", CHAIN_TO_ROUTER);
+		rc |= _fw_append_ruleset("filter", "users-to-router", CHAIN_TO_ROUTER);
 
 		// CHAIN_TO_ROUTER packets marked AUTHENTICATED RETURN
 		rc |= iptables_do_command("-t filter -A " CHAIN_TO_ROUTER " -m mark --mark 0x%x%s -j RETURN", FW_MARK_AUTHENTICATED, markmask);
@@ -694,7 +706,7 @@ iptables_fw_init(void)
 		// CHAIN_TRUSTED, related and established packets ACCEPT
 		rc |= iptables_do_command("-t filter -A " CHAIN_TRUSTED " -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT");
 		// CHAIN_TRUSTED, append the "trusted-users" ruleset
-		rc |= _iptables_append_ruleset("filter", "trusted-users", CHAIN_TRUSTED);
+		rc |= _fw_append_ruleset("filter", "trusted-users", CHAIN_TRUSTED);
 		// CHAIN_TRUSTED, any packets not matching that ruleset REJECT
 		rc |= iptables_do_command("-t filter -A " CHAIN_TRUSTED " -j REJECT --reject-with %s-port-unreachable", ICMP_TYPE);
 	}
@@ -725,7 +737,7 @@ iptables_fw_init(void)
 		// CHAIN_AUTHENTICATED, related and established packets ACCEPT
 		rc |= iptables_do_command("-t filter -A " CHAIN_AUTHENTICATED " -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT");
 		// CHAIN_AUTHENTICATED, append the "authenticated-users" ruleset
-		rc |= _iptables_append_ruleset("filter", "authenticated-users", CHAIN_AUTHENTICATED);
+		rc |= _fw_append_ruleset("filter", "authenticated-users", CHAIN_AUTHENTICATED);
 		// CHAIN_AUTHENTICATED, any packets not matching that ruleset REJECT
 		rc |= iptables_do_command("-t filter -A " CHAIN_AUTHENTICATED " -j REJECT --reject-with %s-port-unreachable", ICMP_TYPE);
 	}
@@ -741,7 +753,7 @@ iptables_fw_init(void)
 	if (is_empty_ruleset("preauthenticated-users")) {
 		rc |= iptables_do_command("-t filter -A " CHAIN_TO_INTERNET " -j %s ", get_empty_ruleset_policy("preauthenticated-users"));
 	} else {
-		rc |= _iptables_append_ruleset("filter", "preauthenticated-users", CHAIN_TO_INTERNET);
+		rc |= _fw_append_ruleset("filter", "preauthenticated-users", CHAIN_TO_INTERNET);
 	}
 
 	// CHAIN_TO_INTERNET, all other packets REJECT
@@ -766,7 +778,7 @@ iptables_fw_init(void)
  * and when it starts, to make sure there are no rules left over from a crash
  */
 int
-iptables_fw_destroy(void)
+fw_destroy(void)
 {
 	fw_quiet = 1;
 	s_config *config;
@@ -779,11 +791,11 @@ iptables_fw_destroy(void)
 
 	// Everything in the mangle table
 	debug(LOG_DEBUG, "Destroying chains in the MANGLE table");
-	iptables_fw_destroy_mention("mangle", "PREROUTING", CHAIN_TRUSTED);
-	iptables_fw_destroy_mention("mangle", "PREROUTING", CHAIN_BLOCKED);
-	iptables_fw_destroy_mention("mangle", "PREROUTING", CHAIN_ALLOWED);
-	iptables_fw_destroy_mention("mangle", "PREROUTING", CHAIN_OUTGOING);
-	iptables_fw_destroy_mention("mangle", "POSTROUTING", CHAIN_INCOMING);
+	fw_destroy_mention("mangle", "PREROUTING", CHAIN_TRUSTED);
+	fw_destroy_mention("mangle", "PREROUTING", CHAIN_BLOCKED);
+	fw_destroy_mention("mangle", "PREROUTING", CHAIN_ALLOWED);
+	fw_destroy_mention("mangle", "PREROUTING", CHAIN_OUTGOING);
+	fw_destroy_mention("mangle", "POSTROUTING", CHAIN_INCOMING);
 	iptables_do_command("-t mangle -F " CHAIN_TRUSTED);
 	iptables_do_command("-t mangle -F " CHAIN_BLOCKED);
 	iptables_do_command("-t mangle -F " CHAIN_ALLOWED);
@@ -798,7 +810,7 @@ iptables_fw_destroy(void)
 	// Everything in the nat table (ip4 only)
 	if (!config->ip6) {
 		debug(LOG_DEBUG, "Destroying chains in the NAT table");
-		iptables_fw_destroy_mention("nat", "PREROUTING", CHAIN_OUTGOING);
+		fw_destroy_mention("nat", "PREROUTING", CHAIN_OUTGOING);
 		iptables_do_command("-t nat -F " CHAIN_OUTGOING);
 		iptables_do_command("-t nat -X " CHAIN_OUTGOING);
 	}
@@ -806,8 +818,8 @@ iptables_fw_destroy(void)
 	// Everything in the filter table
 
 	debug(LOG_DEBUG, "Destroying chains in the FILTER table");
-	iptables_fw_destroy_mention("filter", "INPUT", CHAIN_TO_ROUTER);
-	iptables_fw_destroy_mention("filter", "FORWARD", CHAIN_TO_INTERNET);
+	fw_destroy_mention("filter", "INPUT", CHAIN_TO_ROUTER);
+	fw_destroy_mention("filter", "FORWARD", CHAIN_TO_INTERNET);
 	iptables_do_command("-t filter -F " CHAIN_TO_ROUTER);
 	iptables_do_command("-t filter -F " CHAIN_TO_INTERNET);
 	iptables_do_command("-t filter -F " CHAIN_AUTHENTICATED);
@@ -827,13 +839,13 @@ iptables_fw_destroy(void)
 }
 
 /*
- * Helper for iptables_fw_destroy
+ * Helper for fw_destroy
  * @param table The table to search
  * @param chain The chain in that table to search
  * @param mention A word to find and delete in rules in the given table+chain
  */
 int
-iptables_fw_destroy_mention(
+fw_destroy_mention(
 	const char *table,
 	const char *chain,
 	const char *mention
@@ -882,7 +894,7 @@ iptables_fw_destroy_mention(
 
 	if (retval == 0) {
 		// Recurse just in case there are more in the same table+chain
-		iptables_fw_destroy_mention(table, chain, mention);
+		fw_destroy_mention(table, chain, mention);
 	}
 
 	return (retval);
@@ -890,7 +902,7 @@ iptables_fw_destroy_mention(
 
 // Enable/Disable Download Rate Limiting for client
 int
-iptables_download_ratelimit_enable(t_client *client, int enable)
+fw_download_ratelimit_enable(t_client *client, int enable)
 {
 	int rc = 0;
 	unsigned long long int packets;
@@ -947,7 +959,7 @@ iptables_download_ratelimit_enable(t_client *client, int enable)
 
 // Enable/Disable Upload Rate Limiting for client
 int
-iptables_upload_ratelimit_enable(t_client *client, int enable)
+fw_upload_ratelimit_enable(t_client *client, int enable)
 {
 	int rc = 0;
 	unsigned long long int packets;
@@ -981,7 +993,7 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 
 // Insert or delete firewall mangle rules marking a client's packets.
 int
-iptables_fw_authenticate(t_client *client)
+fw_authenticate(t_client *client)
 {
 	int rc = 0;
 
@@ -995,7 +1007,7 @@ iptables_fw_authenticate(t_client *client)
 		FW_MARK_AUTHENTICATED
 	);
 
-	// This rule is just for download (incoming) byte counting, see iptables_fw_counters_update()
+	// This rule is just for download (incoming) byte counting, see fw_counters_update()
 	rc |= iptables_do_command("-t mangle -A " CHAIN_INCOMING " -d %s -j MARK %s 0x%x", client->ip, markop, FW_MARK_AUTHENTICATED);
 
 	rc |= iptables_do_command("-t mangle -A " CHAIN_INCOMING " -d %s -j ACCEPT", client->ip);
@@ -1004,7 +1016,7 @@ iptables_fw_authenticate(t_client *client)
 }
 
 int
-iptables_fw_deauthenticate(t_client *client)
+fw_deauthenticate(t_client *client)
 {
 	unsigned long long int download_rate, packetsdown;
 	int rc = 0;
@@ -1034,7 +1046,7 @@ iptables_fw_deauthenticate(t_client *client)
 
 // Return the total upload usage in bytes
 unsigned long long int
-iptables_fw_total_upload()
+fw_total_upload()
 {
 	FILE *output;
 	const char *script;
@@ -1072,7 +1084,7 @@ iptables_fw_total_upload()
 
 // Return the total download usage in bytes
 unsigned long long int
-iptables_fw_total_download()
+fw_total_download()
 {
 	FILE *output;
 	const char *script;
@@ -1110,7 +1122,7 @@ iptables_fw_total_download()
 
 // Update the counters of all the clients in the client list
 int
-iptables_fw_counters_update(void)
+fw_counters_update(void)
 {
 	FILE *output;
 	char *script;

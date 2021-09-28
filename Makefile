@@ -9,8 +9,15 @@ LDLIBS=-lmicrohttpd
 STRIP=yes
 
 NDS_OBJS=src/auth.o src/client_list.o src/commandline.o src/conf.o \
-	src/debug.o src/fw_iptables.o src/main.o src/http_microhttpd.o src/http_microhttpd_utils.o \
+	src/debug.o src/main.o src/http_microhttpd.o src/http_microhttpd_utils.o \
 	src/ndsctl_thread.o src/safe.o src/util.o
+
+ifdef FW_NFTABLES
+NDS_OBJS+=src/fw_nftables.o
+LDLIBS+=-lnftables
+else
+NDS_OBJS+=src/fw_iptables.o
+endif
 
 .PHONY: all clean install
 

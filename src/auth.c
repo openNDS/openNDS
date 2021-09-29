@@ -40,7 +40,7 @@
 #include "conf.h"
 #include "debug.h"
 #include "auth.h"
-#include "fw_iptables.h"
+#include "fw.h"
 #include "client_list.h"
 #include "util.h"
 #include "http_microhttpd_utils.h"
@@ -138,7 +138,7 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 		return -1;
 	} else if (state == FW_MARK_PREAUTHENTICATED) {
 		if (new_state == FW_MARK_AUTHENTICATED) {
-			iptables_fw_authenticate(client);
+			fw_authenticate(client);
 
 			if (client->upload_rate == 0) {
 				client->upload_rate = config->upload_rate;
@@ -176,7 +176,7 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 		}
 	} else if (state == FW_MARK_AUTHENTICATED) {
 		if (new_state == FW_MARK_PREAUTHENTICATED) {
-			iptables_fw_deauthenticate(client);
+			fw_deauthenticate(client);
 			binauth_action(client, reason, customdata);
 			client_reset(client);
 		} else if (new_state == FW_MARK_BLOCKED) {
@@ -263,7 +263,7 @@ fw_refresh_client_list(void)
 	debug(LOG_DEBUG, "Rate Check Window is set to %u period(s) of checkinterval", config->rate_check_window);
 
 	// Update all the counters
-	if (-1 == iptables_fw_counters_update()) {
+	if (-1 == fw_counters_update()) {
 		debug(LOG_ERR, "Could not get counters from firewall!");
 		return;
 	}
@@ -430,7 +430,7 @@ fw_refresh_client_list(void)
 							uprate
 						);
 						action = ENABLE;
-						iptables_download_ratelimit_enable(cp1, action);
+						fw_download_ratelimit_enable(cp1, action);
 						//bit 0 is not set so toggle it to signify rate limiting is on
 						cp1->rate_exceeded = cp1->rate_exceeded^1;
 					}
@@ -446,7 +446,7 @@ fw_refresh_client_list(void)
 						);
 
 						action = DISABLE;
-						iptables_download_ratelimit_enable(cp1, action);
+						fw_download_ratelimit_enable(cp1, action);
 						//bit 0 is set so toggle it to signify rate limiting is off
 						cp1->rate_exceeded = cp1->rate_exceeded^1;
 					}
@@ -477,7 +477,7 @@ fw_refresh_client_list(void)
 						);
 
 						action = ENABLE;
-						iptables_upload_ratelimit_enable(cp1, action);
+						fw_upload_ratelimit_enable(cp1, action);
 						//bit 1 is not set so toggle it to signify rate limiting is on
 						cp1->rate_exceeded = cp1->rate_exceeded^2;
 					}
@@ -494,7 +494,7 @@ fw_refresh_client_list(void)
 						);
 
 						action = DISABLE;
-						iptables_upload_ratelimit_enable(cp1, action);
+						fw_upload_ratelimit_enable(cp1, action);
 						//bit 1 is set so toggle it to signify rate limiting is off
 						cp1->rate_exceeded = cp1->rate_exceeded^2;
 					}
@@ -657,7 +657,7 @@ auth_client_trust(const char *mac)
 
 	LOCK_CONFIG();
 
-	if (!add_to_trusted_mac_list(mac) && !iptables_trust_mac(mac)) {
+	if (!add_to_trusted_mac_list(mac) && !fw_trust_mac(mac)) {
 		rc = 0;
 	}
 
@@ -673,7 +673,7 @@ auth_client_untrust(const char *mac)
 
 	LOCK_CONFIG();
 
-	if (!remove_from_trusted_mac_list(mac) && !iptables_untrust_mac(mac)) {
+	if (!remove_from_trusted_mac_list(mac) && !fw_untrust_mac(mac)) {
 		rc = 0;
 	}
 
@@ -688,7 +688,7 @@ auth_client_allow(const char *mac)
 
 	LOCK_CONFIG();
 
-	if (!add_to_allowed_mac_list(mac) && !iptables_allow_mac(mac)) {
+	if (!add_to_allowed_mac_list(mac) && !fw_allow_mac(mac)) {
 		rc = 0;
 	}
 
@@ -704,7 +704,7 @@ auth_client_unallow(const char *mac)
 
 	LOCK_CONFIG();
 
-	if (!remove_from_allowed_mac_list(mac) && !iptables_unallow_mac(mac)) {
+	if (!remove_from_allowed_mac_list(mac) && !fw_unallow_mac(mac)) {
 		rc = 0;
 	}
 
@@ -720,7 +720,7 @@ auth_client_block(const char *mac)
 
 	LOCK_CONFIG();
 
-	if (!add_to_blocked_mac_list(mac) && !iptables_block_mac(mac)) {
+	if (!add_to_blocked_mac_list(mac) && !fw_block_mac(mac)) {
 		rc = 0;
 	}
 
@@ -736,7 +736,7 @@ auth_client_unblock(const char *mac)
 
 	LOCK_CONFIG();
 
-	if (!remove_from_blocked_mac_list(mac) && !iptables_unblock_mac(mac)) {
+	if (!remove_from_blocked_mac_list(mac) && !fw_unblock_mac(mac)) {
 		rc = 0;
 	}
 

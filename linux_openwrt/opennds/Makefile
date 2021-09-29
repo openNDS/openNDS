@@ -25,7 +25,9 @@ define Package/opennds
 	SUBMENU:=Captive Portals
 	SECTION:=net
 	CATEGORY:=Network
-	DEPENDS:=+libpthread +iptables-mod-ipopt +libmicrohttpd-no-ssl
+	DEPENDS:=+libpthread +libmicrohttpd-no-ssl \
+		+OPENNDS_NFTABLES:nftables \
+		+!OPENNDS_NFTABLES:iptables-mod-ipopt
 	TITLE:=Open public network gateway daemon
 	URL:=https://github.com/opennds/opennds
 	CONFLICTS:=nodogsplash nodogsplash2
@@ -39,6 +41,16 @@ define Package/opennds/description
 	The creation of sophisticated third party authentication applications is fully supported.
 	Internet hosted https portals can be utilised to inspire maximum user confidence.
 endef
+
+define Package/opennds/config
+config OPENNDS_NFTABLES
+	bool "Use nftables as firewall backend"
+	depends on PACKAGE_opennds
+endef
+
+ifeq ($(CONFIG_OPENNDS_NFTABLES),y)
+	PKG_MAKE_FLAGS += FW_NFTABLES=1
+endif
 
 define Package/opennds/install
 	$(INSTALL_DIR) $(1)/usr/bin

@@ -7,9 +7,11 @@
 # This is changed to bash automatically by Makefile for generic Linux
 #
 
-# This is the Click To Continue Theme Specification (ThemeSpec) File with custom placeholders.
+# Title of this theme:
+title="theme_user-email-login-custom-placeholders"
 
 # functions:
+
 download_image_files() {
 	# The list of images to be downloaded is defined in $ndscustomimages ( see near the end of this file )
 	# The source of the images is defined in the openNDS config
@@ -498,9 +500,6 @@ ndsparamlist="$ndsparamlist $ndscustomparams $ndscustomimages $ndscustomfiles"
 additionalthemevars="username emailaddress"
 
 fasvarlist="$fasvarlist $additionalthemevars"
-
-# Title of this theme:
-title="theme_user-email-login-custom-placeholders"
 
 # You can choose to send a custom data string to BinAuth. Set the variable $binauth_custom to the desired value.
 # Note1: As this script runs on the openNDS router and creates its own log file, there is little point also enabling Binauth.

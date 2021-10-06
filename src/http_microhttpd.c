@@ -1107,7 +1107,9 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 						cidgood = 1;
 						safe_asprintf(&cidfile, "%s/ndscids/%s", config->tmpfsmountpoint, client->cid);
 
+						// Check if cidfile exists
 						if(access(cidfile, F_OK) != 0) {
+							// does not exist
 							cidgood=0;
 						}
 						free(cidfile);

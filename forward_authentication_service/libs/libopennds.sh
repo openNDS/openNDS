@@ -160,7 +160,7 @@ do_ndsctl () {
 
 	for tic in $(seq $timeout); do
 		ndsstatus="ready"
-		ndsctlout=$(ndsctl $ndsctlcmd)
+		ndsctlout=$(eval ndsctl "$ndsctlcmd")
 
 		for keyword in $ndsctlout; do
 

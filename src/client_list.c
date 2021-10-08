@@ -154,7 +154,7 @@ void client_reset(t_client *client)
 	char msg[16] = {0};
 	char *cidinfo;
 
-
+	debug(LOG_DEBUG, "Resetting client [%s]", client->mac);
 	// Reset traffic counters
 	client->counters.incoming = 0;
 	client->counters.outgoing = 0;

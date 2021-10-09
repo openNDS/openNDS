@@ -95,7 +95,6 @@ _client_list_append(const char mac[], const char ip[])
 {
 	t_client *client, *prevclient;
 	s_config *config;
-	char hash[128] = {0};
 
 	config = config_get_config();
 	if (client_count >= config->maxclients) {
@@ -119,8 +118,6 @@ _client_list_append(const char mac[], const char ip[])
 
 	// Reset volatile fields and create new token
 	client_reset(client);
-	hash_str(hash, sizeof(hash), client->token);
-	client->hid = safe_strdup(hash);
 
 	// Blocked or Trusted client do not trigger the splash page.
 	if (is_blocked_mac(mac)) {
@@ -153,6 +150,11 @@ _client_list_append(const char mac[], const char ip[])
  */
 void client_reset(t_client *client)
 {
+	char hash[128] = {0};
+	char msg[16] = {0};
+	char *cidinfo;
+
+	debug(LOG_DEBUG, "Resetting client [%s]", client->mac);
 	// Reset traffic counters
 	client->counters.incoming = 0;
 	client->counters.outgoing = 0;
@@ -162,9 +164,17 @@ void client_reset(t_client *client)
 	client->session_start = 0;
 	client->session_end = 0;
 
-	// Reset token
+	// Reset token and hid
 	free(client->token);
 	safe_asprintf(&client->token, "%04hx%04hx", rand16(), rand16());
+	hash_str(hash, sizeof(hash), client->token);
+	client->hid = safe_strdup(hash);
+
+	//Reset cidfile using rmcid
+	// Remove any existing cidfile:
+	safe_asprintf(&cidinfo, "cid=\"%s\"\0", client->cid);
+	write_client_info(msg, sizeof(msg), "rmcid", client->cid, cidinfo);
+
 }
 
 /**

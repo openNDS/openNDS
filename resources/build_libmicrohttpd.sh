@@ -21,7 +21,7 @@ if [ -z "$MHD_VERSION" ] ; then
 fi
 unset CFLAGS
 rm -rf /tmp/libmicrohttpd*
-wget https://ftpmirror.gnu.org/libmicrohttpd/libmicrohttpd-${MHD_VERSION}.tar.gz -O /tmp/mhd_src.tar.gz
+wget http://ftpmirror.gnu.org/libmicrohttpd/libmicrohttpd-${MHD_VERSION}.tar.gz -O /tmp/mhd_src.tar.gz
 tar zxf /tmp/mhd_src.tar.gz -C /tmp/
 mv /tmp/libmicrohttpd-* /tmp/libmicrohttpd
 mkdir /tmp/libmicrohttpd_install

@@ -54,8 +54,10 @@ static int preauthenticated(struct MHD_Connection *connection, const char *url, 
 static int authenticate_client(struct MHD_Connection *connection, const char *redirect_url, t_client *client);
 static enum MHD_Result get_host_value_callback(void *cls, enum MHD_ValueKind kind, const char *key, const char *value);
 static enum MHD_Result get_user_agent_callback(void *cls, enum MHD_ValueKind kind, const char *key, const char *value);
+static enum MHD_Result get_accept_callback(void *cls, enum MHD_ValueKind kind, const char *key, const char *value);
 static int serve_file(struct MHD_Connection *connection, t_client *client, const char *url);
 static int show_preauthpage(struct MHD_Connection *connection, const char *query);
+static int send_json(struct MHD_Connection *connection, const char *json);
 static int encode_and_redirect_to_splashpage(struct MHD_Connection *connection, t_client *client, const char *originurl, const char *querystr);
 static int redirect_to_splashpage(struct MHD_Connection *connection, t_client *client, const char *host, const char *url);
 static int send_error(struct MHD_Connection *connection, int error);
@@ -678,6 +680,10 @@ static int authenticated(struct MHD_Connection *connection,
 	char *query = query_str;
 	char *msg;
 	char clientif[64] = {0};
+	const char *accept;
+	char *originurl_raw = NULL;
+	char *captive_json = NULL;
+
 	int rc;
 	int ret;
 	struct MHD_Response *response;
@@ -694,6 +700,37 @@ static int authenticated(struct MHD_Connection *connection,
 	if (host == NULL) {
 		debug(LOG_ERR, "authenticated: Error getting host");
 		host = config->gw_address;
+	}
+
+	// Is it an RFC8908 type request? - check Accept: header
+	ret = MHD_get_connection_values(connection, MHD_HEADER_KIND, get_accept_callback, &accept);
+
+	if (ret < 1) {
+		debug(LOG_ERR, "authenticated: Error getting Accept header");
+		return ret;
+	}
+
+	if (strcmp(accept, "application/captive+json") == 0) {
+		debug(LOG_NOTICE, "authenticated: Accept header [%s]", accept);
+		debug(LOG_NOTICE, "authenticated: RFC 8908 captive+json request received");
+
+		if (strcmp(config->gw_fqdn, "disable") == 0 || strcmp(config->gw_fqdn, "disabled") == 0) {
+			safe_asprintf(&originurl_raw, "http://%s", config->gw_ip);
+		} else {
+			safe_asprintf(&originurl_raw, "http://%s", config->gw_fqdn);
+		}
+
+		safe_asprintf(&captive_json,
+			"{ \"captive\": false, \"user-portal-url\": \"%s\" }",
+			originurl_raw
+		);
+
+		debug(LOG_NOTICE, "captive_json [%s]", captive_json);
+		ret = send_json(connection, captive_json);
+
+		free(originurl_raw);
+		free(captive_json);
+		return ret;
 	}
 
 	/* check if this is a late request, meaning the user tries to get the internet, but ended up here,
@@ -849,6 +886,36 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 }
 
 /**
+ * @brief send_json - send the rfc8908 json response.
+ */
+static int send_json(struct MHD_Connection *connection, const char *json)
+{
+	s_config *config = config_get_config();
+
+	char *msg;
+	int ret;
+	struct MHD_Response *response;
+
+	msg = safe_calloc(HTMLMAXSIZE);
+	snprintf(msg, HTMLMAXSIZE, "%s", json);
+
+	debug(LOG_NOTICE, "json string [%s] [%s]", json, msg);
+
+	response = MHD_create_response_from_buffer(strlen(msg), (char *)msg, MHD_RESPMEM_MUST_FREE);
+
+	if (!response) {
+		return send_error(connection, 503);
+	}
+
+	MHD_add_response_header(response, "Cache-Control", "private");
+	MHD_add_response_header(response, "Content-Type", "application/captive+json");
+	ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
+	MHD_destroy_response(response);
+	return ret;
+
+}
+
+/**
  * @brief preauthenticated - called for all request of a client in this state.
  * @param connection
  * @param ip_addr
@@ -861,11 +928,14 @@ static int preauthenticated(struct MHD_Connection *connection,
 {
 	s_config *config = config_get_config();
 	const char *host = config->gw_address;
+	const char *accept;
 	const char *redirect_url;
 	char query_str[QUERYMAXLEN] = {0};
 	char *query = query_str;
 	char *querystr = query_str;
 	char originurl[QUERYMAXLEN] = {0};
+	char *originurl_raw = NULL;
+	char *captive_json = NULL;
 
 	int ret;
 
@@ -883,7 +953,42 @@ static int preauthenticated(struct MHD_Connection *connection,
 		host = config->gw_address;
 	}
 
-	// User just accessed gatewayaddress:gatewayport either directly or by redirect
+	// Is it an RFC8908 type request? - check Accept: header
+	ret = MHD_get_connection_values(connection, MHD_HEADER_KIND, get_accept_callback, &accept);
+
+	if (ret < 1) {
+		debug(LOG_ERR, "preauthenticated: Error getting Accept header");
+		return ret;
+	}
+
+	if (strcmp(accept, "application/captive+json") == 0) {
+		debug(LOG_NOTICE, "preauthenticated: Accept header [%s]", accept);
+		debug(LOG_NOTICE, "preauthenticated: RFC 8908 captive+json request received");
+
+		if (strcmp(config->gw_fqdn, "disable") == 0 || strcmp(config->gw_fqdn, "disabled") == 0) {
+			safe_asprintf(&originurl_raw, "http://%s", config->gw_ip);
+		} else {
+			safe_asprintf(&originurl_raw, "http://%s", config->gw_fqdn);
+		}
+
+		uh_urlencode(originurl, sizeof(originurl), originurl_raw, strlen(originurl_raw));
+		debug(LOG_DEBUG, "originurl: %s", originurl);
+
+		querystr=construct_querystring(client, originurl, querystr);
+		debug(LOG_NOTICE, "Constructed query string [%s]", querystr);
+		debug(LOG_NOTICE, "FAS url [%s]", config->fas_url);
+
+		safe_asprintf(&captive_json, "{ \"captive\": true, \"user-portal-url\": \"%s%s\" }", config->fas_url, querystr);
+
+		debug(LOG_NOTICE, "captive_json [%s]", captive_json);
+		ret = send_json(connection, captive_json);
+
+		free(originurl_raw);
+		free(captive_json);
+		return ret;
+	}
+
+	// Did user just access gatewayaddress:gatewayport directly or by redirect
 	if (strcmp(url, "/") == 0) {
 		if (strcmp(host, config->gw_address) == 0 || strcmp(host, config->gw_ip) == 0 || strcmp(host, config->gw_fqdn) == 0) {
 			return send_error(connection, 511);
@@ -1107,7 +1212,9 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 						cidgood = 1;
 						safe_asprintf(&cidfile, "%s/ndscids/%s", config->tmpfsmountpoint, client->cid);
 
+						// Check if cidfile exists
 						if(access(cidfile, F_OK) != 0) {
+							// does not exist
 							cidgood=0;
 						}
 						free(cidfile);
@@ -1118,6 +1225,7 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 						client->cid = safe_strdup(cid);
 
 						// Write the new cidfile:
+						debug(LOG_NOTICE, "writing cid file [%s]", cid);
 						safe_asprintf(&cidinfo, "hid=\"%s\"\0", client->hid);
 						write_client_info(msg, sizeof(msg), "write", cid, cidinfo);
 
@@ -1461,6 +1569,7 @@ static int send_error(struct MHD_Connection *connection, int error)
 static enum MHD_Result get_host_value_callback(void *cls, enum MHD_ValueKind kind, const char *key, const char *value)
 {
 	const char **host = (const char **)cls;
+
 	if (MHD_HEADER_KIND != kind) {
 		*host = NULL;
 		return MHD_NO;
@@ -1485,6 +1594,7 @@ static enum MHD_Result get_host_value_callback(void *cls, enum MHD_ValueKind kin
 static enum MHD_Result get_user_agent_callback(void *cls, enum MHD_ValueKind kind, const char *key, const char *value)
 {
 	const char **user_agent = (const char **)cls;
+
 	if (MHD_HEADER_KIND != kind) {
 		*user_agent = NULL;
 		return MHD_NO;
@@ -1492,6 +1602,31 @@ static enum MHD_Result get_user_agent_callback(void *cls, enum MHD_ValueKind kin
 
 	if (!strcmp("User-Agent", key)) {
 		*user_agent = value;
+		return MHD_NO;
+	}
+
+	return MHD_YES;
+}
+
+/**
+ * @brief get_accept_callback save Accept: into cls which is a char**
+ * @param cls - a char ** pointer to our target buffer. This buffer will be alloc in this function.
+ * @param kind - see doc of	MHD_KeyValueIterator's
+ * @param key
+ * @param value
+ * @return MHD_YES or MHD_NO. MHD_NO means we found our item and this callback will not called again.
+ */
+static enum MHD_Result get_accept_callback(void *cls, enum MHD_ValueKind kind, const char *key, const char *value)
+{
+	const char **accept = (const char **)cls;
+
+	if (MHD_HEADER_KIND != kind) {
+		*accept = NULL;
+		return MHD_NO;
+	}
+
+	if (!strcmp("Accept", key)) {
+		*accept = value;
 		return MHD_NO;
 	}
 

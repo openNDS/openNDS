@@ -160,7 +160,7 @@ do_ndsctl () {
 
 	for tic in $(seq $timeout); do
 		ndsstatus="ready"
-		ndsctlout=$(ndsctl $ndsctlcmd)
+		ndsctlout=$(eval ndsctl "$ndsctlcmd")
 
 		for keyword in $ndsctlout; do
 
@@ -881,6 +881,7 @@ elif [ "$1" = "write" ]; then
 	# $2 contains the cid
 	# $3 contains the mountpoint
 	# $4 contains the info element
+	mkdir -p "$3/ndscids"
 	echo "$4" >> "$3/ndscids/$2"
 	echo "done"
 	exit 0

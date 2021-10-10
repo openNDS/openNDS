@@ -721,7 +721,8 @@ static int authenticated(struct MHD_Connection *connection,
 		}
 
 		safe_asprintf(&captive_json,
-			"{ \"captive\": false, \"user-portal-url\": \"%s\" }",
+			"{ \"captive\": false, \"user-portal-url\": \"%s\", \"venue-info-url\": \"%s\", \"can-extend-session\": false }",
+			originurl_raw,
 			originurl_raw
 		);
 

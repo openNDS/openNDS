@@ -721,7 +721,8 @@ static int authenticated(struct MHD_Connection *connection,
 		}
 
 		safe_asprintf(&captive_json,
-			"{ \"captive\": false, \"user-portal-url\": \"%s\" }",
+			"{ \"captive\": false, \"user-portal-url\": \"%s\", \"venue-info-url\": \"%s\", \"can-extend-session\": false }",
+			originurl_raw,
 			originurl_raw
 		);
 
@@ -1533,7 +1534,7 @@ static int send_error(struct MHD_Connection *connection, int error)
 		get_client_ip(ip, connection);
 
 		page_511 = safe_calloc(HTMLMAXSIZE);
-		safe_asprintf(&cmd, "/usr/lib/opennds/client_params.sh err511 '%s'", ip);
+		safe_asprintf(&cmd, "%s err511 '%s'", config->status_path, ip);
 
 		if (execute_ret_url_encoded(page_511, HTMLMAXSIZE - 1, cmd) == 0) {
 			debug(LOG_INFO, "Network Authentication Required - page_511 html generated for [%s]", ip);

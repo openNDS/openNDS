@@ -831,6 +831,11 @@ config_read(const char *filename)
 			config.gw_fqdn = safe_strdup(p1);
 			break;
 		case oStatusPath:
+			if (!((stat(p1, &sb) == 0) && S_ISREG(sb.st_mode) && (sb.st_mode & S_IXUSR))) {
+				debug(LOG_ERR, "StatusPath does not exist or is not executeable: %s", p1);
+				debug(LOG_ERR, "Exiting...");
+				exit(1);
+			}
 			config.status_path = safe_strdup(p1);
 			break;
 		case oDhcpDefaultUrlEnable:

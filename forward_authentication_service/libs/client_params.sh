@@ -110,8 +110,8 @@ header() {
 		<meta http-equiv=\"Expires\" content=\"0\">
 		<meta charset=\"utf-8\">
 		<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
-		<link rel=\"shortcut icon\" href=\"/images/splash.jpg\" type=\"image/x-icon\">
-		<link rel=\"stylesheet\" type=\"text/css\" href=\"/splash.css\">
+		<link rel=\"shortcut icon\" href=\"$url/images/splash.jpg\" type=\"image/x-icon\">
+		<link rel=\"stylesheet\" type=\"text/css\" href=\"$url/splash.css\">
 		<title>$gatewaynamehtml Client Session Status</title>
 		</head>
 		<body>
@@ -132,7 +132,7 @@ footer() {
 	echo "
 		<hr>
 		<div style=\"font-size:0.5em;\">
-			<img style=\"height:30px; width:60px; float:left;\" src=\"/images/splash.jpg\" alt=\"Splash Page: For access to the Internet.\">
+			<img style=\"height:30px; width:60px; float:left;\" src=\"$url/images/splash.jpg\" alt=\"Splash Page: For access to the Internet.\">
 			&copy; The openNDS Project 2015 - $year<br>
 			openNDS $version
 			<br><br>
@@ -180,12 +180,6 @@ body() {
 		"
 	elif [ "$status" = "err511" ]; then
 
-		if [ -z "$gatewayfqdn" ] || [ "$gatewayfqdn" = "disable" ] || [ "$gatewayfqdn" = "disabled" ]; then
-			url="http://$gatewayaddress"
-		else
-			url="http://$gatewayfqdn"
-		fi
-
 		pagebody="
 			<h1>Network Authentication Required</h1>
 			<form action=\"$url\" method=\"get\">
@@ -207,6 +201,13 @@ body() {
 # Start generating the html:
 if [ "$status" = "status" ] || [ "$status" = "err511" ]; then
 	parse_parameters
+
+	if [ -z "$gatewayfqdn" ] || [ "$gatewayfqdn" = "disable" ] || [ "$gatewayfqdn" = "disabled" ]; then
+		url="http://$gatewayaddress"
+	else
+		url="http://$gatewayfqdn"
+	fi
+
 	header
 	body
 	footer

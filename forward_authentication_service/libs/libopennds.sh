@@ -985,6 +985,15 @@ elif [ "$1" = "daemon" ]; then
 		exit 1
 	fi
 
+elif [ "$1" = "get_interface_by_ip" ]; then
+	# $2 contains the ip to check
+	if [ -z "$2" ]; then
+		exit 1
+	else
+		interface=$(ip route get "$2" | awk -F"dev " '{print $2}' | awk '{printf "%s" $1}')
+		printf %s "$interface"
+	fi
+
 else
 	#Display a splash page sequence using a Themespec
 

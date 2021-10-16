@@ -28,6 +28,18 @@
 
 # functions:
 
+# Encode the custom string
+encode_custom() {
+	ndsctlcmd="b64encode \"$binauth_custom\""
+	do_binauth
+
+	if [ "$ndsstatus" = "ready" ]; then
+		custom=$ndsctlout
+	else
+		custom=""
+	fi
+}
+
 # Download external file
 webget() {
 	fetch=$(type -t uclient-fetch)
@@ -965,7 +977,6 @@ elif [ "$1" = "daemon" ]; then
 	do_ndsctl
 
 	if [ "$ndsstatus" = "ready" ]; then
-		#command -p $ndsctlout &
 		exec $ndsctlout
 		echo "ack"
 		exit 0
@@ -984,6 +995,9 @@ else
 	#################################
 
 	#  setup required parameters:	#
+
+	# Client Custom String
+	custom=""
 
 	# Preshared key
 	#########################################

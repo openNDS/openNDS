@@ -12,6 +12,15 @@ title="theme_click-to-continue-custom-placeholders"
 
 # functions:
 
+download_data_files() {
+	# The list of files to be downloaded is defined in $ndscustomfiles ( see near the end of this file )
+	# The source of the files is defined in the openNDS config
+
+	for nameoffile in $ndscustomfiles; do
+		get_data_file "$nameoffile"
+	done
+}
+
 download_image_files() {
 	# The list of images to be downloaded is defined in $ndscustomimages ( see near the end of this file )
 	# The source of the images is defined in the openNDS config
@@ -136,13 +145,20 @@ thankyou_page () {
 	# Add your message here:
 	# You could retrieve text or images from a remote server using wget or curl
 	# as this router has Internet access whilst the client device does not (yet).
+
+	if [ -e "$mountpoint/ndsdata/advert1.htm" ]; then
+		advert1=$(cat "$mountpoint/ndsdata/advert1.htm")
+	else
+		advert1="Your News or Advertising could be here, contact the owners of this Hotspot to find out how!"
+	fi
+
 	echo "
 		<br>
 		<italic-black>
 			<img style=\"width:100%; max-width: 100%;\" src=\"$banner2\" alt=\"Placeholder: Banner2.\"><br>
-			<b>$banner2_message</b><hr>
-			Your News or Advertising could be here, contact the owners of this Hotspot to find out how!
-			<br>
+			<b>$banner2_message</b><br>
+			$advert1
+			<hr>
 		</italic-black>
 	"
 

@@ -70,8 +70,12 @@ static void binauth_action(t_client *client, const char *reason, char *customdat
 	int ret = 1;
 
 	if (config->binauth) {
-		if (!customdata || strlen(customdata) == 0) {
+		debug(LOG_DEBUG, "client->custom=%s", client->custom);
+
+		if (!client->custom || strlen(client->custom) == 0) {
 			customdata="na";
+		} else {
+			customdata=client->custom;
 		}
 
 		uh_urlencode(customdata_enc, sizeof(customdata_enc), customdata, strlen(customdata));
@@ -166,6 +170,11 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 			client->initial_loop = 1;
 			client->counters.in_window_start = client->counters.incoming;
 			client->counters.out_window_start = client->counters.outgoing;
+
+
+			//client->custom = customdata;
+			safe_asprintf(&client->custom, "%s", customdata);
+
 			binauth_action(client, reason, customdata);
 		} else if (new_state == FW_MARK_BLOCKED) {
 			return -1;

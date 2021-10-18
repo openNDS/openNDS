@@ -170,9 +170,9 @@ configure_log_location
 # Get the action method from NDS ie the first command line argument.
 #
 # Possible values are:
-# "auth_client" - NDS requests validation of the client
-# "client_auth" - NDS has authorised the client
-# "client_deauth" - NDS has deauthenticated the client
+# "auth_client" - NDS requests validation of the client (legacy - deprecated)
+# "client_auth" - NDS has authorised the client (legacy - deprecated)
+# "client_deauth" - NDS has deauthenticated the client on request (logout)
 # "idle_deauth" - NDS has deauthenticated the client because the idle timeout duration has been exceeded
 # "timeout_deauth" - NDS has deauthenticated the client because the session length duration has been exceeded
 # "downquota_deauth" - NDS has deauthenticated the client because the client's download quota has been exceeded
@@ -202,23 +202,7 @@ if [ $action = "auth_client" ]; then
 	useragent=$(printf "${useragent_enc//%/\\x}")
 	customdata_enc=$9
 	customdata=$(printf "${customdata_enc//%/\\x}")
-
 	log_entry="method=$1, clientmac=$2, clientip=$7, legacy1=$3, legacy2=$4, redir=$redir, useragent=$useragent, token=$8, custom=$customdata"
-
-elif [ $action = "ndsctl_auth" ]; then
-	# Arguments passed are as follows
-	# $1 method
-	# $2 client mac
-	# $3 bytes incoming
-	# $4 bytes outgoing
-	# $5 session start time
-	# $6 session end time
-	# $7 client token
-	# $8 custom data string
-
-	customdata_enc=$8
-	customdata=$(printf "${customdata_enc//%/\\x}")
-	log_entry="method=$1, clientmac=$2, bytes_incoming=$3, bytes_outgoing=$4, session_start=$5, session_end=$6, token=$7, custom=$customdata_enc"
 
 else
 	# All other methods
@@ -230,8 +214,11 @@ else
 	# $5 session start time
 	# $6 session end time
 	# $7 client token
+	# $8 custom data string
 
-	log_entry="method=$1, clientmac=$2, bytes_incoming=$3, bytes_outgoing=$4, session_start=$5, session_end=$6, token=$7"
+	customdata=$8
+	log_entry="method=$1, clientmac=$2, bytes_incoming=$3, bytes_outgoing=$4, session_start=$5, session_end=$6, token=$7, custom=$customdata"
+
 fi
 
 # In the case of ThemeSpec, get the client id information from the cid database

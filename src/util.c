@@ -195,7 +195,7 @@ int download_remotes(int refresh)
 	debug(LOG_DEBUG, "Executing system command: %s\n", cmd);
 
 	if (system(cmd) < 0) {
-		debug(LOG_ERR, "Unable to start remote download - Continuing");
+		debug(LOG_DEBUG, "system(%s) returned < 0", cmd);
 	}
 
 	free(cmd);
@@ -804,6 +804,7 @@ ndsctl_json_client(FILE *fp, const t_client *client, time_t now, char *indent)
 	fprintf(fp, "  %s\"last_active\":\"%lld\",\n", indent, (long long) client->counters.last_updated);
 	fprintf(fp, "  %s\"token\":\"%s\",\n", indent, client->token ? client->token : "none");
 	fprintf(fp, "  %s\"state\":\"%s\",\n", indent, fw_connection_state_as_string(client->fw_connection_state));
+	fprintf(fp, "  %s\"custom\":\"%s\",\n", indent, client->custom ? client->custom : "none");
 
 	durationsecs = now - client->session_start;
 	download_bytes = client->counters.incoming;

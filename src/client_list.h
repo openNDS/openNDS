@@ -46,6 +46,7 @@ typedef struct _t_client {
 	char *token;				/**< @brief Client token */
 	char *hid;				/**< @brief Client hid */
 	char *cid;				/**< @brief Client cid */
+	char *custom;				/**< @brief Client custom string sent from FAS and sent to BinAuth */
 	unsigned int fw_connection_state;	/**< @brief Client Connection state in the firewall */
 	time_t session_start;			/**< @brief Actual Time the client was authenticated */
 	time_t window_start;			/**< @brief Actual Time the client rate check window begins */

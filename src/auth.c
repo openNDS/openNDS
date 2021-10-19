@@ -172,8 +172,8 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 			client->counters.out_window_start = client->counters.outgoing;
 
 
-			//client->custom = customdata;
-			safe_asprintf(&client->custom, "%s", customdata);
+			client->custom = customdata;
+			//safe_asprintf(&client->custom, "%s", customdata);
 
 			binauth_action(client, reason, customdata);
 		} else if (new_state == FW_MARK_BLOCKED) {

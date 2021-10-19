@@ -371,12 +371,14 @@ get_client_ip(char ip_addr[INET6_ADDRSTRLEN], struct MHD_Connection *connection)
 	switch (client_addr->sa_family) {
 	case AF_INET:
 		if (inet_ntop(AF_INET, &addrin->sin_addr, ip_addr, INET_ADDRSTRLEN)) {
+		debug(LOG_DEBUG, "client ip address is [ %s ]", ip_addr);
 			return 0;
 		}
 		break;
 
 	case AF_INET6:
 		if (inet_ntop(AF_INET6, &addrin6->sin6_addr, ip_addr, INET6_ADDRSTRLEN)) {
+		debug(LOG_DEBUG, "client ip address is [ %s ]", ip_addr);
 			return 0;
 		}
 		break;
@@ -413,6 +415,11 @@ enum MHD_Result libmicrohttpd_cb(
 	char *dds = "../";
 	char *mhdstatus = "/mhdstatus";
 	int rc = 0;
+	char msg[128] = {0};
+	char *testcmd;
+	s_config *config;
+
+	config = config_get_config();
 
 	debug(LOG_DEBUG, "client access: %s %s", method, url);
 
@@ -445,6 +452,27 @@ enum MHD_Result libmicrohttpd_cb(
 	rc = get_client_ip(ip, connection);
 	if (rc != 0) {
 		return send_error(connection, 503);
+	}
+
+	safe_asprintf(&testcmd, "/usr/lib/opennds/libopennds.sh get_interface_by_ip \"%s\"", ip);
+
+	// check if client ip is on our subnet
+
+	rc = execute_ret_url_encoded(msg, sizeof(msg) - 1, testcmd);
+	free(testcmd);
+
+	if (rc == 0) {
+		debug(LOG_DEBUG, "Interface used to route ip [%s] is [%s]", ip, msg);
+		debug(LOG_DEBUG, "Gateway Interface is [%s]", config->gw_interface);
+
+		if (strcmp(config->gw_interface, msg) == 0) {
+			debug(LOG_DEBUG, "Client ip address [%s] is on our subnet using interface [%s]", ip, msg);
+		} else {
+			debug(LOG_NOTICE, "Client ip address [%s] is  NOT on our subnet and is using interface [%s]", ip, msg);
+			return send_error(connection, 403);
+		}
+	} else {
+		debug(LOG_DEBUG, "ip subnet test failed: Continuing...");
 	}
 
 	rc = get_client_mac(mac, ip);

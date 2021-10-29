@@ -66,9 +66,9 @@ parse_parameters() {
 	if [ "$ndsstatus" = "ready" ]; then
 		param_str=$ndsctlout
 
-		for param in gatewayname gatewayaddress gatewayfqdn mac version ip clientif session_start session_end last_active token state upload_rate_limit \
-			download_rate_limit upload_quota download_quota upload_this_session download_this_session  \
-			upload_session_avg  download_session_avg
+		for param in gatewayname gatewayaddress gatewayfqdn mac version ip client_type clientif session_start session_end \
+			last_active token state upload_rate_limit download_rate_limit upload_quota \
+			download_quota upload_this_session download_this_session upload_session_avg  download_session_avg
 		do
 			val=$(echo "$param_str" | grep "$param" | awk -F'"' '{printf "%s", $4}')
 
@@ -157,6 +157,7 @@ body() {
 		pagebody="
 			<b>IP address:</b> $ip<br>
 			<b>MAC address:</b> $mac<br>
+			<b>Client Type:</b> $client_type<br>
 			<b>Interfaces being used by this client:</b> $clientif<br>
 			<b>Session Start:</b> $sessionstart<br>
 			<b>Session End:</b> $sessionend<br>

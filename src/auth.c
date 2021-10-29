@@ -56,7 +56,7 @@ extern pthread_mutex_t config_mutex;
 unsigned int authenticated_since_start = 0;
 
 
-static void binauth_action(t_client *client, const char *reason, char *customdata)
+static void binauth_action(t_client *client, const char *reason, const char *customdata)
 {
 	s_config *config = config_get_config();
 	time_t now = time(NULL);
@@ -73,7 +73,7 @@ static void binauth_action(t_client *client, const char *reason, char *customdat
 		debug(LOG_DEBUG, "client->custom=%s", client->custom);
 
 		if (!client->custom || strlen(client->custom) == 0) {
-			customdata="na";
+			customdata="none";
 		} else {
 			customdata=client->custom;
 		}
@@ -130,7 +130,7 @@ static void binauth_action(t_client *client, const char *reason, char *customdat
 	}
 }
 
-static int auth_change_state(t_client *client, const unsigned int new_state, const char *reason, char *customdata)
+static int auth_change_state(t_client *client, const unsigned int new_state, const char *reason, const char *customdata)
 {
 	const unsigned int state = client->fw_connection_state;
 	const time_t now = time(NULL);
@@ -172,8 +172,13 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 			client->counters.out_window_start = client->counters.outgoing;
 
 
-			client->custom = customdata;
-			//safe_asprintf(&client->custom, "%s", customdata);
+			if (customdata) {
+				client->custom = safe_strdup(customdata);
+			} else {
+				client->custom = "bmE=";
+			}
+
+			debug(LOG_DEBUG, "auth_change_state: client->custom=%s ", client->custom);
 
 			binauth_action(client, reason, customdata);
 		} else if (new_state == FW_MARK_BLOCKED) {
@@ -624,7 +629,7 @@ end:
  * @return 0 on success
  */
 int
-auth_client_auth_nolock(const unsigned id, const char *reason, char *customdata)
+auth_client_auth_nolock(const unsigned id, const char *reason, const char *customdata)
 {
 	t_client *client;
 	int rc;
@@ -648,7 +653,7 @@ auth_client_auth_nolock(const unsigned id, const char *reason, char *customdata)
 }
 
 int
-auth_client_auth(const unsigned id, const char *reason, char *customdata)
+auth_client_auth(const unsigned id, const char *reason, const char *customdata)
 {
 	int rc;
 

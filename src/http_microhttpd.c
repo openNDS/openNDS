@@ -1224,53 +1224,53 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 						client->cid = safe_strdup(cid);
 
 						// Write the new cidfile:
-						msg = safe_calloc(16);
+						msg = safe_calloc(STATUS_BUF);
 						debug(LOG_NOTICE, "writing cid file [%s]", cid);
 
 						safe_asprintf(&cidinfo, "hid=\"%s\"\0", client->hid);
-						write_client_info(msg, sizeof(msg), "write", cid, cidinfo);
+						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
 						safe_asprintf(&cidinfo, "clientip=\"%s\"\0", client->ip);
-						write_client_info(msg, sizeof(msg), "write", cid, cidinfo);
+						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
 						safe_asprintf(&cidinfo, "clientmac=\"%s\"\0", client->mac);
-						write_client_info(msg, sizeof(msg), "write", cid, cidinfo);
+						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
 						safe_asprintf(&cidinfo, "client_type=\"%s\"\0", client->client_type);
-						write_client_info(msg, sizeof(msg), "write", cid, cidinfo);
+						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
 						safe_asprintf(&cidinfo, "gatewayname=\"%s\"\0", config->http_encoded_gw_name);
-						write_client_info(msg, sizeof(msg), "write", cid, cidinfo);
+						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
 						safe_asprintf(&cidinfo, "version=\"%s\"\0", VERSION);
-						write_client_info(msg, sizeof(msg), "write", cid, cidinfo);
+						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
 						safe_asprintf(&cidinfo, "gatewayaddress=\"%s\"\0", config->gw_address);
-						write_client_info(msg, sizeof(msg), "write", cid, cidinfo);
+						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
 						safe_asprintf(&cidinfo, "gatewaymac=\"%s\"\0", config->gw_mac);
-						write_client_info(msg, sizeof(msg), "write", cid, cidinfo);
+						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
 						safe_asprintf(&cidinfo, "originurl=\"%s\"\0", originurl);
-						write_client_info(msg, sizeof(msg), "write", cid, cidinfo);
+						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
 						safe_asprintf(&cidinfo, "clientif=\"%s\"\0", clientif);
-						write_client_info(msg, sizeof(msg), "write", cid, cidinfo);
+						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
 						safe_asprintf(&cidinfo, "themespec=\"%s\"\0", config->themespec_path);
-						write_client_info(msg, sizeof(msg), "write", cid, cidinfo);
+						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
 						safe_asprintf(&cidinfo, "%s\0", config->custom_params);
-						write_client_info(msg, sizeof(msg), "parse", cid, cidinfo);
+						write_client_info(msg, STATUS_BUF, "parse", cid, cidinfo);
 
 						safe_asprintf(&cidinfo, "%s\0", config->custom_vars);
-						write_client_info(msg, sizeof(msg), "parse", cid, cidinfo);
+						write_client_info(msg, STATUS_BUF, "parse", cid, cidinfo);
 
 						safe_asprintf(&cidinfo, "%s\0", config->custom_images);
-						write_client_info(msg, sizeof(msg), "parse", cid, cidinfo);
+						write_client_info(msg, STATUS_BUF, "parse", cid, cidinfo);
 
 						safe_asprintf(&cidinfo, "%s\0", config->custom_files);
-						write_client_info(msg, sizeof(msg), "parse", cid, cidinfo);
+						write_client_info(msg, STATUS_BUF, "parse", cid, cidinfo);
 
 						free(msg);
 						free(cidinfo);

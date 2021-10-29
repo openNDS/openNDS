@@ -1154,6 +1154,7 @@ static int redirect_to_splashpage(struct MHD_Connection *connection, t_client *c
 static char *construct_querystring(t_client *client, char *originurl, char *querystr ) {
 
 	char cid[87] = {0};
+	char *clienttype;
 	char clientif[64] = {0};
 	char query_str[QUERYMAXLEN] = {0};
 	char query_str_b64[QUERYMAXLEN] = {0};
@@ -1164,6 +1165,12 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 	int cidgood = 0;
 
 	s_config *config = config_get_config();
+
+	if (!client->client_type || strlen(client->client_type) == 0) {
+		clienttype = safe_strdup("cpd_can");
+	} else {
+		clienttype = safe_strdup(client->client_type);
+	}
 
 	if (config->fas_secure_enabled == 0) {
 		snprintf(querystr, QUERYMAXLEN, "?clientip=%s&gatewayname=%s&tok=%s&redir=%s",
@@ -1186,7 +1193,7 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 					client->hid, QUERYSEPARATOR,
 					client->ip, QUERYSEPARATOR,
 					client->mac, QUERYSEPARATOR,
-					client->client_type, QUERYSEPARATOR,
+					clienttype, QUERYSEPARATOR,
 					config->url_encoded_gw_name, QUERYSEPARATOR,
 					VERSION, QUERYSEPARATOR,
 					config->gw_address, QUERYSEPARATOR,
@@ -1236,7 +1243,7 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 						safe_asprintf(&cidinfo, "clientmac=\"%s\"\0", client->mac);
 						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
-						safe_asprintf(&cidinfo, "client_type=\"%s\"\0", client->client_type);
+						safe_asprintf(&cidinfo, "client_type=\"%s\"\0", clienttype);
 						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
 						safe_asprintf(&cidinfo, "gatewayname=\"%s\"\0", config->http_encoded_gw_name);
@@ -1296,7 +1303,7 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 			client->hid, QUERYSEPARATOR,
 			client->ip, QUERYSEPARATOR,
 			client->mac, QUERYSEPARATOR,
-			client->client_type, QUERYSEPARATOR,
+			clienttype, QUERYSEPARATOR,
 			config->url_encoded_gw_name, QUERYSEPARATOR,
 			VERSION, QUERYSEPARATOR,
 			config->gw_address, QUERYSEPARATOR,

@@ -47,6 +47,7 @@ typedef struct _t_client {
 	char *hid;				/**< @brief Client hid */
 	char *cid;				/**< @brief Client cid */
 	char *custom;				/**< @brief Client custom string sent from FAS and sent to BinAuth */
+	char *client_type;			/**< @brief Client type, cpd (cpd_can), rfc8910-cpi (cpi_url) or rfc8908-cpi (cpi_api)  */
 	unsigned int fw_connection_state;	/**< @brief Client Connection state in the firewall */
 	time_t session_start;			/**< @brief Actual Time the client was authenticated */
 	time_t window_start;			/**< @brief Actual Time the client rate check window begins */

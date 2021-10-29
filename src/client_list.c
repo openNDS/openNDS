@@ -170,10 +170,15 @@ void client_reset(t_client *client)
 	hash_str(hash, sizeof(hash), client->token);
 	client->hid = safe_strdup(hash);
 
+	// Reset custom and client_type
+	client->custom = safe_strdup("\0");
+	client->client_type = safe_strdup("\0");
+
 	//Reset cidfile using rmcid
 	// Remove any existing cidfile:
 	safe_asprintf(&cidinfo, "cid=\"%s\"\0", client->cid);
 	write_client_info(msg, sizeof(msg), "rmcid", client->cid, cidinfo);
+	free(cidinfo);
 
 }
 
@@ -387,6 +392,12 @@ _client_list_free_node(t_client *client)
 
 	if (client->cid)
 		free(client->cid);
+
+	if (client->client_type)
+		free(client->client_type);
+
+	if (client->custom)
+		free(client->custom);
 
 	free(cidinfo);
 	free(client);

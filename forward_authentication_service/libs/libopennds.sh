@@ -1068,6 +1068,7 @@ else
 	# Get the arguments sent from openNDS and parse/decode them, setting portal ThemeSpec as required
 	get_theme_environment $1 $2 $3 $4
 
+	refresh="0"
 	type download_image_files &>/dev/null && download_image_files
 	type download_data_files &>/dev/null && download_data_files
 

@@ -87,27 +87,29 @@ get_image_file() {
 	evalimg=$(echo "$customimageroot/""$filename")
 	eval $forename=$evalimg
 
-	if [ ! -f "$mountpoint/ndsremote/$filename" ] || [ "$refresh" = "1" ]; then
-		# get protocol
-		protocol=$(echo "$imageurl" | awk -F'://' '{printf("%s", $1)}')
+	if [ "$refresh" -ne 3 ]; then
+		if [ ! -f "$mountpoint/ndsremote/$filename" ] || [ "$refresh" -eq 1 ]; then
+			# get protocol
+			protocol=$(echo "$imageurl" | awk -F'://' '{printf("%s", $1)}')
 
-		if [ "$protocol" = "http" ]; then
-			retrieve=$($wret -q -O "$mountpoint/ndsremote/$filename" "$imageurl")
-		elif [ "$protocol" = "https" ]; then
-			#test for https support
-			result=$($wret -q -O - "https://detectportal.firefox.com/success.txt")
-			if [ "$result" = "success" ];then
+			if [ "$protocol" = "http" ]; then
 				retrieve=$($wret -q -O "$mountpoint/ndsremote/$filename" "$imageurl")
+			elif [ "$protocol" = "https" ]; then
+				#test for https support
+				result=$($wret -q -O - "https://detectportal.firefox.com/success.txt")
+				if [ "$result" = "success" ];then
+					retrieve=$($wret -q -O "$mountpoint/ndsremote/$filename" "$imageurl")
+				else
+					echo "wget - https support failed or not installed - skipping file download" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
+				fi
+			elif [ "$protocol" = "file" ]; then
+				sourcefile=$(echo "$imageurl" | awk -F'://' '{printf("%s", $2)}')
+				destinationfile="$mountpoint/ndsremote/$filename"
+				cp "$sourcefile" "$destinationfile"
 			else
-				echo "wget - https support failed or not installed - skipping file download" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
+				unsupported="Unsupported protocol [$protocol] for [$filename]in url [$imageurl] - skipping download"
+				echo "$unsupported" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 			fi
-		elif [ "$protocol" = "file" ]; then
-			sourcefile=$(echo "$imageurl" | awk -F'://' '{printf("%s", $2)}')
-			destinationfile="$mountpoint/ndsremote/$filename"
-			cp "$sourcefile" "$destinationfile"
-		else
-			unsupported="Unsupported protocol [$protocol] for [$filename]in url [$imageurl] - skipping download"
-			echo "$unsupported" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 		fi
 	fi
 }
@@ -141,27 +143,29 @@ get_data_file() {
 	evaldata=$(echo "$mountpoint/ndsdata/""$filename")
 	eval $forename=$evaldata
 
-	if [ ! -f "$mountpoint/ndsdata/$filename" ] || [ "$refresh" = "1" ]; then
-		# get protocol
-		protocol=$(echo "$dataurl" | awk -F'://' '{printf("%s", $1)}')
+	if [ "$refresh" -ne 3 ]; then
+		if [ ! -f "$mountpoint/ndsdata/$filename" ] || [ "$refresh" -eq 1 ]; then
+			# get protocol
+			protocol=$(echo "$dataurl" | awk -F'://' '{printf("%s", $1)}')
 
-		if [ "$protocol" = "http" ]; then
-			retrieve=$($wret -q -O "$mountpoint/ndsdata/$filename" "$dataurl")
-		elif [ "$protocol" = "https" ]; then
-			#test for https support
-			result=$($wret -q -O - "https://detectportal.firefox.com/success.txt")
-			if [ "$result" = "success" ];then
+			if [ "$protocol" = "http" ]; then
 				retrieve=$($wret -q -O "$mountpoint/ndsdata/$filename" "$dataurl")
+			elif [ "$protocol" = "https" ]; then
+				#test for https support
+				result=$($wret -q -O - "https://detectportal.firefox.com/success.txt")
+				if [ "$result" = "success" ];then
+					retrieve=$($wret -q -O "$mountpoint/ndsdata/$filename" "$dataurl")
+				else
+					echo "wget - https support failed or not installed - skipping file download" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
+				fi
+			elif [ "$protocol" = "file" ]; then
+				sourcefile=$(echo "$dataurl" | awk -F'://' '{printf("%s", $2)}')
+				destinationfile="$mountpoint/ndsdata/$filename"
+				cp "$sourcefile" "$destinationfile"
 			else
-				echo "wget - https support failed or not installed - skipping file download" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
+				unsupported="Unsupported protocol [$protocol] for [$filename]in url [$imageurl] - skipping download"
+				echo "$unsupported" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 			fi
-		elif [ "$protocol" = "file" ]; then
-			sourcefile=$(echo "$dataurl" | awk -F'://' '{printf("%s", $2)}')
-			destinationfile="$mountpoint/ndsdata/$filename"
-			cp "$sourcefile" "$destinationfile"
-		else
-			unsupported="Unsupported protocol [$protocol] for [$filename]in url [$imageurl] - skipping download"
-			echo "$unsupported" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 		fi
 	fi
 }
@@ -917,7 +921,7 @@ elif [ "$1" = "download" ]; then
 	# $2 contains the themespec path
 	# $3 contains the image list
 	# $4 contains the file list
-	# $5 contains the refresh flag, set to 1 to refresh downloads
+	# $5 contains the refresh flag, set to 0 to download if missing, 1 to refresh downloads, 3 to skip downloads
 	# $6 contains the webroot
 
 	if [ -z "$6" ]; then
@@ -1068,7 +1072,7 @@ else
 	# Get the arguments sent from openNDS and parse/decode them, setting portal ThemeSpec as required
 	get_theme_environment $1 $2 $3 $4
 
-	refresh="0"
+	refresh="3"
 	type download_image_files &>/dev/null && download_image_files
 	type download_data_files &>/dev/null && download_data_files
 

@@ -889,7 +889,7 @@ elif [ "$1" = "rmcid" ]; then
 	# $2 contains the cid
 	# $3 contains the mountpoint
 	rm "$3/ndscids/$2"
-	echo "done"
+	printf "%s" "done"
 	exit 0
 
 elif [ "$1" = "write" ]; then
@@ -899,7 +899,7 @@ elif [ "$1" = "write" ]; then
 	# $4 contains the info element
 	mkdir -p "$3/ndscids"
 	echo "$4" >> "$3/ndscids/$2"
-	echo "done"
+	printf "%s" "done"
 	exit 0
 
 elif [ "$1" = "parse" ]; then
@@ -913,7 +913,7 @@ elif [ "$1" = "parse" ]; then
 	list=$(printf "${list//%/\\x}")
 
 	echo "$list" >> "$3/ndscids/$2"
-	echo "done"
+	printf "%s" "done"
 	exit 0
 
 elif [ "$1" = "download" ]; then
@@ -954,7 +954,7 @@ elif [ "$1" = "download" ]; then
 	type download_image_files &>/dev/null && download_image_files
 	type download_data_files &>/dev/null && download_data_files
 
-	echo "done"
+	printf "%s" "done"
 
 	exit 0
 
@@ -982,7 +982,7 @@ elif [ "$1" = "daemon" ]; then
 
 	if [ "$ndsstatus" = "ready" ]; then
 		exec $ndsctlout
-		echo "ack"
+		printf "%s" "ack"
 		exit 0
 	else
 		printf %s "$ndsstatus"

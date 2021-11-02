@@ -303,7 +303,7 @@ ndsctl_auth(FILE *fp, char *arg)
 	unsigned long long int uploadquota = config->upload_quota;
 	unsigned long long int downloadquota = config->download_quota;
 	char *testcmd;
-	char msg[64] = {0};
+	char *msg;
 	char customdata[256] = {0};
 	char *argcopy;
 	const char *arg2;
@@ -389,12 +389,13 @@ ndsctl_auth(FILE *fp, char *arg)
 		// If Preemptive authentication is enabled we should try to auth by mac
 		debug(LOG_DEBUG, "Client is not in client list.");
 		// Build command to get client mac and ip
-		safe_asprintf(&testcmd,
-			"/usr/lib/opennds/libopennds.sh clientaddress \"%s\"",
-			arg2
-		);
+		safe_asprintf(&testcmd, "/usr/lib/opennds/libopennds.sh clientaddress \"%s\"", arg2 );
 
-		if (execute_ret_url_encoded(msg, sizeof(msg) - 1, testcmd) == 0) {
+		msg = safe_calloc(64);
+		rc = execute_ret_url_encoded(msg, 64 - 1, testcmd);
+		free(testcmd);
+
+		if (rc == 0) {
 			debug(LOG_DEBUG, "Client ip/mac: %s", msg);
 
 			if (strcmp(msg, "-") == 0) {
@@ -404,16 +405,33 @@ ndsctl_auth(FILE *fp, char *arg)
 				macclient = strtok(NULL, " ");
 				debug(LOG_DEBUG, "Client ip [%s], mac [%s]", ipclient, macclient);
 
-				client_list_add_client(macclient, ipclient);
-				client = client_list_find_by_any(arg2, arg2, arg2);
-				id = client ? client->id : 0;
-				debug(LOG_DEBUG, "client id: [%d]", id);
+				// check if client ip is on our subnet
+				safe_asprintf(&testcmd, "/usr/lib/opennds/libopennds.sh get_interface_by_ip \"%s\"", ipclient);
+				msg = safe_calloc(64);
+				rc = execute_ret_url_encoded(msg, 64 - 1, testcmd);
+				free(testcmd);
+
+				if (rc == 0) {
+
+					if (strcmp(config->gw_interface, msg) == 0) {
+						debug(LOG_DEBUG, "Pre-emptive Authentication: Client [%s] is on our subnet using interface [%s]", ipclient, msg);
+						client_list_add_client(macclient, ipclient);
+						client = client_list_find_by_any(arg2, arg2, arg2);
+						id = client ? client->id : 0;
+						debug(LOG_DEBUG, "client id: [%d]", id);
+						client->client_type = "preemptive";
+					} else {
+						debug(LOG_NOTICE, "Pre-emptive Authentication: Client ip address [%s] is  NOT on our subnet", ipclient);
+						id = 0;
+					}
+				} else {
+					debug(LOG_DEBUG, "ip subnet test failed: Continuing...");
+				}
 			}
 		} else {
 			debug(LOG_DEBUG, "Client connection not found: Continuing...");
 			rc = -1;
 		}
-		free(testcmd);
 	}
 
 	if (id) {
@@ -439,7 +457,7 @@ ndsctl_auth(FILE *fp, char *arg)
 		}
 	} else {
 		// Client is neither preauthenticated nor authenticated
-		// If Preemptive authentication is enabled we should try to auth by mac
+		// If Preemptive authentication is enabled we should have tried to auth by mac
 		debug(LOG_DEBUG, "Client is not in client list.");
 		rc = -1;
 	}

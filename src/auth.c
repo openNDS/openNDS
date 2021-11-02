@@ -136,8 +136,6 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 	const time_t now = time(NULL);
 	s_config *config = config_get_config();
 
-	debug(LOG_DEBUG, "auth_change_state: customdata [%s]", customdata);
-
 	if (state == new_state) {
 		return -1;
 	} else if (state == FW_MARK_PREAUTHENTICATED) {
@@ -172,7 +170,7 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 			client->counters.out_window_start = client->counters.outgoing;
 
 
-			if (customdata) {
+			if (strlen(customdata) > 0) {
 				client->custom = safe_strdup(customdata);
 			} else {
 				client->custom = "bmE=";
@@ -633,8 +631,6 @@ auth_client_auth_nolock(const unsigned id, const char *reason, const char *custo
 {
 	t_client *client;
 	int rc;
-
-	debug(LOG_DEBUG, "authorise client: custom data [%s] ", customdata);
 
 	client = client_list_find_by_id(id);
 

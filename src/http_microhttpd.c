@@ -431,9 +431,9 @@ enum MHD_Result libmicrohttpd_cb(
 		return send_error(connection, 503);
 	}
 
-	safe_asprintf(&testcmd, "/usr/lib/opennds/libopennds.sh get_interface_by_ip \"%s\"", ip);
 
 	// check if client ip is on our subnet
+	safe_asprintf(&testcmd, "/usr/lib/opennds/libopennds.sh get_interface_by_ip \"%s\"", ip);
 
 	rc = execute_ret_url_encoded(msg, sizeof(msg) - 1, testcmd);
 	free(testcmd);

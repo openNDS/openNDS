@@ -170,9 +170,9 @@ configure_log_location
 # Get the action method from NDS ie the first command line argument.
 #
 # Possible values are:
-# "auth_client" - NDS requests validation of the client
-# "client_auth" - NDS has authorised the client
-# "client_deauth" - NDS has deauthenticated the client
+# "auth_client" - NDS requests validation of the client (legacy - deprecated)
+# "client_auth" - NDS has authorised the client (legacy - deprecated)
+# "client_deauth" - NDS has deauthenticated the client on request (logout)
 # "idle_deauth" - NDS has deauthenticated the client because the idle timeout duration has been exceeded
 # "timeout_deauth" - NDS has deauthenticated the client because the session length duration has been exceeded
 # "downquota_deauth" - NDS has deauthenticated the client because the client's download quota has been exceeded
@@ -187,38 +187,19 @@ if [ $action = "auth_client" ]; then
 	# Arguments passed are as follows
 	# $1 method
 	# $2 client mac
-	# $3 legacy1 (previously username)
-	# $4 legacy2 (previously password)
-	# $5 originurl (redir)
-	# $6 client useragent
-	# $7 client ip
-	# $8 client token
-	# $9 custom data string
+	# $3 originurl (aka redir, this is the query string returned to openNDS when auth_client is requested - not very useful so not usually logged)
+	# $4 client useragent
+	# $5 client ip
+	# $6 client token
+	# $7 custom data string
 
-	# redir, useragent and customdata are url-encoded, so decode:
-	redir_enc=$5
-	redir=$(printf "${redir_enc//%/\\x}")
-	useragent_enc=$6
-	useragent=$(printf "${useragent_enc//%/\\x}")
-	customdata_enc=$9
-	customdata=$(printf "${customdata_enc//%/\\x}")
+	# customdata is by default b64encoded.
+	# You can use ndsctl to decode it (all functions of ndsctl are locked from use within binauth except b64encode and b64decode)
+	# Note the format of the decoded customdata is set in the FAS or Themespec scripts so unencoded special characters may cause issues.
+	# For example, to decode customdata use:
+	# customdata=$(ndsctl b64decode "$customdata")
 
-	log_entry="method=$1, clientmac=$2, clientip=$7, legacy1=$3, legacy2=$4, redir=$redir, useragent=$useragent, token=$8, custom=$customdata"
-
-elif [ $action = "ndsctl_auth" ]; then
-	# Arguments passed are as follows
-	# $1 method
-	# $2 client mac
-	# $3 bytes incoming
-	# $4 bytes outgoing
-	# $5 session start time
-	# $6 session end time
-	# $7 client token
-	# $8 custom data string
-
-	customdata_enc=$8
-	customdata=$(printf "${customdata_enc//%/\\x}")
-	log_entry="method=$1, clientmac=$2, bytes_incoming=$3, bytes_outgoing=$4, session_start=$5, session_end=$6, token=$7, custom=$customdata_enc"
+	log_entry="method=$1, clientmac=$2, clientip=$5, useragent=$4, token=$6, custom=$7"
 
 else
 	# All other methods
@@ -230,8 +211,13 @@ else
 	# $5 session start time
 	# $6 session end time
 	# $7 client token
+	# $8 custom data string
 
-	log_entry="method=$1, clientmac=$2, bytes_incoming=$3, bytes_outgoing=$4, session_start=$5, session_end=$6, token=$7"
+	customdata=$8
+
+	# Build the log entry:
+	log_entry="method=$1, clientmac=$2, bytes_incoming=$3, bytes_outgoing=$4, session_start=$5, session_end=$6, token=$7, custom=$customdata"
+
 fi
 
 # In the case of ThemeSpec, get the client id information from the cid database
@@ -268,7 +254,7 @@ if [ ! -z "$cidfile" ]; then
 	. $mountpoint/ndscids/$cidfile
 
 	# Add a selection of client data variables to the log entry
-	log_entry="$log_entry, gatewayname=$gatewayname, ndsversion=$version, originurl=$originurl"
+	log_entry="$log_entry, client_type=$client_type, gatewayname=$gatewayname, ndsversion=$version, originurl=$originurl"
 else
 	clientmac=$2
 fi

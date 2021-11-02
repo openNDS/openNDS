@@ -349,7 +349,7 @@ iptables_untrust_mac(const char mac[])
 
 int get_iptables_version()
 {
-	char buf[256];
+	char buf[128] = {0};
 	int minor;
 	int major;
 	int patch;

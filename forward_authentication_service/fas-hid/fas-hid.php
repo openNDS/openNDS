@@ -68,12 +68,13 @@ if (isset($fas)) {
 	$dec_r=explode(", ",$decoded);
 
 	foreach ($dec_r as $dec) {
-		list($name,$value)=explode("=",$dec);
+		@list($name,$value)=explode("=",$dec);
 		if ($name == "clientip") {$clientip=$value;}
 		if ($name == "clientmac") {$clientmac=$value;}
 		if ($name == "gatewayname") {$gatewayname=$value;}
 		if ($name == "version") {$version=$value;}
 		if ($name == "hid") {$hid=$value;}
+		if ($name == "client_type") {$client_type=$value;}
 		if ($name == "gatewayaddress") {$gatewayaddress=$value;}
 		if ($name == "gatewaymac") {$gatewaymac=$value;}
 		if ($name == "authdir") {$authdir=$value;}
@@ -126,11 +127,6 @@ function thankyou_page() {
 	# Be aware that many devices will close the login browser as soon as
 	# the client taps continue, so now is the time to deliver your message.
 
-	# You can also send a custom data string to BinAuth. Set the variable $custom to the desired value
-	# Max length 256 characters
-	$custom="Custom data sent to BinAuth";
-	$custom=base64_encode($custom);
-
 	$me=$_SERVER['SCRIPT_NAME'];
 	$host=$_SERVER['HTTP_HOST'];
 	$fas=$GLOBALS["fas"];
@@ -149,6 +145,16 @@ function thankyou_page() {
 	$authaction="http://$gatewayaddress/opennds_auth/";
 	$redir="http://".$host.$me."?fas=$fas&landing=1";
 	$tok=hash('sha256', $hid.$key);
+
+	/*	You can also send a custom data string to BinAuth. Set the variable $custom to the desired value
+		It can contain any information that could be used for post authentication processing
+		eg. the values set per client for Time, Data and Data Rate quotas can be sent to BinAuth for a custom script to use
+		This string will be b64 encoded before sending to binauth and will appear in the output of ndsctl json
+	*/
+
+	$custom="fullname=$fullname, email=$email";
+	$custom=base64_encode($custom);
+
 
 	echo "
 		<big-red>
@@ -199,6 +205,7 @@ function write_log() {
 	$user_agent=$_SERVER['HTTP_USER_AGENT'];
 	$clientip=$GLOBALS["clientip"];
 	$clientmac=$GLOBALS["clientmac"];
+	$client_type=$GLOBALS["client_type"];
 	$gatewayname=$GLOBALS["gatewayname"];
 	$gatewayaddress=$GLOBALS["gatewayaddress"];
 	$gatewaymac=$GLOBALS["gatewaymac"];
@@ -210,7 +217,7 @@ function write_log() {
 
 
 	$log=date('Y-m-d H:i:s', $_SERVER['REQUEST_TIME']).
-		", $script, $gatewayname, $fullname, $email, $clientip, $clientmac, $clientif, $user_agent, $redir\n";
+		", $script, $gatewayname, $fullname, $email, $clientip, $clientmac, $client_type, $clientif, $user_agent, $redir\n";
 
 	if ($logpath == "") {
 		$logfile="ndslog/ndslog_log.php";

@@ -66,9 +66,9 @@ parse_parameters() {
 	if [ "$ndsstatus" = "ready" ]; then
 		param_str=$ndsctlout
 
-		for param in gatewayname gatewayaddress gatewayfqdn mac version ip clientif session_start session_end last_active token state upload_rate_limit \
-			download_rate_limit upload_quota download_quota upload_this_session download_this_session  \
-			upload_session_avg  download_session_avg
+		for param in gatewayname gatewayaddress gatewayfqdn mac version ip client_type clientif session_start session_end \
+			last_active token state upload_rate_limit download_rate_limit upload_quota \
+			download_quota upload_this_session download_this_session upload_session_avg  download_session_avg
 		do
 			val=$(echo "$param_str" | grep "$param" | awk -F'"' '{printf "%s", $4}')
 
@@ -110,8 +110,8 @@ header() {
 		<meta http-equiv=\"Expires\" content=\"0\">
 		<meta charset=\"utf-8\">
 		<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
-		<link rel=\"shortcut icon\" href=\"/images/splash.jpg\" type=\"image/x-icon\">
-		<link rel=\"stylesheet\" type=\"text/css\" href=\"/splash.css\">
+		<link rel=\"shortcut icon\" href=\"$url/images/splash.jpg\" type=\"image/x-icon\">
+		<link rel=\"stylesheet\" type=\"text/css\" href=\"$url/splash.css\">
 		<title>$gatewaynamehtml Client Session Status</title>
 		</head>
 		<body>
@@ -132,7 +132,7 @@ footer() {
 	echo "
 		<hr>
 		<div style=\"font-size:0.5em;\">
-			<img style=\"height:30px; width:60px; float:left;\" src=\"/images/splash.jpg\" alt=\"Splash Page: For access to the Internet.\">
+			<img style=\"height:30px; width:60px; float:left;\" src=\"$url/images/splash.jpg\" alt=\"Splash Page: For access to the Internet.\">
 			&copy; The openNDS Project 2015 - $year<br>
 			openNDS $version
 			<br><br>
@@ -157,6 +157,7 @@ body() {
 		pagebody="
 			<b>IP address:</b> $ip<br>
 			<b>MAC address:</b> $mac<br>
+			<b>Client Type:</b> $client_type<br>
 			<b>Interfaces being used by this client:</b> $clientif<br>
 			<b>Session Start:</b> $sessionstart<br>
 			<b>Session End:</b> $sessionend<br>
@@ -180,12 +181,6 @@ body() {
 		"
 	elif [ "$status" = "err511" ]; then
 
-		if [ -z "$gatewayfqdn" ] || [ "$gatewayfqdn" = "disable" ] || [ "$gatewayfqdn" = "disabled" ]; then
-			url="http://$gatewayaddress"
-		else
-			url="http://$gatewayfqdn"
-		fi
-
 		pagebody="
 			<h1>Network Authentication Required</h1>
 			<form action=\"$url\" method=\"get\">
@@ -207,6 +202,13 @@ body() {
 # Start generating the html:
 if [ "$status" = "status" ] || [ "$status" = "err511" ]; then
 	parse_parameters
+
+	if [ -z "$gatewayfqdn" ] || [ "$gatewayfqdn" = "disable" ] || [ "$gatewayfqdn" = "disabled" ]; then
+		url="http://$gatewayaddress"
+	else
+		url="http://$gatewayfqdn"
+	fi
+
 	header
 	body
 	footer

@@ -12,6 +12,15 @@ title="theme_click-to-continue-custom-placeholders"
 
 # functions:
 
+download_data_files() {
+	# The list of files to be downloaded is defined in $ndscustomfiles ( see near the end of this file )
+	# The source of the files is defined in the openNDS config
+
+	for nameoffile in $ndscustomfiles; do
+		get_data_file "$nameoffile"
+	done
+}
+
 download_image_files() {
 	# The list of images to be downloaded is defined in $ndscustomimages ( see near the end of this file )
 	# The source of the images is defined in the openNDS config
@@ -136,24 +145,27 @@ thankyou_page () {
 	# Add your message here:
 	# You could retrieve text or images from a remote server using wget or curl
 	# as this router has Internet access whilst the client device does not (yet).
+
+	if [ -e "$mountpoint/ndsdata/advert1.htm" ]; then
+		advert1=$(cat "$mountpoint/ndsdata/advert1.htm")
+	else
+		advert1="Your News or Advertising could be here, contact the owners of this Hotspot to find out how!"
+	fi
+
 	echo "
 		<br>
 		<italic-black>
 			<img style=\"width:100%; max-width: 100%;\" src=\"$banner2\" alt=\"Placeholder: Banner2.\"><br>
-			<b>$banner2_message</b><hr>
-			Your News or Advertising could be here, contact the owners of this Hotspot to find out how!
-			<br>
+			<b>$banner2_message</b><br>
+			$advert1
+			<hr>
 		</italic-black>
 	"
 
-	if [ -z "$binauth_custom" ]; then
+	if [ -z "$custom" ]; then
 		customhtml=""
 	else
-		htmlentityencode "$binauth_custom"
-		binauth_custom=$entityencoded
-		# Additionally convert any spaces
-		binauth_custom=$(echo "$binauth_custom" | sed "s/ /\_/g")
-		customhtml="<input type=\"hidden\" name=\"binauth_custom\" value=\"$binauth_custom\">"
+		customhtml="<input type=\"hidden\" name=\"custom\" value=\"$custom\">"
 	fi
 
 	# Continue to the landing page, the client is authenticated there
@@ -472,13 +484,16 @@ additionalthemevars=""
 
 fasvarlist="$fasvarlist $additionalthemevars"
 
-# You can choose to send a custom data string to BinAuth. Set the variable $binauth_custom to the desired value.
-# Note1: As this script runs on the openNDS router and creates its own log file, there is little point also enabling Binauth.
-#	BinAuth is intended more for use with EXTERNAL FAS servers that don't have direct access to the local router.
-#	Nevertheless it can be enabled at the same time as this script if so desired.
-# Note2: Spaces will be translated to underscore characters.
-# Note3: You must escape any quotes.
+# You can choose to define a custom string. This will be b64 encoded and sent to openNDS.
+# There it will be made available to be displayed in the output of ndsctl json as well as being sent
+#	to the BinAuth post authentication processing script if enabled.
+# Set the variable $binauth_custom to the desired value.
+# Values set here can be overridden by the themespec file
+
 #binauth_custom="This is sample text sent from \"$title\" to \"BinAuth\" for post authentication processing."
+
+# Encode and activate the custom string
+#encode_custom
 
 # Set the user info string for logs (this can contain any useful information)
 userinfo="$title"

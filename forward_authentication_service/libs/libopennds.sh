@@ -28,6 +28,18 @@
 
 # functions:
 
+# Encode the custom string
+encode_custom() {
+	ndsctlcmd="b64encode \"$binauth_custom\""
+	do_ndsctl
+
+	if [ "$ndsstatus" = "ready" ]; then
+		custom=$ndsctlout
+	else
+		custom=""
+	fi
+}
+
 # Download external file
 webget() {
 	fetch=$(type -t uclient-fetch)
@@ -75,27 +87,29 @@ get_image_file() {
 	evalimg=$(echo "$customimageroot/""$filename")
 	eval $forename=$evalimg
 
-	if [ ! -f "$mountpoint/ndsremote/$filename" ] || [ "$refresh" = "1" ]; then
-		# get protocol
-		protocol=$(echo "$imageurl" | awk -F'://' '{printf("%s", $1)}')
+	if [ "$refresh" -ne 3 ]; then
+		if [ ! -f "$mountpoint/ndsremote/$filename" ] || [ "$refresh" -eq 1 ]; then
+			# get protocol
+			protocol=$(echo "$imageurl" | awk -F'://' '{printf("%s", $1)}')
 
-		if [ "$protocol" = "http" ]; then
-			retrieve=$($wret -q -O "$mountpoint/ndsremote/$filename" "$imageurl")
-		elif [ "$protocol" = "https" ]; then
-			#test for https support
-			result=$($wret -q -O - "https://detectportal.firefox.com/success.txt")
-			if [ "$result" = "success" ];then
+			if [ "$protocol" = "http" ]; then
 				retrieve=$($wret -q -O "$mountpoint/ndsremote/$filename" "$imageurl")
+			elif [ "$protocol" = "https" ]; then
+				#test for https support
+				result=$($wret -q -O - "https://detectportal.firefox.com/success.txt")
+				if [ "$result" = "success" ];then
+					retrieve=$($wret -q -O "$mountpoint/ndsremote/$filename" "$imageurl")
+				else
+					echo "wget - https support failed or not installed - skipping file download" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
+				fi
+			elif [ "$protocol" = "file" ]; then
+				sourcefile=$(echo "$imageurl" | awk -F'://' '{printf("%s", $2)}')
+				destinationfile="$mountpoint/ndsremote/$filename"
+				cp "$sourcefile" "$destinationfile"
 			else
-				echo "wget - https support failed or not installed - skipping file download" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
+				unsupported="Unsupported protocol [$protocol] for [$filename]in url [$imageurl] - skipping download"
+				echo "$unsupported" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 			fi
-		elif [ "$protocol" = "file" ]; then
-			sourcefile=$(echo "$imageurl" | awk -F'://' '{printf("%s", $2)}')
-			destinationfile="$mountpoint/ndsremote/$filename"
-			cp "$sourcefile" "$destinationfile"
-		else
-			unsupported="Unsupported protocol [$protocol] for [$filename]in url [$imageurl] - skipping download"
-			echo "$unsupported" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 		fi
 	fi
 }
@@ -129,27 +143,29 @@ get_data_file() {
 	evaldata=$(echo "$mountpoint/ndsdata/""$filename")
 	eval $forename=$evaldata
 
-	if [ ! -f "$mountpoint/ndsdata/$filename" ] || [ "$refresh" = "1" ]; then
-		# get protocol
-		protocol=$(echo "$dataurl" | awk -F'://' '{printf("%s", $1)}')
+	if [ "$refresh" -ne 3 ]; then
+		if [ ! -f "$mountpoint/ndsdata/$filename" ] || [ "$refresh" -eq 1 ]; then
+			# get protocol
+			protocol=$(echo "$dataurl" | awk -F'://' '{printf("%s", $1)}')
 
-		if [ "$protocol" = "http" ]; then
-			retrieve=$($wret -q -O "$mountpoint/ndsdata/$filename" "$dataurl")
-		elif [ "$protocol" = "https" ]; then
-			#test for https support
-			result=$($wret -q -O - "https://detectportal.firefox.com/success.txt")
-			if [ "$result" = "success" ];then
+			if [ "$protocol" = "http" ]; then
 				retrieve=$($wret -q -O "$mountpoint/ndsdata/$filename" "$dataurl")
+			elif [ "$protocol" = "https" ]; then
+				#test for https support
+				result=$($wret -q -O - "https://detectportal.firefox.com/success.txt")
+				if [ "$result" = "success" ];then
+					retrieve=$($wret -q -O "$mountpoint/ndsdata/$filename" "$dataurl")
+				else
+					echo "wget - https support failed or not installed - skipping file download" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
+				fi
+			elif [ "$protocol" = "file" ]; then
+				sourcefile=$(echo "$dataurl" | awk -F'://' '{printf("%s", $2)}')
+				destinationfile="$mountpoint/ndsdata/$filename"
+				cp "$sourcefile" "$destinationfile"
 			else
-				echo "wget - https support failed or not installed - skipping file download" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
+				unsupported="Unsupported protocol [$protocol] for [$filename]in url [$imageurl] - skipping download"
+				echo "$unsupported" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 			fi
-		elif [ "$protocol" = "file" ]; then
-			sourcefile=$(echo "$dataurl" | awk -F'://' '{printf("%s", $2)}')
-			destinationfile="$mountpoint/ndsdata/$filename"
-			cp "$sourcefile" "$destinationfile"
-		else
-			unsupported="Unsupported protocol [$protocol] for [$filename]in url [$imageurl] - skipping download"
-			echo "$unsupported" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 		fi
 	fi
 }
@@ -511,14 +527,14 @@ auth_log () {
 	# We are ready to authenticate the client
 
 	rhid=$(printf "$hid$key" | sha256sum | awk -F' ' '{printf $1}')
-	ndsctlcmd="auth $rhid $quotas $binauth_custom"
+	ndsctlcmd="auth $rhid $quotas $custom"
 
 	do_ndsctl
 	authstat=$ndsctlout
 	# $authstat contains the response from do_ndsctl
 
 	mountcheck=$(df | grep "$log_mountpoint")
-	clientinfo="status=$authstat, mac=$clientmac, ip=$clientip, zone=$client_zone, ua=$user_agent"
+	clientinfo="status=$authstat, mac=$clientmac, ip=$clientip, client_type=$client_type, zone=$client_zone, ua=$user_agent"
 
 	if [ ! -z "$logname" ]; then
 
@@ -873,7 +889,7 @@ elif [ "$1" = "rmcid" ]; then
 	# $2 contains the cid
 	# $3 contains the mountpoint
 	rm "$3/ndscids/$2"
-	echo "done"
+	printf "%s" "done"
 	exit 0
 
 elif [ "$1" = "write" ]; then
@@ -883,7 +899,7 @@ elif [ "$1" = "write" ]; then
 	# $4 contains the info element
 	mkdir -p "$3/ndscids"
 	echo "$4" >> "$3/ndscids/$2"
-	echo "done"
+	printf "%s" "done"
 	exit 0
 
 elif [ "$1" = "parse" ]; then
@@ -897,7 +913,7 @@ elif [ "$1" = "parse" ]; then
 	list=$(printf "${list//%/\\x}")
 
 	echo "$list" >> "$3/ndscids/$2"
-	echo "done"
+	printf "%s" "done"
 	exit 0
 
 elif [ "$1" = "download" ]; then
@@ -905,7 +921,7 @@ elif [ "$1" = "download" ]; then
 	# $2 contains the themespec path
 	# $3 contains the image list
 	# $4 contains the file list
-	# $5 contains the refresh flag, set to 1 to refresh downloads
+	# $5 contains the refresh flag, set to 0 to download if missing, 1 to refresh downloads, 3 to skip downloads
 	# $6 contains the webroot
 
 	if [ -z "$6" ]; then
@@ -938,7 +954,7 @@ elif [ "$1" = "download" ]; then
 	type download_image_files &>/dev/null && download_image_files
 	type download_data_files &>/dev/null && download_data_files
 
-	echo "done"
+	printf "%s" "done"
 
 	exit 0
 
@@ -965,13 +981,21 @@ elif [ "$1" = "daemon" ]; then
 	do_ndsctl
 
 	if [ "$ndsstatus" = "ready" ]; then
-		#command -p $ndsctlout &
 		exec $ndsctlout
-		echo "ack"
+		printf "%s" "ack"
 		exit 0
 	else
 		printf %s "$ndsstatus"
 		exit 1
+	fi
+
+elif [ "$1" = "get_interface_by_ip" ]; then
+	# $2 contains the ip to check
+	if [ -z "$2" ]; then
+		exit 1
+	else
+		interface=$(ip route get "$2" | awk -F"dev " '{print $2}' | awk '{printf "%s" $1}')
+		printf %s "$interface"
 	fi
 
 else
@@ -984,6 +1008,19 @@ else
 	#################################
 
 	#  setup required parameters:	#
+
+	# Client Custom String
+	custom=""
+	# You can choose to define a custom string. This will be b64 encoded and sent to openNDS.
+	# There it will be made available to be displayed in the output of ndsctl json as well as being sent
+	#	to the BinAuth post authentication processing script if enabled.
+	# Set the variable $binauth_custom to the desired value.
+	# Values set here can be overridden by the themespec file
+
+	#binauth_custom="This is sample text sent from \"$title\" to \"BinAuth\" for post authentication processing."
+
+	# Encode and activate the custom string
+	#encode_custom
 
 	# Preshared key
 	#########################################
@@ -1017,23 +1054,12 @@ else
 	# The list of Parameters sent from openNDS:
 	# Note you can add custom parameters to the config file and to read them you must also add them here.
 	# Custom parameters are "Portal" information and are the same for all clients eg "admin_email" and "location"
-	ndsparamlist="clientip clientmac gatewayname version hid gatewayaddress gatewaymac originurl clientif"
+	ndsparamlist="clientip clientmac client_type gatewayname version hid gatewayaddress gatewaymac originurl clientif"
 
 	# The list of FAS Variables used in the Login Dialogue generated by this script.
 	# These FAS variables received from the login form presented to the client.
 	# The following are the defaults for all themes. Theme specific variables are appended by the ThemeSpec script.
-	fasvarlist="terms landing status continue binauth_custom"
-
-	# You can choose to send a custom data string to BinAuth. Set the variable $binauth_custom to the desired value.
-	# Note1: As this script runs on the openNDS router and creates its own log file, there is little point also enabling Binauth.
-	#	BinAuth is intended more for use with EXTERNAL FAS servers that don't have direct access to the local router.
-	#	Nevertheless it can be enabled at the same time as this script if so desired.
-	# Note2: Spaces will be translated to underscore characters.
-	# Note3: You must escape any quotes.
-	#
-	#The following value will, if uncommented, be overidden by any value set in a themespec file.
-	#
-	#binauth_custom="This is sample text with the intention of sending it to \"BinAuth\" for post authentication processing."
+	fasvarlist="terms landing status continue custom"
 
 	# Set the Logfile location, using the tmpfs "temporary" directory to prevent flash wear.
 	# or override to a custom location in the ThemeSpec file (eg USB stick)
@@ -1046,6 +1072,7 @@ else
 	# Get the arguments sent from openNDS and parse/decode them, setting portal ThemeSpec as required
 	get_theme_environment $1 $2 $3 $4
 
+	refresh="3"
 	type download_image_files &>/dev/null && download_image_files
 	type download_data_files &>/dev/null && download_data_files
 

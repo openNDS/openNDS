@@ -139,13 +139,24 @@ if (isset($_GET["get_image"])) {
 
 // Get the query string components
 if (isset($_GET['status'])) {
-	$redir=$_GET['redir'];
-	$redir_r=explode("fas=", $redir);
-	$fas=$redir_r[1];
-	$iv=$_GET['iv'];
+	@$redir=$_GET['redir'];
+	@$redir_r=explode("fas=", $redir);
+	@$fas=$redir_r[1];
+
+	if (isset($_GET['iv'])) {
+		$iv=$_GET['iv'];
+	} else {
+		$iv="error";
+	}
+
 } else if (isset($_GET['fas']))  {
 	$fas=$_GET['fas'];
-	$iv=$_GET['iv'];
+
+	if (isset($_GET['iv'])) {
+		$iv=$_GET['iv'];
+	} else {
+		$iv="error";
+	}
 } else {
 	exit(0);
 }
@@ -215,7 +226,7 @@ function decrypt_parse() {
 	*/
 
 	$cipher="AES-256-CBC";
-	$ndsparamlist=explode(" ", "clientip clientmac gatewayname version hid gatewayaddress gatewaymac authdir originurl clientif admin_email location");
+	$ndsparamlist=explode(" ", "clientip clientmac client_type gatewayname version hid gatewayaddress gatewaymac authdir originurl clientif admin_email location");
 
 	if (isset($_GET['fas']) and isset($_GET['iv']))  {
 		$string=$_GET['fas'];
@@ -354,6 +365,7 @@ function write_log() {
 	$user_agent=$_SERVER['HTTP_USER_AGENT'];
 	$clientip=$GLOBALS["clientip"];
 	$clientmac=$GLOBALS["clientmac"];
+	$client_type=$GLOBALS["client_type"];
 	$gatewayname=$GLOBALS["gatewayname"];
 	$gatewayaddress=$GLOBALS["gatewayaddress"];
 	$gatewaymac=$GLOBALS["gatewaymac"];
@@ -373,7 +385,7 @@ function write_log() {
 	}
 
 	$log=date('Y-m-d H:i:s', $_SERVER['REQUEST_TIME']).
-		", $script, $gatewayname, $fullname, $email, $clientip, $clientmac, $clientif, $user_agent, $redir\n";
+		", $script, $gatewayname, $fullname, $email, $clientip, $clientmac, $client_type, $clientif, $user_agent, $redir\n";
 
 	if ($logpath == "") {
 		$logfile="ndslog/ndslog_log.php";
@@ -414,15 +426,26 @@ function authenticate_page() {
 	$gwname=$GLOBALS["gwname"];
 	$logpath=$GLOBALS["logpath"];
 
+	if (isset($_GET["fullname"])) {
+		$fullname=$_GET["fullname"];
+	} else {
+		$fullname="na";
+	}
+
+	if (isset($_GET["email"])) {
+		$email=$_GET["email"];
+	} else {
+		$email="na";
+	}
+
 
 	/*	You can also send a custom data string to BinAuth. Set the variable $custom to the desired value
-		Max length 256 characters
 		It can contain any information that could be used for post authentication processing
-		eg. the values set per client for Time, Data and Data Rate quotas can be sent to BinAuth
-		This string will be b64 encoded before sending
+		eg. the values set per client for Time, Data and Data Rate quotas can be sent to BinAuth for a custom script to use
+		This string will be b64 encoded before sending to binauth and will appear in the output of ndsctl json
 	*/
 
-	$custom="Custom data sent to BinAuth";
+	$custom="fullname=$fullname, email=$email";
 	$custom=base64_encode($custom);
 
 

@@ -195,7 +195,7 @@ int download_remotes(int refresh)
 	debug(LOG_DEBUG, "Executing system command: %s\n", cmd);
 
 	if (system(cmd) < 0) {
-		debug(LOG_ERR, "Unable to start remote download - Continuing");
+		debug(LOG_DEBUG, "system(%s) returned < 0", cmd);
 	}
 
 	free(cmd);
@@ -525,7 +525,7 @@ int is_addr(const char* addr) {
 void
 ndsctl_status(FILE *fp)
 {
-	char timebuf[32];
+	char timebuf[64];
 	char durationbuf[64];
 	s_config *config;
 	t_client *client;
@@ -663,6 +663,13 @@ ndsctl_status(FILE *fp)
 	while (client != NULL) {
 		fprintf(fp, "Client %d\n", indx);
 
+		if (!client->client_type || strlen(client->client_type) == 0) {
+			fprintf(fp, "  Client Type: %s\n", "cpd_can");
+		} else {
+			fprintf(fp, "  Client Type: %s\n", client->client_type);
+		}
+
+
 		fprintf(fp, "  IP: %s MAC: %s\n", client->ip, client->mac);
 
 		format_time(client->counters.last_updated, timebuf);
@@ -790,6 +797,13 @@ ndsctl_json_client(FILE *fp, const t_client *client, time_t now, char *indent)
 	fprintf(fp, "  %s\"gatewayaddress\":\"%s\",\n", indent, config->gw_address);
 	fprintf(fp, "  %s\"gatewayfqdn\":\"%s\",\n", indent, config->gw_fqdn);
 	fprintf(fp, "  %s\"version\":\"%s\",\n", indent, VERSION);
+
+	if (!client->client_type || strlen(client->client_type) == 0) {
+		fprintf(fp, "  %s\"client_type\":\"%s\",\n", indent, "cpd_can");
+	} else {
+		fprintf(fp, "  %s\"client_type\":\"%s\",\n", indent, client->client_type);
+	}
+
 	fprintf(fp, "  %s\"mac\":\"%s\",\n", indent, client->mac);
 	fprintf(fp, "  %s\"ip\":\"%s\",\n", indent, client->ip);
 	fprintf(fp, "  %s\"clientif\":\"%s\",\n", indent, clientif);
@@ -804,6 +818,12 @@ ndsctl_json_client(FILE *fp, const t_client *client, time_t now, char *indent)
 	fprintf(fp, "  %s\"last_active\":\"%lld\",\n", indent, (long long) client->counters.last_updated);
 	fprintf(fp, "  %s\"token\":\"%s\",\n", indent, client->token ? client->token : "none");
 	fprintf(fp, "  %s\"state\":\"%s\",\n", indent, fw_connection_state_as_string(client->fw_connection_state));
+
+	if (!client->custom || strlen(client->custom) == 0) {
+		fprintf(fp, "  %s\"custom\":\"%s\",\n", indent, "none");
+	} else {
+		fprintf(fp, "  %s\"custom\":\"%s\",\n", indent, client->custom);
+	}
 
 	durationsecs = now - client->session_start;
 	download_bytes = client->counters.incoming;

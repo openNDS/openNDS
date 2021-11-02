@@ -42,6 +42,7 @@ if [ "$setconf" = "" ]; then
 
 elif [ "$setconf" = "restart_only" ]; then
 	restart_dnsmasq
+	printf "%s" "done"
 	exit 0
 
 elif [ "$setconf" = "ipsetconf" ]; then
@@ -61,6 +62,7 @@ elif [ "$setconf" = "ipsetconf" ]; then
 		uci add_list dhcp.@dnsmasq[0].ipset=$ipsetconf
 	fi
 
+	printf "%s" "done"
 	exit 0
 
 elif [ "$setconf" = "hostconf" ]; then
@@ -87,6 +89,7 @@ elif [ "$setconf" = "hostconf" ]; then
 		echo "$host_entry" >> "$hosts"
 	fi
 
+	printf "%s" "done"
 	exit 0
 
 elif [ "$setconf" = "cpidconf" ]; then
@@ -107,6 +110,7 @@ elif [ "$setconf" = "cpidconf" ]; then
 		if [ -z "$gatewayfqdn" ]; then
 			delete_114s
 			uci commit dhcp
+			printf "%s" "done"
 			exit 0
 		fi
 
@@ -123,6 +127,7 @@ elif [ "$setconf" = "cpidconf" ]; then
 		fi
 	fi
 
+	printf "%s" "done"
 	exit 0
 
 else

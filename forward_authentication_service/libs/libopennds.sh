@@ -870,7 +870,7 @@ elif [ "$1" = "gatewaymac" ]; then
 elif [ "$1" = "gatewayroute" ]; then
 	# Check for valid gatewayroute
 	ifname=$2
-	defaultif=$(ip route | grep "default" | awk '{printf("%s %s", $3, $5)}')
+	defaultif=$(ip route | grep "default" | awk '{printf("%s %s ", $3, $5)}')
 
 	if [ -z "$defaultif" ]; then
 		defaultif="offline"

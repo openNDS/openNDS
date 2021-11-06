@@ -264,6 +264,7 @@ setup_from_config(void)
 	char *fashid = NULL;
 	char *phpcmd = NULL;
 	char *preauth_dir = NULL;
+	char *debuglevel = NULL;
 	char libscript[] = "/usr/lib/opennds/libopennds.sh";
 	char gw_name_entityencoded[256] = {0};
 	char gw_name_urlencoded[256] = {0};
@@ -816,6 +817,13 @@ setup_from_config(void)
 	if (config->upload_rate < 50 && config->upload_rate > 0) {
 		config->upload_rate = 50;
 	}
+
+	// Flag debuglevel to externals
+	safe_asprintf(&debuglevel, "%d", config->debuglevel);
+	if (!set_debuglevel(debuglevel)) {
+		debug(LOG_NOTICE, "Externals flagged with debuglevel %s.", debuglevel);
+	}
+	free(debuglevel);
 
 	debug(LOG_NOTICE, "openNDS is now running.\n");
 }

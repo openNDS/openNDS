@@ -911,10 +911,11 @@ iptables_download_ratelimit_enable(t_client *client, int enable)
 			markop,
 			FW_MARK_AUTHENTICATED
 		);
-		rc |= iptables_do_command("-t mangle -A " CHAIN_INCOMING " -d %s -c %llu %llu -m limit --limit %llu/sec -j ACCEPT",
+		rc |= iptables_do_command("-t mangle -A " CHAIN_INCOMING " -d %s -c %llu %llu -m limit --limit %llu/sec --limit-burst %llu -j ACCEPT",
 			client->ip,
 			client->counters.incoming / 1500,
 			client->counters.incoming,
+			packets,
 			packets
 		);
 		rc |= iptables_do_command("-t mangle -A " CHAIN_INCOMING " -d %s -j DROP", client->ip);
@@ -959,10 +960,11 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 
 		// Add rate limiting download rule set for this client
 		rc |= iptables_do_command("-t filter -I " CHAIN_UPLOAD_RATE " -s %s -j DROP", client->ip);
-		rc |= iptables_do_command("-t filter -I " CHAIN_UPLOAD_RATE " -s %s -c %llu %llu -m limit --limit %llu/sec -j RETURN",
+		rc |= iptables_do_command("-t filter -I " CHAIN_UPLOAD_RATE " -s %s -c %llu %llu -m limit --limit %llu/sec --limit-burst %llu -j RETURN",
 			client->ip,
 			client->counters.outgoing / 1500,
 			client->counters.outgoing,
+			packets,
 			packets
 		);
 	}

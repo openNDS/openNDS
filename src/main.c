@@ -808,6 +808,15 @@ setup_from_config(void)
 		config->remotes_last_refresh = now;
 	}
 
+	// Check down/up rates are not less than minimum value of 50Kb/s
+	if (config->download_rate < 50 && config->download_rate > 0) {
+		config->download_rate = 50;
+	}
+
+	if (config->upload_rate < 50 && config->upload_rate > 0) {
+		config->upload_rate = 50;
+	}
+
 	debug(LOG_NOTICE, "openNDS is now running.\n");
 }
 

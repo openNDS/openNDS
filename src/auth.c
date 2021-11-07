@@ -416,8 +416,6 @@ fw_refresh_client_list(void)
 					cp1->upload_rate, uprate
 				);
 
-
-
 				debug(LOG_DEBUG, "rate_exceeded flag is: %u", cp1->rate_exceeded);
 
 				//Handle download rate limiting
@@ -450,7 +448,7 @@ fw_refresh_client_list(void)
 
 				if ((cp1->rate_exceeded&1) == 1) {
 					// note checked for bit 0 of rate_exceeded set to 1, it was so we are here 
-					if (cp1->download_rate > 0 && cp1->download_rate >= downrate) {
+					if (cp1->download_rate > 0 && cp1->download_rate > downrate) {
 						debug(LOG_INFO, "Download RATE below quota threshold - bursting allowed: %s %s, in: %llukbits/s, out: %llukbits/s",
 							cp1->ip, cp1->mac,
 							downrate,
@@ -463,9 +461,6 @@ fw_refresh_client_list(void)
 						cp1->rate_exceeded = cp1->rate_exceeded^1;
 					}
 				}
-
-
-
 
 				//Handle upload rate limiting
 				debug(LOG_DEBUG, "cp1->upload_rate: %llu uprate: %llu", cp1->upload_rate, uprate);

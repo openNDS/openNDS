@@ -811,12 +811,26 @@ setup_from_config(void)
 
 	// Check down/up rates are not less than minimum value of 50Kb/s
 	if (config->download_rate < 50 && config->download_rate > 0) {
+		debug(LOG_WARNING, "Download rate setting of %llu is below the required minimum. Setting to 50Kb/s.", config->download_rate);
 		config->download_rate = 50;
 	}
 
 	if (config->upload_rate < 50 && config->upload_rate > 0) {
+		debug(LOG_WARNING, "Upload rate setting of %llu is below the required minimum. Setting to 50Kb/s.", config->upload_rate);
 		config->upload_rate = 50;
 	}
+
+	// Check down/up bucket ratios rates are not less than minimum value of 1
+	if (config->download_bucket_ratio < 1) {
+		debug(LOG_WARNING, "Download bucket ratio setting of %llu is below the required minimum. Setting to 1.", config->download_bucket_ratio);
+		config->download_bucket_ratio = 1;
+	}
+
+	if (config->upload_bucket_ratio < 1) {
+		debug(LOG_WARNING, "Upload bucket ratio setting of %llu is below the required minimum. Setting to 1.", config->upload_bucket_ratio);
+		config->upload_bucket_ratio = 1;
+	}
+
 
 	// Flag debuglevel to externals
 	safe_asprintf(&debuglevel, "%d", config->debuglevel);

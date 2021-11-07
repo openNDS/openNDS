@@ -85,6 +85,8 @@
 #define DEFAULT_RATE_CHECK_WINDOW 2 // The data rate check moving average window size multiply this by CHECKINTERVAL to give window size in seconds
 #define DEFAULT_UPLOAD_RATE 0 // 0 means no limit
 #define DEFAULT_DOWNLOAD_RATE 0 // 0 means no limit
+#define DEFAULT_UPLOAD_BUCKET_RATIO 1 // Determines the packet upload queue size per client
+#define DEFAULT_DOWNLOAD_BUCKET_RATIO 1 // Determines the packet download queue size per client
 #define DEFAULT_UPLOAD_QUOTA 0 // 0 means no limit
 #define DEFAULT_DOWNLOAD_QUOTA 0 // 0 means no limit
 #define DEFAULT_LOG_SYSLOG 0
@@ -230,6 +232,8 @@ typedef struct {
 	int rate_check_window;				//@brief window size in multiples of checkinterval for rate check moving average
 	unsigned long long int download_rate;		//@brief Download rate, kb/s
 	unsigned long long int upload_rate;		//@brief Upload rate, kb/s
+	unsigned long long int download_bucket_ratio;	//@brief used to calculate the packet download queue size per client
+	unsigned long long int upload_bucket_ratio;	//@brief used to calculate the packet upload queue size per client
 	unsigned long long int download_quota;		//@brief Download quota, kB
 	unsigned long long int upload_quota;		//@brief Upload quota, kB
 	int log_syslog;				//@brief boolean, whether to log to syslog

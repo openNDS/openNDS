@@ -98,7 +98,7 @@ generate_uci_config() {
 	fas_custom_images_list fas_custom_files_list \
 	walledgarden_fqdn_list walledgarden_port_list \
 	sessiontimeout preauthidletimeout authidletimeout checkinterval \
-	ratecheckwindow downloadrate uploadrate downloadquota uploadquota \
+	ratecheckwindow downloadrate uploadrate download_bucket_ratio upload_bucket_ratio downloadquota uploadquota \
 	syslogfacility ndsctlsocket \
 	dhcp_default_url_enable \
 	fw_mark_authenticated fw_mark_blocked fw_mark_trusted

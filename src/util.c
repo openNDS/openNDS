@@ -116,8 +116,6 @@ int check_routing(int watchdog)
 				config->ext_gateway = strdup(strtok(rtest, " "));
 				config->ext_interface = strdup(strtok(NULL, " "));
 				debug(LOG_NOTICE, "Upstream gateway [ %s ] via interface [ %s ] is online", config->ext_gateway, config->ext_interface);
-
-				//debug(LOG_NOTICE, "Upstream gateway [ address / via interface ] [ %s ] is online", rtest);
 			}
 		}
 		return config->online_status;

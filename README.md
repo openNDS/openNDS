@@ -10,11 +10,30 @@ Internet hosted **https portals** can be utilised to inspire maximum user confid
 
 ## 1. Overview
 
-**openNDS** is a high performance, small footprint Captive Portal, offering by default a simple restricted Internet connection, yet incorporates an API that allows the creation of sophisticated authentication applications.
+**openNDS** is a high performance, small footprint Captive Portal, offering by default a simple restricted Internet connection, yet incorporates a comprehensive API that allows the creation of sophisticated authentication applications.
 
-## 2. Captive Portal Detection (CPD)
+## 2. Captive Portal Detection (CPD) and Captive Portal Identification
 
- All modern mobile devices, most desktop operating systems and most browsers now have a CPD process that automatically issues a port 80 request on connection to a network. openNDS detects this and serves a special "**splash**" web page sequence to the connecting client device.
+**2.1 CPD**
+
+Captive Portal Detection (CPD) is a client driven process available on all modern mobile devices, most desktop operating systems and most browsers. The CPD process automatically issues a port 80 request on connection to a network as a means of probing for a captive state.
+
+Sometimes known as a "canary test", this process, driven by the client, has evolved over a number of years to be a reliable de-facto standard.
+openNDS detects this probing and serves a special "**splash**" web page sequence to the connecting client device.
+
+**2.2 CPI**
+
+Captive Portal Identification (CPI) is a Gateway driven process as defined in standards RFC8910 (Captive-Portal Identification in DHCP and Router Advertisements) and RFC8908 (Captive Portal API).
+
+A gateway router informs a connecting client that it is in a captive state by providing a url at which a client can access for authentication.
+
+A client may access this url to be served the same portal "**splash**" page sequence as it would have in the traditional CPD method.
+
+Alternatively, a client may use this url to access the RFC8908 Captive Portal API, ultimately being served a splash page sequence for authentication.
+
+From openNDS v9.5.0, The CPI method is supported in both forms and enabled by default. It can be disabled as a config option.
+
+**Note:** Very few client devices support CPI at the time of writing (November 2021)
 
 ## 3. Zero Configuration Click to Continue Default
 

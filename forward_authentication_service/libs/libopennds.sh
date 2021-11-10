@@ -533,14 +533,20 @@ auth_log () {
 	authstat=$ndsctlout
 	# $authstat contains the response from do_ndsctl
 
+	loginfo="$userinfo, status=$authstat, mac=$clientmac, ip=$clientip, client_type=$client_type, zone=$client_zone, ua=$user_agent"
+	write_log
+	# We will not remove the client id file, rather we will let openNDS delete it on deauth/timeout
+}
+
+write_log () {
 	mountcheck=$(df | grep "$log_mountpoint")
-	clientinfo="status=$authstat, mac=$clientmac, ip=$clientip, client_type=$client_type, zone=$client_zone, ua=$user_agent"
 
 	if [ ! -z "$logname" ]; then
 
 		if [ ! -d "$logdir" ]; then
 			mkdir -p "$logdir"
 		fi
+
 
 		logfile="$logdir""$logname"
 		awkcmd="awk ""'\$6==""\"$log_mountpoint\"""{print \$4}'"
@@ -556,7 +562,12 @@ auth_log () {
 			option="max_log_entries"
 			get_option_from_config
 
-			if [ ! -z "$max_log_entries" ]; then
+			if [ -z "$max_log_entries" ]; then
+				max_log_entries=100
+			fi
+
+			if [ "$max_log_entries" -gt 0 ]; then
+				max_log_entries=$((max_log_entries - 1))
 				mv "$logfile" "$logfile.cut"
 				tail -n "$max_log_entries" "$logfile.cut" >> "$logfile"
 				rm "$logfile.cut"
@@ -568,16 +579,20 @@ auth_log () {
 				# Check the logfile is not too big
 				min_freespace_to_log_ratio=10
 				filesize=$(ls -s -1 $logfile | awk -F' ' '{print $1}')
+
+				if [ $filesize -eq 0 ]; then
+					filesize=1
+				fi
 				sizeratio=$(($available/$filesize))
 
 				if [ $sizeratio -ge $min_freespace_to_log_ratio ]; then
-					echo "$datetime, $userinfo, $clientinfo" >> $logfile
+					echo "$datetime, $loginfo" >> $logfile
 				else
 					echo "Log file too big, please archive contents and reduce max_log_entries" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 				fi
 			else
 				if [ "$available" > 10 ];then
-					echo "$datetime, $userinfo, $clientinfo" >> $logfile
+					echo "$datetime, $loginfo" >> $logfile
 				else
 					echo "Log file too big, please archive contents and reduce max_log_entries" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 				fi
@@ -586,8 +601,6 @@ auth_log () {
 			echo "Log location is NOT a mountpoint - logs would fill storage space - logging disabled" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 		fi
 	fi
-
-	# We will not remove the client id file, rather we will let openNDS delete it on deauth/timeout
 }
 
 default_header() {
@@ -857,7 +870,7 @@ elif [ "$1" = "gatewaymac" ]; then
 elif [ "$1" = "gatewayroute" ]; then
 	# Check for valid gatewayroute
 	ifname=$2
-	defaultif=$(ip route | grep "default" | awk '{printf("%s %s", $3, $5)}')
+	defaultif=$(ip route | grep "default" | awk '{printf("%s %s ", $3, $5)}')
 
 	if [ -z "$defaultif" ]; then
 		defaultif="offline"
@@ -996,6 +1009,17 @@ elif [ "$1" = "get_interface_by_ip" ]; then
 	else
 		interface=$(ip route get "$2" | awk -F"dev " '{print $2}' | awk '{printf "%s" $1}')
 		printf %s "$interface"
+	fi
+
+elif [ "$1" = "write_log" ]; then
+	# $2 contains the string to log
+	if [ -z "$2" ]; then
+		exit 1
+	else
+		loginfo="$2"
+		configure_log_location
+		write_log
+		printf "%s" "done"
 	fi
 
 else

@@ -894,11 +894,15 @@ iptables_download_ratelimit_enable(t_client *client, int enable)
 {
 	int rc = 0;
 	unsigned long long int packets;
+	unsigned long long int bucket;
+	s_config *config;
+	config = config_get_config();
 
-	packets = (client->download_rate * 1000 / 1500) / 8;
+	packets = (client->download_rate * 1024 / 1500) / 8;
+	bucket = packets * config->download_bucket_ratio;
 
 	if (enable == 1) {
-		debug(LOG_INFO, "Download Rate Limiting [%s] [%s]  to [%llu] packets per second", client->ip, client->mac, packets);
+		debug(LOG_INFO, "Download Rate Limiting of [%s %s] to [%llu] packets/s, bucket size [%llu]", client->ip, client->mac, packets, bucket);
 		// Remove non-rate limiting rule set for this client
 		rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -j MARK %s 0x%x", client->ip, markop, FW_MARK_AUTHENTICATED);
 		rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -j ACCEPT", client->ip);
@@ -911,11 +915,12 @@ iptables_download_ratelimit_enable(t_client *client, int enable)
 			markop,
 			FW_MARK_AUTHENTICATED
 		);
-		rc |= iptables_do_command("-t mangle -A " CHAIN_INCOMING " -d %s -c %llu %llu -m limit --limit %llu/sec -j ACCEPT",
+		rc |= iptables_do_command("-t mangle -A " CHAIN_INCOMING " -d %s -c %llu %llu -m limit --limit %llu/sec --limit-burst %llu -j ACCEPT",
 			client->ip,
 			client->counters.incoming / 1500,
 			client->counters.incoming,
-			packets
+			packets,
+			bucket
 		);
 		rc |= iptables_do_command("-t mangle -A " CHAIN_INCOMING " -d %s -j DROP", client->ip);
 	}
@@ -924,7 +929,11 @@ iptables_download_ratelimit_enable(t_client *client, int enable)
 		debug(LOG_INFO, "Download Rate Limiting for [%s] [%s] is off", client->ip, client->mac);
 		// Remove rate limiting download rule set for this client
 		rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -j MARK %s 0x%x", client->ip, markop, FW_MARK_AUTHENTICATED);
-		rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -m limit --limit %llu/sec -j ACCEPT", client->ip, packets);
+		rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -m limit --limit %llu/sec --limit-burst %llu -j ACCEPT",
+			client->ip,
+			packets,
+			bucket
+		);
 		rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -j DROP", client->ip);
 
 		// Add non-rate limiting rule set for this client
@@ -951,19 +960,24 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 {
 	int rc = 0;
 	unsigned long long int packets;
+	unsigned long long int bucket;
+	s_config *config;
+	config = config_get_config();
 
-	packets = (client->upload_rate * 1000 / 1500) / 8;
+	packets = (client->upload_rate * 1024 / 1500) / 8;
+	bucket = packets * config->upload_bucket_ratio;
 
 	if (enable == 1) {
-		debug(LOG_INFO, "Upload Rate Limiting [%s] [%s]  to [%llu] packets per second", client->ip, client->mac, packets);
+		debug(LOG_INFO, "Upload Rate Limiting of [%s %s] to [%llu] packets/s, bucket size [%llu]", client->ip, client->mac, packets, bucket);
 
 		// Add rate limiting download rule set for this client
 		rc |= iptables_do_command("-t filter -I " CHAIN_UPLOAD_RATE " -s %s -j DROP", client->ip);
-		rc |= iptables_do_command("-t filter -I " CHAIN_UPLOAD_RATE " -s %s -c %llu %llu -m limit --limit %llu/sec -j RETURN",
+		rc |= iptables_do_command("-t filter -I " CHAIN_UPLOAD_RATE " -s %s -c %llu %llu -m limit --limit %llu/sec --limit-burst %llu -j RETURN",
 			client->ip,
 			client->counters.outgoing / 1500,
 			client->counters.outgoing,
-			packets
+			packets,
+			bucket
 		);
 	}
 
@@ -971,9 +985,10 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 		debug(LOG_INFO, "Upload Rate Limiting for [%s] [%s] is off", client->ip, client->mac);
 		// Remove rate limiting upload rule set for this client
 		rc |= iptables_do_command("-t filter -D " CHAIN_UPLOAD_RATE " -s %s -j DROP", client->ip);
-		rc |= iptables_do_command("-t filter -D " CHAIN_UPLOAD_RATE " -s %s -m limit --limit %llu/sec -j RETURN",
+		rc |= iptables_do_command("-t filter -D " CHAIN_UPLOAD_RATE " -s %s -m limit --limit %llu/sec --limit-burst %llu -j RETURN",
 			client->ip,
-			packets
+			packets,
+			bucket
 		);
 	}
 	return rc;

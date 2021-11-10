@@ -411,7 +411,7 @@ config opennds
 	#
 	# If the client average data rate exceeds the value set here, the client will be rate limited
 	# Values are in kb/s
-	# If set to 0, there is no limit
+	# If set to 0, there is a minimum value of 50 Kb/s but there is no upper limit
 	#
 	# Quotas and rates can also be set by FAS via Authmon Daemon, ThemeSpec scripts, BinAuth, and ndsctl auth.
 	# Values set by these methods, will override values set in this config file.
@@ -422,13 +422,43 @@ config opennds
 	#
 	###########################################################################################
 
+	# Bucket Ratio
+	# Default 1
+	#
+	# Upload and Download bucket ratios can be defined. These are used to calulate the
+	# "bucket size" or "queue length" (in packets) to be used for buffering upload and
+	# download traffic to facilitate rate restrictions defined in this config file or
+	# by FAS for individual clients.
+	# If a bucket becomes full, packets will overflow and be dropped to maintain the rate limit.
+	#
+	# To minimise the number of dropped packets the bucket ratio can be increased whilst
+	# still maintaining the configured rate restriction.
+	#
+	# ***CAUTION*** Large values will consume large amounts of memory per client.
+	#
+	# Consumed memory = (rate(in Kb/s) * bucket-ratio)KB per client bucket per direction.
+	#
+	# Eg. The maximum memory consumed per client for a downloadrate of 1000Kb/s and a
+	# Bucket Ratio of 100 will be: 1000 * 100 = 100000KB ie 100MB
+	# If 10 clients log in then potentially 1GB would be required if all of them became rate limited.
+	#
+	# If the client's average rate does not exceed its configured value within the
+	# ratecheck window interval (See RateCheckWindow option), no memory is consumed.
+	#
+	# If the rate is set to 0, the Bucket Ratio setting has no meaning
+	# and no memory is consumed.
+	#
+	# option upload_bucket_ratio '10'
+	# option download_bucket_ratio '10'
+	###########################################################################################
+
 	# RateCheckWindow
 	# Default 2
 	#
 	# The client data rate is calculated using a moving average.
 	#
-	# This allows clients to burst at maximum possible rate, only blocking if the moving average
-	# exceeds the specified upload or download rate.
+	# This allows clients to burst at maximum possible rate, only enabling rate limiting if the
+	# moving average exceeds the specified upload or download rate.
 	#
 	# The moving average window size is equal to ratecheckwindow times checkinterval (seconds)
 	#

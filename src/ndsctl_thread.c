@@ -420,6 +420,20 @@ ndsctl_auth(FILE *fp, char *arg)
 						id = client ? client->id : 0;
 						debug(LOG_DEBUG, "client id: [%d]", id);
 						client->client_type = "preemptive";
+
+						// log the preemptive authentication
+						safe_asprintf(&testcmd,
+							"/usr/lib/opennds/libopennds.sh write_log \"mac=%s, ip=%s, client_type=%s\"",
+							macclient,
+							ipclient,
+							client->client_type
+						);
+
+						msg = safe_calloc(64);
+						rc = execute_ret_url_encoded(msg, 64 - 1, testcmd);
+						free(testcmd);
+
+
 					} else {
 						debug(LOG_NOTICE, "Pre-emptive Authentication: Client ip address [%s] is  NOT on our subnet", ipclient);
 						id = 0;

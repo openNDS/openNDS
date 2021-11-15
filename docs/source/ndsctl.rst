@@ -19,7 +19,7 @@ openNDS includes ndsctl, a separate utility application. Some command line optio
 
 * To authenticate client given their IP or MAC address:
 
-    ``/usr/bin/ndsctl deauth IP|MAC``
+    ``/usr/bin/ndsctl auth IP|MAC``
 
 * To deauthenticate a currently authenticated client given their IP or MAC address:
 

@@ -1,6 +1,53 @@
 What's New? - ChangeLog
 #######################
 
+opennds (9.5.0)
+
+  * This version adds new functionality, and fixes some issues
+  * Add - enforce minimum data rates in ndsctl auth [bluewave.net]
+  * Add - Update README.md [bluewave.net]
+  * Add - bucket ratio option to config file [bluewave.net]
+  * Add - upload and download bucket ratio config values [bluewave.net]
+  * Fix - flag initial debuglevel to externals [bluewave.net]
+  * Add - limit-burst tuning to rate quotas [bluewave.net]
+  * Fix - add trailing space to defaultip [bluewave.net]
+  * Add - record pre-emptive authentication in local log [bluewave.net]
+  * Add - Write to local log function to libopennds [bluewave.net]
+  * Add - set client_type and custom string for Pre-emptive authentication [bluewave.net]
+  * Fix - Remove trailing newline from library call response [bluewave.net]
+  * Fix - attempt to remove cid file only if client->cid is set [bluewave.net]
+  * Add - a skip option for custom downloads to speed up serving page from themespec [bluewave.net]
+  * Add - put client_type into query string when type is cpd canary [bluewave.net]
+  * Add - set refresh=0 before loading images [bluewave.net]
+  * Fix - Truncated return status [bluewave.net]
+  * Add - Acknowlegement from call to dnsconfig [bluewave.net]
+  * Fix - potential buffer overflow in debug output [bluewave.net]
+  * Add - processing of custom data and client type [bluewave.net]
+  * Add - Client Type for RFC8908 and RFC8910 clients [bluewave.net]
+  * Add - rfc8908 replies for external FAS and refactor memory management for MHD calls [bluewave.net]
+  * Add - send error 403 if client is not on openNDS subnet [bluewave.net]
+  * Fix - remove uneccessary safe_asprint in auth.c [bluewave.net]
+  * Fix - Initialise buffer to prevent receiving spurious characters [bluewave.net]
+  * Add - encoded custom data support to ndsctl json, themespec and binauth [bluewave.net]
+  * Add - advert_1.htm to thankyou page of theme_click-to-continue-custom-placeholders.sh [bluewave.net]
+  * Add - library call get_interface_by_ip [bluewave.net]
+  * Add - function encode_custom() for encoding custom data to be sent to openNDS [bluewave.net]
+  * Fix - error 511, make all html refrences absolute to enforce link to MHD [bluewave.net]
+  * Add - check status_path exists and is executeable [bluewave.net]
+  * Fix - regression causing error 511 to be served from default script [bluewave.net]
+  * Add - venue-info-url and can-extend-session json keys [bluewave.net]
+  * Add - RFC 8908 initial experimental support [bluewave.net]
+  * Add - debug message when resetting client [bluewave.net]
+  * Fix - Ensure the ndscids directory exists before trying to write to it. [bluewave.net]
+  * Fix - use eval in do_ndsctl to allow quoting of arguments [bluewave.net]
+  * Fix - ensure client hid and client cid file is reset correctly [bluewave.net]
+  * Fix - Titles of example ThemeSpec Files [bluewave.net]
+  * Fix - Ensure ThemeSpec Files are executable [bluewave.net]
+  * Remove - deprecated Allowed and Blocked entries in ndsctl status output [bluewave.net]
+  * Add - Deprecate option macmechanism, allowedmaclist and blockedmaclist [bluewave.net]
+
+ -- Rob White <dot@blue-wave.net>  Mon, 15 Nov 2021 14:12:02 +0000
+
 opennds (9.4.0)
 
   * This version adds new functionality, and fixes some issues

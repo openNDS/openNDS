@@ -980,6 +980,7 @@ elif [ "$1" = "get_option_from_config" ]; then
 	exit 0
 
 elif [ "$1" = "debuglevel" ]; then
+	# Sets the debuglevel for externals
 	# $2 contains the debuglevel
 	debuglevel=$2
 	configure_log_location
@@ -989,6 +990,7 @@ elif [ "$1" = "debuglevel" ]; then
 	exit 0
 
 elif [ "$1" = "daemon" ]; then
+	# Start a daemon process
 	# $2 contains the b64 encoded daemon startup command
 	ndsctlcmd="b64decode $2"
 	do_ndsctl

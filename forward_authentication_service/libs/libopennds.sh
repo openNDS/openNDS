@@ -989,20 +989,51 @@ elif [ "$1" = "debuglevel" ]; then
 	printf %d "$setlevel"
 	exit 0
 
-elif [ "$1" = "daemon" ]; then
+elif [ "$1" = "startdaemon" ]; then
 	# Start a daemon process
 	# $2 contains the b64 encoded daemon startup command
 	ndsctlcmd="b64decode $2"
 	do_ndsctl
 
 	if [ "$ndsstatus" = "ready" ]; then
-		exec $ndsctlout
-		printf "%s" "ack"
+		daemoncmd="$ndsctlout </dev/null &>/dev/null &"
+		shelldetect=$(head -1 "/usr/lib/opennds/libopennds.sh")
+
+		if [ "$shelldetect" = "#!/bin/sh" ]; then
+			echo "$daemoncmd" | /bin/sh
+		else
+			echo "$daemoncmd" | /bin/bash
+		fi
+
+		sleep 1
+		daemonpid=$(pgrep -f "$ndsctlout")
+
+		if [ -z "$daemonpid" ]; then
+			printf "%s" "0"
+			exit 1
+		else
+			printf "%s" "$daemonpid"
+		fi
+
 		exit 0
 	else
 		printf %s "$ndsstatus"
 		exit 1
 	fi
+
+elif [ "$1" = "stopdaemon" ]; then
+	# Stop a daemon process
+	# $2 contains the pid of the daemon to stop
+	kill $2
+
+	if [ "$?" = "0" ]; then
+		printf "%s" "done"
+	else
+		printf "%s" "nack"
+		exit 1
+	fi
+
+	exit 0
 
 elif [ "$1" = "get_interface_by_ip" ]; then
 	# $2 contains the ip to check

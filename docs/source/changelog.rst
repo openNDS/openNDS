@@ -4,6 +4,7 @@ What's New? - ChangeLog
 opennds (9.5.0)
 
   * This version adds new functionality, and fixes some issues
+  * Add - library calls startdaemon and stopdaemon [bluewavenet]
   * Fix - Increase buffer length for longer interface names [koivunen]
   * Add - enforce minimum data rates in ndsctl auth [bluewavenet]
   * Add - Update README.md [bluewavenet]

@@ -440,9 +440,14 @@ fw_refresh_client_list(void)
 							uprate
 						);
 						action = ENABLE;
-						iptables_download_ratelimit_enable(cp1, action);
-						//bit 0 is not set so toggle it to signify rate limiting is on
-						cp1->rate_exceeded = cp1->rate_exceeded^1;
+
+						if (config->download_bucket_ratio > 0) {
+							iptables_download_ratelimit_enable(cp1, action);
+							//bit 0 is not set so toggle it to signify rate limiting is on
+							cp1->rate_exceeded = cp1->rate_exceeded^1;
+						} else {
+							debug(LOG_INFO, "Download RATE limiting is disabled");
+						}
 					}
 				}
 
@@ -484,9 +489,14 @@ fw_refresh_client_list(void)
 						);
 
 						action = ENABLE;
-						iptables_upload_ratelimit_enable(cp1, action);
-						//bit 1 is not set so toggle it to signify rate limiting is on
-						cp1->rate_exceeded = cp1->rate_exceeded^2;
+
+						if (config->upload_bucket_ratio > 0) {
+							iptables_upload_ratelimit_enable(cp1, action);
+							//bit 1 is not set so toggle it to signify rate limiting is on
+							cp1->rate_exceeded = cp1->rate_exceeded^2;
+						} else {
+							debug(LOG_INFO, "Upload RATE limiting is disabled");
+						}
 					}
 				}
 

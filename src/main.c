@@ -822,13 +822,13 @@ setup_from_config(void)
 
 	// Check down/up bucket ratios rates are not less than minimum value of 1
 	if (config->download_bucket_ratio < 1) {
-		debug(LOG_WARNING, "Download bucket ratio setting of %llu is below the required minimum. Setting to 1.", config->download_bucket_ratio);
-		config->download_bucket_ratio = 1;
+		debug(LOG_WARNING, "Download bucket ratio setting of %llu disables rate limiting.", config->download_bucket_ratio);
+		config->download_bucket_ratio = 0;
 	}
 
 	if (config->upload_bucket_ratio < 1) {
-		debug(LOG_WARNING, "Upload bucket ratio setting of %llu is below the required minimum. Setting to 1.", config->upload_bucket_ratio);
-		config->upload_bucket_ratio = 1;
+		debug(LOG_WARNING, "Upload bucket ratio setting of %llu disables rate limiting.", config->upload_bucket_ratio);
+		config->upload_bucket_ratio = 0;
 	}
 
 

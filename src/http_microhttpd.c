@@ -1232,7 +1232,7 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 
 						// Write the new cidfile:
 						msg = safe_calloc(STATUS_BUF);
-						debug(LOG_NOTICE, "writing cid file [%s]", cid);
+						debug(LOG_DEBUG, "writing cid file [%s]", cid);
 
 						safe_asprintf(&cidinfo, "hid=\"%s\"\0", client->hid);
 						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);

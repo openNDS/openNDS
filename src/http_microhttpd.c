@@ -719,7 +719,7 @@ static int authenticated(struct MHD_Connection *connection,
 		return ret;
 	}
 
-	if (strcmp(accept, "application/captive+json") == 0) {
+	if (accept && strcmp(accept, "application/captive+json") == 0) {
 		debug(LOG_NOTICE, "authenticated: Accept header [%s]", accept);
 		debug(LOG_NOTICE, "authenticated: RFC 8908 captive+json request received");
 

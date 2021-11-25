@@ -12,7 +12,7 @@ Internet hosted **https portals** can be utilised to inspire maximum user confid
 
 **openNDS** is a high performance, small footprint Captive Portal, offering by default a simple restricted Internet connection, yet incorporates a comprehensive API that allows the creation of sophisticated authentication applications.
 
-## 2. Captive Portal Detection (CPD) and Captive Portal Identification
+## 2. Captive Portal Detection (CPD) and Captive Portal Identification (CPI)
 
 **2.1 CPD**
 

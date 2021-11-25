@@ -336,6 +336,7 @@ ndsctl_auth(FILE *fp, char *arg)
 			seconds = custom_seconds;
 		}
 	}
+	debug(LOG_DEBUG, "Client session duration [%d] seconds", seconds);
 
 	// arg4 = upload rate (kb/s)
 	arg4 = strsep(&argcopy, ",");

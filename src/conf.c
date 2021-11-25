@@ -1928,7 +1928,7 @@ int set_debuglevel(const char opt[])
 		debug(LOG_DEBUG, "Library command: [%s]", libcmd);
 
 		if (execute_ret_url_encoded(msg, sizeof(msg) - 1, libcmd) == 0) {
-			debug(LOG_NOTICE, "debuglevel [%d] signaled to externals - [%s] acknowledged", level, msg);
+			debug(LOG_DEBUG, "debuglevel [%d] signaled to externals - [%s] acknowledged", level, msg);
 		} else {
 			debug(LOG_ERR, "debuglevel [%d] signaled to externals - unable to set", level);
 		}

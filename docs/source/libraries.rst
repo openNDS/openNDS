@@ -91,6 +91,7 @@ tmpfs:
 mhdcheck:
 ---------
     **arg1**: "*mhdcheck*", checks if MHD is running (used by MHD watchdog)
+
     *returns*: "1" if MHD is running, "2" if MHD is not running
 
 gatewaymac:
@@ -106,6 +107,124 @@ gatewayroute:
     **arg1**: "*gatewayroute*", checks for a valid gateway route for an interface.
 
     *returns*: the ip gateway address and the ip gateway interface, or "offline" if the router is offline
+
+clientaddress:
+--------------
+
+    arg1: "clientaddress", find and return both ip and mac of a client
+
+        arg2: contains either client mac or client ip
+
+    *returns*: client ip and mac
+
+rmcid:
+------
+
+    arg1: "rmcid", Remove an existing cidfile (client identifcation file)
+
+        arg2: contains the cid (client id)
+
+        arg3: contains mountpoint of the ndscids database
+
+    *returns*: "done"
+
+write:
+------
+
+    arg1: "write", Write client info element to cidfile (client identifcation file)
+
+        arg2: contains the cid (client id)
+
+        arg2: contains mountpoint of the ndscids database
+
+        arg3: contains info element
+
+    *returns*: "done"
+
+parse:
+------
+
+    arg1: "parse", Parse for sub elements and write to cidfile (client identification file)
+
+        arg2: contains the cid (client id)
+
+        arg3: contains mountpoint of the ndscids database
+
+        arg4: contains info elements to parse
+
+    *returns*: "done"
+
+download:
+---------
+
+    arg1: "download", Download files required for themespec
+
+        arg2: contains the themespec path
+
+        arg3: contains the image list
+
+        arg4: contains the file list
+
+        arg5: contains the refresh flag, set to 0 to download if file missing, 1 to refresh downloads, 3 to skip downloads
+
+        arg6: contains the webroot
+
+    *returns*: "done"
+
+get_option_from_config:
+-----------------------
+
+    arg1: "get_option_from_config", Get the config option value
+
+        arg2: contains the option to get
+
+    *returns*: the requested config option, or an empty string if not configured
+
+debuglevel:
+-----------
+
+    arg1: "debuglevel", Sets the debuglevel for externals
+
+        arg2: contains the debuglevel
+
+    *returns*: the debuglevel
+
+startdaemon:
+------------
+
+    arg1: "startdaemon", Start a daemon process
+
+        arg2: contains the b64 encoded daemon startup command
+
+    *returns*: pid of the daemon and exit code 0 if successful. If unsuccessful returns "0" or a status information string with code 1
+
+stopdaemon:
+-----------
+
+    arg1: "stopdaemon", Stop a daemon process
+
+        arg2: contains the pid of the daemon to stop
+
+    *returns*: "done" if sucessful or "nack" with exit code 1 if unsuccessful
+
+get_interface_by_ip:
+--------------------
+
+    arg1: "get_interface_by_ip", get the interface name that is the gateway for an IP address
+
+        arg2: contains the ip to check
+
+    *returns*: Interface name with exit code 0, or exit code 1 if failed to get interface name
+
+write_log:
+----------
+
+    arg1: "write_log", write a string to the openNDS log
+
+        arg2: contains the string to log
+
+    *returns*: "done"
+
 
 ?fas:
 -----

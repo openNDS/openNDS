@@ -373,7 +373,7 @@ char *
 get_iface_ip(const char ifname[], int ip6)
 {
 	char addrbuf[INET6_ADDRSTRLEN] = {0};
-	char cmd[128] = {0};
+	char cmd[256] = {0};
 	char iptype[8] = {0};
 	int i;
 

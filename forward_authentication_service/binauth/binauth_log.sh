@@ -227,6 +227,7 @@ fi
 # clientmac
 # gatewayname
 # version
+# client_type
 # hid
 # gatewayaddress
 # gatewaymac

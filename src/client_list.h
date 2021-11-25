@@ -58,6 +58,8 @@ typedef struct _t_client {
 	int initial_loop;			/**< @brief Check client initial loop flag */
 	unsigned long long int upload_rate;	/**< @brief Client Upload rate limit, kb/s */
 	unsigned long long int download_rate;	/**< @brief Client Download rate limit, kb/s */
+	unsigned long long int uprate;		/**< @brief Current Client Upload rate, kb/s */
+	unsigned long long int downrate;	/**< @brief Client Download rate, kb/s */
 	unsigned long long int upload_quota;	/**< @brief Client Upload quota, kB */
 	unsigned long long int download_quota;	/**< @brief Client Download quota, kB */
 	unsigned id;

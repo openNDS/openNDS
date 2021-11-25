@@ -200,6 +200,10 @@ body() {
 }
 
 # Start generating the html:
+if [ -z "$clientip" ]; then
+	exit 1
+fi
+
 if [ "$status" = "status" ] || [ "$status" = "err511" ]; then
 	parse_parameters
 

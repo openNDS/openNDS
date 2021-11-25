@@ -975,7 +975,7 @@ static int preauthenticated(struct MHD_Connection *connection,
 		return ret;
 	}
 
-	if (strcmp(accept, "application/captive+json") == 0) {
+	if (accept && strcmp(accept, "application/captive+json") == 0) {
 		debug(LOG_DEBUG, "preauthenticated: Accept header [%s]", accept);
 		debug(LOG_INFO, "preauthenticated: RFC 8908 captive+json request received from client at [%s] [%s]", client->ip, client->mac);
 

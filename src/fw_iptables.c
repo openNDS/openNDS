@@ -893,16 +893,22 @@ int
 iptables_download_ratelimit_enable(t_client *client, int enable)
 {
 	int rc = 0;
+	unsigned long long int packet_limit;
 	unsigned long long int packets;
 	unsigned long long int bucket;
 	s_config *config;
 	config = config_get_config();
 
-	packets = (client->download_rate * 1024 / 1500) / 8;
-	bucket = packets * config->download_bucket_ratio;
+	packet_limit = client->download_rate * 1024 * 60 / 1500 / 8; // packets per minute @ MTU of 1500
+	packets = client->downrate * 1024 * 60 / 1500 / 8; // packets per minute @ MTU of 1500
+	bucket = (packets - packet_limit) * config->download_bucket_ratio;
+
+	if ( bucket < 5) {
+		bucket = 5;
+	}
 
 	if (enable == 1) {
-		debug(LOG_INFO, "Download Rate Limiting of [%s %s] to [%llu] packets/s, bucket size [%llu]", client->ip, client->mac, packets, bucket);
+		debug(LOG_INFO, "Download Rate Limiting of [%s %s] to [%llu] packets/min, bucket size [%llu]", client->ip, client->mac, packet_limit, bucket);
 		// Remove non-rate limiting rule set for this client
 		rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -j MARK %s 0x%x", client->ip, markop, FW_MARK_AUTHENTICATED);
 		rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -j ACCEPT", client->ip);
@@ -915,11 +921,11 @@ iptables_download_ratelimit_enable(t_client *client, int enable)
 			markop,
 			FW_MARK_AUTHENTICATED
 		);
-		rc |= iptables_do_command("-t mangle -A " CHAIN_INCOMING " -d %s -c %llu %llu -m limit --limit %llu/sec --limit-burst %llu -j ACCEPT",
+		rc |= iptables_do_command("-t mangle -A " CHAIN_INCOMING " -d %s -c %llu %llu -m limit --limit %llu/min --limit-burst %llu -j ACCEPT",
 			client->ip,
 			client->counters.incoming / 1500,
 			client->counters.incoming,
-			packets,
+			packet_limit,
 			bucket
 		);
 		rc |= iptables_do_command("-t mangle -A " CHAIN_INCOMING " -d %s -j DROP", client->ip);
@@ -929,9 +935,9 @@ iptables_download_ratelimit_enable(t_client *client, int enable)
 		debug(LOG_INFO, "Download Rate Limiting for [%s] [%s] is off", client->ip, client->mac);
 		// Remove rate limiting download rule set for this client
 		rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -j MARK %s 0x%x", client->ip, markop, FW_MARK_AUTHENTICATED);
-		rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -m limit --limit %llu/sec --limit-burst %llu -j ACCEPT",
+		rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -m limit --limit %llu/min --limit-burst %llu -j ACCEPT",
 			client->ip,
-			packets,
+			packet_limit,
 			bucket
 		);
 		rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -j DROP", client->ip);
@@ -959,16 +965,22 @@ int
 iptables_upload_ratelimit_enable(t_client *client, int enable)
 {
 	int rc = 0;
+	unsigned long long int packet_limit;
 	unsigned long long int packets;
 	unsigned long long int bucket;
 	s_config *config;
 	config = config_get_config();
 
-	packets = (client->upload_rate * 1024 / 1500) / 8;
-	bucket = packets * config->upload_bucket_ratio;
+	packet_limit = client->upload_rate * 1024 * 60 / 1500 / 8; // packets per minute @ MTU of 1500
+	packets = client->uprate * 1024 * 60 / 1500 / 8; // packets per minute @ MTU of 1500
+	bucket = (packets - packet_limit) * config->upload_bucket_ratio;
+
+	if ( bucket < 5) {
+		bucket = 5;
+	}
 
 	if (enable == 1) {
-		debug(LOG_INFO, "Upload Rate Limiting of [%s %s] to [%llu] packets/s, bucket size [%llu]", client->ip, client->mac, packets, bucket);
+		debug(LOG_INFO, "Upload Rate Limiting of [%s %s] to [%llu] packets/min, bucket size [%llu]", client->ip, client->mac, packet_limit, bucket);
 
 		// Add rate limiting download rule set for this client
 		rc |= iptables_do_command("-t filter -I " CHAIN_UPLOAD_RATE " -s %s -j DROP", client->ip);
@@ -976,7 +988,7 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 			client->ip,
 			client->counters.outgoing / 1500,
 			client->counters.outgoing,
-			packets,
+			packet_limit,
 			bucket
 		);
 	}
@@ -987,7 +999,7 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 		rc |= iptables_do_command("-t filter -D " CHAIN_UPLOAD_RATE " -s %s -j DROP", client->ip);
 		rc |= iptables_do_command("-t filter -D " CHAIN_UPLOAD_RATE " -s %s -m limit --limit %llu/sec --limit-burst %llu -j RETURN",
 			client->ip,
-			packets,
+			packet_limit,
 			bucket
 		);
 	}

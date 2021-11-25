@@ -401,6 +401,8 @@ fw_refresh_client_list(void)
 				upload_bytes = (cp1->counters.outgoing - cp1->counters.out_window_start);
 				downrate = (download_bytes / 125 / durationsecs); // kbits/sec
 				uprate = (upload_bytes / 125 / durationsecs); // kbits/sec
+				cp1->downrate = downrate;
+				cp1->uprate = uprate;
 
 				debug(LOG_DEBUG, "durationsecs [%llu] download_bytes [%llu] upload_bytes [%llu] ",
 					durationsecs,

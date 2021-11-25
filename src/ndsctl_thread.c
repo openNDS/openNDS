@@ -468,17 +468,6 @@ ndsctl_auth(FILE *fp, char *arg)
 
 			debug(LOG_DEBUG, "ndsctl_thread: client session start time [ %lu ], end time [ %lu ]", now, client->session_end);
 
-			// Check down/up rates are not less than minimum value of 50Kb/s
-			if (client->download_rate < 50 && client->download_rate > 0) {
-				debug(LOG_WARNING, "Download rate setting of %llu is below the required minimum. Setting to 50Kb/s.", client->download_rate);
-				client->download_rate = 50;
-			}
-
-			if (client->upload_rate < 50 && client->upload_rate > 0) {
-				debug(LOG_WARNING, "Upload rate setting of %llu is below the required minimum. Setting to 50Kb/s.", client->upload_rate);
-				client->upload_rate = 50;
-			}
-
 			rc = auth_client_auth_nolock(id, "ndsctl_auth", customdata);
 		}
 	} else {

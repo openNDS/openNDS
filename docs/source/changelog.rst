@@ -4,6 +4,13 @@ What's New? - ChangeLog
 opennds (9.5.0)
 
   * This version adds new functionality, and fixes some issues
+  * Fix - Potential NULL pointer segfault in http_microhttpd on calling authenticated() [bluewavenet]
+  * Fix - Potential NULL pointer segfault in http_microhttpd on calling preauthenticated() [dddaniel]
+  * Add - Calculate Bucket size based on achieved burst rate [bluewavenet]
+  * Fix - prevent parameter parsing if clientip not known [bluewavenet]
+  * Add - disable rate quotas by setting bucket ratio to zero [bluewavenet]
+  * Fix - suppress some debug messages [bluewavenet]
+  * Add - more libraries documentation [bluewavenet]
   * Add - library calls startdaemon and stopdaemon [bluewavenet]
   * Fix - Increase buffer length for longer interface names [koivunen]
   * Add - enforce minimum data rates in ndsctl auth [bluewavenet]

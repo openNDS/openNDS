@@ -868,22 +868,54 @@ elif [ "$1" = "gatewaymac" ]; then
 	exit 0
 
 elif [ "$1" = "gatewayroute" ]; then
-	# Check for valid gatewayroute
+	# Check for valid route to upstream (WAN) gateway
+	# $2 is the LAN gateway interface
 	ifname=$2
+	online="online"
+	offline="offline"
 	defaultif=$(ip route | grep "default" | awk '{printf("%s %s ", $3, $5)}')
 
 	if [ -z "$defaultif" ]; then
-		defaultif="offline"
+		gatewayinterfaces="offline"
 	else
+		# We have a valid route to upstream (WAN) gateway, so:
+		# Check for bad router config
 		for var in $defaultif; do
 			if [ "$var" = "$ifname" ]; then
 				defaultif="-"
 				break
 			fi
 		done
+
+		# Check if upstream gateway is reachable
+		idx=0
+
+		for var in $defaultif; do
+			if [ "$idx"  -eq 0 ]; then
+				ipaddr=$var
+				idx=1
+			else
+				iface=$var
+				idx=0
+				arptest=$(ip -f inet neigh show | grep "$var" | awk '{print $0}')
+
+				if [ -z "$arptest" ]; then
+					continue
+				else
+					for arg in $arptest; do
+
+						if [ "$arg" = "PROBE" ] || [ "$arg" = "INCOMPLETE" ] || [ "$arg" = "FAILED"  ]; then
+							gatewayinterfaces="$gatewayinterfaces$offline:$ipaddr,$iface "
+						elif [ "$arg" = "REACHABLE" ] || [ "$arg" = "STALE" ] || [ "$arg" = "DELAY"  ]; then
+							gatewayinterfaces="$gatewayinterfaces$online:$ipaddr,$iface "
+						fi
+					done
+				fi
+			fi
+		done
 	fi
 
-	printf "$defaultif"
+	printf "$gatewayinterfaces"
 	exit 0
 
 elif [ "$1" = "clientaddress" ]; then
@@ -1025,15 +1057,15 @@ elif [ "$1" = "stopdaemon" ]; then
 	# Stop a daemon process
 	# $2 contains the pid of the daemon to stop
 	kill $2
+	status=$?
 
-	if [ "$?" = "0" ]; then
+	if [ "$status" = "0" ]; then
 		printf "%s" "done"
 	else
 		printf "%s" "nack"
-		exit 1
 	fi
 
-	exit 0
+	exit $status
 
 elif [ "$1" = "get_interface_by_ip" ]; then
 	# $2 contains the ip to check

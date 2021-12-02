@@ -928,6 +928,8 @@ iptables_download_ratelimit_enable(t_client *client, int enable)
 			packet_limit,
 			bucket
 		);
+
+		client->download_bucket_size = bucket;
 		rc |= iptables_do_command("-t mangle -A " CHAIN_INCOMING " -d %s -j DROP", client->ip);
 	}
 
@@ -938,7 +940,7 @@ iptables_download_ratelimit_enable(t_client *client, int enable)
 		rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -m limit --limit %llu/min --limit-burst %llu -j ACCEPT",
 			client->ip,
 			packet_limit,
-			bucket
+			client->download_bucket_size
 		);
 		rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -j DROP", client->ip);
 
@@ -982,7 +984,7 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 	if (enable == 1) {
 		debug(LOG_INFO, "Upload Rate Limiting of [%s %s] to [%llu] packets/min, bucket size [%llu]", client->ip, client->mac, packet_limit, bucket);
 
-		// Add rate limiting download rule set for this client
+		// Add rate limiting upload rule set for this client
 		rc |= iptables_do_command("-t filter -I " CHAIN_UPLOAD_RATE " -s %s -j DROP", client->ip);
 		rc |= iptables_do_command("-t filter -I " CHAIN_UPLOAD_RATE " -s %s -c %llu %llu -m limit --limit %llu/sec --limit-burst %llu -j RETURN",
 			client->ip,
@@ -991,6 +993,7 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 			packet_limit,
 			bucket
 		);
+		client->upload_bucket_size = bucket;
 	}
 
 	if (enable == 0) {
@@ -1000,7 +1003,7 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 		rc |= iptables_do_command("-t filter -D " CHAIN_UPLOAD_RATE " -s %s -m limit --limit %llu/sec --limit-burst %llu -j RETURN",
 			client->ip,
 			packet_limit,
-			bucket
+			client->upload_bucket_size
 		);
 	}
 	return rc;

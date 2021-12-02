@@ -41,27 +41,29 @@ typedef struct _t_counters {
  */
 typedef struct _t_client {
 	struct _t_client *next;			/**< @brief Pointer to the next client */
-	char *ip;				/**< @brief Client IP address */
-	char *mac;				/**< @brief Client MAC address */
-	char *token;				/**< @brief Client token */
-	char *hid;				/**< @brief Client hid */
-	char *cid;				/**< @brief Client cid */
-	char *custom;				/**< @brief Client custom string sent from FAS and sent to BinAuth */
-	char *client_type;			/**< @brief Client type, cpd (cpd_can), rfc8910-cpi (cpi_url) or rfc8908-cpi (cpi_api)  */
-	unsigned int fw_connection_state;	/**< @brief Client Connection state in the firewall */
-	time_t session_start;			/**< @brief Actual Time the client was authenticated */
-	time_t window_start;			/**< @brief Actual Time the client rate check window begins */
-	time_t session_end;			/**< @brief Scheduled Time the client will be deauthenticated */
-	t_counters counters;			/**< @brief Counters for input/output of the client. */
-	int window_counter;			/**< @brief Rate Check Window counter */
-	int rate_exceeded;			/**< @brief Rate Exceeded Check flag */
-	int initial_loop;			/**< @brief Check client initial loop flag */
-	unsigned long long int upload_rate;	/**< @brief Client Upload rate limit, kb/s */
-	unsigned long long int download_rate;	/**< @brief Client Download rate limit, kb/s */
-	unsigned long long int uprate;		/**< @brief Current Client Upload rate, kb/s */
-	unsigned long long int downrate;	/**< @brief Client Download rate, kb/s */
-	unsigned long long int upload_quota;	/**< @brief Client Upload quota, kB */
-	unsigned long long int download_quota;	/**< @brief Client Download quota, kB */
+	char *ip;					/**< @brief Client IP address */
+	char *mac;					/**< @brief Client MAC address */
+	char *token;					/**< @brief Client token */
+	char *hid;					/**< @brief Client hid */
+	char *cid;					/**< @brief Client cid */
+	char *custom;					/**< @brief Client custom string sent from FAS and sent to BinAuth */
+	char *client_type;				/**< @brief Client type, cpd (cpd_can), rfc8910-cpi (cpi_url) or rfc8908-cpi (cpi_api)  */
+	unsigned int fw_connection_state;		/**< @brief Client Connection state in the firewall */
+	time_t session_start;				/**< @brief Actual Time the client was authenticated */
+	time_t window_start;				/**< @brief Actual Time the client rate check window begins */
+	time_t session_end;				/**< @brief Scheduled Time the client will be deauthenticated */
+	t_counters counters;				/**< @brief Counters for input/output of the client. */
+	int window_counter;				/**< @brief Rate Check Window counter */
+	int rate_exceeded;				/**< @brief Rate Exceeded Check flag */
+	int initial_loop;				/**< @brief Check client initial loop flag */
+	unsigned long long int upload_rate;		/**< @brief Client Upload rate limit, kb/s */
+	unsigned long long int download_rate;		/**< @brief Client Download rate limit, kb/s */
+	unsigned long long int uprate;			/**< @brief Current Client Upload rate, kb/s */
+	unsigned long long int downrate;		/**< @brief Client Download rate, kb/s */
+	unsigned long long int upload_quota;		/**< @brief Client Upload quota, kB */
+	unsigned long long int download_quota;		/**< @brief Client Download quota, kB */
+	unsigned long long int download_bucket_size;	/**< @brief Client Download Bucket size, packets */
+	unsigned long long int upload_bucket_size;	/**< @brief Client Upload Bucket size, packets */
 	unsigned id;
 } t_client;
 

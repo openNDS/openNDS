@@ -418,8 +418,6 @@ fw_refresh_client_list(void)
 					cp1->upload_rate, uprate
 				);
 
-				debug(LOG_DEBUG, "rate_exceeded flag is: %u", cp1->rate_exceeded);
-
 				//Handle download rate limiting
 				debug(LOG_DEBUG, "cp1->download_rate: %llu downrate: %llu", cp1->download_rate, downrate);
 
@@ -519,6 +517,7 @@ fw_refresh_client_list(void)
 					}
 				}
 
+				debug(LOG_DEBUG, "RATE EXCEEDED flag is %d", cp1->rate_exceeded);
 
 				// start new window
 				cp1->window_start = now;

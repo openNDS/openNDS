@@ -932,11 +932,12 @@ elif [ "$1" = "gatewayroute" ]; then
 			else
 				iface=$var
 				idx=0
-				arptest=$(ip -f inet neigh show | grep "$var" | awk '{print $0}')
+				arptest=$(ip -f inet neigh show | grep "$iface" | grep "$ipaddr")
 
 				if [ -z "$arptest" ]; then
 					continue
 				else
+
 					for arg in $arptest; do
 
 						if [ "$arg" = "PROBE" ] || [ "$arg" = "INCOMPLETE" ] || [ "$arg" = "FAILED"  ]; then

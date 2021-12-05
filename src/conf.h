@@ -189,8 +189,7 @@ typedef struct {
 	char *http_encoded_gw_name;			//@brief http encoded name of the gateway, used as a templated variable in splash.htm
 	char *url_encoded_gw_name;			//@brief url encoded name of the gateway used as variable in Preauth
 	char *gw_interface;				//@brief Interface we will manage
-	char *ext_interface;				//@brief Interface of this router which has the routed upstream connection
-	char *ext_gateway;				//@brief The IP address of the upstream gateway
+	char *ext_gateway;				//@brief The interfaces and IP addresses of upstream gateways
 	char *gw_iprange;				//@brief IP range on gw_interface we will manage
 	char *gw_ip;					//@brief Internal IP (v4 or v6) for our web server
 	char *gw_address;				//@brief Internal IP with port for our web server

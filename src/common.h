@@ -26,8 +26,14 @@
 #ifndef _COMMON_H_
 #define _COMMON_H_
 
-/** @brief Read buffer for socket read? */
+/** @brief Big Buffer */
 #define MAX_BUF 8192
+
+/** @brief Medium Buffer */
+#define MID_BUF 4096
+
+/** @brief Small Buffer */
+#define SMALL_BUF 1024
 
 /** @brief exec return status buffer size */
 #define STATUS_BUF 16

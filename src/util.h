@@ -64,6 +64,12 @@ int ndsctl_lock();
 // @brief unlocks ndsctl
 void ndsctl_unlock();
 
+// @brief startdaemon
+int startdaemon(char *cmd, int daemonpid);
+
+// @brief stopdaemon
+int stopdaemon(int daemonpid);
+
 /* @brief writes an element or elements of client info to the cidfile,
  * mode can be:
  * write (write the info)

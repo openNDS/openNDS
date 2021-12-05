@@ -85,13 +85,100 @@ extern unsigned int authenticated_since_start;
 extern int created_httpd_threads;
 extern int current_httpd_threads;
 
+
+int startdaemon(char *cmd, int daemonpid)
+{
+	/* Start a program in the background.
+		cmd contains the full path and startup arguments of the program
+		daemonpid returns with the pid of the running program
+		daemonpid returns 0 if the program terminates quickly
+		Function returns 0 if successfully running in background, 1 if failed
+	*/
+
+	char *buff;
+	char *msg;
+	char *daemoncmd;
+	int ret;
+
+	buff = safe_calloc(MID_BUF);
+	msg = safe_calloc(STATUS_BUF);
+
+	b64_encode(buff, MID_BUF, cmd, strlen(cmd));
+
+	safe_asprintf(&daemoncmd, "/usr/lib/opennds/libopennds.sh startdaemon '%s'",
+		buff
+	);
+
+	debug(LOG_DEBUG, "startdaemon command: %s", daemoncmd);
+
+	ret = execute_ret_url_encoded(msg, STATUS_BUF - 1, daemoncmd);
+
+	if (ret == 0) {
+		debug(LOG_DEBUG, "Daemon pid: %s", msg);
+	} else {
+		debug(LOG_INFO, "Failed start daemon from [%s] - retrying", cmd);
+		sleep(1);
+
+		ret = execute_ret_url_encoded(msg, STATUS_BUF - 1, daemoncmd);
+
+		if (ret == 0) {
+			debug(LOG_DEBUG, "Daemon pid: %s", msg);
+		} else {
+			debug(LOG_INFO, "Failed start daemon from [%s] - giving up", cmd);
+		}
+	}
+	free(daemoncmd);
+	free(buff);
+	free(msg);
+	return ret;
+}
+
+int stopdaemon(int daemonpid)
+{
+	/* Stop a program that is running in the background, daemonpid contains the pid of the daemon
+		Returns 0 if successful or 1 if failed to stop.
+		Note: It might fail to stop because it was actually already stopped.
+	*/
+	char *msg;
+	char *daemoncmd;
+	int ret;
+
+	msg = safe_calloc(STATUS_BUF);
+	safe_asprintf(&daemoncmd, "/usr/lib/opennds/libopennds.sh stopdaemon '%d'",
+		daemonpid
+	);
+
+	debug(LOG_DEBUG, "stopdaemon command: %s", daemoncmd);
+
+	ret = execute_ret_url_encoded(msg, STATUS_BUF - 1, daemoncmd);
+
+	if (ret == 0) {
+		debug(LOG_DEBUG, "stopdaemon, pid: [%d], %s", daemonpid, msg);
+	} else {
+		debug(LOG_INFO, "Failed stop daemon pid [%d] - retrying", daemonpid);
+		sleep(1);
+
+		ret = execute_ret_url_encoded(msg, STATUS_BUF - 1, daemoncmd);
+
+		if (ret == 0) {
+			debug(LOG_DEBUG, "stopdaemon, pid: [%d], %s", daemonpid, msg);
+		} else {
+			debug(LOG_INFO, "Failed stop daemon, pid [%d] - giving up", daemonpid);
+		}
+	}
+	free(daemoncmd);
+	free(msg);
+	return ret;
+}
+
 int check_routing(int watchdog)
 {
 	// Check routing configuration
-	char rtest[32] = {0};
+	char *rtest;
 	char *rcmd;
 	const char rtr_fail[] = "-";
 	const char rtr_offline[] = "offline";
+	const char rtr_online[] = "online";
 	s_config *config = config_get_config();
 
 	safe_asprintf(&rcmd,
@@ -99,25 +186,37 @@ int check_routing(int watchdog)
 		config->gw_interface
 	);
 
-	if (execute_ret_url_encoded(rtest, sizeof(rtest) - 1, rcmd) == 0) {
-		free (rcmd);
+	rtest = safe_calloc(SMALL_BUF);
+
+	if (execute_ret_url_encoded(rtest, SMALL_BUF - 1, rcmd) == 0) {
 
 		if (strcmp(rtest, rtr_fail) == 0) {
 			debug(LOG_ERR, "Routing configuration is not valid for openNDS, exiting ...");
 			exit(1);
-		} else if (strcmp(rtest, rtr_offline) == 0) {
-			// offline
-			config->online_status = 0;
-			debug(LOG_WARNING, "Upstream gateway is not connected or is offline");
+		} else if (strstr(rtest, rtr_offline) != NULL) {
+			// An upstream gateway is offline
+
+			if (strstr(rtest, rtr_online) != NULL) {
+				// At least one upstream gateway is online
+				config->online_status = 1;
+			} else {
+				// all upstream gateways are offline
+				config->online_status = 0;
+			}
+			config->ext_gateway = rtest;
+			debug(LOG_WARNING, "Upstream gateway(s) [ %s ]", rtest);
 		} else {
-			// online
+			// All upstream gateways are online
 			if (watchdog == 0 || config->online_status == 0) {
 				config->online_status = 1;
-				config->ext_gateway = strdup(strtok(rtest, " "));
-				config->ext_interface = strdup(strtok(NULL, " "));
-				debug(LOG_NOTICE, "Upstream gateway [ %s ] via interface [ %s ] is online", config->ext_gateway, config->ext_interface);
+				debug(LOG_NOTICE, "Upstream gateway(s) [ %s ]", rtest);
 			}
 		}
+
+		config->ext_gateway = safe_strdup(rtest);
+		free (rcmd);
+		free (rtest);
+		debug(LOG_DEBUG, "Online Status [ %d ]", config->online_status);
 		return config->online_status;
 	} else {
 		debug(LOG_ERR, "Unable to get routing configuration, exiting ...");
@@ -173,6 +272,7 @@ void ndsctl_unlock()
 int download_remotes(int refresh)
 {
 	char *cmd = NULL;
+	int daemonpid;
 	s_config *config = config_get_config();
 
 	if(refresh == 0) {
@@ -182,7 +282,7 @@ int download_remotes(int refresh)
 	}
 
 	safe_asprintf(&cmd,
-		"/usr/lib/opennds/libopennds.sh download \"%s\" \"%s\" \"%s\" \"%d\" \"%s\" &",
+		"/usr/lib/opennds/libopennds.sh download \"%s\" \"%s\" \"%s\" \"%d\" \"%s\"",
 		config->themespec_path,
 		config->custom_images,
 		config->custom_files,
@@ -190,10 +290,16 @@ int download_remotes(int refresh)
 		config->webroot
 	);
 
-	debug(LOG_DEBUG, "Executing system command: %s\n", cmd);
+	if (config->online_status == 1) {
+		debug(LOG_DEBUG, "Starting daemon: %s\n", cmd);
 
-	if (system(cmd) < 0) {
-		debug(LOG_DEBUG, "system(%s) returned < 0", cmd);
+		if (startdaemon(cmd, daemonpid) == 0) {
+			debug(LOG_DEBUG, "daemon(%s) pid is [%d]", cmd, daemonpid);
+		} else {
+			debug(LOG_DEBUG, "Cannot download remotes - daemon failed to start");
+		}
+	} else {
+		debug(LOG_DEBUG, "Cannot download remotes - upstream gateway(s) are offline");
 	}
 
 	free(cmd);
@@ -573,9 +679,9 @@ ndsctl_status(FILE *fp)
 	routercheck = check_routing(watchdog);
 
 	if (routercheck == 1) {
-		fprintf(fp, "Upstream gateway [ %s ] via interface [ %s ] is online\n", config->ext_gateway, config->ext_interface);
+		fprintf(fp, "Upstream gateway(s) [ %s ]\n", config->ext_gateway);
 	} else {
-		fprintf(fp, "Upstream gateway is offline or not connected\n");
+		fprintf(fp, "All Upstream gateway(s) are offline or not connected [ %s ]\n", config->ext_gateway);
 	}
 
 	fprintf(fp, "MHD Server [ version %s ] listening on: http://%s\n", mhdversion, config->gw_address);

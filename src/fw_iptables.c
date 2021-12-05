@@ -986,7 +986,7 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 
 		// Add rate limiting upload rule set for this client
 		rc |= iptables_do_command("-t filter -I " CHAIN_UPLOAD_RATE " -s %s -j DROP", client->ip);
-		rc |= iptables_do_command("-t filter -I " CHAIN_UPLOAD_RATE " -s %s -c %llu %llu -m limit --limit %llu/sec --limit-burst %llu -j RETURN",
+		rc |= iptables_do_command("-t filter -I " CHAIN_UPLOAD_RATE " -s %s -c %llu %llu -m limit --limit %llu/min --limit-burst %llu -j RETURN",
 			client->ip,
 			client->counters.outgoing / 1500,
 			client->counters.outgoing,
@@ -1000,7 +1000,7 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 		debug(LOG_INFO, "Upload Rate Limiting for [%s] [%s] is off", client->ip, client->mac);
 		// Remove rate limiting upload rule set for this client
 		rc |= iptables_do_command("-t filter -D " CHAIN_UPLOAD_RATE " -s %s -j DROP", client->ip);
-		rc |= iptables_do_command("-t filter -D " CHAIN_UPLOAD_RATE " -s %s -m limit --limit %llu/sec --limit-burst %llu -j RETURN",
+		rc |= iptables_do_command("-t filter -D " CHAIN_UPLOAD_RATE " -s %s -m limit --limit %llu/min --limit-burst %llu -j RETURN",
 			client->ip,
 			packet_limit,
 			client->upload_bucket_size
@@ -1056,8 +1056,6 @@ iptables_fw_deauthenticate(t_client *client)
 	rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -j DROP", client->ip);
 	rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -j MARK %s 0x%x", client->ip, markop, FW_MARK_AUTHENTICATED);
 	rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -j ACCEPT", client->ip);
-	rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -m limit --limit %llu/sec -j ACCEPT", client->ip, packetsdown);
-
 
 	return rc;
 }

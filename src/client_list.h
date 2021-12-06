@@ -30,11 +30,13 @@
 /** Counters struct for a client's bandwidth usage (in bytes)
  */
 typedef struct _t_counters {
-	unsigned long long incoming;		/**< @brief Incoming data total */
-	unsigned long long outgoing;		/**< @brief Outgoing data total */
-	unsigned long long in_window_start;	/**< @brief Incoming data total at rate check window start */
-	unsigned long long out_window_start;	/**< @brief Outgoing data total at rate check window start */
-	time_t last_updated;			/**< @brief Last update of the counters */
+	unsigned long long incoming;			/**< @brief Incoming bytes total */
+	unsigned long long outgoing;			/**< @brief Outgoing bytes total */
+	unsigned long long inpackets;			/**< @brief Incoming packets total */
+	unsigned long long outpackets;			/**< @brief Outgoing packets total */
+	unsigned long long in_window_start;		/**< @brief Incoming bytes total at rate check window start */
+	unsigned long long out_window_start;		/**< @brief Outgoing bytes total at rate check window start */
+	time_t last_updated;				/**< @brief Last update of the counters */
 } t_counters;
 
 /** Client node for the connected client linked list.
@@ -64,6 +66,8 @@ typedef struct _t_client {
 	unsigned long long int download_quota;		/**< @brief Client Download quota, kB */
 	unsigned long long int download_bucket_size;	/**< @brief Client Download Bucket size, packets */
 	unsigned long long int upload_bucket_size;	/**< @brief Client Upload Bucket size, packets */
+	unsigned long long int inc_packet_limit;	/**< @brief Incoming packet limit */
+	unsigned long long int out_packet_limit;	/**< @brief Outgoing packet limit */
 	unsigned id;
 } t_client;
 

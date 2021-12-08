@@ -1,6 +1,14 @@
 opennds (9.5.0-1) stable; urgency=medium
 
   * This version adds new functionality, and fixes some issues
+  * Add - use average packet size instead of MTU when implementing rate limiting [bluewavenet]
+  * Fix - typo in iptables command and remove a redundant command [bluewavenet]
+  * Add - startdaemon() and stopdaemon() utility functions [bluewavenet]
+  * Add - combined interface/ipaddress external gateway status monitoring [bluewavenet]
+  * Fix - potential online/offline detection problem when mwan3 is running [bluewavenet]
+  * Add - get_debug_level and syslog library calls [bluewavenet]
+  * Fix - correctly reset upload and download rate rules [bluewavenet]
+  * Add - extend upstream gateway checking for use with mwan3 loadbalance/failover [bluewavenet]
   * Fix - Potential NULL pointer segfault in http_microhttpd on calling authenticated() [bluewavenet]
   * Fix - Potential NULL pointer segfault in http_microhttpd on calling preauthenticated() [dddaniel]
   * Add - Calculate Bucket size based on achieved burst rate [bluewavenet]
@@ -51,7 +59,7 @@ opennds (9.5.0-1) stable; urgency=medium
   * Remove - deprecated Allowed and Blocked entries in ndsctl status output [bluewavenet]
   * Add - Deprecate option macmechanism, allowedmaclist and blockedmaclist [bluewavenet]
 
- -- Rob White <dot@blue-wave.net>  Fri, 26 Nov 2021 09:40:06 +0000
+ -- Rob White <dot@blue-wave.net>  Wed, 8 Dec 2021 06:45:56 +0000
 
 opennds (9.4.0-1) stable; urgency=medium
 

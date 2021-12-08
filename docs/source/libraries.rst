@@ -189,6 +189,24 @@ debuglevel:
 
     *returns*: the debuglevel
 
+get_debuglevel:
+---------------
+
+	arg1: "get_debuglevel", Gets the debuglevel set for externals
+
+    *returns*: the debuglevel
+
+syslog:
+-------
+
+	arg1: "syslog", Write a debug message to syslog
+
+	    arg2: contains the string to to write to syslog if enabled by debuglevel
+
+	    arg3: "debugtype" contains debug type: debug, info, warn, notice, err, emerg.
+
+    *returns*: "done"
+
 startdaemon:
 ------------
 
@@ -196,7 +214,7 @@ startdaemon:
 
         arg2: contains the b64 encoded daemon startup command
 
-    *returns*: pid of the daemon and exit code 0 if successful. If unsuccessful returns "0" or a status information string with code 1
+    *returns*: pid of the daemon and exit code 0 if successful. If unsuccessful or terminated immediately returns "0" or a status information string with code 1
 
 stopdaemon:
 -----------

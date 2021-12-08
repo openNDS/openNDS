@@ -895,13 +895,17 @@ iptables_download_ratelimit_enable(t_client *client, int enable)
 	int rc = 0;
 	unsigned long long int packet_limit;
 	unsigned long long int packets;
+	unsigned long long int average_packet_size;
 	unsigned long long int bucket;
 	s_config *config;
 	config = config_get_config();
 
-	packet_limit = client->download_rate * 1024 * 60 / 1500 / 8; // packets per minute @ MTU of 1500
-	packets = client->downrate * 1024 * 60 / 1500 / 8; // packets per minute @ MTU of 1500
+	average_packet_size = client->counters.incoming / client->counters.inpackets;
+	packet_limit = client->download_rate * 1024 * 60 / average_packet_size / 8; // packets per minute
+	packets = client->downrate * 1024 * 60 / average_packet_size / 8; // packets per minute
 	bucket = (packets - packet_limit) * config->download_bucket_ratio;
+
+	debug(LOG_INFO, "Average Download Packet Size for [%s] is [%llu] bytes", client->ip, average_packet_size);
 
 	if ( bucket < 5) {
 		bucket = 5;
@@ -910,49 +914,35 @@ iptables_download_ratelimit_enable(t_client *client, int enable)
 	if (enable == 1) {
 		debug(LOG_INFO, "Download Rate Limiting of [%s %s] to [%llu] packets/min, bucket size [%llu]", client->ip, client->mac, packet_limit, bucket);
 		// Remove non-rate limiting rule set for this client
-		rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -j MARK %s 0x%x", client->ip, markop, FW_MARK_AUTHENTICATED);
 		rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -j ACCEPT", client->ip);
 
-		// Add rate limiting download rule set for this client
-		rc |= iptables_do_command("-t mangle -A " CHAIN_INCOMING " -d %s -c %llu %llu -j MARK %s 0x%x",
-			client->ip,
-			client->counters.incoming / 1500,
-			client->counters.incoming,
-			markop,
-			FW_MARK_AUTHENTICATED
-		);
 		rc |= iptables_do_command("-t mangle -A " CHAIN_INCOMING " -d %s -c %llu %llu -m limit --limit %llu/min --limit-burst %llu -j ACCEPT",
 			client->ip,
-			client->counters.incoming / 1500,
+			client->counters.inpackets,
 			client->counters.incoming,
 			packet_limit,
 			bucket
 		);
+
+		client->inc_packet_limit = packet_limit;
+		client->download_bucket_size = bucket;
 		rc |= iptables_do_command("-t mangle -A " CHAIN_INCOMING " -d %s -j DROP", client->ip);
 	}
 
 	if (enable == 0) {
 		debug(LOG_INFO, "Download Rate Limiting for [%s] [%s] is off", client->ip, client->mac);
 		// Remove rate limiting download rule set for this client
-		rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -j MARK %s 0x%x", client->ip, markop, FW_MARK_AUTHENTICATED);
 		rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -m limit --limit %llu/min --limit-burst %llu -j ACCEPT",
 			client->ip,
-			packet_limit,
-			bucket
+			client->inc_packet_limit,
+			client->download_bucket_size
 		);
+
 		rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -j DROP", client->ip);
 
-		// Add non-rate limiting rule set for this client
-		rc |= iptables_do_command("-t mangle -A " CHAIN_INCOMING " -d %s -c %llu %llu -j MARK %s 0x%x",
-			client->ip,
-			client->counters.incoming / 1500,
-			client->counters.incoming,
-			markop,
-			FW_MARK_AUTHENTICATED
-		);
 		rc |= iptables_do_command("-t mangle -A " CHAIN_INCOMING " -d %s -c %llu %llu -j ACCEPT",
 			client->ip,
-			client->counters.incoming / 1500,
+			client->counters.inpackets,
 			client->counters.incoming
 		);
 	}
@@ -967,13 +957,17 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 	int rc = 0;
 	unsigned long long int packet_limit;
 	unsigned long long int packets;
+	unsigned long long int average_packet_size;
 	unsigned long long int bucket;
 	s_config *config;
 	config = config_get_config();
 
-	packet_limit = client->upload_rate * 1024 * 60 / 1500 / 8; // packets per minute @ MTU of 1500
-	packets = client->uprate * 1024 * 60 / 1500 / 8; // packets per minute @ MTU of 1500
+	average_packet_size = client->counters.outgoing / client->counters.outpackets;
+	packet_limit = client->upload_rate * 1024 * 60 / average_packet_size / 8; // packets per minute
+	packets = client->uprate * 1024 * 60 / average_packet_size / 8; // packets per minute
 	bucket = (packets - packet_limit) * config->upload_bucket_ratio;
+
+	debug(LOG_INFO, "Average Upload Packet Size for [%s] is [%llu] bytes", client->ip, average_packet_size);
 
 	if ( bucket < 5) {
 		bucket = 5;
@@ -982,25 +976,28 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 	if (enable == 1) {
 		debug(LOG_INFO, "Upload Rate Limiting of [%s %s] to [%llu] packets/min, bucket size [%llu]", client->ip, client->mac, packet_limit, bucket);
 
-		// Add rate limiting download rule set for this client
+		// Add rate limiting upload rule set for this client
 		rc |= iptables_do_command("-t filter -I " CHAIN_UPLOAD_RATE " -s %s -j DROP", client->ip);
-		rc |= iptables_do_command("-t filter -I " CHAIN_UPLOAD_RATE " -s %s -c %llu %llu -m limit --limit %llu/sec --limit-burst %llu -j RETURN",
+		rc |= iptables_do_command("-t filter -I " CHAIN_UPLOAD_RATE " -s %s -c %llu %llu -m limit --limit %llu/min --limit-burst %llu -j RETURN",
 			client->ip,
-			client->counters.outgoing / 1500,
+			client->counters.outpackets,
 			client->counters.outgoing,
 			packet_limit,
 			bucket
 		);
+
+		client->out_packet_limit = packet_limit;
+		client->upload_bucket_size = bucket;
 	}
 
 	if (enable == 0) {
 		debug(LOG_INFO, "Upload Rate Limiting for [%s] [%s] is off", client->ip, client->mac);
 		// Remove rate limiting upload rule set for this client
 		rc |= iptables_do_command("-t filter -D " CHAIN_UPLOAD_RATE " -s %s -j DROP", client->ip);
-		rc |= iptables_do_command("-t filter -D " CHAIN_UPLOAD_RATE " -s %s -m limit --limit %llu/sec --limit-burst %llu -j RETURN",
+		rc |= iptables_do_command("-t filter -D " CHAIN_UPLOAD_RATE " -s %s -m limit --limit %llu/min --limit-burst %llu -j RETURN",
 			client->ip,
-			packet_limit,
-			bucket
+			client->out_packet_limit,
+			client->upload_bucket_size
 		);
 	}
 	return rc;
@@ -1053,8 +1050,6 @@ iptables_fw_deauthenticate(t_client *client)
 	rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -j DROP", client->ip);
 	rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -j MARK %s 0x%x", client->ip, markop, FW_MARK_AUTHENTICATED);
 	rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -j ACCEPT", client->ip);
-	rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -m limit --limit %llu/sec -j ACCEPT", client->ip, packetsdown);
-
 
 	return rc;
 }
@@ -1147,6 +1142,7 @@ iptables_fw_counters_update(void)
 	int af;
 	s_config *config;
 	unsigned long long int counter;
+	unsigned long long int packets;
 	t_client *p1;
 	struct sockaddr_storage tempaddr;
 
@@ -1155,10 +1151,11 @@ iptables_fw_counters_update(void)
 
 	LOCK_CLIENT_LIST();
 
-	// Look for outgoing traffic of authenticated clients.
+	// Look for outgoing (upload) traffic of authenticated clients.
 	safe_asprintf(&script, "%s %s", "iptables", "-v -n -x -t mangle -L " CHAIN_OUTGOING);
 	output = popen(script, "r");
 	free(script);
+
 	if (!output) {
 		debug(LOG_ERR, "popen(): %s", strerror(errno));
 		return -1;
@@ -1169,24 +1166,28 @@ iptables_fw_counters_update(void)
 	while (('\n' != fgetc(output)) && !feof(output)) {}
 
 	while (!feof(output)) {
-		rc = fscanf(output, "%*s %llu %s %*s %*s %*s %*s %15[0-9.]", &counter, target, ip);
+		rc = fscanf(output, " %llu %llu %s %*s %*s %*s %*s %15[0-9.]", &packets, &counter, target, ip);
 		// eat rest of line
 		while (('\n' != fgetc(output)) && !feof(output)) {}
-		if (3 == rc && !strcmp(target, "MARK")) {
+		if (4 == rc && !strcmp(target, "MARK")) {
 			// Sanity
 			if (!inet_pton(af, ip, &tempaddr)) {
 				debug(LOG_WARNING, "I was supposed to read an IP address but instead got [%s] - ignoring it", ip);
 				continue;
 			}
-			debug(LOG_DEBUG, "Read outgoing traffic for %s: Bytes=%llu", ip, counter);
+
+			debug(LOG_DEBUG, "Read outgoing traffic for %s: Bytes=%llu, Packets=%llu", ip, counter, packets);
+
 			if ((p1 = client_list_find_by_ip(ip))) {
 				if (p1->counters.outgoing < counter) {
 					p1->counters.outgoing = counter;
+					p1->counters.outpackets = packets;
 					p1->counters.last_updated = time(NULL);
 
-					debug(LOG_DEBUG, "%s - Updated counter.outgoing to %llu bytes.  Updated last_updated to %d",
+					debug(LOG_DEBUG, "%s - Updated counter.outgoing to %llu bytes, packets=%llu.  Updated last_updated to %d",
 						ip,
 						counter,
+						packets,
 						p1->counters.last_updated
 					);
 				}
@@ -1197,10 +1198,11 @@ iptables_fw_counters_update(void)
 	}
 	pclose(output);
 
-	// Look for incoming traffic
+	// Look for incoming (download) traffic
 	safe_asprintf(&script, "%s %s", "iptables", "-v -n -x -t mangle -L " CHAIN_INCOMING);
 	output = popen(script, "r");
 	free(script);
+
 	if (!output) {
 		debug(LOG_ERR, "popen(): %s", strerror(errno));
 		return -1;
@@ -1211,20 +1213,28 @@ iptables_fw_counters_update(void)
 	while (('\n' != fgetc(output)) && !feof(output)) {}
 
 	while (!feof(output)) {
-		rc = fscanf(output, "%*s %llu %s %*s %*s %*s %*s %*s %15[0-9.]", &counter, target, ip);
+		rc = fscanf(output, " %llu %llu %s %*s %*s %*s %*s %*s %15[0-9.]", &packets, &counter, target, ip);
 		// eat rest of line
 		while (('\n' != fgetc(output)) && !feof(output)) {}
-		if (3 == rc && !strcmp(target, "ACCEPT")) {
+		if (4 == rc && !strcmp(target, "MARK")) {
 			// Sanity
 			if (!inet_pton(af, ip, &tempaddr)) {
 				debug(LOG_WARNING, "I was supposed to read an IP address but instead got [%s] - ignoring it", ip);
 				continue;
 			}
-			debug(LOG_DEBUG, "Read incoming traffic for %s: Bytes=%llu", ip, counter);
+
+			debug(LOG_DEBUG, "Read incoming traffic for %s: Bytes=%llu, Packets=%llu", ip, counter, packets);
+
 			if ((p1 = client_list_find_by_ip(ip))) {
 				if (p1->counters.incoming < counter) {
 					p1->counters.incoming = counter;
-					debug(LOG_DEBUG, "%s - Updated counter.incoming to %llu bytes", ip, counter);
+					p1->counters.inpackets = packets;
+					debug(LOG_DEBUG, "%s - Updated counter.incoming to %llu bytes, packets=%llu.  Updated last_updated to %d",
+						ip,
+						counter,
+						packets,
+						p1->counters.last_updated
+					);
 				}
 			} else {
 				debug(LOG_WARNING, "Could not find %s in client list", ip);

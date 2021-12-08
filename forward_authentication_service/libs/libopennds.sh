@@ -28,6 +28,41 @@
 
 # functions:
 
+# Write debug message to syslog
+# $syslogmessage contains the string to log
+# $debugtype contains the debug level string: debug, info, warn, notice, err, emerg.
+write_to_syslog() {
+
+	if [ ! -z "$syslogmessage" ]; then
+		get_debuglevel
+
+		case $debugtype in
+			"emerg") debugnum=0;;
+			"err") debugnum=0;;
+			"notice") debugnum=1;;
+			"warn") debugnum=1;;
+			"info") debugnum=2;;
+			"debug") debugnum=3;;
+			*) debugnum=1; debugtype="notice";;
+		esac
+
+		if [ "$debuglevel" -ge "$debugnum" ]; then
+			echo "libopennds - [$syslogmessage]" | logger -p "daemon.$debugtype" -s -t "opennds[$ndspid]"
+		fi
+	fi
+}
+
+# Get the debug level for externals
+get_debuglevel() {
+	configure_log_location
+
+	if [ -e "$mountpoint/ndsdebuglevel" ]; then
+		debuglevel=$(cat "$mountpoint/ndsdebuglevel")
+	else
+		debuglevel=0
+	fi
+}
+
 # Encode the custom string
 encode_custom() {
 	ndsctlcmd="b64encode \"$binauth_custom\""
@@ -868,22 +903,55 @@ elif [ "$1" = "gatewaymac" ]; then
 	exit 0
 
 elif [ "$1" = "gatewayroute" ]; then
-	# Check for valid gatewayroute
+	# Check for valid route to upstream (WAN) gateway
+	# $2 is the LAN gateway interface
 	ifname=$2
+	online="online"
+	offline="offline"
 	defaultif=$(ip route | grep "default" | awk '{printf("%s %s ", $3, $5)}')
 
 	if [ -z "$defaultif" ]; then
-		defaultif="offline"
+		gatewayinterfaces="offline"
 	else
+		# We have a valid route to upstream (WAN) gateway, so:
+		# Check for bad router config
 		for var in $defaultif; do
 			if [ "$var" = "$ifname" ]; then
 				defaultif="-"
 				break
 			fi
 		done
+
+		# Check if upstream gateway is reachable
+		idx=0
+
+		for var in $defaultif; do
+			if [ "$idx"  -eq 0 ]; then
+				ipaddr=$var
+				idx=1
+			else
+				iface=$var
+				idx=0
+				arptest=$(ip -f inet neigh show | grep "$iface" | grep "$ipaddr")
+
+				if [ -z "$arptest" ]; then
+					continue
+				else
+
+					for arg in $arptest; do
+
+						if [ "$arg" = "PROBE" ] || [ "$arg" = "INCOMPLETE" ] || [ "$arg" = "FAILED"  ]; then
+							gatewayinterfaces="$gatewayinterfaces$offline:$ipaddr,$iface "
+						elif [ "$arg" = "REACHABLE" ] || [ "$arg" = "STALE" ] || [ "$arg" = "DELAY"  ]; then
+							gatewayinterfaces="$gatewayinterfaces$online:$ipaddr,$iface "
+						fi
+					done
+				fi
+			fi
+		done
 	fi
 
-	printf "$defaultif"
+	printf "$gatewayinterfaces"
 	exit 0
 
 elif [ "$1" = "clientaddress" ]; then
@@ -989,6 +1057,29 @@ elif [ "$1" = "debuglevel" ]; then
 	printf %d "$setlevel"
 	exit 0
 
+elif [ "$1" = "get_debuglevel" ]; then
+	# Gets the debuglevel set for externals
+	get_debuglevel
+	printf %d "$debuglevel"
+	exit 0
+
+elif [ "$1" = "syslog" ]; then
+	# Write a debug message to syslog
+	# $2 contains the string to to write to syslog if enabled by debuglevel
+	# $3 contains debug type: debug, info, warn, notice, err, emerg.
+	# debugtype contains the debug level string: debug, info, warn, notice, err, emerg.
+
+	if [ -z "$2" ]; then
+		exit 1
+	else
+		syslogmessage=$2
+		debugtype=$3
+		write_to_syslog
+		printf "%s" "done"
+		exit 0
+	fi
+
+
 elif [ "$1" = "startdaemon" ]; then
 	# Start a daemon process
 	# $2 contains the b64 encoded daemon startup command
@@ -1000,17 +1091,23 @@ elif [ "$1" = "startdaemon" ]; then
 		shelldetect=$(head -1 "/usr/lib/opennds/libopennds.sh")
 
 		if [ "$shelldetect" = "#!/bin/sh" ]; then
-			echo "$daemoncmd" | /bin/sh
+			shell="/bin/sh"
 		else
-			echo "$daemoncmd" | /bin/bash
+			shell="/bin/bash"
 		fi
 
-		sleep 1
-		daemonpid=$(pgrep -f "$ndsctlout")
+		echo "$daemoncmd" | $shell
+
+		#sleep 1
+		daemonpid=$(pgrep -f "$shell $ndsctlout")
+
+		syslogmessage="daemonpid is [$daemonpid]"
+		debugtype="debug"
+		write_to_syslog
 
 		if [ -z "$daemonpid" ]; then
 			printf "%s" "0"
-			exit 1
+			exit 0
 		else
 			printf "%s" "$daemonpid"
 		fi
@@ -1024,16 +1121,21 @@ elif [ "$1" = "startdaemon" ]; then
 elif [ "$1" = "stopdaemon" ]; then
 	# Stop a daemon process
 	# $2 contains the pid of the daemon to stop
-	kill $2
 
-	if [ "$?" = "0" ]; then
+	if [ ! -z "$2" ] || [ "$2" -ne 0 ]; then
+		kill $2
+		status=$?
+	else
+		status=1
+	fi
+
+	if [ "$status" = "0" ]; then
 		printf "%s" "done"
 	else
 		printf "%s" "nack"
-		exit 1
 	fi
 
-	exit 0
+	exit $status
 
 elif [ "$1" = "get_interface_by_ip" ]; then
 	# $2 contains the ip to check

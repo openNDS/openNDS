@@ -272,7 +272,7 @@ void ndsctl_unlock()
 int download_remotes(int refresh)
 {
 	char *cmd = NULL;
-	int daemonpid;
+	int daemonpid = 0;
 	s_config *config = config_get_config();
 
 	if(refresh == 0) {
@@ -637,8 +637,6 @@ ndsctl_status(FILE *fp)
 	unsigned long int now, uptimesecs, durationsecs = 0;
 	unsigned long long int download_bytes, upload_bytes;
 	t_MAC *trust_mac;
-	t_MAC *allow_mac;
-	t_MAC *block_mac;
 	time_t sysuptime;
 	t_WGP *allowed_wgport;
 	t_WGFQDN *allowed_wgfqdn;

@@ -1,6 +1,6 @@
 .\" Man page generated from reStructuredText.
 .
-.TH "OPENNDS" "1" "Sep 23, 2021" "9.4.0" "openNDS"
+.TH "OPENNDS" "1" "Dec 12, 2021" "9.5.0" "openNDS"
 .SH NAME
 opennds \- opennds Documentation
 .
@@ -102,6 +102,137 @@ NDS can be used as the "Engine" behind the most sophisticated Captive Portal sys
 .UNINDENT
 .SH WHAT'S NEW? - CHANGELOG
 .sp
+opennds (9.5.0)
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+This version adds new functionality, and fixes some issues
+.IP \(bu 2
+Add \- use average packet size instead of MTU when implementing rate limiting [bluewavenet]
+.IP \(bu 2
+Fix \- typo in iptables command and remove a redundant command [bluewavenet]
+.IP \(bu 2
+Add \- startdaemon() and stopdaemon() utility functions [bluewavenet]
+.IP \(bu 2
+Add \- combined interface/ipaddress external gateway status monitoring [bluewavenet]
+.IP \(bu 2
+Fix \- potential online/offline detection problem when mwan3 is running [bluewavenet]
+.IP \(bu 2
+Add \- get_debug_level and syslog library calls [bluewavenet]
+.IP \(bu 2
+Fix \- correctly reset upload and download rate rules [bluewavenet]
+.IP \(bu 2
+Add \- extend upstream gateway checking for use with mwan3 loadbalance/failover [bluewavenet]
+.IP \(bu 2
+Fix \- Potential NULL pointer segfault in http_microhttpd on calling authenticated() [bluewavenet]
+.IP \(bu 2
+Fix \- Potential NULL pointer segfault in http_microhttpd on calling preauthenticated() [dddaniel]
+.IP \(bu 2
+Add \- Calculate Bucket size based on achieved burst rate [bluewavenet]
+.IP \(bu 2
+Fix \- prevent parameter parsing if clientip not known [bluewavenet]
+.IP \(bu 2
+Add \- disable rate quotas by setting bucket ratio to zero [bluewavenet]
+.IP \(bu 2
+Fix \- suppress some debug messages [bluewavenet]
+.IP \(bu 2
+Add \- more libraries documentation [bluewavenet]
+.IP \(bu 2
+Add \- library calls startdaemon and stopdaemon [bluewavenet]
+.IP \(bu 2
+Fix \- Increase buffer length for longer interface names [koivunen]
+.IP \(bu 2
+Add \- enforce minimum data rates in ndsctl auth [bluewavenet]
+.IP \(bu 2
+Add \- Update README.md [bluewavenet]
+.IP \(bu 2
+Add \- bucket ratio option to config file [bluewavenet]
+.IP \(bu 2
+Add \- upload and download bucket ratio config values [bluewavenet]
+.IP \(bu 2
+Fix \- flag initial debuglevel to externals [bluewavenet]
+.IP \(bu 2
+Add \- limit\-burst tuning to rate quotas [bluewavenet]
+.IP \(bu 2
+Fix \- add trailing space to defaultip [bluewavenet]
+.IP \(bu 2
+Add \- record pre\-emptive authentication in local log [bluewavenet]
+.IP \(bu 2
+Add \- Write to local log function to libopennds [bluewavenet]
+.IP \(bu 2
+Add \- set client_type and custom string for Pre\-emptive authentication [bluewavenet]
+.IP \(bu 2
+Fix \- Remove trailing newline from library call response [bluewavenet]
+.IP \(bu 2
+Fix \- attempt to remove cid file only if client\->cid is set [bluewavenet]
+.IP \(bu 2
+Add \- a skip option for custom downloads to speed up serving page from themespec [bluewavenet]
+.IP \(bu 2
+Add \- put client_type into query string when type is cpd canary [bluewavenet]
+.IP \(bu 2
+Add \- set refresh=0 before loading images [bluewavenet]
+.IP \(bu 2
+Fix \- Truncated return status [bluewavenet]
+.IP \(bu 2
+Add \- Acknowlegement from call to dnsconfig [bluewavenet]
+.IP \(bu 2
+Fix \- potential buffer overflow in debug output [bluewavenet]
+.IP \(bu 2
+Add \- processing of custom data and client type [bluewavenet]
+.IP \(bu 2
+Add \- Client Type for RFC8908 and RFC8910 clients [bluewavenet]
+.IP \(bu 2
+Add \- rfc8908 replies for external FAS and refactor memory management for MHD calls [bluewavenet]
+.IP \(bu 2
+Add \- send error 403 if client is not on openNDS subnet [bluewavenet]
+.IP \(bu 2
+Fix \- remove uneccessary safe_asprint in auth.c [bluewavenet]
+.IP \(bu 2
+Fix \- Initialise buffer to prevent receiving spurious characters [bluewavenet]
+.IP \(bu 2
+Add \- encoded custom data support to ndsctl json, themespec and binauth [bluewavenet]
+.IP \(bu 2
+Add \- advert_1.htm to thankyou page of theme_click\-to\-continue\-custom\-placeholders.sh [bluewavenet]
+.IP \(bu 2
+Add \- library call get_interface_by_ip [bluewavenet]
+.IP \(bu 2
+Add \- function encode_custom() for encoding custom data to be sent to openNDS [bluewavenet]
+.IP \(bu 2
+Fix \- error 511, make all html refrences absolute to enforce link to MHD [bluewavenet]
+.IP \(bu 2
+Add \- check status_path exists and is executeable [bluewavenet]
+.IP \(bu 2
+Fix \- regression causing error 511 to be served from default script [bluewavenet]
+.IP \(bu 2
+Add \- venue\-info\-url and can\-extend\-session json keys [bluewavenet]
+.IP \(bu 2
+Add \- RFC 8908 initial experimental support [bluewavenet]
+.IP \(bu 2
+Add \- debug message when resetting client [bluewavenet]
+.IP \(bu 2
+Fix \- Ensure the ndscids directory exists before trying to write to it. [bluewavenet]
+.IP \(bu 2
+Fix \- use eval in do_ndsctl to allow quoting of arguments [bluewavenet]
+.IP \(bu 2
+Fix \- ensure client hid and client cid file is reset correctly [bluewavenet]
+.IP \(bu 2
+Fix \- Titles of example ThemeSpec Files [bluewavenet]
+.IP \(bu 2
+Fix \- Ensure ThemeSpec Files are executable [bluewavenet]
+.IP \(bu 2
+Remove \- deprecated Allowed and Blocked entries in ndsctl status output [bluewavenet]
+.IP \(bu 2
+Add \- Deprecate option macmechanism, allowedmaclist and blockedmaclist [bluewavenet]
+.UNINDENT
+.UNINDENT
+.UNINDENT
+\(em Rob White <\fI\%dot@blue\-wave.net\fP>  Wed, 8 Dec 2021 06:45:56 +0000
+.UNINDENT
+.UNINDENT
+.sp
 opennds (9.4.0)
 .INDENT 0.0
 .INDENT 3.5
@@ -111,63 +242,63 @@ opennds (9.4.0)
 .IP \(bu 2
 This version adds new functionality, and fixes some issues
 .IP \(bu 2
-Add \- Error message in fas\-aes\-https if shared key is mismatched [bluewave.net]
+Add \- Error message in fas\-aes\-https if shared key is mismatched [bluewavenet]
 .IP \(bu 2
-Fix \- and refactor error 511 page generation[bluewave.net]
+Fix \- and refactor error 511 page generation[bluewavenet]
 .IP \(bu 2
-Fix \- and refactor dnsmasq configuration [bluewave.net]
+Fix \- and refactor dnsmasq configuration [bluewavenet]
 .IP \(bu 2
-Fix \- Typographic error preventing RFC8910 disable [bluewave.net]
+Fix \- Typographic error preventing RFC8910 disable [bluewavenet]
 .IP \(bu 2
-Add \- gateway address and gatewayfqdn to ndsctl json output [bluewave.net]
+Add \- gateway address and gatewayfqdn to ndsctl json output [bluewavenet]
 .IP \(bu 2
-Add \- RFC8910 housekeeping on startup and shutdown [bluewave.net]
+Add \- RFC8910 housekeeping on startup and shutdown [bluewavenet]
 .IP \(bu 2
-Add \- correctly apply dhcp option 114 for generic Linux [bluewave.net]
+Add \- correctly apply dhcp option 114 for generic Linux [bluewavenet]
 .IP \(bu 2
-Add \- reading of configured ndsctlsocket in ndsctl utility[bluewave.net]
+Add \- reading of configured ndsctlsocket in ndsctl utility[bluewavenet]
 .IP \(bu 2
-Add \- use send_error 200 for MHD watchdog [bluewave.net]
+Add \- use send_error 200 for MHD watchdog [bluewavenet]
 .IP \(bu 2
-Add \- generation of page_511 html by library script [bluewave.net]
+Add \- generation of page_511 html by library script [bluewavenet]
 .IP \(bu 2
-Add \- extend debuglevel support to library scripts [bluewave.net]
+Add \- extend debuglevel support to library scripts [bluewavenet]
 .IP \(bu 2
-Refactor \- fas\-aes\-https to simplify and make customisation of http easier [bluewave.net]
+Refactor \- fas\-aes\-https to simplify and make customisation of http easier [bluewavenet]
 .IP \(bu 2
-Add \- library script for error 511 page, allowing customisation [bluewave.net]
+Add \- library script for error 511 page, allowing customisation [bluewavenet]
 .IP \(bu 2
-Add \- make authmon report connection error details [bluewave.net]
+Add \- make authmon report connection error details [bluewavenet]
 .IP \(bu 2
-Fix\- remove unwanted debug message in ndsctl [bluewave.net]
+Fix\- remove unwanted debug message in ndsctl [bluewavenet]
 .IP \(bu 2
-Add \- RFC8910 support by default [bluewave.net]
+Add \- RFC8910 support by default [bluewavenet]
 .IP \(bu 2
-Add \- display status page when accessing /login when authenticated [bluewave.net]
+Add \- display status page when accessing /login when authenticated [bluewavenet]
 .IP \(bu 2
-Add \- MHD response to RFC8910 requests [bluewave.net]
+Add \- MHD response to RFC8910 requests [bluewavenet]
 .IP \(bu 2
-Add \- Dnsmasq RFC8910 configuration [bluewave.net]
+Add \- Dnsmasq RFC8910 configuration [bluewavenet]
 .IP \(bu 2
-Add \- send error 511 in response to unsupported http method [bluewave.net]
+Add \- send error 511 in response to unsupported http method [bluewavenet]
 .IP \(bu 2
-Add \- Check for ca\-bundle on OpenWrt, if not installed, add syslog messages and terminate [bluewave.net]
+Add \- Check for ca\-bundle on OpenWrt, if not installed, add syslog messages and terminate [bluewavenet]
 .IP \(bu 2
-Add \- Make ndsctl use the configured value for socket path if set and deprecate \-s option [bluewave.net]
+Add \- Make ndsctl use the configured value for socket path if set and deprecate \-s option [bluewavenet]
 .IP \(bu 2
-Add \- Warning message when Walled Garden port 80 is allowed [bluewave.net]
+Add \- Warning message when Walled Garden port 80 is allowed [bluewavenet]
 .IP \(bu 2
-Fix \- remove un\-needed pthread_kill in termination_handler() [bluewave.net] [T\-X]
+Fix \- remove un\-needed pthread_kill in termination_handler() [bluewavenet] [T\-X]
 .IP \(bu 2
-Fix \- debug messages from authmon.sh [bluewave.net]
+Fix \- debug messages from authmon.sh [bluewavenet]
 .IP \(bu 2
-Fix \- Allow disabling gateway fqdn, facilitating access to router port 80 [bluewave.net]
+Fix \- Allow disabling gateway fqdn, facilitating access to router port 80 [bluewavenet]
 .IP \(bu 2
-Fix \- Segfault in ndsctl when \-s option is used incorrectly [bluewave.net] [T\-X]
+Fix \- Segfault in ndsctl when \-s option is used incorrectly [bluewavenet] [T\-X]
 .IP \(bu 2
-Fix \- Typo making calculation of ul/dl rates incorrect [bluewave.net]
+Fix \- Typo making calculation of ul/dl rates incorrect [bluewavenet]
 .IP \(bu 2
-Fix \- Allow port 80 to be configured in the Walled Garden [bluewave.net]
+Fix \- Allow port 80 to be configured in the Walled Garden [bluewavenet]
 .UNINDENT
 .UNINDENT
 .UNINDENT
@@ -184,13 +315,13 @@ opennds (9.3.1)
 .IP \(bu 2
 This version fixes some issues
 .IP \(bu 2
-Fix \- Segfault in ndsctl when \-s option is used incorrectly [bluewave.net] [T\-X]
+Fix \- Segfault in ndsctl when \-s option is used incorrectly [bluewavenet] [T\-X]
 .IP \(bu 2
-Fix \- Typo making calculation of ul/dl rates incorrect [bluewave.net]
+Fix \- Typo making calculation of ul/dl rates incorrect [bluewavenet]
 .IP \(bu 2
-Fix \- Allow port 80 to be configured in the Walled Garden [bluewave.net]
+Fix \- Allow port 80 to be configured in the Walled Garden [bluewavenet]
 .IP \(bu 2
-Add \- Warning message when Walled Garden port 80 is allowed [bluewave.net]
+Add \- Warning message when Walled Garden port 80 is allowed [bluewavenet]
 .UNINDENT
 .UNINDENT
 .UNINDENT
@@ -207,37 +338,37 @@ opennds (9.3.0)
 .IP \(bu 2
 This version adds new functionality, and fixes some issues
 .IP \(bu 2
-Add \- Add \- firewall passthrough mode for authenticated users [bluewave.net]
+Add \- Add \- firewall passthrough mode for authenticated users [bluewavenet]
 .IP \(bu 2
-Add \- Add \- use configured debuglevel in authmon [bluewave.net]
+Add \- Add \- use configured debuglevel in authmon [bluewavenet]
 .IP \(bu 2
-Add \- automated log rotation and client_zone to binauth_log [bluewave.net]
+Add \- automated log rotation and client_zone to binauth_log [bluewavenet]
 .IP \(bu 2
-Add \- increased timeout interval for file downloads [bluewave.net]
+Add \- increased timeout interval for file downloads [bluewavenet]
 .IP \(bu 2
-Add \- local interface to MeshZone and remove unneeded call to ip utility [bluewave.net]
+Add \- local interface to MeshZone and remove unneeded call to ip utility [bluewavenet]
 .IP \(bu 2
-Add \- log_mountpoint and max_log_entries options [bluewave.net]
+Add \- log_mountpoint and max_log_entries options [bluewavenet]
 .IP \(bu 2
-Add \- config variables ext_interface and ext_gateway [bluewave.net]
+Add \- config variables ext_interface and ext_gateway [bluewavenet]
 .IP \(bu 2
-Add \- Start initial download of remotes only if online [bluewave.net]
+Add \- Start initial download of remotes only if online [bluewavenet]
 .IP \(bu 2
-Add \- Router online/offline watchdog [bluewave.net]
+Add \- Router online/offline watchdog [bluewavenet]
 .IP \(bu 2
-Fix \- Segfault when gatewayfqdn is disabled [bluewave.net]
+Fix \- Segfault when gatewayfqdn is disabled [bluewavenet]
 .IP \(bu 2
-Fix \- missing clientmac when not using themespec [bluewave.net]
+Fix \- missing clientmac when not using themespec [bluewavenet]
 .IP \(bu 2
-Fix \- some compiler warnings [bluewave.net]
+Fix \- some compiler warnings [bluewavenet]
 .IP \(bu 2
-Fix \- use configured value for webroot for remote image symlink to images folder [bluewave.net]
+Fix \- use configured value for webroot for remote image symlink to images folder [bluewavenet]
 .IP \(bu 2
-Fix \- remove refrences to login.sh in documentation and comments [bluewave.net]
+Fix \- remove refrences to login.sh in documentation and comments [bluewavenet]
 .IP \(bu 2
-Fix \- Prevent potential read overrun within the MHD page buffer [bluewave.net]
+Fix \- Prevent potential read overrun within the MHD page buffer [bluewavenet]
 .IP \(bu 2
-Remove \- legacy get_ext_iface() function [bluewave.net]
+Remove \- legacy get_ext_iface() function [bluewavenet]
 .UNINDENT
 .UNINDENT
 .UNINDENT
@@ -254,17 +385,17 @@ opennds (9.2.0)
 .IP \(bu 2
 This version adds new functionality, improves performance, adds documentation and fixes an issue
 .IP \(bu 2
-Add \- new config options to ndsctl status [bluewave.net]
+Add \- new config options to ndsctl status [bluewavenet]
 .IP \(bu 2
-Add \- Readthedocs / man documentation for configuration options [bluewave.net]
+Add \- Readthedocs / man documentation for configuration options [bluewavenet]
 .IP \(bu 2
-Add \- Faster convergence of average rates to configured rate quotas [bluewave.net]
+Add \- Faster convergence of average rates to configured rate quotas [bluewavenet]
 .IP \(bu 2
-Add \- BinAuth parse authenticated client database for client data [bluewave.net]
+Add \- BinAuth parse authenticated client database for client data [bluewavenet]
 .IP \(bu 2
-Add \- Use heap allocation for http page buffer allowing large page sizes [bluewave.net]
+Add \- Use heap allocation for http page buffer allowing large page sizes [bluewavenet]
 .IP \(bu 2
-Fix \- fail to serve downloaded images on custom themespec [bluewave.net]
+Fix \- fail to serve downloaded images on custom themespec [bluewavenet]
 .UNINDENT
 .UNINDENT
 .UNINDENT
@@ -281,15 +412,15 @@ opennds (9.1.1)
 .IP \(bu 2
 This version fixes a compiler error, some compiler warnings and mutes a debug message
 .IP \(bu 2
-Fix \- Compiler error, missing mode in call to open() [bluewave.net]
+Fix \- Compiler error, missing mode in call to open() [bluewavenet]
 .IP \(bu 2
-Fix \- Compiler warning, ignored return value from call to lockf() [bluewave.net]
+Fix \- Compiler warning, ignored return value from call to lockf() [bluewavenet]
 .IP \(bu 2
-Fix \- Compiler warning, ignored return value from call to system() [bluewave.net]
+Fix \- Compiler warning, ignored return value from call to system() [bluewavenet]
 .IP \(bu 2
-Fix \- Compiler warning, ignored return value from call to fgets() [bluewave.net]
+Fix \- Compiler warning, ignored return value from call to fgets() [bluewavenet]
 .IP \(bu 2
-Fix \- Remove debug message from call to get_client_interface library [bluewave.net]
+Fix \- Remove debug message from call to get_client_interface library [bluewavenet]
 .UNINDENT
 .UNINDENT
 .UNINDENT
@@ -314,29 +445,29 @@ Add \- b64encode to ndsctl [bluewavenet]
 .IP \(bu 2
 Add \- option max_page_size for MHD [bluewavenet]
 .IP \(bu 2
-Add \- option remotes_refresh_interval [bluewave.net]
+Add \- option remotes_refresh_interval [bluewavenet]
 .IP \(bu 2
-Add \- Pre\-download remote files in background after startup [bluewave.net]
+Add \- Pre\-download remote files in background after startup [bluewavenet]
 .IP \(bu 2
-Add \- client id data files created by openNDS on client connect [bluewave.net]
+Add \- client id data files created by openNDS on client connect [bluewavenet]
 .IP \(bu 2
-Add \- check routing is configured and up [bluewave.net]
+Add \- check routing is configured and up [bluewavenet]
 .IP \(bu 2
-Add \- support for Preemptive Authentication for connected client devices. [bluewave.net]
+Add \- support for Preemptive Authentication for connected client devices. [bluewavenet]
 .IP \(bu 2
-Add \- Gateway interface watchdog [bluewave.net]
+Add \- Gateway interface watchdog [bluewavenet]
 .IP \(bu 2
 Remove \- deprecated IFB config [bluewavenet]
 .IP \(bu 2
-Fix \- ndsctl, send return codes [bluewave.net]
+Fix \- ndsctl, send return codes [bluewavenet]
 .IP \(bu 2
-Fix \- MHD Watchdog Use uclient\-fetch in OpenWrt [bluewave.net]
+Fix \- MHD Watchdog Use uclient\-fetch in OpenWrt [bluewavenet]
 .IP \(bu 2
-Fix \- Improve MHD watchdog [bluewave.net]
+Fix \- Improve MHD watchdog [bluewavenet]
 .IP \(bu 2
-Fix \- update legacy code in ndsctl_thread [bluewave.net]
+Fix \- update legacy code in ndsctl_thread [bluewavenet]
 .IP \(bu 2
-Fix \- edge case where MHD returns (null) as host value [bluewave.net]
+Fix \- edge case where MHD returns (null) as host value [bluewavenet]
 .UNINDENT
 .UNINDENT
 .UNINDENT
@@ -1021,7 +1152,7 @@ This IS how it is supposed to work, but does involve some compromises.
 The best solution is to set the session timeout to a value greater than the expected length of time a client device is likely to be present. Experience shows a limit of 24 hours covers most situations eg bars, clubs, coffee shops, motels etc. If for example an hotel has guests regularly staying for a few days, then increase the session timeout as required.
 .sp
 Staff at the venue could have their devices added to the Trusted List if appropriate, but experience shows, it is better not to do this as they very soon learn what to do and can help guests who encounter the issue. (Anything that reduces support calls is good!)
-.SS Captive Portal Identification (RFC8910)
+.SS Captive Portal Identification (CPI) (RFC 8910)
 .sp
 Captive Portal Identification is an alternative method of triggering the Portal "Splash" page without having to capture the attempted port 80 access that CPD does.
 .sp
@@ -1032,6 +1163,12 @@ Any clients supporting this method will open their CPD browser pointing at the s
 This is a new and somewhat experimental standard with very few clients supporting it, but this is likely to change rapidly as the standard matures.
 .sp
 This method is enabled in openNDS by default, but can be disabled (see "Dhcp option 114 Enable \- RFC8910" in the Configuration Options section).
+.SS Captive Portal Identification With Portal API (RFC 8910 / RFC 8908)
+.sp
+The RFC8908 Captive Portal API extends Captive Portal Identification by adding an API by which a client device can access the Portal.
+This is supported in openNDS from version 9.5.0 onwards.
+.sp
+At the time of writing (November 2021), very few client devices support this API.
 .SS Network Zone Detection (Where is the Client Connected?)
 .sp
 Client devices can be connected to one of a number of local WiFi SSIDs, connected directly or indirectly by ethernet, or connected via a wireless mesh network. Each connection type available is considered as a Network Zone.
@@ -1515,13 +1652,13 @@ Default 100
 .sp
 Minimum value 0 (no limit)
 .sp
-Maximum value \- limited only be free storage space on the logging mountpoint
+Maximum value \- limited only by free storage space on the logging mountpoint
 .sp
 If set to \(aq0\(aq there is no limit
 .sp
 This is the maximum number of local log entries allowed before log rotation begins
 .sp
-Both ThemeSpec and Binauth log locally if they are enabled
+Both ThemeSpec and BinAuth log locally if they are enabled
 .sp
 \fBWARNING\fP \- local logging is by default written to the tmpfs volatile storage
 .sp
@@ -3861,6 +3998,7 @@ Usage: libopennds arg1 arg2 ... argN
 .INDENT 0.0
 .INDENT 3.5
 \fBarg1\fP: "\fImhdcheck\fP", checks if MHD is running (used by MHD watchdog)
+.sp
 \fIreturns\fP: "1" if MHD is running, "2" if MHD is not running
 .UNINDENT
 .UNINDENT
@@ -3883,6 +4021,198 @@ Usage: libopennds arg1 arg2 ... argN
 \fBarg1\fP: "\fIgatewayroute\fP", checks for a valid gateway route for an interface.
 .sp
 \fIreturns\fP: the ip gateway address and the ip gateway interface, or "offline" if the router is offline
+.UNINDENT
+.UNINDENT
+.SS clientaddress:
+.INDENT 0.0
+.INDENT 3.5
+arg1: "clientaddress", find and return both ip and mac of a client
+.INDENT 0.0
+.INDENT 3.5
+arg2: contains either client mac or client ip
+.UNINDENT
+.UNINDENT
+.sp
+\fIreturns\fP: client ip and mac
+.UNINDENT
+.UNINDENT
+.SS rmcid:
+.INDENT 0.0
+.INDENT 3.5
+arg1: "rmcid", Remove an existing cidfile (client identifcation file)
+.INDENT 0.0
+.INDENT 3.5
+arg2: contains the cid (client id)
+.sp
+arg3: contains mountpoint of the ndscids database
+.UNINDENT
+.UNINDENT
+.sp
+\fIreturns\fP: "done"
+.UNINDENT
+.UNINDENT
+.SS write:
+.INDENT 0.0
+.INDENT 3.5
+arg1: "write", Write client info element to cidfile (client identifcation file)
+.INDENT 0.0
+.INDENT 3.5
+arg2: contains the cid (client id)
+.sp
+arg2: contains mountpoint of the ndscids database
+.sp
+arg3: contains info element
+.UNINDENT
+.UNINDENT
+.sp
+\fIreturns\fP: "done"
+.UNINDENT
+.UNINDENT
+.SS parse:
+.INDENT 0.0
+.INDENT 3.5
+arg1: "parse", Parse for sub elements and write to cidfile (client identification file)
+.INDENT 0.0
+.INDENT 3.5
+arg2: contains the cid (client id)
+.sp
+arg3: contains mountpoint of the ndscids database
+.sp
+arg4: contains info elements to parse
+.UNINDENT
+.UNINDENT
+.sp
+\fIreturns\fP: "done"
+.UNINDENT
+.UNINDENT
+.SS download:
+.INDENT 0.0
+.INDENT 3.5
+arg1: "download", Download files required for themespec
+.INDENT 0.0
+.INDENT 3.5
+arg2: contains the themespec path
+.sp
+arg3: contains the image list
+.sp
+arg4: contains the file list
+.sp
+arg5: contains the refresh flag, set to 0 to download if file missing, 1 to refresh downloads, 3 to skip downloads
+.sp
+arg6: contains the webroot
+.UNINDENT
+.UNINDENT
+.sp
+\fIreturns\fP: "done"
+.UNINDENT
+.UNINDENT
+.SS get_option_from_config:
+.INDENT 0.0
+.INDENT 3.5
+arg1: "get_option_from_config", Get the config option value
+.INDENT 0.0
+.INDENT 3.5
+arg2: contains the option to get
+.UNINDENT
+.UNINDENT
+.sp
+\fIreturns\fP: the requested config option, or an empty string if not configured
+.UNINDENT
+.UNINDENT
+.SS debuglevel:
+.INDENT 0.0
+.INDENT 3.5
+arg1: "debuglevel", Sets the debuglevel for externals
+.INDENT 0.0
+.INDENT 3.5
+arg2: contains the debuglevel
+.UNINDENT
+.UNINDENT
+.sp
+\fIreturns\fP: the debuglevel
+.UNINDENT
+.UNINDENT
+.SS get_debuglevel:
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.INDENT 3.5
+arg1: "get_debuglevel", Gets the debuglevel set for externals
+.UNINDENT
+.UNINDENT
+.sp
+\fIreturns\fP: the debuglevel
+.UNINDENT
+.UNINDENT
+.SS syslog:
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.INDENT 3.5
+arg1: "syslog", Write a debug message to syslog
+.INDENT 0.0
+.INDENT 3.5
+arg2: contains the string to to write to syslog if enabled by debuglevel
+.sp
+arg3: "debugtype" contains debug type: debug, info, warn, notice, err, emerg.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+\fIreturns\fP: "done"
+.UNINDENT
+.UNINDENT
+.SS startdaemon:
+.INDENT 0.0
+.INDENT 3.5
+arg1: "startdaemon", Start a daemon process
+.INDENT 0.0
+.INDENT 3.5
+arg2: contains the b64 encoded daemon startup command
+.UNINDENT
+.UNINDENT
+.sp
+\fIreturns\fP: pid of the daemon and exit code 0 if successful. If unsuccessful or terminated immediately returns "0" or a status information string with code 1
+.UNINDENT
+.UNINDENT
+.SS stopdaemon:
+.INDENT 0.0
+.INDENT 3.5
+arg1: "stopdaemon", Stop a daemon process
+.INDENT 0.0
+.INDENT 3.5
+arg2: contains the pid of the daemon to stop
+.UNINDENT
+.UNINDENT
+.sp
+\fIreturns\fP: "done" if sucessful or "nack" with exit code 1 if unsuccessful
+.UNINDENT
+.UNINDENT
+.SS get_interface_by_ip:
+.INDENT 0.0
+.INDENT 3.5
+arg1: "get_interface_by_ip", get the interface name that is the gateway for an IP address
+.INDENT 0.0
+.INDENT 3.5
+arg2: contains the ip to check
+.UNINDENT
+.UNINDENT
+.sp
+\fIreturns\fP: Interface name with exit code 0, or exit code 1 if failed to get interface name
+.UNINDENT
+.UNINDENT
+.SS write_log:
+.INDENT 0.0
+.INDENT 3.5
+arg1: "write_log", write a string to the openNDS log
+.INDENT 0.0
+.INDENT 3.5
+arg2: contains the string to log
+.UNINDENT
+.UNINDENT
+.sp
+\fIreturns\fP: "done"
 .UNINDENT
 .UNINDENT
 .SS ?fas:
@@ -3933,7 +4263,7 @@ To print to stdout the details of a particular client in json format (This is pa
 To authenticate client given their IP or MAC address:
 .INDENT 2.0
 .INDENT 3.5
-\fB/usr/bin/ndsctl deauth IP|MAC\fP
+\fB/usr/bin/ndsctl auth IP|MAC\fP
 .UNINDENT
 .UNINDENT
 .IP \(bu 2

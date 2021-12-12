@@ -90,11 +90,11 @@ Custom images are defined in the config file and are sent as fixed name/URL pair
 
 ``list fas_custom_images_list 'logo_png=https://openwrt.org/_media/logo.png'``
 
-``list fas_custom_images_list 'banner1_jpg=https://raw.githubusercontent.com/openNDS/openNDS/9.0.0/resources/bannerbw.jpg'``
+``list fas_custom_images_list 'banner1_jpg=https://raw.githubusercontent.com/openNDS/openNDS/v9.5.0/resources/bannerbw.jpg'``
 
-``list fas_custom_images_list 'banner2_jpg=https://raw.githubusercontent.com/openNDS/openNDS/9.0.0/resources/bannerpickle.jpg'``
+``list fas_custom_images_list 'banner2_jpg=https://raw.githubusercontent.com/openNDS/openNDS/v9.5.0/resources/bannerpickle.jpg'``
 
-``list fas_custom_images_list 'banner3_jpg=https://raw.githubusercontent.com/openNDS/openNDS/9.0.0/resources/bannerseawolf.jpg'``
+``list fas_custom_images_list 'banner3_jpg=https://raw.githubusercontent.com/openNDS/openNDS/v9.5.0/resources/bannerseawolf.jpg'``
 
 Custom Files
 ************
@@ -111,4 +111,4 @@ Custom files are defined in the config file and are sent as fixed name/URL pairs
 
 **Note:** These pre-installed ThemeSpec script files will automatically download remote files to volatile storage on the router.
 
-``list fas_custom_files_list 'advert1_htm=https://raw.githubusercontent.com/openNDS/openNDS/9.0.0/resources/bannerpickle.htm'``
+``list fas_custom_files_list 'advert1_htm=https://raw.githubusercontent.com/openNDS/openNDS/v9.5.0/resources/bannerpickle.htm'``

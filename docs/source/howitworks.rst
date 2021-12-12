@@ -114,8 +114,8 @@ The best solution is to set the session timeout to a value greater than the expe
 
 Staff at the venue could have their devices added to the Trusted List if appropriate, but experience shows, it is better not to do this as they very soon learn what to do and can help guests who encounter the issue. (Anything that reduces support calls is good!)
 
-Captive Portal Identification (RFC8910)
-***************************************
+Captive Portal Identification (CPI) (RFC 8910)
+**********************************************
 
 Captive Portal Identification is an alternative method of triggering the Portal "Splash" page without having to capture the attempted port 80 access that CPD does.
 
@@ -126,6 +126,14 @@ Any clients supporting this method will open their CPD browser pointing at the s
 This is a new and somewhat experimental standard with very few clients supporting it, but this is likely to change rapidly as the standard matures.
 
 This method is enabled in openNDS by default, but can be disabled (see "Dhcp option 114 Enable - RFC8910" in the Configuration Options section).
+
+Captive Portal Identification With Portal API (RFC 8910 / RFC 8908)
+*******************************************************************
+
+The RFC8908 Captive Portal API extends Captive Portal Identification by adding an API by which a client device can access the Portal.
+This is supported in openNDS from version 9.5.0 onwards.
+
+At the time of writing (November 2021), very few client devices support this API.
 
 Network Zone Detection (Where is the Client Connected?)
 *******************************************************

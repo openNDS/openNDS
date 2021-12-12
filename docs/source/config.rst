@@ -84,13 +84,13 @@ Default 100
 
 Minimum value 0 (no limit)
 
-Maximum value - limited only be free storage space on the logging mountpoint
+Maximum value - limited only by free storage space on the logging mountpoint
 
 If set to '0' there is no limit
 
 This is the maximum number of local log entries allowed before log rotation begins
 
-Both ThemeSpec and Binauth log locally if they are enabled
+Both ThemeSpec and BinAuth log locally if they are enabled
 
 **WARNING** - local logging is by default written to the tmpfs volatile storage
 

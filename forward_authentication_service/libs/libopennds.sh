@@ -1142,7 +1142,7 @@ elif [ "$1" = "get_interface_by_ip" ]; then
 	if [ -z "$2" ]; then
 		exit 1
 	else
-		interface=$(ip route get "$2" | awk -F"dev " '{print $2}' | awk '{printf "%s" $1}')
+		interface=$(ip route get "$2" | awk -F"dev " '{print $2}' | awk '{printf "%s", $1}')
 		printf %s "$interface"
 	fi
 

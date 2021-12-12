@@ -154,9 +154,6 @@ static int do_binauth(
 	unsigned long long int upload_quota;
 	unsigned long long int download_quota;
 	int rc =1;
-	s_config *config;
-
-	config = config_get_config();
 
 	// Get the client user agent
 	MHD_get_connection_values(connection, MHD_HEADER_KIND, get_user_agent_callback, &user_agent);

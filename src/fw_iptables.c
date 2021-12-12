@@ -1030,12 +1030,7 @@ iptables_fw_authenticate(t_client *client)
 int
 iptables_fw_deauthenticate(t_client *client)
 {
-	unsigned long long int download_rate, packetsdown;
 	int rc = 0;
-
-	download_rate = client->download_rate;
-
-	packetsdown=download_rate * 1024 / 1500;
 
 	// Remove the authentication rules.
 	debug(LOG_NOTICE, "Deauthenticating %s %s", client->ip, client->mac);

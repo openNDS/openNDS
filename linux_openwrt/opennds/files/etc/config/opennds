@@ -411,7 +411,7 @@ config opennds
 	#
 	# If the client average data rate exceeds the value set here, the client will be rate limited
 	# Values are in kb/s
-	# If set to 0, there is a minimum value of 50 Kb/s but there is no upper limit
+	# If set to 0, there is no upper limit
 	#
 	# Quotas and rates can also be set by FAS via Authmon Daemon, ThemeSpec scripts, BinAuth, and ndsctl auth.
 	# Values set by these methods, will override values set in this config file.

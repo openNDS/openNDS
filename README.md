@@ -6,7 +6,7 @@ With little or no configuration, a dynamically generated and adaptive splash pag
 
 The package incorporates the FAS API allowing many flexible customisation options. The creation of sophisticated third party authentication applications is fully supported.
 
-Internet hosted **https portals** can be utilised to inspire maximum user confidence.
+Internet hosted **https portals** can be implemented with no security errors, to inspire maximum user confidence.
 
 ## 1. Overview
 
@@ -21,7 +21,7 @@ Captive Portal Detection (CPD) is a client driven process available on all moder
 Sometimes known as a "canary test", this process, driven by the client, has evolved over a number of years to be a reliable de-facto standard.
 openNDS detects this probing and serves a special "**splash**" web page sequence to the connecting client device.
 
-**2.2 CPI**
+**2.2 CPI  - RFC 8910 and RFC 8908**
 
 Captive Portal Identification (CPI) is a Gateway driven process as defined in standards RFC8910 (Captive-Portal Identification in DHCP and Router Advertisements) and RFC8908 (Captive Portal API).
 

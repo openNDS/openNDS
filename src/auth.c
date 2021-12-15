@@ -191,6 +191,7 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 			iptables_fw_deauthenticate(client);
 			binauth_action(client, reason, customdata);
 			client_reset(client);
+			client_list_delete(client);
 		} else if (new_state == FW_MARK_BLOCKED) {
 			return -1;
 		} else if (new_state == FW_MARK_TRUSTED) {

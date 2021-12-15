@@ -957,12 +957,28 @@ elif [ "$1" = "gatewayroute" ]; then
 elif [ "$1" = "clientaddress" ]; then
 	# Find and return client ip and mac
 	# $2 contains either client mac or client ip
-	addrs=$(ip neigh | grep "$2" | awk 'NR==1, length($1)<16 {printf("%s %s", $1, $5)}')
+	addrs=$(ip -f inet neigh show | grep "$2")
 
 	if [ -z "$addrs" ]; then
 		addrs="-"
 	fi
-	printf "$addrs"
+
+	idx=0
+
+	for arg in $addrs; do
+		idx=$((idx+1))
+
+		if [ "$idx"  -eq 1 ]; then
+			ipaddr=$arg
+		elif  [ "$idx"  -eq 5 ]; then
+			macaddr=$arg
+		elif [ "$arg" = "PROBE" ] || [ "$arg" = "INCOMPLETE" ] || [ "$arg" = "FAILED"  ]; then
+			printf "-"
+			exit 0
+		fi
+	done
+
+	printf "%s %s" "$ipaddr" "$macaddr"
 	exit 0
 
 elif [ "$1" = "rmcid" ]; then

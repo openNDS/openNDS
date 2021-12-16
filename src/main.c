@@ -804,7 +804,7 @@ setup_from_config(void)
 	}
 
 	// Preload remote files defined in themespec
-	if (config->login_option_enabled == 3 && routercheck == 1) {
+	if (config->login_option_enabled == 3 && routercheck > 0) {
 		download_remotes(1);
 		// Initial download is in progress, so sleep for a while before starting watchdog thread.
 		sleep(2);

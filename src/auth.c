@@ -252,7 +252,7 @@ fw_refresh_client_list(void)
 	int routercheck;
 	routercheck = check_routing(watchdog);
 
-	if (config->login_option_enabled == 3 && routercheck == 1) {
+	if (config->login_option_enabled == 3 && routercheck > 0) {
 		/* If the refresh interval has expired, refresh the downloaded remote files.
 			This can be used to update data files or images used by openNDS from storage on a remote server.
 			Access to the openNDS router is not required to update these files as openNDS downloads them.

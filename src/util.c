@@ -85,6 +85,24 @@ extern unsigned int authenticated_since_start;
 extern int created_httpd_threads;
 extern int current_httpd_threads;
 
+int count_substrings(char* string, char* substring) {
+	int idx;
+	int len1;
+	int len2;
+	int numsubs = 0;
+
+	len1 = strlen(string);
+	len2 = strlen(substring);
+
+	for(idx = 0; idx < len1 - len2 + 1; idx++) {
+		if(strstr(string + idx, substring) == string + idx) {
+			numsubs++;
+			idx = idx + len2 -1;
+		}
+	}
+
+	return numsubs;
+}
 
 int startdaemon(char *cmd, int daemonpid)
 {
@@ -176,9 +194,11 @@ int check_routing(int watchdog)
 	// Check routing configuration
 	char *rtest;
 	char *rcmd;
-	const char rtr_fail[] = "-";
-	const char rtr_offline[] = "offline";
-	const char rtr_online[] = "online";
+	char rtr_fail[] = "-";
+	char rtr_offline[] = "offline";
+	char rtr_online[] = "online";
+	int online_count;
+	int offline_count;
 	s_config *config = config_get_config();
 
 	safe_asprintf(&rcmd,
@@ -189,27 +209,43 @@ int check_routing(int watchdog)
 	rtest = safe_calloc(SMALL_BUF);
 
 	if (execute_ret_url_encoded(rtest, SMALL_BUF - 1, rcmd) == 0) {
+		online_count = count_substrings(rtest, rtr_online);
+		offline_count = count_substrings(rtest, rtr_offline);
+
 
 		if (strcmp(rtest, rtr_fail) == 0) {
 			debug(LOG_ERR, "Routing configuration is not valid for openNDS, exiting ...");
 			exit(1);
-		} else if (strstr(rtest, rtr_offline) != NULL) {
-			// An upstream gateway is offline
-
-			if (strstr(rtest, rtr_online) != NULL) {
-				// At least one upstream gateway is online
-				config->online_status = 1;
-			} else {
-				// all upstream gateways are offline
-				config->online_status = 0;
-			}
-			config->ext_gateway = rtest;
-			debug(LOG_WARNING, "Upstream gateway(s) [ %s ]", rtest);
 		} else {
-			// All upstream gateways are online
-			if (watchdog == 0 || config->online_status == 0) {
-				config->online_status = 1;
-				debug(LOG_NOTICE, "Upstream gateway(s) [ %s ]", rtest);
+
+			if (watchdog == 0) {
+				debug(LOG_NOTICE, "Number of Upstream gateway(s) [ %d ]", (online_count + offline_count));
+			}
+
+			if (offline_count > 0) {
+				// An upstream gateway is offline
+				if (online_count == config->online_status) {
+					// no change since last time so issue warning
+					debug(LOG_WARNING, "Upstream gateway(s) [ %s ]", rtest);
+
+				} else if (online_count > config->online_status) {
+					// an interface came online
+					debug(LOG_NOTICE, "Upstream gateway(s) [ %s ]", rtest);
+					config->online_status = online_count;
+
+				} else if (online_count < config->online_status) {
+					// an interface went offline
+					debug(LOG_WARNING, "Upstream gateway(s) [ %s ]", rtest);
+					config->online_status = online_count;
+				}
+			} else {
+
+				if (online_count > config->online_status) {
+					// an interface came online
+					debug(LOG_NOTICE, "Upstream gateway(s) [ %s ]", rtest);
+				}
+
+				config->online_status = online_count;
 			}
 		}
 
@@ -290,7 +326,7 @@ int download_remotes(int refresh)
 		config->webroot
 	);
 
-	if (config->online_status == 1) {
+	if (config->online_status > 0) {
 		debug(LOG_DEBUG, "Starting daemon: %s\n", cmd);
 
 		if (startdaemon(cmd, daemonpid) == 0) {
@@ -676,7 +712,7 @@ ndsctl_status(FILE *fp)
 	int routercheck;
 	routercheck = check_routing(watchdog);
 
-	if (routercheck == 1) {
+	if (routercheck > 0) {
 		fprintf(fp, "Upstream gateway(s) [ %s ]\n", config->ext_gateway);
 	} else {
 		fprintf(fp, "All Upstream gateway(s) are offline or not connected [ %s ]\n", config->ext_gateway);

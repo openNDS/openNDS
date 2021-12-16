@@ -67,6 +67,9 @@ void ndsctl_unlock();
 // @brief startdaemon
 int startdaemon(char *cmd, int daemonpid);
 
+// @brief count substrings
+int count_substrings(char* string, char* substring);
+
 // @brief stopdaemon
 int stopdaemon(int daemonpid);
 

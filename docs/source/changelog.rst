@@ -1,6 +1,14 @@
 What's New? - ChangeLog
 #######################
 
+opennds (9.5.1)
+
+  * This minor version update fixes two important issues
+  * Fix - ThemeSpec file downloads when mwan3 is running [bluewavenet]
+  * Fix - Preemptive auth failure after previous deauth [minhng99] [bluewavenet]
+
+ -- Rob White <dot@blue-wave.net>  Thu, 16 Dec 2021 16:22:16 +0000
+
 opennds (9.5.0)
 
   * This version adds new functionality, and fixes some issues

@@ -191,6 +191,7 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 			iptables_fw_deauthenticate(client);
 			binauth_action(client, reason, customdata);
 			client_reset(client);
+			client_list_delete(client);
 		} else if (new_state == FW_MARK_BLOCKED) {
 			return -1;
 		} else if (new_state == FW_MARK_TRUSTED) {
@@ -251,7 +252,7 @@ fw_refresh_client_list(void)
 	int routercheck;
 	routercheck = check_routing(watchdog);
 
-	if (config->login_option_enabled == 3 && routercheck == 1) {
+	if (config->login_option_enabled == 3 && routercheck > 0) {
 		/* If the refresh interval has expired, refresh the downloaded remote files.
 			This can be used to update data files or images used by openNDS from storage on a remote server.
 			Access to the openNDS router is not required to update these files as openNDS downloads them.

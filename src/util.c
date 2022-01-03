@@ -670,6 +670,8 @@ ndsctl_status(FILE *fp)
 	s_config *config;
 	t_client *client;
 	int indx;
+	unsigned int uploadburst = 0;
+	unsigned int downloadburst = 0;
 	unsigned long int now, uptimesecs, durationsecs = 0;
 	unsigned long long int download_bytes, upload_bytes;
 	t_MAC *trust_mac;
@@ -679,6 +681,14 @@ ndsctl_status(FILE *fp)
 	const char *mhdversion = MHD_get_version();
 
 	config = config_get_config();
+
+	if (config->upload_bucket_ratio > 0) {
+		uploadburst = config->checkinterval * config->rate_check_window;
+	}
+
+	if (config->upload_bucket_ratio > 0) {
+		downloadburst = config->checkinterval * config->rate_check_window;
+	}
 
 	fprintf(fp, "==================\nopenNDS Status\n====\n");
 	sysuptime = get_system_uptime ();
@@ -754,11 +764,13 @@ ndsctl_status(FILE *fp)
 
 	if (config->download_rate > 0) {
 		fprintf(fp, "Download rate limit (default per client): %llu kbit/s\n", config->download_rate);
+		fprintf(fp, "Download Unrestricted Burst Interval %u seconds\n", downloadburst);
 	} else {
 		fprintf(fp, "Download rate limit (default per client): no limit\n");
 	}
 	if (config->upload_rate > 0) {
 		fprintf(fp, "Upload rate limit (default per client): %llu kbit/s\n", config->upload_rate);
+		fprintf(fp, "Upload Unrestricted Burst Interval %u seconds\n", uploadburst);
 	} else {
 		fprintf(fp, "Upload rate limit (default per client): no limit\n");
 	}

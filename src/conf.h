@@ -85,8 +85,8 @@
 #define DEFAULT_RATE_CHECK_WINDOW 2 // The data rate check moving average window size multiply this by CHECKINTERVAL to give window size in seconds
 #define DEFAULT_UPLOAD_RATE 0 // 0 means no limit
 #define DEFAULT_DOWNLOAD_RATE 0 // 0 means no limit
-#define DEFAULT_UPLOAD_BUCKET_RATIO 1 // Determines the packet upload queue size per client
-#define DEFAULT_DOWNLOAD_BUCKET_RATIO 1 // Determines the packet download queue size per client
+#define DEFAULT_UPLOAD_BUCKET_RATIO 10 // Used to calculate the packet upload queue size per client
+#define DEFAULT_DOWNLOAD_BUCKET_RATIO 10 // Used to calculate the packet download queue size per client
 #define DEFAULT_UPLOAD_QUOTA 0 // 0 means no limit
 #define DEFAULT_DOWNLOAD_QUOTA 0 // 0 means no limit
 #define DEFAULT_LOG_SYSLOG 0

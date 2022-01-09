@@ -315,12 +315,16 @@ config_init(void)
 	// Set up default FirewallRuleSets, and their empty ruleset policies
 	rs = add_ruleset("trusted-users");
 	rs->emptyrulesetpolicy = safe_strdup(DEFAULT_EMPTY_TRUSTED_USERS_POLICY);
+
 	rs = add_ruleset("trusted-users-to-router");
 	rs->emptyrulesetpolicy = safe_strdup(DEFAULT_EMPTY_TRUSTED_USERS_TO_ROUTER_POLICY);
+
 	rs = add_ruleset("users-to-router");
 	rs->emptyrulesetpolicy = safe_strdup(DEFAULT_EMPTY_USERS_TO_ROUTER_POLICY);
+
 	rs = add_ruleset("authenticated-users");
 	rs->emptyrulesetpolicy = safe_strdup(DEFAULT_EMPTY_AUTHENTICATED_USERS_POLICY);
+
 	rs = add_ruleset("preauthenticated-users");
 	rs->emptyrulesetpolicy = safe_strdup(DEFAULT_EMPTY_PREAUTHENTICATED_USERS_POLICY);
 }
@@ -692,7 +696,6 @@ get_ruleset(const char ruleset[])
 
 	for (tmp = config.rulesets; tmp != NULL
 			&& strcmp(tmp->name, ruleset) != 0; tmp = tmp->next);
-
 	return (tmp);
 }
 

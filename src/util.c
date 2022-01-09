@@ -763,16 +763,16 @@ ndsctl_status(FILE *fp)
 	fprintf(fp, "Authenticated Client Idle Timeout: %dm\n", config->auth_idle_timeout);
 
 	if (config->download_rate > 0) {
-		fprintf(fp, "Download rate limit (default per client): %llu kbit/s\n", config->download_rate);
+		fprintf(fp, "Download rate limit threshold (default per client): %llu kbit/s\n", config->download_rate);
 		fprintf(fp, "Download Unrestricted Burst Interval %u seconds\n", downloadburst);
 	} else {
-		fprintf(fp, "Download rate limit (default per client): no limit\n");
+		fprintf(fp, "Download rate limit threshold (default per client): no limit\n");
 	}
 	if (config->upload_rate > 0) {
-		fprintf(fp, "Upload rate limit (default per client): %llu kbit/s\n", config->upload_rate);
+		fprintf(fp, "Upload rate limit threshold (default per client): %llu kbit/s\n", config->upload_rate);
 		fprintf(fp, "Upload Unrestricted Burst Interval %u seconds\n", uploadburst);
 	} else {
-		fprintf(fp, "Upload rate limit (default per client): no limit\n");
+		fprintf(fp, "Upload rate limit threshold (default per client): no limit\n");
 	}
 
 	if (config->download_quota > 0) {

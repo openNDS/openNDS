@@ -299,7 +299,7 @@ fw_refresh_client_list(void)
 
 		if (conn_state == FW_MARK_PREAUTHENTICATED) {
 
-			// Preauthenticated client reached Idle Timeout witout authenticating so delete from the client list
+			// Preauthenticated client reached Idle Timeout without authenticating so delete from the client list
 			if (preauth_idle_timeout_secs > 0
 				&& conn_state == FW_MARK_PREAUTHENTICATED
 				&& (last_updated + preauth_idle_timeout_secs) <= now)
@@ -463,8 +463,15 @@ fw_refresh_client_list(void)
 
 						action = DISABLE;
 						iptables_download_ratelimit_enable(cp1, action);
+						debug(LOG_INFO, "Download Rate Limiting for [%s] [%s] is off", cp1->ip, cp1->mac);
 						//bit 0 is set so toggle it to signify rate limiting is off
 						cp1->rate_exceeded = cp1->rate_exceeded^1;
+					} else {
+						// refresh rate limiting
+						action = DISABLE;
+						iptables_download_ratelimit_enable(cp1, action);
+						action = ENABLE;
+						iptables_download_ratelimit_enable(cp1, action);
 					}
 				}
 
@@ -513,8 +520,15 @@ fw_refresh_client_list(void)
 
 						action = DISABLE;
 						iptables_upload_ratelimit_enable(cp1, action);
+						debug(LOG_INFO, "Upload Rate Limiting for [%s] [%s] is off", cp1->ip, cp1->mac);
 						//bit 1 is set so toggle it to signify rate limiting is off
 						cp1->rate_exceeded = cp1->rate_exceeded^2;
+					} else {
+						// refresh rate limiting
+						action = DISABLE;
+						iptables_upload_ratelimit_enable(cp1, action);
+						action = ENABLE;
+						iptables_upload_ratelimit_enable(cp1, action);
 					}
 				}
 

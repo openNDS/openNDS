@@ -943,6 +943,9 @@ iptables_download_ratelimit_enable(t_client *client, int enable)
 			client->download_bucket_size
 		);
 
+		client->inc_packet_limit = 0;
+		client->download_bucket_size = 0;
+
 		rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -j DROP", client->ip);
 
 		rc |= iptables_do_command("-t mangle -A " CHAIN_INCOMING " -d %s -c %llu %llu -j ACCEPT",
@@ -1013,6 +1016,10 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 			client->out_packet_limit,
 			client->upload_bucket_size
 		);
+
+		client->out_packet_limit = 0;
+		client->upload_bucket_size = 0;
+
 		// Add non rate limiting rule set for this client
 		rc |= iptables_do_command("-t filter -I " CHAIN_UPLOAD_RATE " -s %s -c %llu %llu -j RETURN",
 			client->ip,

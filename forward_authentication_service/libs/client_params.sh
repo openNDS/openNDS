@@ -40,9 +40,9 @@ get_client_zone () {
 		local_mesh_if=$(echo "$clientif" | awk '{printf $3}')
 
 		if [ ! -z "$client_meshnode" ]; then
-			client_zone="MeshZone:$client_meshnode"
+			client_zone="MeshZone: $client_meshnode"
 		else
-			client_zone="LocalZone:$client_if"
+			client_zone="LocalZone: $client_if"
 		fi
 	else
 		client_zone=""
@@ -67,16 +67,21 @@ parse_parameters() {
 		param_str=$ndsctlout
 
 		for param in gatewayname gatewayaddress gatewayfqdn mac version ip client_type clientif session_start session_end \
-			last_active token state upload_rate_limit download_rate_limit upload_quota \
-			download_quota upload_this_session download_this_session upload_session_avg  download_session_avg
+			last_active token state upload_rate_limit_threshold download_rate_limit_threshold \
+			upload_packet_rate upload_bucket_size download_packet_rate download_bucket_size \
+			upload_quota download_quota upload_this_session download_this_session upload_session_avg  download_session_avg
 		do
-			val=$(echo "$param_str" | grep "$param" | awk -F'"' '{printf "%s", $4}')
+			val=$(echo "$param_str" | grep "$param\"" | awk -F'"' '{printf "%s", $4}')
 
 			if [ "$val" = "null" ]; then
 				val="Unlimited"
 			fi
 
-			eval $param=$(echo "\"$val\"")
+			if [ -z "$val" ]; then
+				eval $param=$(echo "Unavailable")
+			else
+				eval $param=$(echo "\"$val\"")
+			fi
 		done
 
 		# url decode and html entity encode gatewayname
@@ -116,9 +121,11 @@ header() {
 		</head>
 		<body>
 		<div class=\"offset\">
+		<big-red>
+			Client Session Status<br>
+		</big-red>
 		<med-blue>
 			$gatewaynamehtml <br>
-			Client Session Status<br>
 			$client_zone
 		</med-blue><br>
 		<div class=\"insert\" style=\"max-width:100%;\">
@@ -154,7 +161,28 @@ body() {
 			</form>
 		"
 	elif [ "$status" = "status" ]; then
+
+		if [ "$upload_rate_limit_threshold" = "Unlimited" ] || [ "$upload_packet_rate" = "Unlimited" ]; then
+			upload_packet_rate="(Not Checked)"
+			upload_bucket_size="(Not Set)"
+		fi
+
+		if [ "$download_rate_limit_threshold" = "Unlimited" ] || [ "$download_packet_rate" = "Unlimited" ]; then
+			download_packet_rate="(Not Checked)"
+			download_bucket_size="(Not Set)"
+		fi
+
 		pagebody="
+			<form action=\"$url/opennds_deny/\" method=\"get\">
+				<input type=\"submit\" value=\"Logout\" >
+			</form>
+			<hr>
+			<form>
+				<input type=\"button\" VALUE=\"Refresh\" onClick=\"history.go(0);return true;\">
+			</form>
+
+		<div style=\"font-size:0.8em;\">
+			<br>
 			<b>IP address:</b> $ip<br>
 			<b>MAC address:</b> $mac<br>
 			<b>Client Type:</b> $client_type<br>
@@ -162,22 +190,19 @@ body() {
 			<b>Session Start:</b> $sessionstart<br>
 			<b>Session End:</b> $sessionend<br>
 			<b>Last Active:</b> $lastactive<br>
-			<b>Upload Rate Limit:</b> $upload_rate_limit Kb/s<br>
-			<b>Download Rate Limit:</b> $download_rate_limit Kb/s<br>
+			<b>Upload Rate Limit Threshold:</b> $upload_rate_limit_threshold Kb/s<br>
+			<b>Upload Packet Rate:</b> $upload_packet_rate packets/s<br>
+			<b>Upload Bucket Size:</b> $upload_bucket_size packets<br>
+			<b>Download Rate Limit Threshold:</b> $download_rate_limit_threshold Kb/s<br>
+			<b>Download Packet Rate:</b> $download_packet_rate packets/s<br>
+			<b>Download Bucket Size:</b> $download_bucket_size packets<br>
 			<b>Upload Quota:</b> $upload_quota KBytes<br>
 			<b>Download Quota:</b> $download_quota KBytes<br>
 			<b>Uploaded This Session:</b> $upload_this_session KBytes<br>
 			<b>Downloaded This Session:</b> $download_this_session KBytes<br>
 			<b>Average Upload Rate This Session:</b> $upload_session_avg Kb/s<br>
 			<b>Average Download Rate This Session:</b> $download_session_avg Kb/s<br>
-			<hr>
-			<form>
-				<input type=\"button\" VALUE=\"Refresh\" onClick=\"history.go(0);return true;\">
-			</form>
-			<hr>
-			<form action=\"/opennds_deny/\" method=\"get\">
-				<input type=\"submit\" value=\"Logout\" >
-			</form>
+		</div>
 		"
 	elif [ "$status" = "err511" ]; then
 

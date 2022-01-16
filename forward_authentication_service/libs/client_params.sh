@@ -191,10 +191,10 @@ body() {
 			<b>Session End:</b> $sessionend<br>
 			<b>Last Active:</b> $lastactive<br>
 			<b>Upload Rate Limit Threshold:</b> $upload_rate_limit_threshold Kb/s<br>
-			<b>Upload Packet Rate:</b> $upload_packet_rate packets/s<br>
+			<b>Upload Packet Rate:</b> $upload_packet_rate packets/min<br>
 			<b>Upload Bucket Size:</b> $upload_bucket_size packets<br>
 			<b>Download Rate Limit Threshold:</b> $download_rate_limit_threshold Kb/s<br>
-			<b>Download Packet Rate:</b> $download_packet_rate packets/s<br>
+			<b>Download Packet Rate:</b> $download_packet_rate packets/min<br>
 			<b>Download Bucket Size:</b> $download_bucket_size packets<br>
 			<b>Upload Quota:</b> $upload_quota KBytes<br>
 			<b>Download Quota:</b> $download_quota KBytes<br>

@@ -154,6 +154,7 @@ thankyou_page () {
 
 landing_page() {
 	originurl=$(printf "${originurl//%/\\x}")
+	gatewayurl=$(printf "${gatewayurl//%/\\x}")
 
 	# authenticate and write to the log - returns with $ndsstatus set
 	auth_log
@@ -166,20 +167,17 @@ landing_page() {
 				You are now logged in and have been granted access to the Internet.
 			</big-red>
 			<hr>
-		</p>
-		<hr>
-		<p>
+
 			<italic-black>
 				You can use your Browser, Email and other network Apps as you normally would.
 			</italic-black>
-		</p>
-		<p>
-			Your device originally requested <b>$originurl</b>
-			<br>
-			Click or tap Continue to go to there.
+
+			(Your device originally requested $originurl)
+			<hr>
+			Click or tap Continue to show the status of your account.
 		</p>
 		<form>
-			<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='$originurl'\" >
+			<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='$gatewayurl'\" >
 		</form>
 		<hr>
 	"

@@ -170,7 +170,7 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 			client->counters.out_window_start = client->counters.outgoing;
 
 
-			if (strlen(customdata) > 0) {
+			if (customdata && strlen(customdata) > 0) {
 				client->custom = safe_strdup(customdata);
 			} else {
 				client->custom = "bmE=";

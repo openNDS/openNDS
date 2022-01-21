@@ -185,7 +185,7 @@ Authentication Method for fas_secure_enabled levels 0,1 and 2
 
  This virtual URL is of the form:
 
- `http://[nds_ip]:[nds_port]/[authdir]/?tok=[token]&redir=[landing_page_url]`
+ `http://[nds_ip]:[nds_port]/[authdir]/?tok=[token]&redir=[landing_page_url]&custom=`
 
  This is most commonly achieved using an html form of method GET.
  The parameter redir can be the client's originally requested URL sent by NDS, or more usefully, the URL of a suitable landing page.

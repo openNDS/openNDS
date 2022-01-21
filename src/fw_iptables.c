@@ -975,8 +975,6 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 	packets = client->uprate * 1000 * 60 / average_packet_size / 8; // packets per minute
 	bucket = (packets - packet_limit) / packet_limit;
 
-	debug(LOG_INFO, "Average Upload Packet Size for [%s] is [%llu] bytes", client->ip, average_packet_size);
-
 	if ( bucket < 5) {
 		bucket = 5;
 	}
@@ -988,6 +986,7 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 	}
 
 	if (enable == 1) {
+		debug(LOG_INFO, "Average Upload Packet Size for [%s] is [%llu] bytes", client->ip, average_packet_size);
 		debug(LOG_INFO, "Upload Rate Limiting of [%s %s] to [%llu] packets/min, bucket size [%llu]", client->ip, client->mac, packet_limit, bucket);
 
 		// Remove non rate limiting rule set for this client

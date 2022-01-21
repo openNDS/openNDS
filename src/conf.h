@@ -89,6 +89,9 @@
 #define DEFAULT_DOWNLOAD_BUCKET_RATIO 10 // Used to calculate the packet download queue size per client
 #define DEFAULT_UPLOAD_QUOTA 0 // 0 means no limit
 #define DEFAULT_DOWNLOAD_QUOTA 0 // 0 means no limit
+#define DEFAULT_UPLOAD_UNRESTRICTED_BURSTING 1 // 0 means disabled, 1 means enabled
+#define DEFAULT_DOWNLOAD_UNRESTRICTED_BURSTING 1 // 0 means disabled, 1 means enabled
+#define DEFAULT_LOG_SYSLOG 0
 #define DEFAULT_LOG_SYSLOG 0
 #define DEFAULT_SYSLOG_FACILITY LOG_DAEMON
 #define DEFAULT_NDSCTL_SOCK "ndsctl.sock"
@@ -235,6 +238,8 @@ typedef struct {
 	unsigned long long int upload_bucket_ratio;	//@brief used to calculate the packet upload queue size per client
 	unsigned long long int download_quota;		//@brief Download quota, kB
 	unsigned long long int upload_quota;		//@brief Upload quota, kB
+	int download_unrestricted_bursting;		//@brief Enable/disable unrestriced bursting
+	int upload_unrestricted_bursting;		//@brief Enable/disable unrestriced bursting
 	int log_syslog;				//@brief boolean, whether to log to syslog
 	int syslog_facility;				//@brief facility to use when using syslog for logging
 	int macmechanism; 				//@brief mechanism wrt MAC addrs

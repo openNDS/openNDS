@@ -452,6 +452,34 @@ config opennds
 	# option download_bucket_ratio '10'
 	###########################################################################################
 
+	# DownLoadUnrestrictedBursting
+	# Default 1
+	# Enables / disables unrestricted bursting
+	# Setting to 0 disables
+	# Setting to 1 enables
+	#
+	# If enabled, a client is allowed unrestricted bursting until its average download
+	#	rate exceeds the set download rate threshold.
+	#
+	# If disabled, a client is not allowed unrestricted bursting.
+	#
+	# option download_unrestricted_bursting '0'
+	###########################################################################################
+
+	# UpLoadUnrestrictedBursting
+	# Default 1
+	# Enables / disables unrestricted bursting
+	# Setting to 0 disables
+	# Setting to 1 enables
+	#
+	# If enabled, a client is allowed unrestricted bursting until its average upload
+	#	rate exceeds the set upload rate threshold.
+	#
+	# If disabled, a client is not allowed unrestricted bursting.
+	#
+	# option upload_unrestricted_bursting '0'
+	###########################################################################################
+
 	# RateCheckWindow
 	# Default 2
 	#

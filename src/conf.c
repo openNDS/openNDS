@@ -106,6 +106,8 @@ typedef enum {
 	oUploadRate,
 	oDownloadBucketRatio,
 	oUploadBucketRatio,
+	oUploadUnrestrictedBursting,
+	oDownloadUnrestrictedBursting,
 	oDownloadQuota,
 	oUploadQuota,
 	oNdsctlSocket,
@@ -180,6 +182,8 @@ static const struct {
 	{ "uploadrate", oUploadRate },
 	{ "download_bucket_ratio", oDownloadBucketRatio },
 	{ "upload_bucket_ratio", oUploadBucketRatio },
+	{ "upload_unrestricted_bursting", oUploadUnrestrictedBursting },
+	{ "download_unrestricted_bursting", oDownloadUnrestrictedBursting },
 	{ "downloadquota", oDownloadQuota },
 	{ "uploadquota", oUploadQuota },
 	{ "syslogfacility", oSyslogFacility },
@@ -289,7 +293,9 @@ config_init(void)
 	config.upload_rate =  DEFAULT_UPLOAD_RATE;
 	config.download_rate = DEFAULT_DOWNLOAD_RATE;
 	config.download_bucket_ratio = DEFAULT_DOWNLOAD_BUCKET_RATIO;
+	config.download_unrestricted_bursting = DEFAULT_DOWNLOAD_UNRESTRICTED_BURSTING;
 	config.upload_bucket_ratio =  DEFAULT_UPLOAD_BUCKET_RATIO;
+	config.upload_unrestricted_bursting = DEFAULT_UPLOAD_UNRESTRICTED_BURSTING;
 	config.upload_quota =  DEFAULT_UPLOAD_QUOTA;
 	config.download_quota = DEFAULT_DOWNLOAD_QUOTA;
 	config.syslog_facility = DEFAULT_SYSLOG_FACILITY;
@@ -1089,6 +1095,20 @@ config_read(const char *filename)
 			break;
 		case oUploadBucketRatio:
 			if (sscanf(p1, "%llu", &config.upload_bucket_ratio) < 1 || config.upload_bucket_ratio < 0) {
+				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+				debug(LOG_ERR, "Exiting...");
+				exit(1);
+			}
+			break;
+		case oDownloadUnrestrictedBursting:
+			if (sscanf(p1, "%d", &config.download_unrestricted_bursting) < 1) {
+				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+				debug(LOG_ERR, "Exiting...");
+				exit(1);
+			}
+			break;
+		case oUploadUnrestrictedBursting:
+			if (sscanf(p1, "%d", &config.upload_unrestricted_bursting) < 1) {
 				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
 				debug(LOG_ERR, "Exiting...");
 				exit(1);

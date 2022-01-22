@@ -960,7 +960,8 @@ elif [ "$1" = "clientaddress" ]; then
 	addrs=$(ip -f inet neigh show | grep "$2")
 
 	if [ -z "$addrs" ]; then
-		addrs="-"
+		printf "-"
+		exit 0
 	fi
 
 	idx=0

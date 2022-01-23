@@ -844,6 +844,19 @@ check_gw_mac() {
 	fi
 }
 
+dhcp_check() {
+	dhcpdblocations="/tmp/dhcp.leases /var/lib/misc/dnsmasq.leases /var/db/dnsmasq.leases"
+	dhcprecord=""
+
+	for dhcpdb in $dhcpdblocations; do
+
+		if [ -e "$dhcpdb" ]; then
+			dhcprecord=$(grep "$iptocheck " "$dhcpdb" | awk '{printf "%s", $2}')
+			break
+		fi
+	done
+}
+
 #### end of functions ####
 
 
@@ -1172,6 +1185,27 @@ elif [ "$1" = "write_log" ]; then
 		configure_log_location
 		write_log
 		printf "%s" "done"
+	fi
+
+elif [ "$1" = "dhcpcheck" ]; then
+	# Checks if an ip address was allocated by dhcp
+	# Returns the mac address that was allocated to the ip address
+	# 	or null and return code 1 if not allocated
+	#
+	# $2 contains the ip to check
+
+	if [ -z "$2" ]; then
+		exit 1
+	else
+		iptocheck=$2
+		dhcp_check
+
+		if [ -z "$dhcprecord" ]; then
+			exit 1
+		else
+			printf "%s" "$dhcprecord"
+			exit 0
+		fi
 	fi
 
 else

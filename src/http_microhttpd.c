@@ -1553,7 +1553,7 @@ static int send_error(struct MHD_Connection *connection, int error)
 	 */
 	const char *page_200 = "<br>OK<br>";
 	const char *page_400 = "<html><head><title>Error 400</title></head><body><h1>Error 400 - Bad Request</h1></body></html>";
-	const char *page_403 = "<html><head><title>Error 403</title></head><body><h1>Error 403 - Forbidden</h1></body></html>";
+	const char *page_403 = "<html><head><title>Error 403</title></head><body><h1>Error 403 - Forbidden - Access Denied to this Client!</h1></body></html>";
 	const char *page_404 = "<html><head><title>Error 404</title></head><body><h1>Error 404 - Not Found</h1></body></html>";
 	const char *page_500 = "<html><head><title>Error 500</title></head><body><h1>Error 500 - Internal Server Error. Oh no!</h1></body></html>";
 	const char *page_501 = "<html><head><title>Error 501</title></head><body><h1>Error 501 - Not Implemented</h1></body></html>";

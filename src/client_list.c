@@ -199,6 +199,9 @@ t_client *
 client_list_add_client(const char mac[], const char ip[])
 {
 	t_client *client;
+	int rc = -1;
+	char *libcmd;
+	char *msg;
 
 	if (!check_mac_format(mac)) {
 		// Inappropriate format in IP address
@@ -212,7 +215,20 @@ client_list_add_client(const char mac[], const char ip[])
 		return NULL;
 	}
 
+	// check if client ip was allocated by dhcp
+	safe_asprintf(&libcmd, "/usr/lib/opennds/libopennds.sh dhcpcheck \"%s\"", ip);
+	msg = safe_calloc(64);
+	rc = execute_ret_url_encoded(msg, 64 - 1, libcmd);
+	free(libcmd);
+
+	if (rc > 0) {
+		// IP address is not in the dhcp database
+		debug(LOG_NOTICE, "IP not allocated by dhcp [%s]", ip);
+		return NULL;
+	}
+
 	client = client_list_find(mac, ip);
+
 	if (!client) {
 		client = _client_list_append(mac, ip);
 	} else {
@@ -223,7 +239,7 @@ client_list_add_client(const char mac[], const char ip[])
 }
 
 /** Finds a client by its token, IP or MAC.
- * A found client is guaranted to be unique.
+ * A found client is guaranteed to be unique.
  * @param ip IP we are looking for in the linked list
  * @param mac MAC we are looking for in the linked list
  * @return Pointer to the client, or NULL if not found

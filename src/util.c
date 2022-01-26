@@ -764,13 +764,13 @@ ndsctl_status(FILE *fp)
 
 	if (config->download_rate > 0) {
 		fprintf(fp, "Download rate limit threshold (default per client): %llu kbit/s\n", config->download_rate);
-		fprintf(fp, "Download Unrestricted Burst Interval %u seconds\n", downloadburst);
+		fprintf(fp, "Download Burst Interval %u seconds\n", downloadburst);
 	} else {
 		fprintf(fp, "Download rate limit threshold (default per client): no limit\n");
 	}
 	if (config->upload_rate > 0) {
 		fprintf(fp, "Upload rate limit threshold (default per client): %llu kbit/s\n", config->upload_rate);
-		fprintf(fp, "Upload Unrestricted Burst Interval %u seconds\n", uploadburst);
+		fprintf(fp, "Upload Burst Interval %u seconds\n", uploadburst);
 	} else {
 		fprintf(fp, "Upload rate limit threshold (default per client): no limit\n");
 	}
@@ -788,11 +788,11 @@ ndsctl_status(FILE *fp)
 
 
 	download_bytes = iptables_fw_total_download();
-	fprintf(fp, "Total download: %llu kByte", download_bytes / 1000);
+	fprintf(fp, "Total download: %llu kByte", download_bytes / 1024);
 	fprintf(fp, "; average: %.2f kbit/s\n", ((double) download_bytes) / 125 / uptimesecs);
 
 	upload_bytes = iptables_fw_total_upload();
-	fprintf(fp, "Total upload: %llu kByte", upload_bytes / 1000);
+	fprintf(fp, "Total upload: %llu kByte", upload_bytes / 1024);
 	fprintf(fp, "; average: %.2f kbit/s\n", ((double) upload_bytes) / 125 / uptimesecs);
 
 	fprintf(fp, "====\n");
@@ -896,14 +896,14 @@ ndsctl_status(FILE *fp)
 			durationsecs = 1;
 		}
 
-		fprintf(fp, "  Upload this session: %llu kB; Session average: %.2f kb/s\n",
-			upload_bytes / 1000,
-			((double)upload_bytes) / 125 / durationsecs)
+		fprintf(fp, "  Download this session: %llu kB; Session average: %.2f kb/s\n",
+			download_bytes / 1024,
+			((double)download_bytes) / 125 / durationsecs)
 		;
 
-		fprintf(fp, "  Download this session: %llu kB; Session average: %.2f kb/s\n\n",
-			download_bytes / 1000,
-			((double)download_bytes) / 125 / durationsecs)
+		fprintf(fp, "  Upload this session: %llu kB; Session average: %.2f kb/s\n\n",
+			upload_bytes / 1024,
+			((double)upload_bytes) / 125 / durationsecs)
 		;
 
 		indx++;
@@ -1041,30 +1041,29 @@ ndsctl_json_client(FILE *fp, const t_client *client, time_t now, char *indent)
 		fprintf(fp, "  %s\"upload_quota\":\"%llu\",\n", indent, client->upload_quota);
 	}
 
-
 	// prevent divison by 0
 	if (durationsecs < 1) {
 		durationsecs = 1;
 	}
 
-	fprintf(fp, "  %s\"upload_this_session\":\"%llu\",\n",
-		indent,
-		(upload_bytes / 1000)
-	);
-
-	fprintf(fp, "  %s\"upload_session_avg\":\"%.2f\",\n",
-		indent,
-		(double)upload_bytes / 125 / durationsecs
-	);
-
 	fprintf(fp, "  %s\"download_this_session\":\"%llu\",\n",
 		indent,
-		(download_bytes / 1000)
+		(download_bytes / 1024)
 	);
 
 	fprintf(fp, "  %s\"download_session_avg\":\"%.2f\"\n",
 		indent,
 		(double)download_bytes / 125 / durationsecs
+	);
+
+	fprintf(fp, "  %s\"upload_this_session\":\"%llu\",\n",
+		indent,
+		(upload_bytes / 1024)
+	);
+
+	fprintf(fp, "  %s\"upload_session_avg\":\"%.2f\",\n",
+		indent,
+		(double)upload_bytes / 125 / durationsecs
 	);
 }
 

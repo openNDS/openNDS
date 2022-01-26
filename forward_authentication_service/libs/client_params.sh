@@ -190,18 +190,18 @@ body() {
 			<b>Session Start:</b> $sessionstart<br>
 			<b>Session End:</b> $sessionend<br>
 			<b>Last Active:</b> $lastactive<br>
-			<b>Upload Rate Limit Threshold:</b> $upload_rate_limit_threshold Kb/s<br>
-			<b>Upload Packet Rate:</b> $upload_packet_rate packets/min<br>
-			<b>Upload Bucket Size:</b> $upload_bucket_size packets<br>
 			<b>Download Rate Limit Threshold:</b> $download_rate_limit_threshold Kb/s<br>
 			<b>Download Packet Rate:</b> $download_packet_rate packets/min<br>
 			<b>Download Bucket Size:</b> $download_bucket_size packets<br>
-			<b>Upload Quota:</b> $upload_quota KBytes<br>
+			<b>Upload Rate Limit Threshold:</b> $upload_rate_limit_threshold Kb/s<br>
+			<b>Upload Packet Rate:</b> $upload_packet_rate packets/min<br>
+			<b>Upload Bucket Size:</b> $upload_bucket_size packets<br>
 			<b>Download Quota:</b> $download_quota KBytes<br>
-			<b>Uploaded This Session:</b> $upload_this_session KBytes<br>
+			<b>Upload Quota:</b> $upload_quota KBytes<br>
 			<b>Downloaded This Session:</b> $download_this_session KBytes<br>
-			<b>Average Upload Rate This Session:</b> $upload_session_avg Kb/s<br>
+			<b>Uploaded This Session:</b> $upload_this_session KBytes<br>
 			<b>Average Download Rate This Session:</b> $download_session_avg Kb/s<br>
+			<b>Average Upload Rate This Session:</b> $upload_session_avg Kb/s<br>
 		</div>
 		"
 	elif [ "$status" = "err511" ]; then

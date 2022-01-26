@@ -901,10 +901,16 @@ iptables_download_ratelimit_enable(t_client *client, int enable)
 	s_config *config;
 	config = config_get_config();
 
-	average_packet_size = client->counters.incoming / client->counters.inpackets;
-	packet_limit = client->download_rate * 1000 * 60 / average_packet_size / 8; // packets per minute
-	packets = client->downrate * 1000 * 60 / average_packet_size / 8; // packets per minute
-	bucket = (packets - packet_limit) / packet_limit;
+	if (client->counters.incoming == 0 || client->counters.inpackets == 0) {
+		average_packet_size = 1500;
+		packet_limit = client->download_rate * 1024 * 60 / average_packet_size / 8; // packets per minute
+		bucket = 5;
+	} else {
+		average_packet_size = client->counters.incoming / client->counters.inpackets;
+		packet_limit = client->download_rate * 1024 * 60 / average_packet_size / 8; // packets per minute
+		packets = client->downrate * 1024 * 60 / average_packet_size / 8; // packets per minute
+		bucket = (packets - packet_limit) / packet_limit;
+	}
 
 	if ( bucket < 5) {
 		bucket = 5;
@@ -970,10 +976,16 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 	s_config *config;
 	config = config_get_config();
 
-	average_packet_size = client->counters.outgoing / client->counters.outpackets;
-	packet_limit = client->upload_rate * 1000 * 60 / average_packet_size / 8; // packets per minute
-	packets = client->uprate * 1000 * 60 / average_packet_size / 8; // packets per minute
-	bucket = (packets - packet_limit) / packet_limit;
+	if (client->counters.outgoing == 0 || client->counters.outpackets == 0) {
+		average_packet_size = 1500;
+		packet_limit = client->upload_rate * 1024 * 60 / average_packet_size / 8; // packets per minute
+		bucket = 5;
+	} else {
+		average_packet_size = client->counters.outgoing / client->counters.outpackets;
+		packet_limit = client->upload_rate * 1024 * 60 / average_packet_size / 8; // packets per minute
+		packets = client->uprate * 1024 * 60 / average_packet_size / 8; // packets per minute
+		bucket = (packets - packet_limit) / packet_limit;
+	}
 
 	if ( bucket < 5) {
 		bucket = 5;
@@ -1174,8 +1186,6 @@ iptables_fw_counters_update(void)
 	config = config_get_config();
 	af = config->ip6 ? AF_INET6 : AF_INET;
 
-	LOCK_CLIENT_LIST();
-
 	// Look for outgoing (upload) traffic of authenticated clients.
 	safe_asprintf(&script, "%s %s", "iptables", "-v -n -x -t filter -L " CHAIN_UPLOAD_RATE);
 	output = popen(script, "r");
@@ -1276,7 +1286,6 @@ iptables_fw_counters_update(void)
 		}
 	}
 	pclose(output);
-	UNLOCK_CLIENT_LIST();
 
 	return 0;
 }

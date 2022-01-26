@@ -134,6 +134,7 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 {
 	const unsigned int state = client->fw_connection_state;
 	const time_t now = time(NULL);
+	int action;
 	s_config *config = config_get_config();
 
 	if (state == new_state) {
@@ -177,6 +178,27 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 			}
 
 			debug(LOG_DEBUG, "auth_change_state: client->custom=%s ", client->custom);
+
+			action = ENABLE;
+
+			// Update all the counters
+			if (-1 == iptables_fw_counters_update()) {
+				debug(LOG_ERR, "Could not get counters from firewall!");
+				return -1;
+			}
+
+
+			if (config->download_unrestricted_bursting == 0 && config->download_bucket_ratio > 0) {
+				iptables_download_ratelimit_enable(client, action);
+				//bit 0 is not set so toggle it to signify rate limiting is on
+				client->rate_exceeded = client->rate_exceeded^1;
+			}
+
+			if (config->upload_unrestricted_bursting == 0 && config->upload_bucket_ratio > 0) {
+				iptables_upload_ratelimit_enable(client, action);
+				//bit 1 is not set so toggle it to signify rate limiting is on
+				client->rate_exceeded = client->rate_exceeded^2;
+			}
 
 			binauth_action(client, reason, customdata);
 		} else if (new_state == FW_MARK_BLOCKED) {
@@ -317,43 +339,43 @@ fw_refresh_client_list(void)
 
 		debug(LOG_INFO, "Client @ %s %s, quotas: ", cp1->ip, cp1->mac);
 
-		debug(LOG_INFO, "	Download DATA quota (kBytes): %llu, used: %llu ", cp1->download_quota, cp1->counters.incoming / 1000);
+		debug(LOG_INFO, "	Download DATA quota (kBytes): %llu, used: %llu ", cp1->download_quota, cp1->counters.incoming / 1024);
 
-		debug(LOG_INFO, "	Upload DATA quota (kBytes): %llu, used: %llu \n", cp1->upload_quota, cp1->counters.outgoing / 1000);
+		debug(LOG_INFO, "	Upload DATA quota (kBytes): %llu, used: %llu \n", cp1->upload_quota, cp1->counters.outgoing / 1024);
 
 		if (cp1->session_end > 0 && cp1->session_end <= now) {
 			// Session Timeout so deauthenticate the client
 
 			debug(LOG_NOTICE, "Session end time reached, deauthenticating: %s %s, connected: %lu, in: %llukB, out: %llukB",
 				cp1->ip, cp1->mac, now - cp1->session_end,
-				cp1->counters.incoming / 1000,
-				cp1->counters.outgoing / 1000
+				cp1->counters.incoming / 1024,
+				cp1->counters.outgoing / 1024
 			);
 
 			auth_change_state(cp1, FW_MARK_PREAUTHENTICATED, "timeout_deauth", NULL);
 
 
-		} else if (cp1->download_quota > 0 && cp1->download_quota <= (cp1->counters.incoming / 1000)) {
+		} else if (cp1->download_quota > 0 && cp1->download_quota <= (cp1->counters.incoming / 1024)) {
 			// Download quota reached so deauthenticate the client
 
 			debug(LOG_NOTICE, "Download quota reached, deauthenticating: %s %s, connected: %lus, in: %llukB, out: %llukB",
 				cp1->ip, cp1->mac,
 				now - cp1->session_end,
-				cp1->counters.incoming / 1000,
-				cp1->counters.outgoing / 1000
+				cp1->counters.incoming / 1024,
+				cp1->counters.outgoing / 1024
 			);
 
 			auth_change_state(cp1, FW_MARK_PREAUTHENTICATED, "downquota_deauth", NULL);
 
-		} else if (cp1->upload_quota > 0 && cp1->upload_quota <= (cp1->counters.outgoing / 1000)) {
+		} else if (cp1->upload_quota > 0 && cp1->upload_quota <= (cp1->counters.outgoing / 1024)) {
 			// Upload quota reached so deauthenticate the client
 
 			debug(LOG_NOTICE, "Upload quota reached, deauthenticating: %s %s, connected: %lus, in: %llukB, out: %llukB",
 				cp1->ip,
 				cp1->mac,
 				now - cp1->session_end,
-				cp1->counters.incoming / 1000,
-				cp1->counters.outgoing / 1000
+				cp1->counters.incoming / 1024,
+				cp1->counters.outgoing / 1024
 			);
 
 			auth_change_state(cp1, FW_MARK_PREAUTHENTICATED, "upquota_deauth", NULL);
@@ -365,8 +387,8 @@ fw_refresh_client_list(void)
 
 			debug(LOG_NOTICE, "Timeout authenticated idle user: %s %s, inactive: %ds, in: %llukB, out: %llukB",
 				cp1->ip, cp1->mac, now - last_updated,
-				cp1->counters.incoming / 1000,
-				cp1->counters.outgoing / 1000
+				cp1->counters.incoming / 1024,
+				cp1->counters.outgoing / 1024
 			);
 
 			auth_change_state(cp1, FW_MARK_PREAUTHENTICATED, "idle_deauth", NULL);
@@ -485,6 +507,9 @@ fw_refresh_client_list(void)
 				// we have decremented from ratecheckwindow value to expiry
 				// so check clients upload and download
 				// If rates are below threshold we can disable
+
+				//reset ratecheckwindow
+				cp1->window_counter = config->rate_check_window;
 
 				//Handle download rate limiting
 

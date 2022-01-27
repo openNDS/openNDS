@@ -901,12 +901,13 @@ iptables_download_ratelimit_enable(t_client *client, int enable)
 	s_config *config;
 	config = config_get_config();
 
-	if (client->counters.incoming == 0 || client->counters.inpackets == 0) {
+	if (client->counters.incoming == 0 || client->counters.inpackets == 0 || (client->counters.incoming - client->counters.incoming_previous) == 0) {
 		average_packet_size = 1500;
 		packet_limit = client->download_rate * 1024 * 60 / average_packet_size / 8; // packets per minute
 		bucket = 5;
 	} else {
-		average_packet_size = client->counters.incoming / client->counters.inpackets;
+		average_packet_size = (client->counters.incoming - client->counters.incoming_previous) /
+			(client->counters.inpackets - client->counters.inpackets_previous);
 		packet_limit = client->download_rate * 1024 * 60 / average_packet_size / 8; // packets per minute
 		packets = client->downrate * 1024 * 60 / average_packet_size / 8; // packets per minute
 		bucket = (packets - packet_limit) / packet_limit;
@@ -918,8 +919,8 @@ iptables_download_ratelimit_enable(t_client *client, int enable)
 
 	bucket = bucket * config->download_bucket_ratio;
 
-	if ( bucket > 10000) {
-		bucket = 10000;
+	if ( bucket > 500) {
+		bucket = 500;
 	}
 
 	if (enable == 1) {
@@ -976,12 +977,13 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 	s_config *config;
 	config = config_get_config();
 
-	if (client->counters.outgoing == 0 || client->counters.outpackets == 0) {
+	if (client->counters.outgoing == 0 || client->counters.outpackets == 0 || (client->counters.outgoing - client->counters.outgoing_previous) == 0) {
 		average_packet_size = 1500;
 		packet_limit = client->upload_rate * 1024 * 60 / average_packet_size / 8; // packets per minute
 		bucket = 5;
 	} else {
-		average_packet_size = client->counters.outgoing / client->counters.outpackets;
+		average_packet_size = (client->counters.outgoing - client->counters.outgoing_previous) /
+			(client->counters.outpackets - client->counters.outpackets_previous);
 		packet_limit = client->upload_rate * 1024 * 60 / average_packet_size / 8; // packets per minute
 		packets = client->uprate * 1024 * 60 / average_packet_size / 8; // packets per minute
 		bucket = (packets - packet_limit) / packet_limit;
@@ -993,8 +995,8 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 
 	bucket = bucket * config->upload_bucket_ratio;
 
-	if ( bucket > 10000) {
-		bucket = 10000;
+	if ( bucket > 500) {
+		bucket = 500;
 	}
 
 	if (enable == 1) {
@@ -1063,6 +1065,15 @@ iptables_fw_authenticate(t_client *client)
 	rc |= iptables_do_command("-t mangle -A " CHAIN_INCOMING " -d %s -j MARK %s 0x%x", client->ip, markop, FW_MARK_AUTHENTICATED);
 
 	rc |= iptables_do_command("-t mangle -A " CHAIN_INCOMING " -d %s -j ACCEPT", client->ip);
+
+	client->counters.incoming = 0;
+	client->counters.incoming_previous = 0;
+	client->counters.outgoing = 0;
+	client->counters.outgoing_previous = 0;
+	client->counters.inpackets = 0;
+	client->counters.inpackets_previous = 0;
+	client->counters.outpackets = 0;
+	client->counters.outpackets_previous = 0;
 
 	return rc;
 }
@@ -1220,7 +1231,9 @@ iptables_fw_counters_update(void)
 
 			if ((p1 = client_list_find_by_ip(ip))) {
 				if (p1->counters.outgoing < counter) {
+					p1->counters.outgoing_previous = p1->counters.outgoing;
 					p1->counters.outgoing = counter;
+					p1->counters.outpackets_previous = p1->counters.outpackets;
 					p1->counters.outpackets = packets;
 					p1->counters.last_updated = time(NULL);
 
@@ -1271,7 +1284,9 @@ iptables_fw_counters_update(void)
 
 			if ((p1 = client_list_find_by_ip(ip))) {
 				if (p1->counters.incoming < counter) {
+					p1->counters.incoming_previous = p1->counters.incoming;
 					p1->counters.incoming = counter;
+					p1->counters.inpackets_previous = p1->counters.inpackets;
 					p1->counters.inpackets = packets;
 					debug(LOG_DEBUG, "%s - Updated counter.incoming to %llu bytes, packets=%llu.  Updated last_updated to %d",
 						ip,

@@ -82,15 +82,15 @@
 #define DEFAULT_MACMECHANISM MAC_BLOCK
 #define DEFAULT_SET_MSS 1 //allow setting the TCP Maximum Segment Size
 #define DEFAULT_MSS_VALUE 0 // value to set the MSS. 0 means use max possible ie clamp-mss-to-pmtu
-#define DEFAULT_RATE_CHECK_WINDOW 2 // The data rate check moving average window size multiply this by CHECKINTERVAL to give window size in seconds
+#define DEFAULT_RATE_CHECK_WINDOW 2 // The data rate check moving average window size multiply this by CHECKINTERVAL to give window size (or burst interval) in seconds
 #define DEFAULT_UPLOAD_RATE 0 // 0 means no limit
 #define DEFAULT_DOWNLOAD_RATE 0 // 0 means no limit
 #define DEFAULT_UPLOAD_BUCKET_RATIO 10 // Used to calculate the packet upload queue size per client
 #define DEFAULT_DOWNLOAD_BUCKET_RATIO 10 // Used to calculate the packet download queue size per client
 #define DEFAULT_UPLOAD_QUOTA 0 // 0 means no limit
 #define DEFAULT_DOWNLOAD_QUOTA 0 // 0 means no limit
-#define DEFAULT_UPLOAD_UNRESTRICTED_BURSTING 1 // 0 means disabled, 1 means enabled
-#define DEFAULT_DOWNLOAD_UNRESTRICTED_BURSTING 1 // 0 means disabled, 1 means enabled
+#define DEFAULT_UPLOAD_UNRESTRICTED_BURSTING 0 // 0 means disabled, 1 means enabled
+#define DEFAULT_DOWNLOAD_UNRESTRICTED_BURSTING 0 // 0 means disabled, 1 means enabled
 #define DEFAULT_LOG_SYSLOG 0
 #define DEFAULT_LOG_SYSLOG 0
 #define DEFAULT_SYSLOG_FACILITY LOG_DAEMON

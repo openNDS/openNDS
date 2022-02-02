@@ -901,7 +901,11 @@ iptables_download_ratelimit_enable(t_client *client, int enable)
 	s_config *config;
 	config = config_get_config();
 
-	if (client->counters.incoming == 0 || client->counters.inpackets == 0 || (client->counters.incoming - client->counters.incoming_previous) == 0) {
+	if (client->counters.incoming == 0
+		|| client->counters.inpackets == 0
+		|| (client->counters.incoming - client->counters.incoming_previous) == 0
+		|| (client->counters.inpackets - client->counters.inpackets_previous) == 0
+	) {
 		average_packet_size = 1500;
 		packet_limit = client->download_rate * 1024 * 60 / average_packet_size / 8; // packets per minute
 		bucket = 5;
@@ -919,8 +923,8 @@ iptables_download_ratelimit_enable(t_client *client, int enable)
 
 	bucket = bucket * config->download_bucket_ratio;
 
-	if ( bucket > 500) {
-		bucket = 500;
+	if ( bucket > config->max_download_bucket_size) {
+		bucket = config->max_download_bucket_size;
 	}
 
 	if (enable == 1) {
@@ -943,6 +947,8 @@ iptables_download_ratelimit_enable(t_client *client, int enable)
 	}
 
 	if (enable == 0) {
+		debug(LOG_DEBUG, "client->inc_packet_limit %llu client->download_bucket_size %llu", client->inc_packet_limit, client->download_bucket_size);
+
 		// Remove rate limiting download rule set for this client
 		rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -m limit --limit %llu/min --limit-burst %llu -j ACCEPT",
 			client->ip,
@@ -995,8 +1001,8 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 
 	bucket = bucket * config->upload_bucket_ratio;
 
-	if ( bucket > 500) {
-		bucket = 500;
+	if ( bucket > config->max_upload_bucket_size) {
+		bucket = config->max_upload_bucket_size;
 	}
 
 	if (enable == 1) {
@@ -1023,12 +1029,7 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 
 	if (enable == 0) {
 		// Remove rate limiting upload rule set for this client
-		rc |= iptables_do_command("-t filter -D " CHAIN_UPLOAD_RATE " -s %s -j DROP", client->ip);
-		rc |= iptables_do_command("-t filter -D " CHAIN_UPLOAD_RATE " -s %s -m limit --limit %llu/min --limit-burst %llu -j RETURN",
-			client->ip,
-			client->out_packet_limit,
-			client->upload_bucket_size
-		);
+		rc |= iptables_fw_destroy_mention("filter", CHAIN_UPLOAD_RATE, client->ip);
 
 		client->out_packet_limit = 0;
 		client->upload_bucket_size = 0;
@@ -1086,18 +1087,9 @@ iptables_fw_deauthenticate(t_client *client)
 	// Remove the authentication rules.
 	debug(LOG_NOTICE, "Deauthenticating %s %s", client->ip, client->mac);
 
-	rc |= iptables_do_command("-t mangle -D " CHAIN_OUTGOING " -s %s -m mac --mac-source %s -j MARK %s 0x%x",
-		client->ip,
-		client->mac,
-		markop,
-		FW_MARK_AUTHENTICATED
-	);
-
-	rc |= iptables_do_command("-t filter -D " CHAIN_UPLOAD_RATE " -s %s -j RETURN", client->ip);
-
-	rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -j DROP", client->ip);
-	rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -j MARK %s 0x%x", client->ip, markop, FW_MARK_AUTHENTICATED);
-	rc |= iptables_do_command("-t mangle -D " CHAIN_INCOMING " -d %s -j ACCEPT", client->ip);
+	rc |= iptables_fw_destroy_mention("mangle", CHAIN_OUTGOING, client->ip);
+	rc |= iptables_fw_destroy_mention("filter", CHAIN_UPLOAD_RATE, client->ip);
+	rc |= iptables_fw_destroy_mention("mangle", CHAIN_INCOMING, client->ip);
 
 	return rc;
 }

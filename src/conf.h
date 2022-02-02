@@ -85,8 +85,10 @@
 #define DEFAULT_RATE_CHECK_WINDOW 2 // The data rate check moving average window size multiply this by CHECKINTERVAL to give window size (or burst interval) in seconds
 #define DEFAULT_UPLOAD_RATE 0 // 0 means no limit
 #define DEFAULT_DOWNLOAD_RATE 0 // 0 means no limit
-#define DEFAULT_UPLOAD_BUCKET_RATIO 10 // Used to calculate the packet upload queue size per client
-#define DEFAULT_DOWNLOAD_BUCKET_RATIO 10 // Used to calculate the packet download queue size per client
+#define DEFAULT_UPLOAD_BUCKET_RATIO 10 // Allows control of upload rate limit threshold overrun per client
+#define DEFAULT_DOWNLOAD_BUCKET_RATIO 10 // Allows control of download rate limit threshold overrun per client
+#define DEFAULT_MAX_UPLOAD_BUCKET_SIZE 250 // Allows control over upload rate limiting packet loss at the expense of increased latency
+#define DEFAULT_MAX_DOWNLOAD_BUCKET_SIZE 250 // Allows control over download rate limiting packet loss at the expense of increased latency
 #define DEFAULT_UPLOAD_QUOTA 0 // 0 means no limit
 #define DEFAULT_DOWNLOAD_QUOTA 0 // 0 means no limit
 #define DEFAULT_UPLOAD_UNRESTRICTED_BURSTING 0 // 0 means disabled, 1 means enabled
@@ -181,89 +183,91 @@ typedef struct _FASFILE_t {
 
 // Configuration structure
 typedef struct {
-	char configfile[255];				//@brief name of the config file
-	char *ndsctl_sock;				//@brief ndsctl path to socket
-	char *internal_sock;				//@brief internal path to socket
-	int daemon;					//@brief if daemon > 0, use daemon mode
-	int debuglevel;				//@brief Debug information verbosity
-	int maxclients;				//@brief Maximum number of clients allowed
-	int online_status;				//@brief Online status of the router, 1=online, 0=offline
-	char *gw_name;					//@brief Name of the gateway; e.g. its SSID or a unique identifier for use in a remote FAS
-	char *http_encoded_gw_name;			//@brief http encoded name of the gateway, used as a templated variable in splash.htm
-	char *url_encoded_gw_name;			//@brief url encoded name of the gateway used as variable in Preauth
-	char *gw_interface;				//@brief Interface we will manage
-	char *ext_gateway;				//@brief The interfaces and IP addresses of upstream gateways
-	char *gw_iprange;				//@brief IP range on gw_interface we will manage
-	char *gw_ip;					//@brief Internal IP (v4 or v6) for our web server
-	char *gw_address;				//@brief Internal IP with port for our web server
-	char *gw_mac;					//@brief MAC address of the interface we manage
-	char *gw_fqdn;					//@brief FQDN of the client status page
-	char *status_path;				//@brief Path to the client status page script
-	int dhcp_default_url_enable;			//@brief Enable DHCP default-url (code 114 - RFC8910)
-	unsigned int gw_port;				//@brief Port the webserver will run on
-	unsigned int fas_port;				//@brief Port the fas server will run on
-	int login_option_enabled;			//@brief Use default PreAuth Login script
-	unsigned long long int max_log_entries;	//@brief set the maximum number of log entries
-	int use_outdated_mhd;				//@brief Use outdated libmicrohttpd
-	unsigned long long int max_page_size;		//@brief Max page size to be served by libmicrohttpd
-	int allow_preemptive_authentication;		//@brief Allow Preemptive Authentication using the ndsctl utility
-	int unescape_callback_enabled;			//@brief Enable external MHD unescape callback script
-	int fas_secure_enabled;			//@brief Enable Secure FAS
-	char *fas_path;				//@brief Path to forward authentication page of FAS
-	char *fas_key;					//@brief AES key for FAS
-	char *fas_remoteip;				//@brief IP addess of a remote FAS
-	char *fas_remotefqdn;				//@brief FQDN of a remote FAS
-	char *fas_url;					//@brief URL of a remote FAS
-	char *fas_ssl;					//@brief SSL provider for FAS
-	char *fas_hid;					//@brief Hash provider for FAS
-	char *themespec_path;				//@brief Path to the ThemeSpec file to use for login_option_enabled = 3
-	char *tmpfsmountpoint;				//@brief Mountpoint of the tmpfs drive eg /tmp etc.
-	char *log_mountpoint;				//@brief Mountpoint of the log drive eg a USB drive mounted at /logs
-	char *webroot;					//@brief Directory containing splash pages, etc.
-	char *authdir;					//@brief Notional relative dir for authentication URL
-	char *denydir;					//@brief Notional relative dir for denial URL
-	char *preauthdir;				//@brief Notional relative dir for preauth URL
-	int session_timeout;				//@brief Minutes of the default session length
-	int preauth_idle_timeout;			//@brief Minutes a preauthenticated client will be kept in the system
-	int auth_idle_timeout;				//@brief Minutes an authenticated client will be kept in the system
-	int remotes_refresh_interval;			//@brief Minutes before remote files will be refreshed
-	unsigned long long int remotes_last_refresh;	//@brief Time of last refresh of remote files
-	int checkinterval;				//@brief Period the the client timeout check thread will run, in seconds
-	int set_mss;					//@brief boolean, whether to set mss
-	int mss_value;					//@brief int, mss value; <= 0 clamp to pmtu
-	int rate_check_window;				//@brief window size in multiples of checkinterval for rate check moving average
-	unsigned long long int download_rate;		//@brief Download rate, kb/s
-	unsigned long long int upload_rate;		//@brief Upload rate, kb/s
-	unsigned long long int download_bucket_ratio;	//@brief used to calculate the packet download queue size per client
-	unsigned long long int upload_bucket_ratio;	//@brief used to calculate the packet upload queue size per client
-	unsigned long long int download_quota;		//@brief Download quota, kB
-	unsigned long long int upload_quota;		//@brief Upload quota, kB
-	int download_unrestricted_bursting;		//@brief Enable/disable unrestriced bursting
-	int upload_unrestricted_bursting;		//@brief Enable/disable unrestriced bursting
-	int log_syslog;				//@brief boolean, whether to log to syslog
-	int syslog_facility;				//@brief facility to use when using syslog for logging
-	int macmechanism; 				//@brief mechanism wrt MAC addrs
-	t_firewall_ruleset *rulesets;			//@brief firewall rules
-	t_MAC *trustedmaclist;				//@brief list of trusted macs
-	t_MAC *blockedmaclist;				//@brief list of blocked macs
-	t_MAC *allowedmaclist;				//@brief list of allowed macs
-	t_WGP *walledgarden_port_list;			//@brief list of Walled Garden Ports
-	t_WGFQDN *walledgarden_fqdn_list;		//@brief list of Walled Garden FQDNs
-	t_FASPARAM *fas_custom_parameters_list;	//@brief list of Custom FAS parameters
-	t_FASVAR *fas_custom_variables_list;		//@brief list of Custom FAS variables
-	t_FASIMG *fas_custom_images_list;		//@brief list of Custom FAS images
-	t_FASFILE *fas_custom_files_list;		//@brief list of Custom FAS files
-	char *custom_params;				//@brief FAS custom parameter string
-	char *custom_vars;				//@brief FAS custom variable string
-	char *custom_images;				//@brief FAS custom image string
-	char *custom_files;				//@brief FAS custom file string
-	unsigned int fw_mark_authenticated;		//@brief iptables mark for authenticated packets
-	unsigned int fw_mark_blocked;			//@brief iptables mark for blocked packets
-	unsigned int fw_mark_trusted;			//@brief iptables mark for trusted packets
-	int ip6;					//@brief enable IPv6
-	char *binauth;					//@brief external authentication program
-	char *preauth;					//@brief external preauthentication program
-	int lockfd;					//@brief ndsctl lockfile file descriptor
+	char configfile[255];					//@brief name of the config file
+	char *ndsctl_sock;					//@brief ndsctl path to socket
+	char *internal_sock;					//@brief internal path to socket
+	int daemon;						//@brief if daemon > 0, use daemon mode
+	int debuglevel;					//@brief Debug information verbosity
+	int maxclients;					//@brief Maximum number of clients allowed
+	int online_status;					//@brief Online status of the router, 1=online, 0=offline
+	char *gw_name;						//@brief Name of the gateway; e.g. its SSID or a unique identifier for use in a remote FAS
+	char *http_encoded_gw_name;				//@brief http encoded name of the gateway, used as a templated variable in splash.htm
+	char *url_encoded_gw_name;				//@brief url encoded name of the gateway used as variable in Preauth
+	char *gw_interface;					//@brief Interface we will manage
+	char *ext_gateway;					//@brief The interfaces and IP addresses of upstream gateways
+	char *gw_iprange;					//@brief IP range on gw_interface we will manage
+	char *gw_ip;						//@brief Internal IP (v4 or v6) for our web server
+	char *gw_address;					//@brief Internal IP with port for our web server
+	char *gw_mac;						//@brief MAC address of the interface we manage
+	char *gw_fqdn;						//@brief FQDN of the client status page
+	char *status_path;					//@brief Path to the client status page script
+	int dhcp_default_url_enable;				//@brief Enable DHCP default-url (code 114 - RFC8910)
+	unsigned int gw_port;					//@brief Port the webserver will run on
+	unsigned int fas_port;					//@brief Port the fas server will run on
+	int login_option_enabled;				//@brief Use default PreAuth Login script
+	unsigned long long int max_log_entries;		//@brief set the maximum number of log entries
+	int use_outdated_mhd;					//@brief Use outdated libmicrohttpd
+	unsigned long long int max_page_size;			//@brief Max page size to be served by libmicrohttpd
+	int allow_preemptive_authentication;			//@brief Allow Preemptive Authentication using the ndsctl utility
+	int unescape_callback_enabled;				//@brief Enable external MHD unescape callback script
+	int fas_secure_enabled;				//@brief Enable Secure FAS
+	char *fas_path;					//@brief Path to forward authentication page of FAS
+	char *fas_key;						//@brief AES key for FAS
+	char *fas_remoteip;					//@brief IP addess of a remote FAS
+	char *fas_remotefqdn;					//@brief FQDN of a remote FAS
+	char *fas_url;						//@brief URL of a remote FAS
+	char *fas_ssl;						//@brief SSL provider for FAS
+	char *fas_hid;						//@brief Hash provider for FAS
+	char *themespec_path;					//@brief Path to the ThemeSpec file to use for login_option_enabled = 3
+	char *tmpfsmountpoint;					//@brief Mountpoint of the tmpfs drive eg /tmp etc.
+	char *log_mountpoint;					//@brief Mountpoint of the log drive eg a USB drive mounted at /logs
+	char *webroot;						//@brief Directory containing splash pages, etc.
+	char *authdir;						//@brief Notional relative dir for authentication URL
+	char *denydir;						//@brief Notional relative dir for denial URL
+	char *preauthdir;					//@brief Notional relative dir for preauth URL
+	int session_timeout;					//@brief Minutes of the default session length
+	int preauth_idle_timeout;				//@brief Minutes a preauthenticated client will be kept in the system
+	int auth_idle_timeout;					//@brief Minutes an authenticated client will be kept in the system
+	int remotes_refresh_interval;				//@brief Minutes before remote files will be refreshed
+	unsigned long long int remotes_last_refresh;		//@brief Time of last refresh of remote files
+	int checkinterval;					//@brief Period the the client timeout check thread will run, in seconds
+	int set_mss;						//@brief boolean, whether to set mss
+	int mss_value;						//@brief int, mss value; <= 0 clamp to pmtu
+	int rate_check_window;					//@brief window size in multiples of checkinterval for rate check moving average
+	unsigned long long int download_rate;			//@brief Download rate, kb/s
+	unsigned long long int upload_rate;			//@brief Upload rate, kb/s
+	unsigned long long int download_bucket_ratio;		//@brief Allows control of download rate limit threshold overrun per client
+	unsigned long long int upload_bucket_ratio;		//@brief Allows control of upload rate limit threshold overrun per client
+	unsigned long long int max_upload_bucket_size;		//@brief control upload rate limiting packet loss at the expense of increased latency
+	unsigned long long int max_download_bucket_size;	//@brief control download rate limiting packet loss at the expense of increased latency
+	unsigned long long int download_quota;			//@brief Download quota, kB
+	unsigned long long int upload_quota;			//@brief Upload quota, kB
+	int download_unrestricted_bursting;			//@brief Enable/disable unrestriced bursting
+	int upload_unrestricted_bursting;			//@brief Enable/disable unrestriced bursting
+	int log_syslog;					//@brief boolean, whether to log to syslog
+	int syslog_facility;					//@brief facility to use when using syslog for logging
+	int macmechanism; 					//@brief mechanism wrt MAC addrs
+	t_firewall_ruleset *rulesets;				//@brief firewall rules
+	t_MAC *trustedmaclist;					//@brief list of trusted macs
+	t_MAC *blockedmaclist;					//@brief list of blocked macs
+	t_MAC *allowedmaclist;					//@brief list of allowed macs
+	t_WGP *walledgarden_port_list;				//@brief list of Walled Garden Ports
+	t_WGFQDN *walledgarden_fqdn_list;			//@brief list of Walled Garden FQDNs
+	t_FASPARAM *fas_custom_parameters_list;		//@brief list of Custom FAS parameters
+	t_FASVAR *fas_custom_variables_list;			//@brief list of Custom FAS variables
+	t_FASIMG *fas_custom_images_list;			//@brief list of Custom FAS images
+	t_FASFILE *fas_custom_files_list;			//@brief list of Custom FAS files
+	char *custom_params;					//@brief FAS custom parameter string
+	char *custom_vars;					//@brief FAS custom variable string
+	char *custom_images;					//@brief FAS custom image string
+	char *custom_files;					//@brief FAS custom file string
+	unsigned int fw_mark_authenticated;			//@brief iptables mark for authenticated packets
+	unsigned int fw_mark_blocked;				//@brief iptables mark for blocked packets
+	unsigned int fw_mark_trusted;				//@brief iptables mark for trusted packets
+	int ip6;						//@brief enable IPv6
+	char *binauth;						//@brief external authentication program
+	char *preauth;						//@brief external preauthentication program
+	int lockfd;						//@brief ndsctl lockfile file descriptor
 } s_config;
 
 // @brief Get the current gateway configuration

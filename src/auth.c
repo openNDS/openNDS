@@ -510,14 +510,20 @@ fw_refresh_client_list(void)
 
 				//reset ratecheckwindow
 				cp1->window_counter = config->rate_check_window;
+				cp1->window_start = now;
+				//cp1->counters.in_window_start = cp1->counters.incoming;
+				//cp1->counters.out_window_start = cp1->counters.outgoing;
+
 
 				//Handle download rate limiting
 
 				if ((cp1->rate_exceeded&1) == 1) {
 					// note checked for bit 0 of rate_exceeded set to 1, it was so we are here 
 					if (cp1->download_rate > 0 && cp1->download_rate > downrate) {
+						// dropped below threshold
 
 						if (config->download_unrestricted_bursting > 0) {
+							//Unrestricted bursting is enabled
 							debug(LOG_INFO,
 								"Download RATE below quota threshold - bursting allowed: %s %s, in: %llukbits/s, out: %llukbits/s",
 								cp1->ip, cp1->mac,
@@ -532,16 +538,24 @@ fw_refresh_client_list(void)
 							cp1->rate_exceeded = cp1->rate_exceeded^1;
 						} else {
 							// refresh rate limiting
+							//Unrestricted bursting is disabled
+							debug(LOG_DEBUG, "Refreshing Download Rate Limiting for [%s] [%s]", cp1->ip, cp1->mac);
 							action = DISABLE;
+							debug(LOG_DEBUG, "Refresh - Disabling Download Rate Limiting for [%s] [%s]", cp1->ip, cp1->mac);
 							iptables_download_ratelimit_enable(cp1, action);
 							action = ENABLE;
+							debug(LOG_DEBUG, "Refresh - Enabling Download Rate Limiting for [%s] [%s]", cp1->ip, cp1->mac);
 							iptables_download_ratelimit_enable(cp1, action);
 						}
 					} else {
+						// still above threshold
 						// refresh rate limiting
+						debug(LOG_DEBUG, "Above threshold - Refreshing Download Rate Limiting for [%s] [%s]", cp1->ip, cp1->mac);
 						action = DISABLE;
+						debug(LOG_DEBUG, "Refresh - Disabling Download Rate Limiting for [%s] [%s]", cp1->ip, cp1->mac);
 						iptables_download_ratelimit_enable(cp1, action);
 						action = ENABLE;
+						debug(LOG_DEBUG, "Refresh - Enabling Download Rate Limiting for [%s] [%s]", cp1->ip, cp1->mac);
 						iptables_download_ratelimit_enable(cp1, action);
 					}
 				}

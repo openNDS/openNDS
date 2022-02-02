@@ -106,6 +106,8 @@ typedef enum {
 	oUploadRate,
 	oDownloadBucketRatio,
 	oUploadBucketRatio,
+	oMaxDownloadBucketSize,
+	oMaxUploadBucketSize,
 	oUploadUnrestrictedBursting,
 	oDownloadUnrestrictedBursting,
 	oDownloadQuota,
@@ -182,6 +184,8 @@ static const struct {
 	{ "uploadrate", oUploadRate },
 	{ "download_bucket_ratio", oDownloadBucketRatio },
 	{ "upload_bucket_ratio", oUploadBucketRatio },
+	{ "max_download_bucket_size", oMaxDownloadBucketSize },
+	{ "max_upload_bucket_size", oMaxUploadBucketSize },
 	{ "upload_unrestricted_bursting", oUploadUnrestrictedBursting },
 	{ "download_unrestricted_bursting", oDownloadUnrestrictedBursting },
 	{ "downloadquota", oDownloadQuota },
@@ -293,8 +297,10 @@ config_init(void)
 	config.upload_rate =  DEFAULT_UPLOAD_RATE;
 	config.download_rate = DEFAULT_DOWNLOAD_RATE;
 	config.download_bucket_ratio = DEFAULT_DOWNLOAD_BUCKET_RATIO;
+	config.max_download_bucket_size = DEFAULT_MAX_DOWNLOAD_BUCKET_SIZE;
 	config.download_unrestricted_bursting = DEFAULT_DOWNLOAD_UNRESTRICTED_BURSTING;
 	config.upload_bucket_ratio =  DEFAULT_UPLOAD_BUCKET_RATIO;
+	config.max_upload_bucket_size = DEFAULT_MAX_UPLOAD_BUCKET_SIZE;
 	config.upload_unrestricted_bursting = DEFAULT_UPLOAD_UNRESTRICTED_BURSTING;
 	config.upload_quota =  DEFAULT_UPLOAD_QUOTA;
 	config.download_quota = DEFAULT_DOWNLOAD_QUOTA;
@@ -1095,6 +1101,20 @@ config_read(const char *filename)
 			break;
 		case oUploadBucketRatio:
 			if (sscanf(p1, "%llu", &config.upload_bucket_ratio) < 1 || config.upload_bucket_ratio < 0) {
+				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+				debug(LOG_ERR, "Exiting...");
+				exit(1);
+			}
+			break;
+		case oMaxDownloadBucketSize:
+			if (sscanf(p1, "%llu", &config.max_download_bucket_size) < 1 || config.max_download_bucket_size < 0) {
+				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+				debug(LOG_ERR, "Exiting...");
+				exit(1);
+			}
+			break;
+		case oMaxUploadBucketSize:
+			if (sscanf(p1, "%llu", &config.max_upload_bucket_size) < 1 || config.max_upload_bucket_size < 0) {
 				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
 				debug(LOG_ERR, "Exiting...");
 				exit(1);

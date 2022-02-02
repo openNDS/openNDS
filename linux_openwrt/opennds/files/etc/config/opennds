@@ -425,10 +425,12 @@ config opennds
 	# Bucket Ratio
 	# Default 10
 	#
-	# Upload and Download bucket ratios can be defined. These are used to calulate the
-	# "bucket size" or "queue length" (in packets) to be used for buffering upload and
-	# download traffic to facilitate rate restrictions defined in this config file or
-	# by FAS for individual clients.
+	# Upload and Download bucket ratios can be defined.
+	# Allows control of upload rate limit threshold overrun per client.
+	# Used in conjunction with MaxDownloadBucketSize and MaxUploadBucketSize
+	# Facilitates calculation of a dynamic "bucket size" or "queue length" (in packets)
+	# to be used for buffering upload and download traffic to achieve rate restrictions
+	# defined in this config file or by FAS for individual clients.
 	# If a bucket becomes full, packets will overflow and be dropped to maintain the rate limit.
 	#
 	# To minimise the number of dropped packets the bucket ratio can be increased whilst
@@ -444,6 +446,23 @@ config opennds
 	#
 	# option upload_bucket_ratio '1'
 	# option download_bucket_ratio '5'
+	###########################################################################################
+
+	# MaxDownloadBucketSize
+	# Allows control over download rate limiting packet loss at the expense of increased latency
+	# ***CAUTION*** Large values may consume large amounts of memory per client.
+	# Default 250
+	# Allowed Range 5 to 10000
+	#option max_download_bucket_size '100'
+	###########################################################################################
+
+	# MaxUploadBucketSize
+	# Allows control over upload rate limiting packet loss at the expense of increased latency
+	# ***CAUTION*** Large values may consume large amounts of memory per client.
+	# Default 250
+	# Allowed Range 5 to 10000
+	#
+	#option max_upload_bucket_size '100'
 	###########################################################################################
 
 	# DownLoadUnrestrictedBursting

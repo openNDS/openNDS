@@ -399,7 +399,7 @@ config opennds
 	###########################################################################################
 
 	# The interval in seconds at which opennds checks client timeout and quota status
-	# Default 60 seconds (1 minute)
+	# Default 15 seconds
 	# Example: Set to 30 seconds
 	#option checkinterval '30'
 	###########################################################################################

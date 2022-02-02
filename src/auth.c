@@ -511,8 +511,8 @@ fw_refresh_client_list(void)
 				//reset ratecheckwindow
 				cp1->window_counter = config->rate_check_window;
 				cp1->window_start = now;
-				//cp1->counters.in_window_start = cp1->counters.incoming;
-				//cp1->counters.out_window_start = cp1->counters.outgoing;
+				cp1->counters.in_window_start = cp1->counters.incoming;
+				cp1->counters.out_window_start = cp1->counters.outgoing;
 
 
 				//Handle download rate limiting

@@ -72,6 +72,7 @@ if (isset($fas)) {
 		if ($name == "clientip") {$clientip=$value;}
 		if ($name == "clientmac") {$clientmac=$value;}
 		if ($name == "gatewayname") {$gatewayname=$value;}
+		if ($name == "gatewayurl") {$gatewayurl=rawurldecode($value);}
 		if ($name == "version") {$version=$value;}
 		if ($name == "hid") {$hid=$value;}
 		if ($name == "client_type") {$client_type=$value;}
@@ -334,6 +335,7 @@ function landing_page() {
 	$originurl=$GLOBALS["originurl"];
 	$gatewayaddress=$GLOBALS["gatewayaddress"];
 	$gatewayname=$GLOBALS["gatewayname"];
+	$gatewayurl=$GLOBALS["gatewayurl"];
 	$clientif=$GLOBALS["clientif"];
 	$client_zone=$GLOBALS["client_zone"];
 	$redir=rawurldecode($originurl);
@@ -352,12 +354,12 @@ function landing_page() {
 			</italic-black>
 		</p>
 		<p>
-		Your device originally requested <b>$redir</b>
-		<br>
-		Click or tap Continue to go to there.
+		(Your device originally requested $redir)
+		<hr>
+		Click or tap Continue to show the status of your account.
 		</p>
 		<form>
-			<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='".$redir."'\" >
+			<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='".$gatewayurl."'\" >
 		</form>
 		<hr>
 	";

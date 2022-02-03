@@ -681,7 +681,7 @@ static int authenticated(struct MHD_Connection *connection,
 {
 	s_config *config = config_get_config();
 	const char *host = config->gw_address;
-	char redirect_to_us[128];
+	char *redirect_to_us = NULL;
 	char *fasurl = NULL;
 	char *query;
 	char *msg;
@@ -749,8 +749,14 @@ static int authenticated(struct MHD_Connection *connection,
 	}
 
 	if (check_authdir_match(url, config->denydir)) {
+		debug(LOG_NOTICE, "Deauthentication request - client  [%s]", client->mac);
 		auth_client_deauth(client->id, "client_deauth");
-		snprintf(redirect_to_us, sizeof(redirect_to_us), "http://%s/", config->gw_address);
+		debug(LOG_DEBUG, "Post deauth redirection [%s]", config->gw_address);
+		redirect_to_us = safe_calloc(QUERYMAXLEN);
+			safe_asprintf(&redirect_to_us, "http://%s/",
+				config->gw_address
+			);
+
 		return send_redirect_temp(connection, client, redirect_to_us);
 	}
 
@@ -759,6 +765,7 @@ static int authenticated(struct MHD_Connection *connection,
 
 		if (config->fas_port && !config->preauth) {
 			query = safe_calloc(QUERYMAXLEN);
+			fasurl = safe_calloc(QUERYMAXLEN);
 			get_query(connection, &query, HTMLQUERYSEPARATOR);
 			safe_asprintf(&fasurl, "%s%s%sstatus=authenticated",
 				config->fas_url,
@@ -1158,10 +1165,23 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 	char *msg;
 	char *cidinfo;
 	char *cidfile;
+	char *gw_url_raw = NULL;
+	char gw_url[QUERYMAXLEN] = {0};
 	char *phpcmd = NULL;
 	int cidgood = 0;
 
 	s_config *config = config_get_config();
+
+
+	if (strcmp(config->gw_fqdn, "disable") == 0 || strcmp(config->gw_fqdn, "disabled") == 0) {
+		safe_asprintf(&gw_url_raw, "http://%s", config->gw_ip);
+	} else {
+		safe_asprintf(&gw_url_raw, "http://%s", config->gw_fqdn);
+	}
+
+	uh_urlencode(gw_url, sizeof(gw_url), gw_url_raw, strlen(gw_url_raw));
+	debug(LOG_DEBUG, "gw_url: %s", gw_url);
+
 
 	if (!client->client_type || strlen(client->client_type) == 0) {
 		clienttype = safe_strdup("cpd_can");
@@ -1186,12 +1206,13 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 				debug(LOG_DEBUG, "clientif: [%s] url_encoded_gw_name: [%s]", clientif, config->url_encoded_gw_name);
 
 				snprintf(query_str, QUERYMAXLEN,
-					"hid=%s%sclientip=%s%sclientmac=%s%sclient_type=%s%sgatewayname=%s%sversion=%s%sgatewayaddress=%s%sgatewaymac=%s%soriginurl=%s%sclientif=%s%sthemespec=%s%s%s%s%s%s",
+					"hid=%s%sclientip=%s%sclientmac=%s%sclient_type=%s%sgatewayname=%s%sgatewayurl=%s%sversion=%s%sgatewayaddress=%s%sgatewaymac=%s%soriginurl=%s%sclientif=%s%sthemespec=%s%s%s%s%s%s",
 					client->hid, QUERYSEPARATOR,
 					client->ip, QUERYSEPARATOR,
 					client->mac, QUERYSEPARATOR,
 					clienttype, QUERYSEPARATOR,
 					config->url_encoded_gw_name, QUERYSEPARATOR,
+					gw_url, QUERYSEPARATOR,
 					VERSION, QUERYSEPARATOR,
 					config->gw_address, QUERYSEPARATOR,
 					config->gw_mac, QUERYSEPARATOR,
@@ -1246,6 +1267,9 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 						safe_asprintf(&cidinfo, "gatewayname=\"%s\"\0", config->http_encoded_gw_name);
 						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
+						safe_asprintf(&cidinfo, "gatewayurl=\"%s\"\0", gw_url);
+						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
+
 						safe_asprintf(&cidinfo, "version=\"%s\"\0", VERSION);
 						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
@@ -1296,12 +1320,13 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 		get_client_interface(clientif, sizeof(clientif), client->mac);
 		debug(LOG_DEBUG, "clientif: [%s]", clientif);
 		snprintf(querystr, QUERYMAXLEN,
-			"hid=%s%sclientip=%s%sclientmac=%s%sclient_type=%s%sgatewayname=%s%sversion=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s%sthemespec=%s%s%s%s%s%s",
+			"hid=%s%sclientip=%s%sclientmac=%s%sclient_type=%s%sgatewayname=%s%sgatewayurl=%s%sversion=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s%sthemespec=%s%s%s%s%s%s",
 			client->hid, QUERYSEPARATOR,
 			client->ip, QUERYSEPARATOR,
 			client->mac, QUERYSEPARATOR,
 			clienttype, QUERYSEPARATOR,
 			config->url_encoded_gw_name, QUERYSEPARATOR,
+			gw_url, QUERYSEPARATOR,
 			VERSION, QUERYSEPARATOR,
 			config->gw_address, QUERYSEPARATOR,
 			config->gw_mac, QUERYSEPARATOR,
@@ -1379,6 +1404,7 @@ add_client(const char *mac, const char *ip)
 
 int send_redirect_temp(struct MHD_Connection *connection, t_client *client, const char *url)
 {
+	// Warning - *client will be undefined if not authenticated
 	struct MHD_Response *response;
 	int ret;
 	char *redirect = NULL;
@@ -1388,32 +1414,39 @@ int send_redirect_temp(struct MHD_Connection *connection, t_client *client, cons
 	safe_asprintf(&redirect, redirect_body, url, url);
 
 	debug(LOG_DEBUG, "send_redirect_temp: MHD_create_response_from_buffer. url [%s]", url);
+	debug(LOG_DEBUG, "send_redirect_temp: Redirect body [%s]", redirect_body);
 
 	response = MHD_create_response_from_buffer(strlen(redirect), redirect, MHD_RESPMEM_MUST_FREE);
 
 	if (!response) {
+		debug(LOG_DEBUG, "send_redirect_temp: Failed to create response....");
 		return send_error(connection, 503);
+	} else {
+		debug(LOG_DEBUG, "send_redirect_temp: Response created");
 	}
 
-	// MHD_set_response_options(response, MHD_RF_HTTP_VERSION_1_0_ONLY, MHD_RO_END);
 	ret = MHD_add_response_header(response, "Location", url);
 
 	if (ret == MHD_NO) {
 		debug(LOG_ERR, "send_redirect_temp: Error adding Location header to redirection page");
+	} else {
+		debug(LOG_DEBUG, "send_redirect_temp: Location header added to redirection page");
 	}
 
 	ret = MHD_add_response_header(response, "Connection", "close");
 
 	if (ret == MHD_NO) {
 		debug(LOG_ERR, "send_redirect_temp: Error adding Connection header to redirection page");
+	} else {
+		debug(LOG_DEBUG, "send_redirect_temp: Connection header added to redirection page");
 	}
 
-	debug(LOG_DEBUG, "send_redirect_temp: Queueing response for %s, %s", client->ip, client->mac);
+	debug(LOG_DEBUG, "send_redirect_temp: Queueing response");
 
 	ret = MHD_queue_response(connection, MHD_HTTP_TEMPORARY_REDIRECT, response);
 
 	if (ret == MHD_NO) {
-		debug(LOG_ERR, "send_redirect_temp: Error queueing response for %s, %s", client->ip, client->mac);
+		debug(LOG_ERR, "send_redirect_temp: Error queueing response");
 	} else {
 		debug(LOG_DEBUG, "send_redirect_temp: Response is Queued");
 	}
@@ -1520,7 +1553,7 @@ static int send_error(struct MHD_Connection *connection, int error)
 	 */
 	const char *page_200 = "<br>OK<br>";
 	const char *page_400 = "<html><head><title>Error 400</title></head><body><h1>Error 400 - Bad Request</h1></body></html>";
-	const char *page_403 = "<html><head><title>Error 403</title></head><body><h1>Error 403 - Forbidden</h1></body></html>";
+	const char *page_403 = "<html><head><title>Error 403</title></head><body><h1>Error 403 - Forbidden - Access Denied to this Client!</h1></body></html>";
 	const char *page_404 = "<html><head><title>Error 404</title></head><body><h1>Error 404 - Not Found</h1></body></html>";
 	const char *page_500 = "<html><head><title>Error 500</title></head><body><h1>Error 500 - Internal Server Error. Oh no!</h1></body></html>";
 	const char *page_501 = "<html><head><title>Error 501</title></head><body><h1>Error 501 - Not Implemented</h1></body></html>";

@@ -30,12 +30,16 @@
 /** Counters struct for a client's bandwidth usage (in bytes)
  */
 typedef struct _t_counters {
-	unsigned long long incoming;			/**< @brief Incoming bytes total */
-	unsigned long long outgoing;			/**< @brief Outgoing bytes total */
-	unsigned long long inpackets;			/**< @brief Incoming packets total */
-	unsigned long long outpackets;			/**< @brief Outgoing packets total */
-	unsigned long long in_window_start;		/**< @brief Incoming bytes total at rate check window start */
-	unsigned long long out_window_start;		/**< @brief Outgoing bytes total at rate check window start */
+	unsigned long long int incoming;		/**< @brief Incoming bytes total */
+	unsigned long long int incoming_previous;	/**< @brief Incoming bytes previous */
+	unsigned long long int outgoing;		/**< @brief Outgoing bytes total */
+	unsigned long long int outgoing_previous;	/**< @brief Outgoing bytes previous */
+	unsigned long long int inpackets;		/**< @brief Incoming packets total */
+	unsigned long long int inpackets_previous;	/**< @brief Incoming packets previous */
+	unsigned long long int outpackets;		/**< @brief Outgoing packets total */
+	unsigned long long int outpackets_previous;	/**< @brief Outgoing packets previous */
+	unsigned long long int in_window_start;	/**< @brief Incoming bytes total at rate check window start */
+	unsigned long long int out_window_start;	/**< @brief Outgoing bytes total at rate check window start */
 	time_t last_updated;				/**< @brief Last update of the counters */
 } t_counters;
 

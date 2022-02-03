@@ -399,7 +399,7 @@ config opennds
 	###########################################################################################
 
 	# The interval in seconds at which opennds checks client timeout and quota status
-	# Default 60 seconds (1 minute)
+	# Default 15 seconds
 	# Example: Set to 30 seconds
 	#option checkinterval '30'
 	###########################################################################################
@@ -423,24 +423,20 @@ config opennds
 	###########################################################################################
 
 	# Bucket Ratio
-	# Default 1
+	# Default 10
 	#
-	# Upload and Download bucket ratios can be defined. These are used to calulate the
-	# "bucket size" or "queue length" (in packets) to be used for buffering upload and
-	# download traffic to facilitate rate restrictions defined in this config file or
-	# by FAS for individual clients.
+	# Upload and Download bucket ratios can be defined.
+	# Allows control of upload rate limit threshold overrun per client.
+	# Used in conjunction with MaxDownloadBucketSize and MaxUploadBucketSize
+	# Facilitates calculation of a dynamic "bucket size" or "queue length" (in packets)
+	# to be used for buffering upload and download traffic to achieve rate restrictions
+	# defined in this config file or by FAS for individual clients.
 	# If a bucket becomes full, packets will overflow and be dropped to maintain the rate limit.
 	#
 	# To minimise the number of dropped packets the bucket ratio can be increased whilst
 	# still maintaining the configured rate restriction.
 	#
-	# ***CAUTION*** Large values will consume large amounts of memory per client.
-	#
-	# Consumed memory = (rate(in Kb/s) * bucket-ratio)KB per client bucket per direction.
-	#
-	# Eg. The maximum memory consumed per client for a downloadrate of 1000Kb/s and a
-	# Bucket Ratio of 100 will be: 1000 * 100 = 100000KB ie 100MB
-	# If 10 clients log in then potentially 1GB would be required if all of them became rate limited.
+	# ***CAUTION*** Large values may consume large amounts of memory per client.
 	#
 	# If the client's average rate does not exceed its configured value within the
 	# ratecheck window interval (See RateCheckWindow option), no memory is consumed.
@@ -448,8 +444,57 @@ config opennds
 	# If the rate is set to 0, the Bucket Ratio setting has no meaning
 	# and no memory is consumed.
 	#
-	# option upload_bucket_ratio '10'
-	# option download_bucket_ratio '10'
+	# option upload_bucket_ratio '1'
+	# option download_bucket_ratio '5'
+	###########################################################################################
+
+	# MaxDownloadBucketSize
+	# Allows control over download rate limiting packet loss at the expense of increased latency
+	# ***CAUTION*** Large values may consume large amounts of memory per client.
+	# Default 250
+	# Allowed Range 5 to 10000
+	#option max_download_bucket_size '100'
+	###########################################################################################
+
+	# MaxUploadBucketSize
+	# Allows control over upload rate limiting packet loss at the expense of increased latency
+	# ***CAUTION*** Large values may consume large amounts of memory per client.
+	# Default 250
+	# Allowed Range 5 to 10000
+	#
+	#option max_upload_bucket_size '100'
+	###########################################################################################
+
+	# DownLoadUnrestrictedBursting
+	# Default 0
+	# Enables / disables unrestricted bursting
+	# Setting to 0 disables
+	# Setting to 1 enables
+	#
+	# If enabled, a client is allowed unrestricted bursting until its average download
+	#	rate exceeds the set download rate threshold.
+	#	Unrestricted bursting minimises memory consumption
+	#	at the expense of potential short term bandwidth hogging
+	#
+	# If disabled, a client is not allowed unrestricted bursting.
+	#
+	# option download_unrestricted_bursting '1'
+	###########################################################################################
+
+	# UpLoadUnrestrictedBursting
+	# Default 0
+	# Enables / disables unrestricted bursting
+	# Setting to 0 disables
+	# Setting to 1 enables
+	#
+	# If enabled, a client is allowed unrestricted bursting until its average upload
+	#	rate exceeds the set upload rate threshold.
+	#	Unrestricted bursting minimises memory consumption
+	#	at the expense of potential short term bandwidth hogging
+	#
+	# If disabled, a client is not allowed unrestricted bursting.
+	#
+	# option upload_unrestricted_bursting '1'
 	###########################################################################################
 
 	# RateCheckWindow
@@ -457,10 +502,7 @@ config opennds
 	#
 	# The client data rate is calculated using a moving average.
 	#
-	# This allows clients to burst at maximum possible rate, only enabling rate limiting if the
-	# moving average exceeds the specified upload or download rate.
-	#
-	# The moving average window size is equal to ratecheckwindow times checkinterval (seconds)
+	# The moving average window size (or bursting interval) is equal to ratecheckwindow times checkinterval (seconds)
 	#
 	# All rate limits can be globally disabled by setting this option to 0 (zero)
 	#

@@ -351,13 +351,13 @@ int write_client_info(char* msg, int msg_len, const char *mode, const char *cid,
 	safe_asprintf(&cmd, "/usr/lib/opennds/libopennds.sh '%s' '%s' '%s' '%s'", mode, cid, config->tmpfsmountpoint, info);
 		debug(LOG_DEBUG, "WriteClientInfo command: %s", cmd);
 	if (execute_ret_url_encoded(msg, msg_len - 1, cmd) == 0) {
-		debug(LOG_DEBUG, "Client Info added: %s", info);
+		debug(LOG_DEBUG, "Client Info updated: %s", info);
 	} else {
 		debug(LOG_INFO, "Failed to write client info [%s] - retrying", info);
 		sleep(1);
 
 		if (execute_ret_url_encoded(msg, msg_len - 1, cmd) == 0) {
-			debug(LOG_DEBUG, "Client Info added: %s", info);
+			debug(LOG_DEBUG, "Client Info updated: %s", info);
 		} else {
 			debug(LOG_INFO, "Failed to write client info [%s] - giving up", info);
 		}
@@ -670,6 +670,8 @@ ndsctl_status(FILE *fp)
 	s_config *config;
 	t_client *client;
 	int indx;
+	unsigned int uploadburst = 0;
+	unsigned int downloadburst = 0;
 	unsigned long int now, uptimesecs, durationsecs = 0;
 	unsigned long long int download_bytes, upload_bytes;
 	t_MAC *trust_mac;
@@ -679,6 +681,14 @@ ndsctl_status(FILE *fp)
 	const char *mhdversion = MHD_get_version();
 
 	config = config_get_config();
+
+	if (config->upload_bucket_ratio > 0) {
+		uploadburst = config->checkinterval * config->rate_check_window;
+	}
+
+	if (config->upload_bucket_ratio > 0) {
+		downloadburst = config->checkinterval * config->rate_check_window;
+	}
 
 	fprintf(fp, "==================\nopenNDS Status\n====\n");
 	sysuptime = get_system_uptime ();
@@ -753,14 +763,16 @@ ndsctl_status(FILE *fp)
 	fprintf(fp, "Authenticated Client Idle Timeout: %dm\n", config->auth_idle_timeout);
 
 	if (config->download_rate > 0) {
-		fprintf(fp, "Download rate limit (default per client): %llu kbit/s\n", config->download_rate);
+		fprintf(fp, "Download rate limit threshold (default per client): %llu kbit/s\n", config->download_rate);
+		fprintf(fp, "Download Burst Interval %u seconds\n", downloadburst);
 	} else {
-		fprintf(fp, "Download rate limit (default per client): no limit\n");
+		fprintf(fp, "Download rate limit threshold (default per client): no limit\n");
 	}
 	if (config->upload_rate > 0) {
-		fprintf(fp, "Upload rate limit (default per client): %llu kbit/s\n", config->upload_rate);
+		fprintf(fp, "Upload rate limit threshold (default per client): %llu kbit/s\n", config->upload_rate);
+		fprintf(fp, "Upload Burst Interval %u seconds\n", uploadburst);
 	} else {
-		fprintf(fp, "Upload rate limit (default per client): no limit\n");
+		fprintf(fp, "Upload rate limit threshold (default per client): no limit\n");
 	}
 
 	if (config->download_quota > 0) {
@@ -776,12 +788,13 @@ ndsctl_status(FILE *fp)
 
 
 	download_bytes = iptables_fw_total_download();
-	fprintf(fp, "Total download: %llu kByte", download_bytes / 1000);
-	fprintf(fp, "; avg: %.2f kbit/s\n", ((double) download_bytes) / 125 / uptimesecs);
+	fprintf(fp, "Total download: %llu kByte", download_bytes / 1024);
+	fprintf(fp, "; average: %.2f kbit/s\n", ((double) download_bytes) / 125 / uptimesecs);
 
 	upload_bytes = iptables_fw_total_upload();
-	fprintf(fp, "Total upload: %llu kByte", upload_bytes / 1000);
-	fprintf(fp, "; avg: %.2f kbit/s\n", ((double) upload_bytes) / 125 / uptimesecs);
+	fprintf(fp, "Total upload: %llu kByte", upload_bytes / 1024);
+	fprintf(fp, "; average: %.2f kbit/s\n", ((double) upload_bytes) / 125 / uptimesecs);
+
 	fprintf(fp, "====\n");
 	fprintf(fp, "Client authentications since start: %u\n", authenticated_since_start);
 
@@ -833,28 +846,45 @@ ndsctl_status(FILE *fp)
 		fprintf(fp, "  Token: %s\n", client->token ? client->token : "none");
 		fprintf(fp, "  State: %s\n", fw_connection_state_as_string(client->fw_connection_state));
 
-		if (client->upload_rate == 0) {
-			fprintf(fp, "  Upload rate limit: not set\n");
-		} else {
-			fprintf(fp, "  Upload rate limit: %llu kb/s\n", client->upload_rate);
-		}
-
 		if (client->download_rate == 0) {
-			fprintf(fp, "  Download rate limit: not set\n");
+			fprintf(fp, "  Download rate limit threshold: not set\n");
 		} else {
-			fprintf(fp, "  Download rate limit: %llu kb/s\n", client->download_rate);
+			fprintf(fp, "  Download rate limit threshold: %llu kb/s\n", client->download_rate);
+
+			if (client->inc_packet_limit == 0) {
+				fprintf(fp, "  Download Packet Rate: Not active\n");
+				fprintf(fp, "  Download Bucket Size: Not active\n");
+			} else {
+				fprintf(fp, "  Download Packet Rate: %llu packets/min\n", client->inc_packet_limit);
+				fprintf(fp, "  Download Bucket Size: %llu packets\n", client->download_bucket_size);
+			}
 		}
 
-		if (client->upload_quota == 0) {
-			fprintf(fp, "  Upload quota: not set\n");
+
+		if (client->upload_rate == 0) {
+			fprintf(fp, "  Upload rate limit threshold: not set\n");
 		} else {
-			fprintf(fp, "  Upload quota: %llu kB\n", client->upload_quota);
+			fprintf(fp, "  Upload rate limit threshold: %llu kb/s\n", client->upload_rate);
+
+			if (client->out_packet_limit == 0) {
+				fprintf(fp, "  Upload Packet Rate: Not active\n");
+				fprintf(fp, "  Upload Bucket Size: Not active\n");
+			} else {
+				fprintf(fp, "  Upload Packet Rate: %llu packets/min\n", client->out_packet_limit);
+				fprintf(fp, "  Upload Bucket Size: %llu packets\n", client->upload_bucket_size);
+			}
 		}
 
 		if (client->download_quota == 0) {
 			fprintf(fp, "  Download quota: not set\n");
 		} else {
 			fprintf(fp, "  Download quota: %llu kB\n", client->download_quota);
+		}
+
+		if (client->upload_quota == 0) {
+			fprintf(fp, "  Upload quota: not set\n");
+		} else {
+			fprintf(fp, "  Upload quota: %llu kB\n", client->upload_quota);
 		}
 
 		download_bytes = client->counters.incoming;
@@ -866,14 +896,14 @@ ndsctl_status(FILE *fp)
 			durationsecs = 1;
 		}
 
-		fprintf(fp, "  Upload this session: %llu kB; Session avg: %.2f kb/s\n",
-			upload_bytes / 1000,
-			((double)upload_bytes) / 125 / durationsecs)
+		fprintf(fp, "  Download this session: %llu kB; Session average: %.2f kb/s\n",
+			download_bytes / 1024,
+			((double)download_bytes) / 125 / durationsecs)
 		;
 
-		fprintf(fp, "  Download this session: %llu kB; Session avg: %.2f kb/s\n\n",
-			download_bytes / 1000,
-			((double)download_bytes) / 125 / durationsecs)
+		fprintf(fp, "  Upload this session: %llu kB; Session average: %.2f kb/s\n\n",
+			upload_bytes / 1024,
+			((double)upload_bytes) / 125 / durationsecs)
 		;
 
 		indx++;
@@ -967,22 +997,36 @@ ndsctl_json_client(FILE *fp, const t_client *client, time_t now, char *indent)
 	download_bytes = client->counters.incoming;
 	upload_bytes = client->counters.outgoing;
 
-	if (client->upload_rate == 0) {
-		fprintf(fp, "  %s\"upload_rate_limit\":\"null\",\n", indent);
-	} else {
-		fprintf(fp, "  %s\"upload_rate_limit\":\"%llu\",\n", indent, client->upload_rate);
-	}
-
 	if (client->download_rate == 0) {
-		fprintf(fp, "  %s\"download_rate_limit\":\"null\",\n", indent);
+		fprintf(fp, "  %s\"download_rate_limit_threshold\":\"null\",\n", indent);
+		fprintf(fp, "  %s\"download_packet_rate\":\"null\",\n", indent);
+		fprintf(fp, "  %s\"download_bucket_size\":\"null\",\n", indent);
 	} else {
-		fprintf(fp, "  %s\"download_rate_limit\":\"%llu\",\n", indent, client->download_rate);
+		fprintf(fp, "  %s\"download_rate_limit_threshold\":\"%llu\",\n", indent, client->download_rate);
+
+		if (client->inc_packet_limit == 0) {
+			fprintf(fp, "  %s\"download_packet_rate\":\"null\",\n", indent);
+			fprintf(fp, "  %s\"download_bucket_size\":\"null\",\n", indent);
+		} else {
+			fprintf(fp, "  %s\"download_packet_rate\":\"%llu\",\n", indent, client->inc_packet_limit);
+			fprintf(fp, "  %s\"download_bucket_size\":\"%llu\",\n", indent, client->download_bucket_size);
+		}
 	}
 
-	if (client->upload_quota == 0) {
-		fprintf(fp, "  %s\"upload_quota\":\"null\",\n", indent);
+	if (client->upload_rate == 0) {
+		fprintf(fp, "  %s\"upload_rate_limit_threshold\":\"null\",\n", indent);
+		fprintf(fp, "  %s\"upload_packet_rate\":\"null\",\n", indent);
+		fprintf(fp, "  %s\"upload_bucket_size\":\"null\",\n", indent);
 	} else {
-		fprintf(fp, "  %s\"upload_quota\":\"%llu\",\n", indent, client->upload_quota);
+		fprintf(fp, "  %s\"upload_rate_limit_threshold\":\"%llu\",\n", indent, client->upload_rate);
+
+		if (client->out_packet_limit == 0) {
+			fprintf(fp, "  %s\"upload_packet_rate\":\"null\",\n", indent);
+			fprintf(fp, "  %s\"upload_bucket_size\":\"null\",\n", indent);
+		} else {
+			fprintf(fp, "  %s\"upload_packet_rate\":\"%llu\",\n", indent, client->out_packet_limit);
+			fprintf(fp, "  %s\"upload_bucket_size\":\"%llu\",\n", indent, client->upload_bucket_size);
+		}
 	}
 
 	if (client->download_quota == 0) {
@@ -991,29 +1035,35 @@ ndsctl_json_client(FILE *fp, const t_client *client, time_t now, char *indent)
 		fprintf(fp, "  %s\"download_quota\":\"%llu\",\n", indent, client->download_quota);
 	}
 
+	if (client->upload_quota == 0) {
+		fprintf(fp, "  %s\"upload_quota\":\"null\",\n", indent);
+	} else {
+		fprintf(fp, "  %s\"upload_quota\":\"%llu\",\n", indent, client->upload_quota);
+	}
+
 	// prevent divison by 0
 	if (durationsecs < 1) {
 		durationsecs = 1;
 	}
 
-	fprintf(fp, "  %s\"upload_this_session\":\"%llu\",\n",
-		indent,
-		(upload_bytes / 1000)
-	);
-
-	fprintf(fp, "  %s\"upload_session_avg\":\"%.2f\",\n",
-		indent,
-		(double)upload_bytes / 125 / durationsecs
-	);
-
 	fprintf(fp, "  %s\"download_this_session\":\"%llu\",\n",
 		indent,
-		(download_bytes / 1000)
+		(download_bytes / 1024)
 	);
 
 	fprintf(fp, "  %s\"download_session_avg\":\"%.2f\"\n",
 		indent,
 		(double)download_bytes / 125 / durationsecs
+	);
+
+	fprintf(fp, "  %s\"upload_this_session\":\"%llu\",\n",
+		indent,
+		(upload_bytes / 1024)
+	);
+
+	fprintf(fp, "  %s\"upload_session_avg\":\"%.2f\",\n",
+		indent,
+		(double)upload_bytes / 125 / durationsecs
 	);
 }
 

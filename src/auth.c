@@ -134,6 +134,7 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 {
 	const unsigned int state = client->fw_connection_state;
 	const time_t now = time(NULL);
+	int action;
 	s_config *config = config_get_config();
 
 	if (state == new_state) {
@@ -170,13 +171,34 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 			client->counters.out_window_start = client->counters.outgoing;
 
 
-			if (strlen(customdata) > 0) {
+			if (customdata && strlen(customdata) > 0) {
 				client->custom = safe_strdup(customdata);
 			} else {
 				client->custom = "bmE=";
 			}
 
 			debug(LOG_DEBUG, "auth_change_state: client->custom=%s ", client->custom);
+
+			action = ENABLE;
+
+			// Update all the counters
+			if (-1 == iptables_fw_counters_update()) {
+				debug(LOG_ERR, "Could not get counters from firewall!");
+				return -1;
+			}
+
+
+			if (config->download_unrestricted_bursting == 0 && config->download_bucket_ratio > 0) {
+				iptables_download_ratelimit_enable(client, action);
+				//bit 0 is not set so toggle it to signify rate limiting is on
+				client->rate_exceeded = client->rate_exceeded^1;
+			}
+
+			if (config->upload_unrestricted_bursting == 0 && config->upload_bucket_ratio > 0) {
+				iptables_upload_ratelimit_enable(client, action);
+				//bit 1 is not set so toggle it to signify rate limiting is on
+				client->rate_exceeded = client->rate_exceeded^2;
+			}
 
 			binauth_action(client, reason, customdata);
 		} else if (new_state == FW_MARK_BLOCKED) {
@@ -299,7 +321,7 @@ fw_refresh_client_list(void)
 
 		if (conn_state == FW_MARK_PREAUTHENTICATED) {
 
-			// Preauthenticated client reached Idle Timeout witout authenticating so delete from the client list
+			// Preauthenticated client reached Idle Timeout without authenticating so delete from the client list
 			if (preauth_idle_timeout_secs > 0
 				&& conn_state == FW_MARK_PREAUTHENTICATED
 				&& (last_updated + preauth_idle_timeout_secs) <= now)
@@ -317,43 +339,43 @@ fw_refresh_client_list(void)
 
 		debug(LOG_INFO, "Client @ %s %s, quotas: ", cp1->ip, cp1->mac);
 
-		debug(LOG_INFO, "	Download DATA quota (kBytes): %llu, used: %llu ", cp1->download_quota, cp1->counters.incoming / 1000);
+		debug(LOG_INFO, "	Download DATA quota (kBytes): %llu, used: %llu ", cp1->download_quota, cp1->counters.incoming / 1024);
 
-		debug(LOG_INFO, "	Upload DATA quota (kBytes): %llu, used: %llu \n", cp1->upload_quota, cp1->counters.outgoing / 1000);
+		debug(LOG_INFO, "	Upload DATA quota (kBytes): %llu, used: %llu \n", cp1->upload_quota, cp1->counters.outgoing / 1024);
 
 		if (cp1->session_end > 0 && cp1->session_end <= now) {
 			// Session Timeout so deauthenticate the client
 
 			debug(LOG_NOTICE, "Session end time reached, deauthenticating: %s %s, connected: %lu, in: %llukB, out: %llukB",
 				cp1->ip, cp1->mac, now - cp1->session_end,
-				cp1->counters.incoming / 1000,
-				cp1->counters.outgoing / 1000
+				cp1->counters.incoming / 1024,
+				cp1->counters.outgoing / 1024
 			);
 
 			auth_change_state(cp1, FW_MARK_PREAUTHENTICATED, "timeout_deauth", NULL);
 
 
-		} else if (cp1->download_quota > 0 && cp1->download_quota <= (cp1->counters.incoming / 1000)) {
+		} else if (cp1->download_quota > 0 && cp1->download_quota <= (cp1->counters.incoming / 1024)) {
 			// Download quota reached so deauthenticate the client
 
 			debug(LOG_NOTICE, "Download quota reached, deauthenticating: %s %s, connected: %lus, in: %llukB, out: %llukB",
 				cp1->ip, cp1->mac,
 				now - cp1->session_end,
-				cp1->counters.incoming / 1000,
-				cp1->counters.outgoing / 1000
+				cp1->counters.incoming / 1024,
+				cp1->counters.outgoing / 1024
 			);
 
 			auth_change_state(cp1, FW_MARK_PREAUTHENTICATED, "downquota_deauth", NULL);
 
-		} else if (cp1->upload_quota > 0 && cp1->upload_quota <= (cp1->counters.outgoing / 1000)) {
+		} else if (cp1->upload_quota > 0 && cp1->upload_quota <= (cp1->counters.outgoing / 1024)) {
 			// Upload quota reached so deauthenticate the client
 
 			debug(LOG_NOTICE, "Upload quota reached, deauthenticating: %s %s, connected: %lus, in: %llukB, out: %llukB",
 				cp1->ip,
 				cp1->mac,
 				now - cp1->session_end,
-				cp1->counters.incoming / 1000,
-				cp1->counters.outgoing / 1000
+				cp1->counters.incoming / 1024,
+				cp1->counters.outgoing / 1024
 			);
 
 			auth_change_state(cp1, FW_MARK_PREAUTHENTICATED, "upquota_deauth", NULL);
@@ -365,8 +387,8 @@ fw_refresh_client_list(void)
 
 			debug(LOG_NOTICE, "Timeout authenticated idle user: %s %s, inactive: %ds, in: %llukB, out: %llukB",
 				cp1->ip, cp1->mac, now - last_updated,
-				cp1->counters.incoming / 1000,
-				cp1->counters.outgoing / 1000
+				cp1->counters.incoming / 1024,
+				cp1->counters.outgoing / 1024
 			);
 
 			auth_change_state(cp1, FW_MARK_PREAUTHENTICATED, "idle_deauth", NULL);
@@ -391,143 +413,192 @@ fw_refresh_client_list(void)
 
 			durationsecs = (now - cp1->window_start);
 
+
+			// Calculate actual rates
+			download_bytes = (cp1->counters.incoming - cp1->counters.in_window_start);
+			upload_bytes = (cp1->counters.outgoing - cp1->counters.out_window_start);
+			downrate = (download_bytes / 125 / durationsecs); // kbits/sec
+			uprate = (upload_bytes / 125 / durationsecs); // kbits/sec
+			cp1->downrate = downrate;
+			cp1->uprate = uprate;
+
+			debug(LOG_DEBUG, "durationsecs [%llu] download_bytes [%llu] upload_bytes [%llu] ",
+				durationsecs,
+				download_bytes,
+				upload_bytes
+			);
+
+			debug(LOG_INFO, "	Download RATE quota (kbits/s): %llu, Current average download rate (kbits/s): %llu",
+				cp1->download_rate, downrate
+			);
+
+			debug(LOG_INFO, "	Upload RATE quota (kbits/s): %llu, Current average upload rate (kbits/s): %llu",
+				cp1->upload_rate, uprate
+			);
+
+			/*	OR with set bit sets the bit in a variable
+				AND with set bit checks if bit is set in a variable
+				XOR with set bit toggles bit in a variable
+				In variable rate_exceeded we are interested in bits zero and one
+				Bit zero pertains to download
+				Bit one pertains to upload
+				So variable can have integer values of 0, 1, 2 or 3
+			*/
+
+			// ** ENABLE rate limiting **
+			// Has the client exceeded its rate quotas?
+			// If so we should enable limiting
+
+			//Handle download rate limiting
+
+			if ((cp1->rate_exceeded&1) == 0) {
+				// note checked for bit 0 of rate_exceeded set to 0, it was so we are here 
+				if (cp1->download_rate > 0 && cp1->download_rate <= downrate) {
+					debug(LOG_INFO, "Download RATE quota reached for: %s %s, in: %llukbits/s, out: %llukbits/s",
+						cp1->ip, cp1->mac,
+						downrate,
+						uprate
+					);
+					action = ENABLE;
+
+					if (config->download_bucket_ratio > 0) {
+						iptables_download_ratelimit_enable(cp1, action);
+						//bit 0 is not set so toggle it to signify rate limiting is on
+						cp1->rate_exceeded = cp1->rate_exceeded^1;
+					} else {
+						debug(LOG_INFO, "Download RATE limiting is disabled");
+					}
+				}
+			}
+
+			//Handle upload rate limiting
+
+			if ((cp1->rate_exceeded&2) == 0) {
+				// note checked for bit 1 of rate_exceeded set to 0, it was so we are here 
+				if (cp1->upload_rate > 0 && cp1->upload_rate <= uprate) {
+					debug(LOG_INFO, "Upload RATE quota reached for: %s %s, in: %llukbits/s, out: %llukbits/s",
+						cp1->ip, cp1->mac,
+						downrate,
+						uprate
+					);
+
+					action = ENABLE;
+
+					if (config->upload_bucket_ratio > 0) {
+						iptables_upload_ratelimit_enable(cp1, action);
+						//bit 1 is not set so toggle it to signify rate limiting is on
+						cp1->rate_exceeded = cp1->rate_exceeded^2;
+					} else {
+						debug(LOG_INFO, "Upload RATE limiting is disabled");
+					}
+				}
+			}
+
+			// ** DISABLE or refresh rate limiting **
+			// Has ratecheck window expired?
+			// Has client rate dropped below threshold?
+			// If so we should disable limiting
 			if (cp1->window_counter > 1) {
 				--cp1->window_counter;
 				// skip to next client
 				continue;
-			}
 
-			if (cp1->window_counter == 1) {
-				download_bytes = (cp1->counters.incoming - cp1->counters.in_window_start);
-				upload_bytes = (cp1->counters.outgoing - cp1->counters.out_window_start);
-				downrate = (download_bytes / 125 / durationsecs); // kbits/sec
-				uprate = (upload_bytes / 125 / durationsecs); // kbits/sec
-				cp1->downrate = downrate;
-				cp1->uprate = uprate;
+			} else if (cp1->window_counter < 2) {
+				// we have decremented from ratecheckwindow value to expiry
+				// so check clients upload and download
+				// If rates are below threshold we can disable
 
-				debug(LOG_DEBUG, "durationsecs [%llu] download_bytes [%llu] upload_bytes [%llu] ",
-					durationsecs,
-					download_bytes,
-					upload_bytes
-				);
+				//reset ratecheckwindow
+				cp1->window_counter = config->rate_check_window;
+				cp1->window_start = now;
+				cp1->counters.in_window_start = cp1->counters.incoming;
+				cp1->counters.out_window_start = cp1->counters.outgoing;
 
-				debug(LOG_INFO, "	Download RATE quota (kbits/s): %llu, Current average download rate (kbits/s): %llu",
-					cp1->download_rate, downrate
-				);
-
-				debug(LOG_INFO, "	Upload RATE quota (kbits/s): %llu, Current average upload rate (kbits/s): %llu",
-					cp1->upload_rate, uprate
-				);
 
 				//Handle download rate limiting
-				debug(LOG_DEBUG, "cp1->download_rate: %llu downrate: %llu", cp1->download_rate, downrate);
-
-				/*	OR with set bit sets the bit in the variable
-					AND with set bit checks if bit is set in variable
-					XOR with set bit toggles bit in variable
-					In variable rate_exceeded we are interested in bits zero and one
-					Bit zero pertains to download
-					Bit one pertains to upload
-					So variable can have integer values of 0, 1, 2 or 3
-				*/
-
-				if ((cp1->rate_exceeded&1) == 0) {
-					// note checked for bit 0 of rate_exceeded set to 0, it was so we are here 
-					if (cp1->download_rate > 0 && cp1->download_rate <= downrate) {
-
-						debug(LOG_INFO, "Download RATE quota reached for: %s %s, in: %llukbits/s, out: %llukbits/s",
-							cp1->ip, cp1->mac,
-							downrate,
-							uprate
-						);
-						action = ENABLE;
-
-						if (config->download_bucket_ratio > 0) {
-							iptables_download_ratelimit_enable(cp1, action);
-							//bit 0 is not set so toggle it to signify rate limiting is on
-							cp1->rate_exceeded = cp1->rate_exceeded^1;
-						} else {
-							debug(LOG_INFO, "Download RATE limiting is disabled");
-						}
-					}
-				}
 
 				if ((cp1->rate_exceeded&1) == 1) {
 					// note checked for bit 0 of rate_exceeded set to 1, it was so we are here 
 					if (cp1->download_rate > 0 && cp1->download_rate > downrate) {
-						debug(LOG_INFO, "Download RATE below quota threshold - bursting allowed: %s %s, in: %llukbits/s, out: %llukbits/s",
-							cp1->ip, cp1->mac,
-							downrate,
-							uprate
-						);
+						// dropped below threshold
 
+						if (config->download_unrestricted_bursting > 0) {
+							//Unrestricted bursting is enabled
+							debug(LOG_INFO,
+								"Download RATE below quota threshold - bursting allowed: %s %s, in: %llukbits/s, out: %llukbits/s",
+								cp1->ip, cp1->mac,
+								downrate,
+								uprate
+							);
+
+							action = DISABLE;
+							iptables_download_ratelimit_enable(cp1, action);
+							debug(LOG_INFO, "Download Rate Limiting for [%s] [%s] is off", cp1->ip, cp1->mac);
+							//bit 0 is set so toggle it to signify rate limiting is off
+							cp1->rate_exceeded = cp1->rate_exceeded^1;
+						} else {
+							// refresh rate limiting
+							//Unrestricted bursting is disabled
+							debug(LOG_DEBUG, "Refreshing Download Rate Limiting for [%s] [%s]", cp1->ip, cp1->mac);
+							action = DISABLE;
+							debug(LOG_DEBUG, "Refresh - Disabling Download Rate Limiting for [%s] [%s]", cp1->ip, cp1->mac);
+							iptables_download_ratelimit_enable(cp1, action);
+							action = ENABLE;
+							debug(LOG_DEBUG, "Refresh - Enabling Download Rate Limiting for [%s] [%s]", cp1->ip, cp1->mac);
+							iptables_download_ratelimit_enable(cp1, action);
+						}
+					} else {
+						// still above threshold
+						// refresh rate limiting
+						debug(LOG_DEBUG, "Above threshold - Refreshing Download Rate Limiting for [%s] [%s]", cp1->ip, cp1->mac);
 						action = DISABLE;
+						debug(LOG_DEBUG, "Refresh - Disabling Download Rate Limiting for [%s] [%s]", cp1->ip, cp1->mac);
 						iptables_download_ratelimit_enable(cp1, action);
-						//bit 0 is set so toggle it to signify rate limiting is off
-						cp1->rate_exceeded = cp1->rate_exceeded^1;
+						action = ENABLE;
+						debug(LOG_DEBUG, "Refresh - Enabling Download Rate Limiting for [%s] [%s]", cp1->ip, cp1->mac);
+						iptables_download_ratelimit_enable(cp1, action);
 					}
 				}
 
 				//Handle upload rate limiting
 				debug(LOG_DEBUG, "cp1->upload_rate: %llu uprate: %llu", cp1->upload_rate, uprate);
 
-				/*	OR with set bit sets the bit in the variable
-					AND with set bit checks if bit is set in variable
-					XOR with set bit toggles bit in variable
-					In variable rate_exceeded we are interested in bits zero and one
-					Bit zero pertains to download
-					Bit one pertains to upload
-					So variable can have integer values of 0, 1, 2 or 3
-				*/
-				if ((cp1->rate_exceeded&2) == 0) {
-					// note checked for bit 1 of rate_exceeded set to 0, it was so we are here 
-					if (cp1->upload_rate > 0 && cp1->upload_rate <= uprate) {
-
-						debug(LOG_INFO, "Upload RATE quota reached for: %s %s, in: %llukbits/s, out: %llukbits/s",
-							cp1->ip, cp1->mac,
-							downrate,
-							uprate
-						);
-
-						action = ENABLE;
-
-						if (config->upload_bucket_ratio > 0) {
-							iptables_upload_ratelimit_enable(cp1, action);
-							//bit 1 is not set so toggle it to signify rate limiting is on
-							cp1->rate_exceeded = cp1->rate_exceeded^2;
-						} else {
-							debug(LOG_INFO, "Upload RATE limiting is disabled");
-						}
-					}
-				}
-
 				if ((cp1->rate_exceeded&2) == 2) {
 					// note checked for bit 1 of rate_exceeded set to 1, it was so we are here 
 					if (cp1->upload_rate > 0 && cp1->upload_rate > uprate) {
 
-						debug(LOG_INFO, "Upload RATE below quota threshold - bursting allowed: %s %s, in: %llukbits/s, out: %llukbits/s",
-							cp1->ip, cp1->mac,
-							downrate,
-							uprate
-						);
+						if (config->upload_unrestricted_bursting > 0) {
+							debug(LOG_INFO,
+								"Upload RATE below quota threshold - bursting allowed: %s %s, in: %llukbits/s, out: %llukbits/s",
+								cp1->ip, cp1->mac,
+								downrate,
+								uprate
+							);
 
+							action = DISABLE;
+							iptables_upload_ratelimit_enable(cp1, action);
+							debug(LOG_INFO, "Upload Rate Limiting for [%s] [%s] is off", cp1->ip, cp1->mac);
+							//bit 1 is set so toggle it to signify rate limiting is off
+							cp1->rate_exceeded = cp1->rate_exceeded^2;
+						} else {
+							// refresh rate limiting
+							action = DISABLE;
+							iptables_upload_ratelimit_enable(cp1, action);
+							action = ENABLE;
+							iptables_upload_ratelimit_enable(cp1, action);
+						}
+					} else {
+						// refresh rate limiting
 						action = DISABLE;
 						iptables_upload_ratelimit_enable(cp1, action);
-						//bit 1 is set so toggle it to signify rate limiting is off
-						cp1->rate_exceeded = cp1->rate_exceeded^2;
+						action = ENABLE;
+						iptables_upload_ratelimit_enable(cp1, action);
 					}
 				}
-
-				debug(LOG_DEBUG, "RATE EXCEEDED flag is %d", cp1->rate_exceeded);
-
-				// start new window
-				cp1->window_start = now;
-				cp1->window_counter = config->rate_check_window;
-				cp1->counters.in_window_start = cp1->counters.incoming;
-				cp1->counters.out_window_start = cp1->counters.outgoing;
 			}
 		}
 	}
+
 	UNLOCK_CLIENT_LIST();
 }
 

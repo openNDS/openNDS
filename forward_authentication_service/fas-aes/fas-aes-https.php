@@ -226,7 +226,7 @@ function decrypt_parse() {
 	*/
 
 	$cipher="AES-256-CBC";
-	$ndsparamlist=explode(" ", "clientip clientmac client_type gatewayname version hid gatewayaddress gatewaymac authdir originurl clientif admin_email location");
+	$ndsparamlist=explode(" ", "clientip clientmac client_type gatewayname gatewayurl version hid gatewayaddress gatewaymac originurl clientif admin_email location");
 
 	if (isset($_GET['fas']) and isset($_GET['iv']))  {
 		$string=$_GET['fas'];
@@ -661,6 +661,7 @@ function landing_page() {
 	$originurl=$GLOBALS["originurl"];
 	$gatewayaddress=$GLOBALS["gatewayaddress"];
 	$gatewayname=$GLOBALS["gatewayname"];
+	$gatewayurl=rawurldecode($GLOBALS["gatewayurl"]);
 	$clientif=$GLOBALS["clientif"];
 	$client_zone=$GLOBALS["client_zone"];
 	$fullname=$_GET["fullname"];
@@ -681,12 +682,12 @@ function landing_page() {
 			</italic-black>
 		</p>
 		<p>
-		Your device originally requested <b>$redir</b>
-		<br>
-		Click or tap Continue to go to there.
+		(Your device originally requested $redir)
+		<hr>
+		Click or tap Continue to show the status of your account.
 		</p>
 		<form>
-			<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='".$redir."'\" >
+			<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='".$gatewayurl."'\" >
 		</form>
 		<hr>
 	";

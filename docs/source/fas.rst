@@ -204,7 +204,7 @@ Authentication Method for fas_secure_enabled level 3 (Authmon Daemon)
 
  FAS will deposit client authentication variables for the Authmon daemon to use for the authentication process. These variables are as follows:
 
- * clientip: The ip address of the client to be authenticated
+ * rhid: The return hashed ID of the client to be authenticated
  * sessionlength: length of session - minutes
  * uploadrate: maximum allowed upload data rate - kbits/sec
  * downloadrate: maximum allowed download data rate - kbits/sec

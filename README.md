@@ -47,7 +47,17 @@ Immediately after installing, a simple three stage dynamic html splash page sequ
 
 Very similar to the Click to Continue default, this option has an initial "login page" that presents a form to the user where they must enter a name and email address.
 
-## 5. Customisation
+## 5. Data and Data Rate Quotas
+
+Data volume and data rate thresholds are supported without additional dependencies, independently for both upload and download with configurable default values for all clients, or specific values per client.
+
+If a data volume threshold is exceeded the client will be deauthenticated.
+
+If a rate threshold is exceeded, a dynamic bucket filter is used, per client, to limit data rates at a packet level, either limiting rates close to the threshold or by increasing the bucket size at the expense of increased latency.
+
+Third party traffic control packages can also be used, for example to provide system wide rate ceilings, at the same time as the built in thresholds.
+
+## 6. Customisation
 
 Many methods of customising openNDS exist:
 

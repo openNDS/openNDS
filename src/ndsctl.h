@@ -22,6 +22,7 @@
     @brief nodogsplash monitoring client
     @author Copyright (C) 2004 Alexandre Carmel-Veilleux <acv@acv.ca>
     trivially modified 2007 for nodogsplash
+    @author Copyright (C) 2015-2022 Modifications and additions by BlueWave Projects and Services <opennds@blue-wave.net>
 */
 
 #ifndef _NDSCTL_H_

@@ -21,7 +21,7 @@
 /* @file ndsctl_thread.c
     @brief Monitoring and control of opennds, server part
     @author Copyright (C) 2004 Alexandre Carmel-Veilleux <acv@acv.ca>
-    trivially modified for opennds
+    @author Copyright (C) 2015-2022 Modifications and additions by BlueWave Projects and Services <opennds@blue-wave.net>
 */
 
 #define _GNU_SOURCE

@@ -1,8 +1,9 @@
 /*
- * uhttpd - Tiny single-threaded httpd
+ * Imprted from uhttpd - Tiny single-threaded httpd
  *
  *	 Copyright (C) 2010-2013 Jo-Philipp Wich <xm@subsignal.org>
  *	 Copyright (C) 2013 Felix Fietkau <nbd@openwrt.org>
+ *	 Copyright (C) 2015-2022 Modifications and additions by BlueWave Projects and Services <opennds@blue-wave.net>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -28,7 +29,7 @@ struct mimetype {
 static const struct mimetype uh_mime_types[] = {
 	{ "txt",		"text/plain" },
 	{ "log",		"text/plain" },
-	{ "js",			"text/javascript" },
+	{ "js",		"text/javascript" },
 	{ "css",		"text/css" },
 	{ "htm",		"text/html; charset=utf-8" },
 	{ "html",		"text/html; charset=utf-8" },
@@ -37,7 +38,7 @@ static const struct mimetype uh_mime_types[] = {
 	{ "c",			"text/x-csrc" },
 	{ "h",			"text/x-chdr" },
 	{ "o",			"text/x-object" },
-	{ "ko",			"text/x-object" },
+	{ "ko",		"text/x-object" },
 
 	{ "bmp",		"image/bmp" },
 	{ "gif",		"image/gif" },
@@ -57,15 +58,15 @@ static const struct mimetype uh_mime_types[] = {
 	{ "xls",		"application/vnd.ms-excel" },
 	{ "odt",		"application/vnd.oasis.opendocument.text" },
 	{ "odp",		"application/vnd.oasis.opendocument.presentation" },
-	{ "pl",			"application/x-perl" },
-	{ "sh",			"application/x-shellscript" },
+	{ "pl",		"application/x-perl" },
+	{ "sh",		"application/x-shellscript" },
 	{ "php",		"application/x-php" },
 	{ "deb",		"application/x-deb" },
 	{ "iso",		"application/x-cd-image" },
 	{ "tar.gz",		"application/x-compressed-tar" },
 	{ "tgz",		"application/x-compressed-tar" },
-	{ "gz",			"application/x-gzip" },
-	{ "tar.bz2",	"application/x-bzip-compressed-tar" },
+	{ "gz",		"application/x-gzip" },
+	{ "tar.bz2",		"application/x-bzip-compressed-tar" },
 	{ "tbz",		"application/x-bzip-compressed-tar" },
 	{ "bz2",		"application/x-bzip" },
 	{ "tar",		"application/x-tar" },
@@ -73,7 +74,7 @@ static const struct mimetype uh_mime_types[] = {
 
 	{ "mp3",		"audio/mpeg" },
 	{ "ogg",		"audio/x-vorbis+ogg" },
-	{ "wav",		 "audio/x-wav" },
+	{ "wav",		"audio/x-wav" },
 
 	{ "mpg",		"video/mpeg" },
 	{ "mpeg",		"video/mpeg" },
@@ -84,7 +85,7 @@ static const struct mimetype uh_mime_types[] = {
 	{ "conf",		"text/plain" },
 
 	{ "pac",		"application/x-ns-proxy-autoconfig" },
-	{ "wpad.dat",	"application/x-ns-proxy-autoconfig" },
+	{ "wpad.dat",		"application/x-ns-proxy-autoconfig" },
 
 	{ "woff",		"application/x-font-woff" },
 	{ "woff2",		"application/x-font-woff2" },

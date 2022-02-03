@@ -1,6 +1,34 @@
 What's New? - ChangeLog
 #######################
 
+opennds (9.6.0)
+
+  * This version adds new functionality, and fixes some issues
+  * Add - update of README.md [bluewavenet]
+  * Fix - Added required variable to FAS return string example documentation [dorkone]
+  * Add - Default checkinterval set to 15 seconds [bluewavenet]
+  * Fix - incoming and outgoing counters when unlimited bursting is enabled [bluewavenet]
+  * Add - maximum bucket size configuration [bluewavenet]
+  * Add - calculate moving average packet size for rate limiting [bluewavenet]
+  * Add - some operational default values [bluewavenet]
+  * Add - initial rate limits when unrestricted bursting is disabled [bluewavenet]
+  * Add - Require clients to be in the dhcp database [bluewavenet]
+  * Add - dhcpcheck library call [bluewavenet]
+  * Fix - Remove trailing whitespace when getting clientaddress if client not active [bluewavenet]
+  * Fix - Segfault when FAS fails to Return customstring [dorkone] [bluewavenet]
+  * Add - Enable/Disable unrestricted bursting [bluewavenet]
+  * Add - gatewayurl to querystring and use in place of originurl in FAS [bluewavenet]
+  * Fix - more accurate debug message [bluewavenet]
+  * Fix - Show packet rate correctly as packets per minute [bluewavenet]
+  * Add - Report Packet Rate and Bucket Size in ndsctl status and json and status client page [bluewavenet]
+  * Add - rate limit refresh to client limit rules [bluewavenet]
+  * Fix - code readability [bluewavenet]
+  * Fix - Documentation for data sent to Authmon Daemon [bluewavenet]
+  * Add - Show unrestricted burst intervals in ndsctl status [bluewavenet]
+  * Add - Set default bucket ratios to 10 [bluewavenet]
+
+ -- Rob White <dot@blue-wave.net>  Thu, 03 Feb 2022 10:14:50 +0000
+
 opennds (9.5.1)
 
   * This minor version update fixes two important issues

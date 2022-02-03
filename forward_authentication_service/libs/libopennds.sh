@@ -1,6 +1,6 @@
 #!/bin/sh
-#Copyright (C) The openNDS Contributors 2004-2021
-#Copyright (C) BlueWave Projects and Services 2015-2021
+#Copyright (C) The openNDS Contributors 2004-2022
+#Copyright (C) BlueWave Projects and Services 2015-2022
 #This software is released under the GNU GPL license.
 #
 # WARNING - shebang "sh" is for compatiblity with busybox ash (eg on OpenWrt)

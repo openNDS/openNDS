@@ -243,6 +243,14 @@ write_log:
 
     *returns*: "done"
 
+dhcpcheck:
+----------
+
+    arg1: "dhcpcheck", Checks if an ip address was allocated by dhcp
+
+        arg2: contains the ip to check
+
+    *returns*: The mac address that was allocated to the ip address or null and exit code 1 if not allocated
 
 ?fas:
 -----

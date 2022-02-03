@@ -22,6 +22,7 @@
     @brief Config file parsing
     @author Copyright (C) 2004 Philippe April <papril777@yahoo.com>
     @author Copyright (C) 2007 Paul Kube <nodogsplash@kokoro.ucsd.edu>
+    @author Copyright (C) 2015-2022 Modifications and additions by BlueWave Projects and Services <opennds@blue-wave.net>
 */
 
 #define COPYRIGHT "openNDS, Copyright (C) 2021, The openNDS Contributors"

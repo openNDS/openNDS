@@ -1,3 +1,11 @@
+/** @internal
+ * @file http_microhttpd.c
+ * @brief a httpd implementation using libmicrohttpd
+ * @author Copyright (C) 2015 Alexander Couzens <lynxis@fe80.eu>
+ * @author Copyright (C) 2015-2022 The openNDS contributors <opennds@blue-wave.net>
+ * @author Copyright (C) 2015-2022 Modifications and additions by BlueWave Projects and Services <opennds@blue-wave.net>
+ */
+
 #ifndef HTTP_MICROHTTPD_H
 #define HTTP_MICROHTTPD_H
 

@@ -22,6 +22,7 @@
     @brief Client List functions
     @author Copyright (C) 2004 Alexandre Carmel-Veilleux <acv@acv.ca>
     @author Copyright (C) 2007 Paul Kube <nodogsplash@kokoro.ucsd.edu>
+    @author Copyright (C) 2015-2022 Modifications and additions by BlueWave Projects and Services <opennds@blue-wave.net>
 */
 
 #ifndef _CLIENT_LIST_H_

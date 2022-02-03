@@ -1,5 +1,5 @@
 #!/bin/sh
-#Copyright (C) BlueWave Projects and Services 2015-2021
+#Copyright (C) BlueWave Projects and Services 2015-2022
 #This software is released under the GNU GPL license.
 #
 status=$1

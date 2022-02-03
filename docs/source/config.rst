@@ -594,7 +594,7 @@ Set the Checkinterval
 
 The interval in seconds at which openNDS checks client timeouts, quota usage and runs watchdog checks.
 
-Default 60 seconds (1 minute).
+Default 15 seconds (one quarter of a minute).
 
 Example: Set to 30 seconds.
 
@@ -623,6 +623,108 @@ Rates:
 ``option uploadrate '200'``
 
 ``option downloadrate '800'``
+
+Set Bucket Ratio
+****************
+
+Default 10
+
+Upload and Download bucket ratios can be defined.
+
+Allows control of upload rate limit threshold overrun per client.
+
+Used in conjunction with MaxDownloadBucketSize and MaxUploadBucketSize.
+
+Facilitates calculation of a dynamic "bucket size" or "queue length" (in packets) to be used for buffering upload and download traffic to achieve rate restrictions defined in this config file or by FAS for individual clients.
+
+If a bucket becomes full, packets will overflow and be dropped to maintain the rate limit.
+
+To minimise the number of dropped packets the bucket ratio can be increased whilst still maintaining the configured rate restriction.
+
+***CAUTION*** Large values may consume large amounts of memory per client.
+
+If the client's average rate does not exceed its configured value within the ratecheck window interval (See RateCheckWindow option), no memory is consumed.
+
+If the rate is set to 0, the Bucket Ratio setting has no meaning and no memory is consumed.
+
+Examples:
+
+	`option upload_bucket_ratio '1'`
+
+	`option download_bucket_ratio '5'`
+
+
+MaxDownloadBucketSize
+*********************
+
+Default: 250
+
+Allows control over download rate limiting packet loss at the expense of increased latency.
+
+***CAUTION*** Large values may consume large amounts of memory per client.
+
+Allowed Range 5 to 10000
+
+Example:
+
+`option max_download_bucket_size '100'`
+
+MaxUploadBucketSize
+*******************
+
+Default 250
+
+Allows control over upload rate limiting packet loss at the expense of increased latency.
+
+***CAUTION*** Large values may consume large amounts of memory per client.
+
+Allowed Range 5 to 10000
+
+Example:
+
+`option max_upload_bucket_size '100'`
+
+DownLoadUnrestrictedBursting
+****************************
+
+Default 0
+
+Enables / disables unrestricted bursting
+
+Setting to 0 disables
+
+Setting to 1 enables
+
+If enabled, a client is allowed unrestricted bursting until its average download rate exceeds the set download rate threshold.
+
+Unrestricted bursting minimises memory consumption at the expense of potential short term bandwidth hogging.
+
+If disabled, a client is not allowed unrestricted bursting.
+
+Example:
+
+`option download_unrestricted_bursting '1'`
+
+UpLoadUnrestrictedBursting
+**************************
+
+Default 0
+
+Enables / disables unrestricted bursting
+
+Setting to 0 disables
+
+Setting to 1 enables
+
+If enabled, a client is allowed unrestricted bursting until its average upload rate exceeds the set upload rate threshold.
+
+Unrestricted bursting minimises memory consumption at the expense of potential short term bandwidth hogging.
+
+If disabled, a client is not allowed unrestricted bursting.
+
+Example:
+
+`option upload_unrestricted_bursting '1'`
 
 Set RateCheckWindow
 *******************

@@ -36,44 +36,44 @@ Note: upload means to the Internet, download means from the Internet
 **Quotas for individual clients** will override configured global values and are set either by BinAuth or the Authmon Daemon (fas_secure_enable level 3) - see example BinAuth script (binauth_log.sh) and example FAS script (fas-aes-https.php).
 
 
-Global Data Rate Quota
-----------------------
-The client data rate is calculated using a moving average. This allows clients to burst at maximum possible rate, only rate limiting if the moving average exceeds the specified upload or download rate.
+Data Rate Quota Threshold
+-------------------------
+Both upload and download data rate quotas are a threshold above which traffic is rate limited using a dynamic bucket filter.
+
+There are no additional packages required or further dependencies.
+
+The client data rate is calculated using a moving average.
+
+If the client's average rate exceeds the set quota, packets will be queued using a dynamic bucket filter. This allows clients to burst at a rate exceeding the set quota for a short interval thus improving the user experience compared with a fixed ceiling rate limit.
+
+Upload and download rate limiting is provided independently for upload and download traffic.
+
+The configured rate quotas can be overridden on a client by client basis according to criteria determined by the FAS.
 
 The moving average window size is equal to ratecheckwindow times checkinterval (seconds).
 
 The default value of ratecheckwindow is 2 and is a good working setting. Increasing the value allows a longer period of bursting. Setting to 0 disables all Data Rate Quotas.
 
-Simply put, this means clients are able to transfer data at the maximum rate the router can achieve for short bursts.
-
 Data Rate Quotas are ideal for allowing opening of web pages and emails etc in the fastest way possible, yet preventing an individual client from monopolizing all the available bandwidth by streaming or transferring large files.
 
 Configuring Data Rate Quotas
 ============================
-Global Data Rate quotas are configured in the config file.
+Data Rate quota thresholds are configured in the config file along with  options that allow tuning of the bursting intervals and bucket filter sizes to suit a wide range of venue requirements.
 
-.. code-block:: sh
+The configuration options are as follows:
 
-	# Note: upload means to the Internet, download means from the Internet
-	# Defaults 0
-	# Integer values only
-	#
-	# If the client average data rate exceeds the value set here, the client will be rate limited
-	# Values are in kb/s
-	# If set to 0, there is no limit
-	#
-	# Quotas and rates can also be set by FAS via Authmon Daemon, by BinAuth, and by ndsctl auth.
-	# Values set by these methods, will be override values set in this config file.
-	#
-	option uploadrate '0'
-	option downloadrate '0'
-	###########################################################################################
-	# The client data rate is calculated using a moving average.
-	# This allows clients to burst at maximum possible rate, only rate limiting if the moving average
-	# exceeds the specified upload or download rate.
-	# The moving average window size is equal to ratecheckwindow times checkinterval (seconds)
-	# Default 2
-	option ratecheckwindow '2'
+* ratecheckwindow
+* download_bucket_ratio
+* upload_bucket_ratio
+* max_download_bucket_size
+* max_upload_bucket_size
+* download_unrestricted_bursting
+* upload_unrestricted_bursting
+* downloadrate
+* uploadrate
+
+See the Configuration Options section for details.
+
 
 Note: upload means to the Internet, download means from the Internet
 
@@ -94,18 +94,11 @@ If using BinAuth, the FAS would utilise the BinAuth custom variable to send quot
 Traffic Shaping
 ***************
 
-openNDS (NDS) supports Traffic Shaping (Bandwidth Limiting) using the SQM - Smart Queue Management (sqm-scripts) package, available for OpenWrt and generic Linux.
+If a fixed ceiling data rate is required, third party traffic shaping packages can be used at the same time as the built in openNDS Rate Quota Thresholds.
 
+For example, SQM - Smart Queue Management (sqm-scripts) package is fully compatible and available for OpenWrt and generic Linux.
 
-https://github.com/tohojo/sqm-scripts
-
-SQM does efficient bandwidth control, independently for both upload and download, on an IP connection basis. This ideal for enforcing a fair usage policy on a typical Captive Portal implementation.
-
-In addition the Queue management SQM provides, results in significantly improved WiFi performance, particularly on the modern low cost WiFi routers available on the market today.
-
-Finally, SQM controls quality of service (QOS), allowing priority for real time protocols such a VOIP.
-
-Overall, SQM can enhance significantly the experience of clients using your Captive Portal, whilst ensuring a single client is unlikely to dominate the available Internet service at the expense of others.
+See: https://github.com/tohojo/sqm-scripts
 
 Installing SQM
 **************

@@ -1167,7 +1167,7 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 	char *cidinfo;
 	char *cidfile;
 	char *gw_url_raw = NULL;
-	char gw_url[QUERYMAXLEN] = {0};
+	char gw_url[SMALL_BUF] = {0};
 	char *phpcmd = NULL;
 	int cidgood = 0;
 

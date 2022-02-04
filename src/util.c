@@ -847,30 +847,30 @@ ndsctl_status(FILE *fp)
 		fprintf(fp, "  State: %s\n", fw_connection_state_as_string(client->fw_connection_state));
 
 		if (client->download_rate == 0) {
-			fprintf(fp, "  Download rate limit threshold: not set\n");
+			fprintf(fp, "  Download Rate Limit Threshold: not set\n");
 		} else {
-			fprintf(fp, "  Download rate limit threshold: %llu kb/s\n", client->download_rate);
+			fprintf(fp, "  Download Rate Limit Threshold: %llu kb/s\n", client->download_rate);
 
 			if (client->inc_packet_limit == 0) {
-				fprintf(fp, "  Download Packet Rate: Not active\n");
+				fprintf(fp, "  Download Packet Rate Limit: Not active\n");
 				fprintf(fp, "  Download Bucket Size: Not active\n");
 			} else {
-				fprintf(fp, "  Download Packet Rate: %llu packets/min\n", client->inc_packet_limit);
+				fprintf(fp, "  Download Packet Rate Limit: %llu packets/min\n", client->inc_packet_limit);
 				fprintf(fp, "  Download Bucket Size: %llu packets\n", client->download_bucket_size);
 			}
 		}
 
 
 		if (client->upload_rate == 0) {
-			fprintf(fp, "  Upload rate limit threshold: not set\n");
+			fprintf(fp, "  Upload Rate Limit Threshold: not set\n");
 		} else {
-			fprintf(fp, "  Upload rate limit threshold: %llu kb/s\n", client->upload_rate);
+			fprintf(fp, "  Upload Rate Limit Threshold: %llu kb/s\n", client->upload_rate);
 
 			if (client->out_packet_limit == 0) {
-				fprintf(fp, "  Upload Packet Rate: Not active\n");
+				fprintf(fp, "  Upload Packet Rate Limit: Not active\n");
 				fprintf(fp, "  Upload Bucket Size: Not active\n");
 			} else {
-				fprintf(fp, "  Upload Packet Rate: %llu packets/min\n", client->out_packet_limit);
+				fprintf(fp, "  Upload Packet Rate Limit: %llu packets/min\n", client->out_packet_limit);
 				fprintf(fp, "  Upload Bucket Size: %llu packets\n", client->upload_bucket_size);
 			}
 		}

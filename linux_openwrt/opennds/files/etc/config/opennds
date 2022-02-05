@@ -393,9 +393,9 @@ config opennds
 
 	# Session Timeout is the interval after which clients are forced out (a value of 0 means never)
 	# Clients will be deauthenticated at the end of this period
-	# Default 1200 minutes (20 hours)
-	# Example: Set to 24 hours (1440 minutes)
-	#option sessiontimeout '1440'
+	# Default 1440 minutes (24 hours)
+	# Example: Set to 20 hours (1200 minutes)
+	#option sessiontimeout '1200'
 	###########################################################################################
 
 	# The interval in seconds at which opennds checks client timeout and quota status

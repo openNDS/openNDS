@@ -579,15 +579,15 @@ Example:
 Session Timeout
 ---------------
 
-Default 1200 minutes (20 hours).
+Default 1440 minutes (24 hours).
 
 This is the interval after which clients are forced out (a value of 0 means never).
 
 Clients will be deauthenticated at the end of this period.
 
-Example: Set to 24 hours (1440 minutes).
+Example: Set to 20 hours (1200 minutes).
 
-``option sessiontimeout '1440'``
+``option sessiontimeout '1200'``
 
 Set the Checkinterval
 *********************

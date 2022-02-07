@@ -690,7 +690,7 @@ static int authenticated(struct MHD_Connection *connection,
 	const char *accept;
 	char *originurl_raw = NULL;
 	char *captive_json = NULL;
-
+	char *buff;
 	int rc;
 	int ret;
 	struct MHD_Response *response;
@@ -802,6 +802,7 @@ static int authenticated(struct MHD_Connection *connection,
 		if (config->fas_port) {
 			query = safe_calloc(QUERYMAXLEN);
 			get_query(connection, &query, QUERYSEPARATOR);
+
 			safe_asprintf(&fasurl, "%s%sstatus=authenticated",
 				query,
 				QUERYSEPARATOR
@@ -817,8 +818,18 @@ static int authenticated(struct MHD_Connection *connection,
 
 	// User just entered gatewayaddress:gatewayport so give them the info page
 	if (strcmp(url, "/") == 0 || strcmp(url, "/login") == 0) {
+		query = safe_calloc(QUERYMAXLEN);
+		get_query(connection, &query, QUERYSEPARATOR);
+		debug(LOG_DEBUG, "status_query=[%s]", query);
+
+		buff = safe_calloc(MID_BUF);
+
+		b64_encode(buff, MID_BUF, query, strlen(query));
+
+		debug(LOG_DEBUG, "b64_status_query=[%s]", buff);
+
 		msg = safe_calloc(HTMLMAXSIZE);
-		rc = execute_ret(msg, HTMLMAXSIZE - 1, "%s status '%s'", config->status_path, client->ip);
+		rc = execute_ret(msg, HTMLMAXSIZE - 1, "%s status '%s' '%s'", config->status_path, client->ip, buff);
 
 		if (rc != 0) {
 			debug(LOG_WARNING, "Script: %s - failed to execute", config->status_path);

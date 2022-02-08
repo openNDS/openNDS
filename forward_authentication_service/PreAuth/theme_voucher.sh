@@ -223,8 +223,7 @@ voucher_form() {
 
 	echo "
 		<med-blue>
-			You are accessing a Swiss Government (SG) Information System (IS) that is provided for authorized use only.<br>
-			Unauthorized use is in violation of several federal laws, including art. 143 CP, and can result in up to 10 years imprisonment and fines not to exceed 15'000.-.
+			Welcome!
 		</med-blue><br>
 		<hr>
 		Your IP: $clientip <br>

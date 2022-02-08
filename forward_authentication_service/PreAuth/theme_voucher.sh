@@ -41,12 +41,19 @@ footer() {
 	# Define a common footer html for every page served
 	year=$(date +'%Y')
 	echo "
+		<hr>
+		<div style=\"font-size:0.5em;\">
+			<img style=\"height:30px; width:60px; float:left;\" src=\"$imagepath\" alt=\"Splash Page: For access to the Internet.\">
+			&copy; The openNDS Project 2015 - $year<br>
+			openNDS $version
+			<br><br>
 		</div>
-		Cthulhuuuu's Hotspot
+		</div>
 		</div>
 		</body>
 		</html>
 	"
+
 	exit 0
 }
 

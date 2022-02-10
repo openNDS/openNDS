@@ -902,6 +902,10 @@ iptables_download_ratelimit_enable(t_client *client, int enable)
 	s_config *config;
 	config = config_get_config();
 
+	if (client->download_rate == 0) {
+		return 0;
+	}
+
 	if (client->counters.incoming == 0
 		|| client->counters.inpackets == 0
 		|| (client->counters.incoming - client->counters.incoming_previous) == 0
@@ -988,6 +992,10 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 	unsigned long long int bucket;
 	s_config *config;
 	config = config_get_config();
+
+	if (client->upload_rate == 0) {
+		return 0;
+	}
 
 	if (client->counters.outgoing == 0 || client->counters.outpackets == 0 || (client->counters.outgoing - client->counters.outgoing_previous) == 0) {
 		average_packet_size = 1500;

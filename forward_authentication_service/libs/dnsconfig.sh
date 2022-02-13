@@ -20,7 +20,7 @@ delete_114s() {
 	if [ ! -z "$cpidconfig" ]; then
 
 		for option114 in $cpidconfig; do
-			is_114=$(echo "$option114" | grep "114")
+			is_114=$(echo "$option114" | grep -w "114")
 
 			if [ ! -z "$is_114" ]; then
 				echo "$dellist'$option114'" | uci batch
@@ -53,7 +53,7 @@ elif [ "$setconf" = "ipsetconf" ]; then
 		echo "ipset=$ipsetconf" >> $conflocation
 	else
 		uci revert dhcp
-		hardconfig=$(uci get dhcp.@dnsmasq[0].ipset | awk -F' ' '{print $1}' | grep '/walledgarden')
+		hardconfig=$(uci get dhcp.@dnsmasq[0].ipset | awk -F' ' '{print $1}' | grep -w '/walledgarden')
 
 		if [ "$hardconfig" = "$ipsetconf" ]; then
 			uci del_list dhcp.@dnsmasq[0].ipset=$ipsetconf

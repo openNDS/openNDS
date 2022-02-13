@@ -4,6 +4,11 @@ What's New? - ChangeLog
 opennds (9.6.0)
 
   * This version adds new functionality, and fixes some issues
+  * Add - OpenWrt makefile for nft or ipt dependencies [bluewavenet]
+  * Fix - grep by word to prevent any ambiguity [doctor-ox] [bluewavenet]
+  * Fix - ensure rate limiting is disabled if rate thresholds are set to zero [bluewavenet]
+  * Add - querystring support for client status page [bluewavenet]
+  * Add - Advanced/standard status page checkbox [bluewavenet]
   * Add - set default session timeout to 24 hours [bluewavenet]
   * Fix - potential buffer overflow [bluewavenet]
   * Fix - Restrict max packet limit to iptables maximum [bluewavenet]

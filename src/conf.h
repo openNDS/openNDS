@@ -25,12 +25,12 @@
     @author Copyright (C) 2015-2022 Modifications and additions by BlueWave Projects and Services <opennds@blue-wave.net>
 */
 
-#define COPYRIGHT "openNDS, Copyright (C) 2021, The openNDS Contributors"
+#define COPYRIGHT "openNDS, Copyright (C) 2015-2022 Modifications and additions by BlueWave Projects and Services"
 
 #ifndef _CONF_H_
 #define _CONF_H_
 
-#define VERSION "9.6.0beta"
+#define VERSION "9.6.0"
 
 /*
  * Defines how many times should we try detecting the interface with the default route (in seconds).

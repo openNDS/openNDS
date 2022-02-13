@@ -60,17 +60,17 @@ Configuring Data Rate Quotas
 ============================
 Data Rate quota thresholds are configured in the config file along with  options that allow tuning of the bursting intervals and bucket filter sizes to suit a wide range of venue requirements.
 
-The configuration options are as follows:
+The configuration options and their defaults are as follows:
 
-* ratecheckwindow
-* download_bucket_ratio
-* upload_bucket_ratio
-* max_download_bucket_size
-* max_upload_bucket_size
-* download_unrestricted_bursting
-* upload_unrestricted_bursting
-* downloadrate
-* uploadrate
+* ratecheckwindow (Default 2)
+* download_bucket_ratio (Default 10)
+* upload_bucket_ratio (Default 10)
+* max_download_bucket_size (Default 250)
+* max_upload_bucket_size (Default 250)
+* download_unrestricted_bursting (Default 0, disabled)
+* upload_unrestricted_bursting (Default 0, disabled)
+* downloadrate (Default 0, unlimited)
+* uploadrate (Default 0, unlimited)
 
 See the Configuration Options section for details.
 
@@ -94,7 +94,7 @@ If using BinAuth, the FAS would utilise the BinAuth custom variable to send quot
 Traffic Shaping
 ***************
 
-If a fixed ceiling data rate is required, third party traffic shaping packages can be used at the same time as the built in openNDS Rate Quota Thresholds.
+If a fixed ceiling data rate is required, third party traffic shaping packages can be used in place of the built in openNDS Rate Quota Thresholds.
 
 For example, SQM - Smart Queue Management (sqm-scripts) package is fully compatible and available for OpenWrt and generic Linux.
 

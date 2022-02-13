@@ -508,7 +508,6 @@ fw_refresh_client_list(void)
 				// we have decremented from ratecheckwindow value to expiry
 				// so check clients upload and download
 				// If rates are below threshold we can disable
-
 				//reset ratecheckwindow
 				cp1->window_counter = config->rate_check_window;
 				cp1->window_start = now;

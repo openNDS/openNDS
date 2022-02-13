@@ -1,11 +1,13 @@
-The Error511/Client Status Page
+The Client Status/Error511 Page
 ###############################
 
-From version 8.0.0 onwards, openNDS has a Client Status Page.
+If the client is redirected by the CPI (RFC 8910) process, this page is displayed.
 
-This page is accessible by any connected client by accessing the default url:
+This page is also accessible by any connected client at the default url:
 
 http://status.client
+
+Default "Quick Status" and optional "Advanced Status" options can be selected.
 
 If the client has been authenticated in the normal way by the client CPD process, a page is served displaying the Gatewayname and the Network Zone the client device is currently using.
 

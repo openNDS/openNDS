@@ -5,16 +5,16 @@ Overview
 ********
 ThemeSpec Script files are an evolution of the original PreAuth/Login-Option scripts that were introduced to provide dynamic splash page sequences without requiring a separate web server or additional dependencies.
 
-From openNDS version 9 onwards, the old login.sh script file is replaced by a new library script that provides resources for openNDS to use along with a standardised method for including themed specification files that generate the required html for the specified theme and functionality required for the venue.
+From openNDS version 9 onwards, a library script provides resources for openNDS to use. In addition, a standardised method for including themed specification files is provided. These files are used by the library script to generate the required html for the specified theme and functionality required for the venue.
 
 Pre-installed ThemeSpec script files
 ************************************
 
-Two default and pre-installed ThemeSpec script files are included. These provide the equivalent of the pre version 9 "Click to Continue" and "Username/Email" Login splash pages.
+Four pre-installed ThemeSpec script files are included. These provide a "Click to Continue" and a "Username/Email" sequence of "splash" pages.
 
-These options are selected in the same way as was the case in version 8, using:
+The first two of these examples are selected using:
 
-``option login_option_enabled '1'`` (for click to continue)
+``option login_option_enabled '1'`` (for click to continue - the default)
 
 and
 
@@ -23,6 +23,23 @@ and
 Mode 1 selects the script file theme_click-to-continue.sh for inclusion.
 
 Mode 2 selects the script file theme_user-email-login.sh for inclusion.
+
+Automated Content Updates
+-------------------------
+
+The final two examples enable automated updating of content from remote sources. This is ideal for dynamic serving of venue information, news and advertising. These options are selected using:
+
+``option login_option_enabled '3'``
+
+``option themespec_path '/usr/lib/opennds/theme_click-to-continue-custom-placeholders.sh'``
+
+for click to continue (with custom content) and
+
+``option themespec_path '/usr/lib/opennds/theme_user-email-login-custom-placeholders.sh'``
+
+for username-email login (with custom content).
+
+The content to be downloaded is then specified in the configuration. See "ThemeSpec Templates" below.
 
 libopennds.sh
 *************

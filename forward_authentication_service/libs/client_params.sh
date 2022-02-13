@@ -4,6 +4,7 @@
 #
 status=$1
 clientip=$2
+b64query=$3
 
 do_ndsctl () {
 	local timeout=4
@@ -50,12 +51,44 @@ get_client_zone () {
 }
 
 htmlentityencode() {
-	entitylist="s/\"/\&quot;/ s/>/\&gt;/ s/</\&lt;/"
+	entitylist="
+		s/\"/\&quot;/g
+		s/>/\&gt;/g
+		s/</\&lt;/g
+		s/%/\&#37;/g
+		s/'/\&#39;/g
+		s/\`/\&#96;/g
+	"
 	local buffer="$1"
+
 	for entity in $entitylist; do
 		entityencoded=$(echo "$buffer" | sed "$entity")
 		buffer=$entityencoded
 	done
+
+	entityencoded=$(echo "$buffer" | awk '{ gsub(/\$/, "\\&#36;"); print }')
+}
+
+
+parse_variables() {
+	# Parse for variables in $query from the list in $queryvarlist:
+
+	for var in $queryvarlist; do
+		evalstr=$(echo "$query" | awk -F"$var=" '{print $2}' | awk -F', ' '{print $1}')
+		evalstr=$(printf "${evalstr//%/\\x}")
+
+		# sanitise $evalstr to prevent code injection
+		htmlentityencode "$evalstr"
+		evalstr=$entityencoded
+
+		if [ -z "$evalstr" ]; then
+			continue
+		fi
+
+		eval $var=$(echo "\"$evalstr\"")
+		evalstr=""
+	done
+	query=""
 }
 
 parse_parameters() {
@@ -69,7 +102,7 @@ parse_parameters() {
 		for param in gatewayname gatewayaddress gatewayfqdn mac version ip client_type clientif session_start session_end \
 			last_active token state upload_rate_limit_threshold download_rate_limit_threshold \
 			upload_packet_rate upload_bucket_size download_packet_rate download_bucket_size \
-			upload_quota download_quota upload_this_session download_this_session upload_session_avg  download_session_avg
+			upload_quota download_quota upload_this_session download_this_session upload_session_avg download_session_avg
 		do
 			val=$(echo "$param_str" | grep "$param\"" | awk -F'"' '{printf "%s", $4}')
 
@@ -122,11 +155,10 @@ header() {
 		<body>
 		<div class=\"offset\">
 		<big-red>
-			Client Session Status<br>
+			Session Status<br>
 		</big-red>
 		<med-blue>
-			$gatewaynamehtml <br>
-			$client_zone
+			$gatewaynamehtml
 		</med-blue><br>
 		<div class=\"insert\" style=\"max-width:100%;\">
 	"
@@ -172,38 +204,65 @@ body() {
 			download_bucket_size="(Not Set)"
 		fi
 
-		pagebody="
+		checked="$advanced"
+
+		buttons="
 			<form action=\"$url/opennds_deny/\" method=\"get\">
 				<input type=\"submit\" value=\"Logout\" >
 			</form>
-			<hr>
-			<form>
-				<input type=\"button\" VALUE=\"Refresh\" onClick=\"history.go(0);return true;\">
-			</form>
 
-		<div style=\"font-size:0.8em;\">
-			<br>
-			<b>IP address:</b> $ip<br>
-			<b>MAC address:</b> $mac<br>
-			<b>Client Type:</b> $client_type<br>
-			<b>Interfaces being used by this client:</b> $clientif<br>
-			<b>Session Start:</b> $sessionstart<br>
-			<b>Session End:</b> $sessionend<br>
-			<b>Last Active:</b> $lastactive<br>
-			<b>Download Rate Limit Threshold:</b> $download_rate_limit_threshold Kb/s<br>
-			<b>Download Packet Rate:</b> $download_packet_rate packets/min<br>
-			<b>Download Bucket Size:</b> $download_bucket_size packets<br>
-			<b>Upload Rate Limit Threshold:</b> $upload_rate_limit_threshold Kb/s<br>
-			<b>Upload Packet Rate:</b> $upload_packet_rate packets/min<br>
-			<b>Upload Bucket Size:</b> $upload_bucket_size packets<br>
-			<b>Download Quota:</b> $download_quota KBytes<br>
-			<b>Upload Quota:</b> $upload_quota KBytes<br>
-			<b>Downloaded This Session:</b> $download_this_session KBytes<br>
-			<b>Uploaded This Session:</b> $upload_this_session KBytes<br>
-			<b>Average Download Rate This Session:</b> $download_session_avg Kb/s<br>
-			<b>Average Upload Rate This Session:</b> $upload_session_avg Kb/s<br>
-		</div>
+			<hr>
+
+			<form action=\"$url/\" method=\"get\">
+				<input type=\"checkbox\" value=\"checked\" name=\"advanced\" $checked >
+				Select and click Refresh to see Advanced Account Details<br>
+				<input type=\"submit\" value=\"Refresh\" >
+			</form>
 		"
+
+		echo "$buttons"
+
+		if [ "$advanced" = "checked" ]; then
+			pagebody="
+			<div style=\"font-size:0.8em;\">
+				<br>
+				<b>IP address:</b> $ip<br>
+				<b>MAC address:</b> $mac<br>
+				<b>Client Type:</b> $client_type<br>
+				<b>Interfaces being used by this client:</b> $clientif<br>
+				<b>Session Start:</b> $sessionstart<br>
+				<b>Session End:</b> $sessionend<br>
+				<b>Last Active:</b> $lastactive<br>
+				<b>Download Rate Limit Threshold:</b> $download_rate_limit_threshold Kb/s<br>
+				<b>Download Packet Rate:</b> $download_packet_rate packets/min<br>
+				<b>Download Bucket Size:</b> $download_bucket_size packets<br>
+				<b>Upload Rate Limit Threshold:</b> $upload_rate_limit_threshold Kb/s<br>
+				<b>Upload Packet Rate:</b> $upload_packet_rate packets/min<br>
+				<b>Upload Bucket Size:</b> $upload_bucket_size packets<br>
+				<b>Download Quota:</b> $download_quota KBytes<br>
+				<b>Upload Quota:</b> $upload_quota KBytes<br>
+				<b>Downloaded This Session:</b> $download_this_session KBytes<br>
+				<b>Uploaded This Session:</b> $upload_this_session KBytes<br>
+				<b>Average Download Rate This Session:</b> $download_session_avg Kb/s<br>
+				<b>Average Upload Rate This Session:</b> $upload_session_avg Kb/s<br>
+			</div>
+			"
+		else
+			pagebody="
+			<div style=\"font-size:0.8em;\">
+				<br>
+				<b>IP address:</b> $ip<br>
+				<b>MAC address:</b> $mac<br>
+				<b>Session Start:</b> $sessionstart<br>
+				<b>Session End:</b> $sessionend<br>
+				<b>Downloaded This Session:</b> $download_this_session KBytes<br>
+				<b>Uploaded This Session:</b> $upload_this_session KBytes<br>
+				<b>Average Download Rate This Session:</b> $download_session_avg Kb/s<br>
+				<b>Average Upload Rate This Session:</b> $upload_session_avg Kb/s<br>
+			</div>
+			"
+		fi
+
 	elif [ "$status" = "err511" ]; then
 
 		pagebody="
@@ -237,6 +296,28 @@ if [ "$status" = "status" ] || [ "$status" = "err511" ]; then
 	else
 		url="http://$gatewayfqdn"
 	fi
+
+	querystr=""
+
+	if [ ! -z "$b64query" ]; then
+		ndsctlcmd="b64decode $b64query"
+		do_ndsctl
+		querystr=$ndsctlout	
+	fi
+
+	# strip off leasing "?" character
+	querystr=${querystr:1:1024}
+	queryvarlist=""
+
+	for element in $querystr; do
+		htmlentityencode "$element"
+		element=$entityencoded
+		varname=$(echo "$element" | awk -F'=' '$2!="" {printf "%s" $1}')
+		queryvarlist="$queryvarlist $varname"
+	done
+
+	query=$querystr
+	parse_variables
 
 	header
 	body

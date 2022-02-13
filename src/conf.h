@@ -25,12 +25,12 @@
     @author Copyright (C) 2015-2022 Modifications and additions by BlueWave Projects and Services <opennds@blue-wave.net>
 */
 
-#define COPYRIGHT "openNDS, Copyright (C) 2021, The openNDS Contributors"
+#define COPYRIGHT "openNDS, Copyright (C) 2015-2022 Modifications and additions by BlueWave Projects and Services"
 
 #ifndef _CONF_H_
 #define _CONF_H_
 
-#define VERSION "9.6.0beta"
+#define VERSION "9.6.0"
 
 /*
  * Defines how many times should we try detecting the interface with the default route (in seconds).
@@ -72,7 +72,7 @@
 #define DEFAULT_FASPATH "/"
 #define DEFAULT_FASKEY "1234567890"
 #define DEFAULT_CHECKINTERVAL 15
-#define DEFAULT_SESSION_TIMEOUT 1200
+#define DEFAULT_SESSION_TIMEOUT 1440
 #define DEFAULT_PREAUTH_IDLE_TIMEOUT 30
 #define DEFAULT_AUTH_IDLE_TIMEOUT 120
 #define DEFAULT_REMOTES_REFRESH_INTERVAL 0

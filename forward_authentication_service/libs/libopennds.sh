@@ -94,12 +94,12 @@ get_image_file() {
 
 	if [ "$shelldetect" = "#!/bin/sh" ]; then
 		setcontents=$(set)
-		imageurl=$(echo "$setcontents" | grep "$imagename='" | awk -F"'" '{print $2}')
+		imageurl=$(echo "$setcontents" | grep -w  "$imagename='" | awk -F"'" '{print $2}')
 	else
 		set -o posix
 		setcontents=$(set)
 		set +o posix
-		imageurl=$(echo "$setcontents" | grep "$imagename=" | awk -F"$imagename=" '{print $2}' | awk -F", " 'NR==1{print $1}')
+		imageurl=$(echo "$setcontents" | grep -w  "$imagename=" | awk -F"$imagename=" '{print $2}' | awk -F", " 'NR==1{print $1}')
 
 	fi
 
@@ -158,12 +158,12 @@ get_data_file() {
 	if [ "$shelldetect" = "#!/bin/sh" ]; then
 		setcontents=$(set)
 
-		dataurl=$(echo "$setcontents" | grep "$dataname='" | awk -F"'" '{print $2}')
+		dataurl=$(echo "$setcontents" | grep -w  "$dataname='" | awk -F"'" '{print $2}')
 	else
 		set -o posix
 		setcontents=$(set)
 		set +o posix
-		dataurl=$(echo "$setcontents" | grep "$dataname=" | awk -F"$dataname=" '{print $2}' | awk -F", " 'NR==1{print $1}')
+		dataurl=$(echo "$setcontents" | grep -w  "$dataname=" | awk -F"$dataname=" '{print $2}' | awk -F", " 'NR==1{print $1}')
 	fi
 
 	setcontents=""
@@ -538,7 +538,7 @@ get_client_zone () {
 	if [ -z "$client_zone" ]; then
 		client_mac=$clientmac
 		client_if_string=$(/usr/lib/opennds/get_client_interface.sh $client_mac)
-		failcheck=$(echo "$client_if_string" | grep "get_client_interface")
+		failcheck=$(echo "$client_if_string" | grep -w  "get_client_interface")
 
 		if [ -z $failcheck ]; then
 			client_if=$(echo "$client_if_string" | awk '{printf $1}')
@@ -574,7 +574,7 @@ auth_log () {
 }
 
 write_log () {
-	mountcheck=$(df | grep "$log_mountpoint")
+	mountcheck=$(df | grep -w  "$log_mountpoint")
 
 	if [ ! -z "$logname" ]; then
 
@@ -608,7 +608,7 @@ write_log () {
 				rm "$logfile.cut"
 			fi
 
-			available=$(df | grep "$log_mountpoint" | eval "$awkcmd")
+			available=$(df | grep -w  "$log_mountpoint" | eval "$awkcmd")
 
 			if [ "$log_mountpoint" = "$mountpoint" ]; then
 				# Check the logfile is not too big
@@ -793,13 +793,13 @@ check_mhd() {
 mhd_get_status() {
 
 	if [ -z "$fetch" ]; then
-		mhdtest=$(wget -t 1 -T 1 -O - "http://$gw_address/mhdstatus" 2>&1 | grep "<br>OK<br>")
+		mhdtest=$(wget -t 1 -T 1 -O - "http://$gw_address/mhdstatus" 2>&1 | grep -w  "<br>OK<br>")
 
 		if [ ! -z "$mhdtest" ]; then
 			mhdstatus="1"
 		fi
 	else
-		mhdtest=$(uclient-fetch -T 1 -O - "http://$gw_address/mhdstatus" 2>&1 | grep "<br>OK<br>")
+		mhdtest=$(uclient-fetch -T 1 -O - "http://$gw_address/mhdstatus" 2>&1 | grep -w  "<br>OK<br>")
 
 		if [ ! -z "$mhdtest" ]; then
 			mhdstatus="1"
@@ -921,7 +921,7 @@ elif [ "$1" = "gatewayroute" ]; then
 	ifname=$2
 	online="online"
 	offline="offline"
-	defaultif=$(ip route | grep "default" | awk '{printf("%s %s ", $3, $5)}')
+	defaultif=$(ip route | grep -w  "default" | awk '{printf("%s %s ", $3, $5)}')
 
 	if [ -z "$defaultif" ]; then
 		gatewayinterfaces="offline"
@@ -945,7 +945,7 @@ elif [ "$1" = "gatewayroute" ]; then
 			else
 				iface=$var
 				idx=0
-				arptest=$(ip -f inet neigh show | grep "$iface" | grep "$ipaddr")
+				arptest=$(ip -f inet neigh show | grep -w  "$iface" | grep -w  "$ipaddr")
 
 				if [ -z "$arptest" ]; then
 					continue
@@ -970,7 +970,7 @@ elif [ "$1" = "gatewayroute" ]; then
 elif [ "$1" = "clientaddress" ]; then
 	# Find and return client ip and mac
 	# $2 contains either client mac or client ip
-	addrs=$(ip -f inet neigh show | grep "$2")
+	addrs=$(ip -f inet neigh show | grep -w  "$2")
 
 	if [ -z "$addrs" ]; then
 		printf "-"

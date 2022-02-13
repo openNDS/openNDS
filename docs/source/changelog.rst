@@ -4,6 +4,15 @@ What's New? - ChangeLog
 opennds (9.6.0)
 
   * This version adds new functionality, and fixes some issues
+  * Add - OpenWrt makefile for nft or ipt dependencies [bluewavenet]
+  * Fix - grep by word to prevent any ambiguity [doctor-ox] [bluewavenet]
+  * Fix - ensure rate limiting is disabled if rate thresholds are set to zero [bluewavenet]
+  * Add - querystring support for client status page [bluewavenet]
+  * Add - Advanced/standard status page checkbox [bluewavenet]
+  * Add - set default session timeout to 24 hours [bluewavenet]
+  * Fix - potential buffer overflow [bluewavenet]
+  * Fix - Restrict max packet limit to iptables maximum [bluewavenet]
+  * Fix - descriptive labels on ndsctl status output [bluewavenet]
   * Add - update of README.md [bluewavenet]
   * Fix - Added required variable to FAS return string example documentation [dorkone]
   * Add - Default checkinterval set to 15 seconds [bluewavenet]
@@ -27,7 +36,7 @@ opennds (9.6.0)
   * Add - Show unrestricted burst intervals in ndsctl status [bluewavenet]
   * Add - Set default bucket ratios to 10 [bluewavenet]
 
- -- Rob White <dot@blue-wave.net>  Thu, 03 Feb 2022 10:14:50 +0000
+ -- Rob White <dot@blue-wave.net>  Sun, 06 Feb 2022 07:44:50 +0000
 
 opennds (9.5.1)
 

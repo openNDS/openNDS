@@ -1,6 +1,6 @@
 .\" Man page generated from reStructuredText.
 .
-.TH "OPENNDS" "1" "Dec 17, 2021" "9.5.1" "openNDS"
+.TH "OPENNDS" "1" "Feb 18, 2022" "9.6.0" "openNDS"
 .SH NAME
 opennds \- opennds Documentation
 .
@@ -101,6 +101,95 @@ NDS can be used as the "Engine" behind the most sophisticated Captive Portal sys
 .UNINDENT
 .UNINDENT
 .SH WHAT'S NEW? - CHANGELOG
+.sp
+opennds (9.6.0)
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+This version adds new functionality, and fixes some issues
+.IP \(bu 2
+Add \- use heap allocation for library call return buffer [bluewavenet]
+.IP \(bu 2
+Fix \- OpenWrt, fhook request for fw3 [bluewavenet]
+.IP \(bu 2
+Add \- spider remote urls before downloading [bluewavenet]
+.IP \(bu 2
+Add \- OpenWrt, revert uncommitted uci updates at startup and shutdown [bluewavenet]
+.IP \(bu 2
+Fix \- remove unneccesary flash writes and fix hosts updates [doctor\-ox] [bluewavenet]
+.IP \(bu 2
+Add \- Updated splash images [bluewavenet]
+.IP \(bu 2
+Add \- OpenWrt makefile for nft or ipt dependencies [bluewavenet]
+.IP \(bu 2
+Fix \- grep by word to prevent any ambiguity [doctor\-ox] [bluewavenet]
+.IP \(bu 2
+Fix \- ensure rate limiting is disabled if rate thresholds are set to zero [bluewavenet]
+.IP \(bu 2
+Add \- querystring support for client status page [bluewavenet]
+.IP \(bu 2
+Add \- Advanced/standard status page checkbox [bluewavenet]
+.IP \(bu 2
+Add \- set default session timeout to 24 hours [bluewavenet]
+.IP \(bu 2
+Fix \- potential buffer overflow [bluewavenet]
+.IP \(bu 2
+Fix \- Restrict max packet limit to iptables maximum [bluewavenet]
+.IP \(bu 2
+Fix \- descriptive labels on ndsctl status output [bluewavenet]
+.IP \(bu 2
+Add \- update of README.md [bluewavenet]
+.IP \(bu 2
+Fix \- Added required variable to FAS return string example documentation [dorkone]
+.IP \(bu 2
+Add \- Default checkinterval set to 15 seconds [bluewavenet]
+.IP \(bu 2
+Fix \- incoming and outgoing counters when unlimited bursting is enabled [bluewavenet]
+.IP \(bu 2
+Add \- maximum bucket size configuration [bluewavenet]
+.IP \(bu 2
+Add \- calculate moving average packet size for rate limiting [bluewavenet]
+.IP \(bu 2
+Add \- some operational default values [bluewavenet]
+.IP \(bu 2
+Add \- initial rate limits when unrestricted bursting is disabled [bluewavenet]
+.IP \(bu 2
+Add \- Require clients to be in the dhcp database [bluewavenet]
+.IP \(bu 2
+Add \- dhcpcheck library call [bluewavenet]
+.IP \(bu 2
+Fix \- Remove trailing whitespace when getting clientaddress if client not active [bluewavenet]
+.IP \(bu 2
+Fix \- Segfault when FAS fails to Return customstring [dorkone] [bluewavenet]
+.IP \(bu 2
+Add \- Enable/Disable unrestricted bursting [bluewavenet]
+.IP \(bu 2
+Add \- gatewayurl to querystring and use in place of originurl in FAS [bluewavenet]
+.IP \(bu 2
+Fix \- more accurate debug message [bluewavenet]
+.IP \(bu 2
+Fix \- Show packet rate correctly as packets per minute [bluewavenet]
+.IP \(bu 2
+Add \- Report Packet Rate and Bucket Size in ndsctl status and json and status client page [bluewavenet]
+.IP \(bu 2
+Add \- rate limit refresh to client limit rules [bluewavenet]
+.IP \(bu 2
+Fix \- code readability [bluewavenet]
+.IP \(bu 2
+Fix \- Documentation for data sent to Authmon Daemon [bluewavenet]
+.IP \(bu 2
+Add \- Show unrestricted burst intervals in ndsctl status [bluewavenet]
+.IP \(bu 2
+Add \- Set default bucket ratios to 10 [bluewavenet]
+.UNINDENT
+.UNINDENT
+.UNINDENT
+\(em Rob White <\fI\%dot@blue\-wave.net\fP>  Sun, 06 Feb 2022 07:44:50 +0000
+.UNINDENT
+.UNINDENT
 .sp
 opennds (9.5.1)
 .INDENT 0.0
@@ -2112,20 +2201,20 @@ Example:
 \fBoption authidletimeout \(aq60\(aq\fP
 .SS Session Timeout
 .sp
-Default 1200 minutes (20 hours).
+Default 1440 minutes (24 hours).
 .sp
 This is the interval after which clients are forced out (a value of 0 means never).
 .sp
 Clients will be deauthenticated at the end of this period.
 .sp
-Example: Set to 24 hours (1440 minutes).
+Example: Set to 20 hours (1200 minutes).
 .sp
-\fBoption sessiontimeout \(aq1440\(aq\fP
+\fBoption sessiontimeout \(aq1200\(aq\fP
 .SS Set the Checkinterval
 .sp
 The interval in seconds at which openNDS checks client timeouts, quota usage and runs watchdog checks.
 .sp
-Default 60 seconds (1 minute).
+Default 15 seconds (one quarter of a minute).
 .sp
 Example: Set to 30 seconds.
 .sp
@@ -2156,6 +2245,100 @@ Rates:
 \fBoption uploadrate \(aq200\(aq\fP
 .sp
 \fBoption downloadrate \(aq800\(aq\fP
+.SS Set Bucket Ratio
+.sp
+Default 10
+.sp
+Upload and Download bucket ratios can be defined.
+.sp
+Allows control of upload rate limit threshold overrun per client.
+.sp
+Used in conjunction with MaxDownloadBucketSize and MaxUploadBucketSize.
+.sp
+Facilitates calculation of a dynamic "bucket size" or "queue length" (in packets) to be used for buffering upload and download traffic to achieve rate restrictions defined in this config file or by FAS for individual clients.
+.sp
+If a bucket becomes full, packets will overflow and be dropped to maintain the rate limit.
+.sp
+To minimise the number of dropped packets the bucket ratio can be increased whilst still maintaining the configured rate restriction.
+.sp
+\fB*CAUTION*\fP Large values may consume large amounts of memory per client.
+.sp
+If the client\(aqs average rate does not exceed its configured value within the ratecheck window interval (See RateCheckWindow option), no memory is consumed.
+.sp
+If the rate is set to 0, the Bucket Ratio setting has no meaning and no memory is consumed.
+.sp
+Examples:
+.INDENT 0.0
+.INDENT 3.5
+\fIoption upload_bucket_ratio \(aq1\(aq\fP
+.sp
+\fIoption download_bucket_ratio \(aq5\(aq\fP
+.UNINDENT
+.UNINDENT
+.SS MaxDownloadBucketSize
+.sp
+Default: 250
+.sp
+Allows control over download rate limiting packet loss at the expense of increased latency.
+.sp
+\fB*CAUTION*\fP Large values may consume large amounts of memory per client.
+.sp
+Allowed Range 5 to 10000
+.sp
+Example:
+.sp
+\fIoption max_download_bucket_size \(aq100\(aq\fP
+.SS MaxUploadBucketSize
+.sp
+Default 250
+.sp
+Allows control over upload rate limiting packet loss at the expense of increased latency.
+.sp
+\fB*CAUTION*\fP Large values may consume large amounts of memory per client.
+.sp
+Allowed Range 5 to 10000
+.sp
+Example:
+.sp
+\fIoption max_upload_bucket_size \(aq100\(aq\fP
+.SS DownLoadUnrestrictedBursting
+.sp
+Default 0
+.sp
+Enables / disables unrestricted bursting
+.sp
+Setting to 0 disables
+.sp
+Setting to 1 enables
+.sp
+If enabled, a client is allowed unrestricted bursting until its average download rate exceeds the set download rate threshold.
+.sp
+Unrestricted bursting minimises memory consumption at the expense of potential short term bandwidth hogging.
+.sp
+If disabled, a client is not allowed unrestricted bursting.
+.sp
+Example:
+.sp
+\fIoption download_unrestricted_bursting \(aq1\(aq\fP
+.SS UpLoadUnrestrictedBursting
+.sp
+Default 0
+.sp
+Enables / disables unrestricted bursting
+.sp
+Setting to 0 disables
+.sp
+Setting to 1 enables
+.sp
+If enabled, a client is allowed unrestricted bursting until its average upload rate exceeds the set upload rate threshold.
+.sp
+Unrestricted bursting minimises memory consumption at the expense of potential short term bandwidth hogging.
+.sp
+If disabled, a client is not allowed unrestricted bursting.
+.sp
+Example:
+.sp
+\fIoption upload_unrestricted_bursting \(aq1\(aq\fP
 .SS Set RateCheckWindow
 .sp
 Default 2
@@ -3050,7 +3233,7 @@ Once FAS has verified the client credentials, authentication is achieved by acce
 .sp
 This virtual URL is of the form:
 .sp
-\fIhttp://[nds_ip]:[nds_port]/[authdir]/?tok=[token]&redir=[landing_page_url]\fP
+\fIhttp://[nds_ip]:[nds_port]/[authdir]/?tok=[token]&redir=[landing_page_url]&custom=\fP
 .sp
 This is most commonly achieved using an html form of method GET.
 The parameter redir can be the client\(aqs originally requested URL sent by NDS, or more usefully, the URL of a suitable landing page.
@@ -3069,7 +3252,7 @@ Authmon is started by openNDS to facilitate NAT traversal and allow a remote htt
 FAS will deposit client authentication variables for the Authmon daemon to use for the authentication process. These variables are as follows:
 .INDENT 0.0
 .IP \(bu 2
-clientip: The ip address of the client to be authenticated
+rhid: The return hashed ID of the client to be authenticated
 .IP \(bu 2
 sessionlength: length of session \- minutes
 .IP \(bu 2
@@ -3342,14 +3525,14 @@ The value of option faskey should of course be changed, but must also be pre\-sh
 .sp
 ThemeSpec Script files are an evolution of the original PreAuth/Login\-Option scripts that were introduced to provide dynamic splash page sequences without requiring a separate web server or additional dependencies.
 .sp
-From openNDS version 9 onwards, the old login.sh script file is replaced by a new library script that provides resources for openNDS to use along with a standardised method for including themed specification files that generate the required html for the specified theme and functionality required for the venue.
+From openNDS version 9 onwards, a library script provides resources for openNDS to use. In addition, a standardised method for including themed specification files is provided. These files are used by the library script to generate the required html for the specified theme and functionality required for the venue.
 .SS Pre\-installed ThemeSpec script files
 .sp
-Two default and pre\-installed ThemeSpec script files are included. These provide the equivalent of the pre version 9 "Click to Continue" and "Username/Email" Login splash pages.
+Four pre\-installed ThemeSpec script files are included. These provide a "Click to Continue" and a "Username/Email" sequence of "splash" pages.
 .sp
-These options are selected in the same way as was the case in version 8, using:
+The first two of these examples are selected using:
 .sp
-\fBoption login_option_enabled \(aq1\(aq\fP (for click to continue)
+\fBoption login_option_enabled \(aq1\(aq\fP (for click to continue \- the default)
 .sp
 and
 .sp
@@ -3358,6 +3541,21 @@ and
 Mode 1 selects the script file theme_click\-to\-continue.sh for inclusion.
 .sp
 Mode 2 selects the script file theme_user\-email\-login.sh for inclusion.
+.SS Automated Content Updates
+.sp
+The final two examples enable automated updating of content from remote sources. This is ideal for dynamic serving of venue information, news and advertising. These options are selected using:
+.sp
+\fBoption login_option_enabled \(aq3\(aq\fP
+.sp
+\fBoption themespec_path \(aq/usr/lib/opennds/theme_click\-to\-continue\-custom\-placeholders.sh\(aq\fP
+.sp
+for click to continue (with custom content) and
+.sp
+\fBoption themespec_path \(aq/usr/lib/opennds/theme_user\-email\-login\-custom\-placeholders.sh\(aq\fP
+.sp
+for username\-email login (with custom content).
+.sp
+The content to be downloaded is then specified in the configuration. See "ThemeSpec Templates" below.
 .SS libopennds.sh
 .sp
 This utility controls many of the functions required for PreAuth/ThemeSpec scripts.
@@ -3914,23 +4112,6 @@ By default, library utilities will be installed in the folder
 .sp
 \fB/usr/lib/opennds/\fP
 .SS List of Library Utilities
-.SS get_client_token.sh (deprecated)
-.sp
-This utility allows the unique token of a client to be determined from the client ip address.
-.sp
-It can be used in PreAuth and local FAS scripts.
-.INDENT 0.0
-.INDENT 3.5
-Usage: get_client_token.sh [clientip]
-.sp
-Returns: [client token]
-.INDENT 0.0
-.TP
-.B Where:
-[client token] is the unique client token string.
-.UNINDENT
-.UNINDENT
-.UNINDENT
 .SS get_client_interface.sh
 .sp
 This utility allows the interface a client is using to be determined from the client mac address.
@@ -4234,6 +4415,19 @@ arg2: contains the string to log
 \fIreturns\fP: "done"
 .UNINDENT
 .UNINDENT
+.SS dhcpcheck:
+.INDENT 0.0
+.INDENT 3.5
+arg1: "dhcpcheck", Checks if an ip address was allocated by dhcp
+.INDENT 0.0
+.INDENT 3.5
+arg2: contains the ip to check
+.UNINDENT
+.UNINDENT
+.sp
+\fIreturns\fP: The mac address that was allocated to the ip address or null and exit code 1 if not allocated
+.UNINDENT
+.UNINDENT
 .SS ?fas:
 .INDENT 0.0
 .INDENT 3.5
@@ -4365,49 +4559,52 @@ option downloadquota \(aq0\(aq
 Note: upload means to the Internet, download means from the Internet
 .sp
 \fBQuotas for individual clients\fP will override configured global values and are set either by BinAuth or the Authmon Daemon (fas_secure_enable level 3) \- see example BinAuth script (binauth_log.sh) and example FAS script (fas\-aes\-https.php).
-.SS Global Data Rate Quota
+.SS Data Rate Quota Threshold
 .sp
-The client data rate is calculated using a moving average. This allows clients to burst at maximum possible rate, only rate limiting if the moving average exceeds the specified upload or download rate.
+Both upload and download data rate quotas are a threshold above which traffic is rate limited using a dynamic bucket filter.
+.sp
+There are no additional packages required or further dependencies.
+.sp
+The client data rate is calculated using a moving average.
+.sp
+If the client\(aqs average rate exceeds the set quota, packets will be queued using a dynamic bucket filter. This allows clients to burst at a rate exceeding the set quota for a short interval thus improving the user experience compared with a fixed ceiling rate limit.
+.sp
+Upload and download rate limiting is provided independently for upload and download traffic.
+.sp
+The configured rate quotas can be overridden on a client by client basis according to criteria determined by the FAS.
 .sp
 The moving average window size is equal to ratecheckwindow times checkinterval (seconds).
 .sp
 The default value of ratecheckwindow is 2 and is a good working setting. Increasing the value allows a longer period of bursting. Setting to 0 disables all Data Rate Quotas.
 .sp
-Simply put, this means clients are able to transfer data at the maximum rate the router can achieve for short bursts.
-.sp
 Data Rate Quotas are ideal for allowing opening of web pages and emails etc in the fastest way possible, yet preventing an individual client from monopolizing all the available bandwidth by streaming or transferring large files.
 .SS Configuring Data Rate Quotas
 .sp
-Global Data Rate quotas are configured in the config file.
-.INDENT 0.0
-.INDENT 3.5
+Data Rate quota thresholds are configured in the config file along with  options that allow tuning of the bursting intervals and bucket filter sizes to suit a wide range of venue requirements.
 .sp
-.nf
-.ft C
-# Note: upload means to the Internet, download means from the Internet
-# Defaults 0
-# Integer values only
-#
-# If the client average data rate exceeds the value set here, the client will be rate limited
-# Values are in kb/s
-# If set to 0, there is no limit
-#
-# Quotas and rates can also be set by FAS via Authmon Daemon, by BinAuth, and by ndsctl auth.
-# Values set by these methods, will be override values set in this config file.
-#
-option uploadrate \(aq0\(aq
-option downloadrate \(aq0\(aq
-###########################################################################################
-# The client data rate is calculated using a moving average.
-# This allows clients to burst at maximum possible rate, only rate limiting if the moving average
-# exceeds the specified upload or download rate.
-# The moving average window size is equal to ratecheckwindow times checkinterval (seconds)
-# Default 2
-option ratecheckwindow \(aq2\(aq
-.ft P
-.fi
+The configuration options and their defaults are as follows:
+.INDENT 0.0
+.IP \(bu 2
+ratecheckwindow (Default 2)
+.IP \(bu 2
+download_bucket_ratio (Default 10)
+.IP \(bu 2
+upload_bucket_ratio (Default 10)
+.IP \(bu 2
+max_download_bucket_size (Default 250)
+.IP \(bu 2
+max_upload_bucket_size (Default 250)
+.IP \(bu 2
+download_unrestricted_bursting (Default 0, disabled)
+.IP \(bu 2
+upload_unrestricted_bursting (Default 0, disabled)
+.IP \(bu 2
+downloadrate (Default 0, unlimited)
+.IP \(bu 2
+uploadrate (Default 0, unlimited)
 .UNINDENT
-.UNINDENT
+.sp
+See the Configuration Options section for details.
 .sp
 Note: upload means to the Internet, download means from the Internet
 .SS Data Rate Quotas for Individual Clients
@@ -4423,17 +4620,11 @@ These levels can either use BinAuth to set quota values determined by the FAS, o
 If using BinAuth, the FAS would utilise the BinAuth custom variable to send quota values to a BinAuth script configured to interpret the data passed to it in the variable. There is no set method for doing this, it is left to individual installers to develop their own method.
 .SS Traffic Shaping
 .sp
-openNDS (NDS) supports Traffic Shaping (Bandwidth Limiting) using the SQM \- Smart Queue Management (sqm\-scripts) package, available for OpenWrt and generic Linux.
+If a fixed ceiling data rate is required, third party traffic shaping packages can be used in place of the built in openNDS Rate Quota Thresholds.
 .sp
-\fI\%https://github.com/tohojo/sqm\-scripts\fP
+For example, SQM \- Smart Queue Management (sqm\-scripts) package is fully compatible and available for OpenWrt and generic Linux.
 .sp
-SQM does efficient bandwidth control, independently for both upload and download, on an IP connection basis. This ideal for enforcing a fair usage policy on a typical Captive Portal implementation.
-.sp
-In addition the Queue management SQM provides, results in significantly improved WiFi performance, particularly on the modern low cost WiFi routers available on the market today.
-.sp
-Finally, SQM controls quality of service (QOS), allowing priority for real time protocols such a VOIP.
-.sp
-Overall, SQM can enhance significantly the experience of clients using your Captive Portal, whilst ensuring a single client is unlikely to dominate the available Internet service at the expense of others.
+See: \fI\%https://github.com/tohojo/sqm\-scripts\fP
 .SS Installing SQM
 .sp
 The generic Linux scripts can be downloaded from the link above.
@@ -4598,13 +4789,15 @@ Further details about SQM can be found at the following links:
 \fI\%https://openwrt.org/docs/guide\-user/network/traffic\-shaping/sqm\fP
 .sp
 \fI\%https://openwrt.org/docs/guide\-user/network/traffic\-shaping/sqm\-details\fP
-.SH THE ERROR511/CLIENT STATUS PAGE
+.SH THE CLIENT STATUS/ERROR511 PAGE
 .sp
-From version 8.0.0 onwards, openNDS has a Client Status Page.
+If the client is redirected by the CPI (RFC 8910) process, this page is displayed.
 .sp
-This page is accessible by any connected client by accessing the default url:
+This page is also accessible by any connected client at the default url:
 .sp
 \fI\%http://status.client\fP
+.sp
+Default "Quick Status" and optional "Advanced Status" options can be selected.
 .sp
 If the client has been authenticated in the normal way by the client CPD process, a page is served displaying the Gatewayname and the Network Zone the client device is currently using.
 .sp
@@ -5211,6 +5404,6 @@ search
 .SH AUTHOR
 The openNDS Contributors
 .SH COPYRIGHT
-2016 - 2021, The NoDogSplash and openNDS Contributors
+2015 - 2022 BlueWave Projects and Services and The openNDS Contributors <opennds@blue-wave.net>
 .\" Generated by docutils manpage writer.
 .

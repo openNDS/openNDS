@@ -137,7 +137,7 @@ termination_handler(int s)
 	static pthread_mutex_t sigterm_mutex = PTHREAD_MUTEX_INITIALIZER;
 	char *fasssl = NULL;
 	char *dnscmd;
-	char msg[256] = {0};
+	char *msg;
 	s_config *config;
 	config = config_get_config();
 
@@ -163,16 +163,16 @@ termination_handler(int s)
 		free(fasssl);
 	}
 
-	// If RFC8910 support is enabled, disable it
-	debug(LOG_DEBUG, "Disabling RFC8910 support");
-	safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"cpidconf\"");
+	// Revert any uncommitted uci configs
+	safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"revert\"");
+	msg = safe_calloc(STATUS_BUF);
 
-	if (execute_ret_url_encoded(msg, sizeof(msg) - 1, dnscmd) == 0) {
-		debug(LOG_INFO, "RFC8910 support is disabled");
-	} else {
-		debug(LOG_ERR, "RFC8910 setup script failed to execute");
+	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, dnscmd) == 0) {
+		debug(LOG_INFO, "Revert request sent");
 	}
+
 	free(dnscmd);
+	free(msg);
 
 	// Restart dnsmasq
 	safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" &");
@@ -255,7 +255,7 @@ setup_from_config(void)
 {
 	char protocol[8] = {0};
 	char port[8] = {0};
-	char msg[256] = {0};
+	char *msg;
 	char gwhash[256] = {0};
 	char authmonpid[16] = {0};
 	char *socket;
@@ -279,6 +279,16 @@ setup_from_config(void)
 	s_config *config;
 
 	config = config_get_config();
+
+	// Revert any uncommitted uci configs
+	safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"revert\"");
+	msg = safe_calloc(STATUS_BUF);
+
+	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, dnscmd) == 0) {
+		debug(LOG_INFO, "Revert request sent");
+	}
+	free(dnscmd);
+	free(msg);
 
 	if (!((stat(libscript, &sb) == 0) && S_ISREG(sb.st_mode) && (sb.st_mode & S_IXUSR))) {
 		debug(LOG_ERR, "Library libopennds does not exist or is not executable");
@@ -447,48 +457,62 @@ setup_from_config(void)
 			config->gw_ip,
 			config->gw_fqdn
 		);
+		msg = safe_calloc(SMALL_BUF);
 
-		if (execute_ret_url_encoded(msg, sizeof(msg) - 1, dnscmd) == 0) {
+		if (execute_ret_url_encoded(msg, SMALL_BUF - 1, dnscmd) == 0) {
 			debug(LOG_INFO, "Client status Page: Configured");
 		} else {
 			debug(LOG_ERR, "Client Status Page: Hosts setup script failed to execute");
 		}
 		free(dnscmd);
+		free(msg);
 	}
 
 	// For Walled Garden - Check we have ipset support and if we do, set it up
 	if (config->walledgarden_fqdn_list) {
 		// Check ipset command is available
-		if (execute_ret_url_encoded(msg, sizeof(msg) - 1, "ipset -v") == 0) {
+		msg = safe_calloc(SMALL_BUF);
+
+		if (execute_ret_url_encoded(msg, SMALL_BUF - 1, "ipset -v") == 0) {
 			debug(LOG_NOTICE, "ipset support is available");
 		} else {
 			debug(LOG_ERR, "ipset support not available - please install package to provide it");
 			debug(LOG_ERR, "Exiting...");
 			exit(1);
 		}
+		free(msg);
 
 		// Check we have dnsmasq ipset compile option
-		if (execute_ret_url_encoded(msg, sizeof(msg) - 1, "dnsmasq --version | grep ' ipset '") == 0) {
+		msg = safe_calloc(SMALL_BUF);
+
+		if (execute_ret_url_encoded(msg, SMALL_BUF - 1, "dnsmasq --version | grep ' ipset '") == 0) {
 			debug(LOG_NOTICE, "dnsmasq ipset support is available");
 		} else {
 			debug(LOG_ERR, "Please install dnsmasq full version with ipset compile option");
 			debug(LOG_ERR, "Exiting...");
 			exit(1);
 		}
+		free(msg);
 
 		// If Walled Garden ipset exists, destroy it.
-		execute_ret_url_encoded(msg, sizeof(msg) - 1, "ipset destroy walledgarden");
-
+		msg = safe_calloc(SMALL_BUF);
+		execute_ret_url_encoded(msg, SMALL_BUF - 1, "ipset destroy walledgarden");
+		free(msg);
+		
 		// Set up the Walled Garden
-		if (execute_ret_url_encoded(msg, sizeof(msg) - 1, "ipset create walledgarden hash:ip") == 0) {
+		msg = safe_calloc(SMALL_BUF);
+
+		if (execute_ret_url_encoded(msg, SMALL_BUF - 1, "ipset create walledgarden hash:ip") == 0) {
 			debug(LOG_INFO, "Walled Garden ipset created");
 		} else {
 			debug(LOG_ERR, "Failed to create Walled Garden");
 			debug(LOG_ERR, "Exiting...");
 			exit(1);
 		}
+		free(msg);
 
 		// Configure dnsmasq
+
 		for (allowed_wgfqdn = config->walledgarden_fqdn_list; allowed_wgfqdn != NULL; allowed_wgfqdn = allowed_wgfqdn->next) {
 
 			// Make sure we don't have a buffer overflow:
@@ -503,12 +527,15 @@ setup_from_config(void)
 		strcat(wgfqdns, "/walledgarden");
 		debug(LOG_DEBUG, "Dnsmasq Walled Garden config [%s]", wgfqdns);
 		safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"ipsetconf\" \"%s\"", wgfqdns);
-		if (execute_ret_url_encoded(msg, sizeof(msg) - 1, dnscmd) == 0) {
+		msg = safe_calloc(STATUS_BUF);
+
+		if (execute_ret_url_encoded(msg, STATUS_BUF - 1, dnscmd) == 0) {
 			debug(LOG_INFO, "Dnsmasq configured for Walled Garden");
 		} else {
 			debug(LOG_ERR, "Walled Garden Dnsmasq setup script failed to execute");
 		}
 		free(dnscmd);
+		free(msg);
 	}
 
 	if (config->dhcp_default_url_enable == 1) {
@@ -519,24 +546,28 @@ setup_from_config(void)
 		} else {
 			safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"cpidconf\" \"%s\"", config->gw_address);
 		}
+		msg = safe_calloc(STATUS_BUF);
 
-		if (execute_ret_url_encoded(msg, sizeof(msg) - 1, dnscmd) == 0) {
+		if (execute_ret_url_encoded(msg, STATUS_BUF - 1, dnscmd) == 0) {
 			debug(LOG_INFO, "RFC8910 support is enabled");
 		} else {
 			debug(LOG_ERR, "RFC8910 setup script failed to execute");
 		}
 		free(dnscmd);
+		free(msg);
 	} else {
 		debug(LOG_DEBUG, "Disabling RFC8910 support");
 
 		safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"cpidconf\"");
+		msg = safe_calloc(STATUS_BUF);
 
-		if (execute_ret_url_encoded(msg, sizeof(msg) - 1, dnscmd) == 0) {
+		if (execute_ret_url_encoded(msg, STATUS_BUF - 1, dnscmd) == 0) {
 			debug(LOG_INFO, "RFC8910 support is disabled");
 		} else {
 			debug(LOG_ERR, "RFC8910 setup script failed to execute");
 		}
 		free(dnscmd);
+		free(msg);
 	}
 
 	// Restart dnsmasq
@@ -645,7 +676,9 @@ setup_from_config(void)
 		// FAS secure Level >=1
 		if (config->fas_key && config->fas_secure_enabled >= 1) {
 			// Check sha256sum command is available
-			if (execute_ret_url_encoded(msg, sizeof(msg) - 1, "printf 'test' | sha256sum") == 0) {
+			msg = safe_calloc(SMALL_BUF);
+
+			if (execute_ret_url_encoded(msg, SMALL_BUF - 1, "printf 'test' | sha256sum") == 0) {
 				safe_asprintf(&fashid, "sha256sum");
 				debug(LOG_NOTICE, "sha256sum provider is available");
 			} else {
@@ -655,20 +688,25 @@ setup_from_config(void)
 			}
 			config->fas_hid = safe_strdup(fashid);
 			free(fashid);
+			free(msg);
 		}
 
 		// FAS secure Level 2 and 3
 		if (config->fas_key && config->fas_secure_enabled >= 2) {
 			// PHP cli command can be php or php-cli depending on Linux version.
-			if (execute_ret(msg, sizeof(msg) - 1, "php -v") == 0) {
+			msg = safe_calloc(SMALL_BUF);
+
+			if (execute_ret(msg, SMALL_BUF - 1, "php -v") == 0) {
 				safe_asprintf(&fasssl, "php");
 				debug(LOG_NOTICE, "SSL Provider is active");
 				debug(LOG_DEBUG, "SSL Provider: %s FAS key is: %s\n", &msg, config->fas_key);
+				free(msg);
 
-			} else if (execute_ret(msg, sizeof(msg) - 1, "php-cli -v") == 0) {
+			} else if (execute_ret(msg, SMALL_BUF - 1, "php-cli -v") == 0) {
 				safe_asprintf(&fasssl, "php-cli");
 				debug(LOG_NOTICE, "SSL Provider is active");
 				debug(LOG_DEBUG, "SSL Provider: %s FAS key is: %s\n", &msg, config->fas_key);
+				free(msg);
 			} else {
 				debug(LOG_ERR, "PHP packages PHP CLI and PHP OpenSSL are required");
 
@@ -676,6 +714,7 @@ setup_from_config(void)
 					debug(LOG_ERR, "Package ca-bundle is required for level 3 (https)");
 				}
 
+				free(msg);
 				debug(LOG_ERR, "Exiting...");
 				exit(1);
 			}
@@ -686,8 +725,9 @@ setup_from_config(void)
 				"if (!extension_loaded (\"openssl\")) {exit(1);}"
 				" ?>' | %s", config->fas_ssl
 			);
+			msg = safe_calloc(STATUS_BUF);
 
-			if (execute_ret(msg, sizeof(msg) - 1, phpcmd) == 0) {
+			if (execute_ret(msg, STATUS_BUF - 1, phpcmd) == 0) {
 				debug(LOG_INFO, "OpenSSL module is loaded\n");
 			} else {
 				debug(LOG_ERR, "OpenSSL PHP module is not loaded");
@@ -695,6 +735,7 @@ setup_from_config(void)
 				exit(1);
 			}
 			free(phpcmd);
+			free(msg);
 		}
 
 		// set the protocol used, enforcing https for Level 3

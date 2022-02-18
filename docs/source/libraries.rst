@@ -13,19 +13,6 @@ By default, library utilities will be installed in the folder
 List of Library Utilities
 *************************
 
-get_client_token.sh (deprecated)
-################################
-This utility allows the unique token of a client to be determined from the client ip address.
-
-It can be used in PreAuth and local FAS scripts.
-
-  Usage: get_client_token.sh [clientip]
-
-  Returns: [client token]
-
-  Where:
-    [client token] is the unique client token string.
-
 get_client_interface.sh
 #######################
 This utility allows the interface a client is using to be determined from the client mac address.

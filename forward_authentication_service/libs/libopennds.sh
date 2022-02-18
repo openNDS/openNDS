@@ -80,26 +80,25 @@ webget() {
 	fetch=$(type -t uclient-fetch)
 
 	if [ -z "$fetch" ]; then
-		wret="wget -t 1 -T 4"
+		wret="wget $spider $checkcert -t 1 -T 4"
 	else
-		wret="uclient-fetch -T 4"
+		wret="uclient-fetch $spider $checkcert -T 4"
 	fi
 }
 
 # Get custom image files
 get_image_file() {
-	webget
 	imagename=$1
 	shelldetect=$(head -1 "/usr/lib/opennds/libopennds.sh")
 
 	if [ "$shelldetect" = "#!/bin/sh" ]; then
 		setcontents=$(set)
-		imageurl=$(echo "$setcontents" | grep -w  "$imagename='" | awk -F"'" '{print $2}')
+		imageurl=$(echo "$setcontents" | grep "$imagename='" | awk -F"'" '{print $2}')
 	else
 		set -o posix
 		setcontents=$(set)
 		set +o posix
-		imageurl=$(echo "$setcontents" | grep -w  "$imagename=" | awk -F"$imagename=" '{print $2}' | awk -F", " 'NR==1{print $1}')
+		imageurl=$(echo "$setcontents" | grep "$imagename=" | awk -F"$imagename=" '{print $2}' | awk -F", " 'NR==1{print $1}')
 
 	fi
 
@@ -111,7 +110,7 @@ get_image_file() {
 	if [ ! -d "$mountpoint/ndsremote" ]; then
 		mkdir -p "$mountpoint$customimageroot"
 
-		if [ ! -e "$customimagepath" ]; then
+		if [ ! -L "$customimagepath" ]; then
 			ln -s "$mountpoint$customimageroot" "$customimagepath"
 		fi
 	fi
@@ -128,15 +127,52 @@ get_image_file() {
 			protocol=$(echo "$imageurl" | awk -F'://' '{printf("%s", $1)}')
 
 			if [ "$protocol" = "http" ]; then
+				#Try to download using http
+				spider="--spider"
+				checkcert=""
+				webget
+
 				retrieve=$($wret -q -O "$mountpoint/ndsremote/$filename" "$imageurl")
-			elif [ "$protocol" = "https" ]; then
-				#test for https support
-				result=$($wret -q -O - "https://detectportal.firefox.com/success.txt")
-				if [ "$result" = "success" ];then
+				retcode="$?"
+
+				if [ "$retcode" = 0 ];then
+					spider=""
+					webget
 					retrieve=$($wret -q -O "$mountpoint/ndsremote/$filename" "$imageurl")
 				else
-					echo "wget - https support failed or not installed - skipping file download" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
+					echo "http transfer failed - skipping download of $filename" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 				fi
+
+			elif [ "$protocol" = "https" ]; then
+				#Try to download using https
+				spider="--spider"
+				checkcert=""
+				webget
+				retrieve=$($wret -q -O "$mountpoint/ndsremote/$filename" "$imageurl")
+				retcode="$?"
+
+				if [ "$retcode" = 0 ];then
+					spider=""
+					checkcert=""
+					webget
+					retrieve=$($wret -q -O "$mountpoint/ndsremote/$filename" "$imageurl")
+				else
+					spider="--spider"
+					checkcert="--no-check-certificate "
+					webget
+					retrieve=$($wret -q -O "$mountpoint/ndsremote/$filename" "$imageurl")
+					retcode="$?"
+
+					if [ "$retcode" = 0 ];then
+						spider=""
+						checkcert="--no-check-certificate "
+						webget
+						retrieve=$($wret -q -O "$mountpoint/ndsremote/$filename" "$imageurl")
+					else
+						echo "https transfer failed - skipping download of $filename" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
+					fi
+				fi
+
 			elif [ "$protocol" = "file" ]; then
 				sourcefile=$(echo "$imageurl" | awk -F'://' '{printf("%s", $2)}')
 				destinationfile="$mountpoint/ndsremote/$filename"
@@ -147,23 +183,26 @@ get_image_file() {
 			fi
 		fi
 	fi
+
+	if [ ! -e "$mountpoint$evalimg" ]; then
+		eval $forename="/images/splash.jpg"
+	fi
 }
 
 # Get custom data files
 get_data_file() {
-	webget
 	dataname=$1
 	shelldetect=$(head -1 "/usr/lib/opennds/libopennds.sh")
 
 	if [ "$shelldetect" = "#!/bin/sh" ]; then
 		setcontents=$(set)
 
-		dataurl=$(echo "$setcontents" | grep -w  "$dataname='" | awk -F"'" '{print $2}')
+		dataurl=$(echo "$setcontents" | grep "$dataname='" | awk -F"'" '{print $2}')
 	else
 		set -o posix
 		setcontents=$(set)
 		set +o posix
-		dataurl=$(echo "$setcontents" | grep -w  "$dataname=" | awk -F"$dataname=" '{print $2}' | awk -F", " 'NR==1{print $1}')
+		dataurl=$(echo "$setcontents" | grep "$dataname=" | awk -F"$dataname=" '{print $2}' | awk -F", " 'NR==1{print $1}')
 	fi
 
 	setcontents=""
@@ -184,17 +223,54 @@ get_data_file() {
 			protocol=$(echo "$dataurl" | awk -F'://' '{printf("%s", $1)}')
 
 			if [ "$protocol" = "http" ]; then
+				#Try to download using http
+				spider="--spider"
+				checkcert=""
+				webget
+
 				retrieve=$($wret -q -O "$mountpoint/ndsdata/$filename" "$dataurl")
-			elif [ "$protocol" = "https" ]; then
-				#test for https support
-				result=$($wret -q -O - "https://detectportal.firefox.com/success.txt")
-				if [ "$result" = "success" ];then
+				retcode="$?"
+
+				if [ "$retcode" = 0 ];then
+					spider=""
+					webget
 					retrieve=$($wret -q -O "$mountpoint/ndsdata/$filename" "$dataurl")
 				else
-					echo "wget - https support failed or not installed - skipping file download" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
+					echo "http transfer failed - skipping download of $filename" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 				fi
+
+			elif [ "$protocol" = "https" ]; then
+				#Try to download using https
+				spider="--spider"
+				checkcert=""
+				webget
+				retrieve=$($wret -q -O "$mountpoint/ndsdata/$filename" "$dataurl")
+				retcode="$?"
+
+				if [ "$retcode" = 0 ];then
+					spider=""
+					checkcert=""
+					webget
+					retrieve=$($wret -q -O "$mountpoint/ndsdata/$filename" "$dataurl")
+				else
+					spider="--spider"
+					checkcert="--no-check-certificate "
+					webget
+					retrieve=$($wret -q -O "$mountpoint/ndsdata/$filename" "$dataurl")
+					retcode="$?"
+
+					if [ "$retcode" = 0 ];then
+						spider=""
+						checkcert="--no-check-certificate "
+						webget
+						retrieve=$($wret -q -O "$mountpoint/ndsdata/$filename" "$dataurl")
+					else
+						echo "https transfer failed - skipping download of $filename" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
+					fi
+				fi
+
 			elif [ "$protocol" = "file" ]; then
-				sourcefile=$(echo "$dataurl" | awk -F'://' '{printf("%s", $2)}')
+				sourcefile=$(echo "$imageurl" | awk -F'://' '{printf("%s", $2)}')
 				destinationfile="$mountpoint/ndsdata/$filename"
 				cp "$sourcefile" "$destinationfile"
 			else
@@ -203,6 +279,7 @@ get_data_file() {
 			fi
 		fi
 	fi
+
 }
 
 # Function to send commands to openNDS:
@@ -1131,14 +1208,15 @@ elif [ "$1" = "startdaemon" ]; then
 		#sleep 1
 		daemonpid=$(pgrep -f "$shell $ndsctlout")
 
-		syslogmessage="daemonpid is [$daemonpid]"
-		debugtype="debug"
-		write_to_syslog
-
 		if [ -z "$daemonpid" ]; then
+			syslogmessage="daemon ran to termination"
+			debugtype="debug"
+			write_to_syslog
 			printf "%s" "0"
-			exit 0
 		else
+			syslogmessage="daemonpid is [$daemonpid]"
+			debugtype="debug"
+			write_to_syslog
 			printf "%s" "$daemonpid"
 		fi
 

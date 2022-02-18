@@ -163,15 +163,13 @@ termination_handler(int s)
 		free(fasssl);
 	}
 
-	// If RFC8910 support is enabled, disable it
-	debug(LOG_DEBUG, "Disabling RFC8910 support");
-	safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"cpidconf\"");
+	// Revert any uncommitted uci configs
+	safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"revert\"");
 
 	if (execute_ret_url_encoded(msg, sizeof(msg) - 1, dnscmd) == 0) {
-		debug(LOG_INFO, "RFC8910 support is disabled");
-	} else {
-		debug(LOG_ERR, "RFC8910 setup script failed to execute");
+		debug(LOG_INFO, "Revert request sent");
 	}
+
 	free(dnscmd);
 
 	// Restart dnsmasq
@@ -279,6 +277,15 @@ setup_from_config(void)
 	s_config *config;
 
 	config = config_get_config();
+
+	// Revert any uncommitted uci configs
+	safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"revert\"");
+
+	if (execute_ret_url_encoded(msg, sizeof(msg) - 1, dnscmd) == 0) {
+		debug(LOG_INFO, "Revert request sent");
+	}
+	free(dnscmd);
+
 
 	if (!((stat(libscript, &sb) == 0) && S_ISREG(sb.st_mode) && (sb.st_mode & S_IXUSR))) {
 		debug(LOG_ERR, "Library libopennds does not exist or is not executable");
@@ -489,6 +496,7 @@ setup_from_config(void)
 		}
 
 		// Configure dnsmasq
+
 		for (allowed_wgfqdn = config->walledgarden_fqdn_list; allowed_wgfqdn != NULL; allowed_wgfqdn = allowed_wgfqdn->next) {
 
 			// Make sure we don't have a buffer overflow:
@@ -503,6 +511,7 @@ setup_from_config(void)
 		strcat(wgfqdns, "/walledgarden");
 		debug(LOG_DEBUG, "Dnsmasq Walled Garden config [%s]", wgfqdns);
 		safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"ipsetconf\" \"%s\"", wgfqdns);
+
 		if (execute_ret_url_encoded(msg, sizeof(msg) - 1, dnscmd) == 0) {
 			debug(LOG_INFO, "Dnsmasq configured for Walled Garden");
 		} else {

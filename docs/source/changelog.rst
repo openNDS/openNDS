@@ -4,6 +4,12 @@ What's New? - ChangeLog
 opennds (9.6.0)
 
   * This version adds new functionality, and fixes some issues
+  * Add - use heap allocation for library call return buffer [bluewavenet]
+  * Fix - OpenWrt, fhook request for fw3 [bluewavenet]
+  * Add - spider remote urls before downloading [bluewavenet]
+  * Add - OpenWrt, revert uncommitted uci updates at startup and shutdown [bluewavenet]
+  * Fix - remove unneccesary flash writes and fix hosts updates [doctor-ox] [bluewavenet]
+  * Add - Updated splash images [bluewavenet]
   * Add - OpenWrt makefile for nft or ipt dependencies [bluewavenet]
   * Fix - grep by word to prevent any ambiguity [doctor-ox] [bluewavenet]
   * Fix - ensure rate limiting is disabled if rate thresholds are set to zero [bluewavenet]

@@ -20,7 +20,7 @@ delete_114s() {
 	if [ ! -z "$cpidconfig" ]; then
 
 		for option114 in $cpidconfig; do
-			is_114=$(echo "$option114" | grep -w "114")
+			is_114=$(echo "$option114" | grep "114")
 
 			if [ ! -z "$is_114" ]; then
 				echo "$dellist'$option114'" | uci batch
@@ -37,6 +37,7 @@ restart_dnsmasq() {
 	fi
 }
 
+
 if [ "$setconf" = "" ]; then
 	exit 1
 
@@ -45,21 +46,28 @@ elif [ "$setconf" = "restart_only" ]; then
 	printf "%s" "done"
 	exit 0
 
+elif [ "$setconf" = "revert" ]; then
+
+	if [ ! -z "$uciconfig" ]; then
+		uci revert dhcp
+	fi
+
+	printf "%s" "done"
+	exit 0
+
 elif [ "$setconf" = "ipsetconf" ]; then
 	ipsetconf=$2	
 
-	if [ "$uciconfig" = "" ]; then
+	if [ -z "$uciconfig" ]; then
 		sed -i '/System\|walledgarden/d' $conflocation
 		echo "ipset=$ipsetconf" >> $conflocation
 	else
-		uci revert dhcp
-		hardconfig=$(uci get dhcp.@dnsmasq[0].ipset | awk -F' ' '{print $1}' | grep -w '/walledgarden')
-
-		if [ "$hardconfig" = "$ipsetconf" ]; then
-			uci del_list dhcp.@dnsmasq[0].ipset=$ipsetconf
-			uci commit dhcp
-		fi
-		uci add_list dhcp.@dnsmasq[0].ipset=$ipsetconf
+		# OpenWrt
+		# Note we do not commit here so that the config changes do NOT survive a reboot and can be reverted without writing to config files
+		del_ipset="del_list dhcp.@dnsmasq[0].ipset='$ipsetconf'"
+		add_ipset="add_list dhcp.@dnsmasq[0].ipset='$ipsetconf'"
+		echo $del_ipset | uci batch
+		echo $add_ipset | uci batch
 	fi
 
 	printf "%s" "done"
@@ -68,25 +76,39 @@ elif [ "$setconf" = "ipsetconf" ]; then
 elif [ "$setconf" = "hostconf" ]; then
 	gw_ip=$2
 	gw_fqdn=$3
-	host_entry="$gw_ip $gw_fqdn " 
-	host_entry_check=$(grep "$host_entry" "$hosts")
-	ip_check=$(grep "$gw_ip" "$hosts" | awk 'NR==1{printf("%s ", $1)}')
-	fqdn_check=$(grep "$gw_fqdn" "$hosts" | awk 'NR==1{printf("%s ", $2)}')
 
-	if [ -z "$ip_check" ] && [ ! -z "$fqdn_check" ]; then
-		sed -i "/$fqdn_check/d" $hosts
-		echo "$host_entry" >> "$hosts"
+	if [ -z "$uciconfig" ]; then
+		# Generic Linux
+		host_entry="$gw_ip $gw_fqdn"
+		# generate a tmp filename on tmpfs
+		ram_hosts=$(mktemp --tmpdir=/run/tmpfiles.d)
 
-	elif [ -z "$fqdn_check" ] && [ ! -z "$ip_check" ]; then
-		sed -i "/$ip_check/d" $hosts
-		echo "$host_entry" >> "$hosts"
+		cp -p /etc/hosts "$ram_hosts" &&
+		(
+			# Add record GW_IP GW_FQDN in /etc/hosts file if GW_IP does not exist
+			grep -qw "^$gw_ip" $ram_hosts || (echo "$host_entry" >> $ram_hosts)
 
-	elif [ -z "$host_entry_check" ] && [ ! -z "$fqdn_check" ]; then
-		sed -i "/$fqdn_check/d" $hosts
-		echo "$host_entry" >> "$hosts"
+			# Add GW_FQDN as an alias to GW_IP record where GW_FDQN alias is missing
+			sed -i "/^$gw_ip[[:space:]]\+/ { /[[:space:]]$gw_fqdn[[:space:]]/I! {  /[[:space:]]$gw_fqdn$/I! s/[[:space:]]*$/ $gw_fqdn/}}" $ram_hosts
 
-	elif [ -z "$host_entry_check" ]; then
-		echo "$host_entry" >> "$hosts"
+			# Remove GW_FQDN from IPs different from GW_IP
+			sed -i "/^$gw_ip[[:space:]]\+/! { s/\([[:space:]]\)$gw_fqdn[[:space:]]/\1/Ig;s/\([[:space:]]\)$gw_fqdn$//I}" $ram_hosts
+
+			# rewrite /etc/hosts file only after an update
+			diff -b $ram_hosts /etc/hosts &>/dev/null ||  mv $ram_hosts /etc/hosts
+		)
+
+		# cleanup
+		rm -f $ram_hosts
+
+	else
+		# OpenWrt
+		# Note we do not commit here so that the config changes do NOT survive a reboot and can be reverted without writing to config files
+		host_entry="/$gw_fqdn/$gw_ip"
+		del_dns="del_list dhcp.@dnsmasq[0].address='$host_entry'"
+		add_dns="add_list dhcp.@dnsmasq[0].address='$host_entry'"
+		echo $del_dns | uci batch
+		echo $add_dns | uci batch
 	fi
 
 	printf "%s" "done"
@@ -104,12 +126,12 @@ elif [ "$setconf" = "cpidconf" ]; then
 		fi
 	else
 		# OpenWrt
+		# Note we do not commit here so that the config changes do NOT survive a reboot and can be reverted without writing to config files
 		cpidconfig=$(uci get dhcp.lan.dhcp_option_force 2>/dev/null)
 		dellist="del_list dhcp.lan.dhcp_option_force="
 
 		if [ -z "$gatewayfqdn" ]; then
 			delete_114s
-			uci commit dhcp
 			printf "%s" "done"
 			exit 0
 		fi
@@ -118,12 +140,10 @@ elif [ "$setconf" = "cpidconf" ]; then
 
 		if [ -z "$cpidconfig" ]; then
 			echo $addlist | uci batch
-			# Note we do not commit here so that the config changes do NOT survive a reboot
 
 		elif [ "$cpidconfig" != "114,http://$gatewayfqdn" ]; then
 			delete_114s
 			echo $addlist | uci batch
-			# Note we do not commit here so that the config changes do NOT survive a reboot
 		fi
 	fi
 

@@ -4,6 +4,7 @@ What's New? - ChangeLog
 opennds (9.6.0)
 
   * This version adds new functionality, and fixes some issues
+  * Fix - correctly display return buffer in syslog [bluewavenet]
   * Add - use heap allocation for library call return buffer [bluewavenet]
   * Fix - OpenWrt, fhook request for fw3 [bluewavenet]
   * Add - spider remote urls before downloading [bluewavenet]

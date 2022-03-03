@@ -928,7 +928,7 @@ dhcp_check() {
 	for dhcpdb in $dhcpdblocations; do
 
 		if [ -e "$dhcpdb" ]; then
-			dhcprecord=$(grep "$iptocheck " "$dhcpdb" | awk '{printf "%s", $2}')
+			dhcprecord=$(grep -w "$iptocheck" "$dhcpdb" | tail -1 | awk '{printf "%s", $2}')
 			break
 		fi
 	done

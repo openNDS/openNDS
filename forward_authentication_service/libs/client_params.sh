@@ -104,7 +104,7 @@ parse_parameters() {
 			upload_packet_rate upload_bucket_size download_packet_rate download_bucket_size \
 			upload_quota download_quota upload_this_session download_this_session upload_session_avg download_session_avg
 		do
-			val=$(echo "$param_str" | grep "$param\"" | awk -F'"' '{printf "%s", $4}')
+			val=$(echo "$param_str" | grep "\"$param\":" | awk -F'"' '{printf "%s", $4}')
 
 			if [ "$val" = "null" ]; then
 				val="Unlimited"

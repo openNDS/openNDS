@@ -959,7 +959,7 @@ static int preauthenticated(struct MHD_Connection *connection,
 {
 	s_config *config = config_get_config();
 	const char *host = config->gw_address;
-	const char *accept;
+	const char *accept = NULL;
 	const char *redirect_url;
 	char *query;
 	char *querystr;
@@ -1669,6 +1669,13 @@ static enum MHD_Result get_host_value_callback(void *cls, enum MHD_ValueKind kin
 		*host = value;
 		return MHD_NO;
 	}
+	if (key && value) {
+
+		if (!strcmp("Host", key)) {
+			*host = value;
+			return MHD_NO;
+		}
+	}
 
 	return MHD_YES;
 }
@@ -1690,9 +1697,12 @@ static enum MHD_Result get_user_agent_callback(void *cls, enum MHD_ValueKind kin
 		return MHD_NO;
 	}
 
-	if (!strcmp("User-Agent", key)) {
-		*user_agent = value;
-		return MHD_NO;
+	if (key && value) {
+
+		if (!strcmp("User-Agent", key)) {
+			*user_agent = value;
+			return MHD_NO;
+		}
 	}
 
 	return MHD_YES;
@@ -1715,9 +1725,12 @@ static enum MHD_Result get_accept_callback(void *cls, enum MHD_ValueKind kind, c
 		return MHD_NO;
 	}
 
-	if (!strcmp("Accept", key)) {
-		*accept = value;
-		return MHD_NO;
+	if (key && value) {
+
+		if (!strcmp("Accept", key)) {
+			*accept = value;
+			return MHD_NO;
+		}
 	}
 
 	return MHD_YES;

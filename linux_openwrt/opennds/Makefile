@@ -37,10 +37,11 @@ endef
 define Package/opennds/description
 	openNDS is a Captive Portal solution that offers an instant way to provide restricted access to the Internet.
 	With little or no configuration, a dynamically generated and adaptive splash page sequence is automatically served.
-	Internet access is granted by either a click to continue button, or after credential verification.
+	Both client driven Captive Portal Detection (CPD) and gateway driven Captive Portal Identification (CPI - RFC 8910 and RFC 8908) are supported.
+	Internet access is granted by either a click to continue button, or after credential verification as a result of filling in a login form.
 	The package incorporates the FAS API allowing many flexible customisation options.
 	The creation of sophisticated third party authentication applications is fully supported.
-	Internet hosted https portals can be utilised to inspire maximum user confidence.
+	Internet hosted https portals can be implemented with no security errors, to inspire maximum user confidence.
 endef
 
 define Package/opennds/install
@@ -66,7 +67,6 @@ define Package/opennds/install
 	$(CP) $(PKG_BUILD_DIR)/forward_authentication_service/PreAuth/theme_user-email-login-basic.sh $(1)/usr/lib/opennds/
 	$(CP) $(PKG_BUILD_DIR)/forward_authentication_service/PreAuth/theme_user-email-login-custom-placeholders.sh $(1)/usr/lib/opennds/
 	$(CP) $(PKG_BUILD_DIR)/forward_authentication_service/libs/get_client_interface.sh $(1)/usr/lib/opennds/
-	$(CP) $(PKG_BUILD_DIR)/forward_authentication_service/libs/get_client_token.sh $(1)/usr/lib/opennds/
 	$(CP) $(PKG_BUILD_DIR)/forward_authentication_service/libs/client_params.sh $(1)/usr/lib/opennds/
 	$(CP) $(PKG_BUILD_DIR)/forward_authentication_service/libs/unescape.sh $(1)/usr/lib/opennds/
 	$(CP) $(PKG_BUILD_DIR)/forward_authentication_service/libs/authmon.sh $(1)/usr/lib/opennds/

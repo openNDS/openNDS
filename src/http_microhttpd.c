@@ -733,7 +733,7 @@ static int authenticated(struct MHD_Connection *connection,
 			originurl_raw
 		);
 
-		debug(LOG_NOTICE, "captive_json [%s]", captive_json);
+		debug(LOG_DEBUG, "captive_json [%s]", captive_json);
 		ret = send_json(connection, captive_json);
 
 		free(originurl_raw);
@@ -928,7 +928,7 @@ static int send_json(struct MHD_Connection *connection, const char *json)
 	msg = safe_calloc(HTMLMAXSIZE);
 	snprintf(msg, HTMLMAXSIZE, "%s", json);
 
-	debug(LOG_NOTICE, "json string [%s] [%s]", json, msg);
+	debug(LOG_DEBUG, "json string [%s],  buffer [%s]", json, msg);
 
 	response = MHD_create_response_from_buffer(strlen(msg), (char *)msg, MHD_RESPMEM_MUST_FREE);
 
@@ -959,7 +959,7 @@ static int preauthenticated(struct MHD_Connection *connection,
 {
 	s_config *config = config_get_config();
 	const char *host = config->gw_address;
-	const char *accept;
+	const char *accept = NULL;
 	const char *redirect_url;
 	char *query;
 	char *querystr;
@@ -1014,7 +1014,7 @@ static int preauthenticated(struct MHD_Connection *connection,
 		captive_json = safe_calloc(QUERYMAXLEN);
 		safe_asprintf(&captive_json, "{ \"captive\": true, \"user-portal-url\": \"%s%s\" }", config->fas_url, querystr);
 
-		debug(LOG_NOTICE, "captive_json [%s]", captive_json);
+		debug(LOG_DEBUG, "captive_json [%s]", captive_json);
 		ret = send_json(connection, captive_json);
 
 		free(originurl_raw);
@@ -1669,6 +1669,13 @@ static enum MHD_Result get_host_value_callback(void *cls, enum MHD_ValueKind kin
 		*host = value;
 		return MHD_NO;
 	}
+	if (key && value) {
+
+		if (!strcmp("Host", key)) {
+			*host = value;
+			return MHD_NO;
+		}
+	}
 
 	return MHD_YES;
 }
@@ -1690,9 +1697,12 @@ static enum MHD_Result get_user_agent_callback(void *cls, enum MHD_ValueKind kin
 		return MHD_NO;
 	}
 
-	if (!strcmp("User-Agent", key)) {
-		*user_agent = value;
-		return MHD_NO;
+	if (key && value) {
+
+		if (!strcmp("User-Agent", key)) {
+			*user_agent = value;
+			return MHD_NO;
+		}
 	}
 
 	return MHD_YES;
@@ -1715,9 +1725,12 @@ static enum MHD_Result get_accept_callback(void *cls, enum MHD_ValueKind kind, c
 		return MHD_NO;
 	}
 
-	if (!strcmp("Accept", key)) {
-		*accept = value;
-		return MHD_NO;
+	if (key && value) {
+
+		if (!strcmp("Accept", key)) {
+			*accept = value;
+			return MHD_NO;
+		}
 	}
 
 	return MHD_YES;

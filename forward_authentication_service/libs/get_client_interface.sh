@@ -6,8 +6,7 @@
 # This is changed to bash automatically by Makefile for generic Linux
 #
 
-
-pid=$(ps | grep get_client_interface | awk -F ' ' 'NR==2 {print $1}')
+pid=$(pgrep -f "/bin/sh /usr/lib/opennds/get_client_interface.sh")
 
 # This script requires the iw and ip packages (usually available by default)
 
@@ -54,8 +53,6 @@ clientlocalif=$(ip -4 neigh | awk -F ' ' 'match($s,"'"$mac"' ")>0 {printf $3}')
 
 if [ -z "$clientlocalif" ]; then
 	# The client has gone offline eg battery saving or switched to another ssid
-	# Next line commented with #. Uncomment for debugging
-	#echo "Client $mac is not online" | logger -p "daemon.info" -s -t "NDS-Library[$pid]"
 	exit 1
 fi
 

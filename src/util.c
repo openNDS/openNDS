@@ -1051,7 +1051,7 @@ ndsctl_json_client(FILE *fp, const t_client *client, time_t now, char *indent)
 		(download_bytes / 1024)
 	);
 
-	fprintf(fp, "  %s\"download_session_avg\":\"%.2f\"\n",
+	fprintf(fp, "  %s\"download_session_avg\":\"%.2f\",\n",
 		indent,
 		(double)download_bytes / 125 / durationsecs
 	);
@@ -1061,7 +1061,7 @@ ndsctl_json_client(FILE *fp, const t_client *client, time_t now, char *indent)
 		(upload_bytes / 1024)
 	);
 
-	fprintf(fp, "  %s\"upload_session_avg\":\"%.2f\",\n",
+	fprintf(fp, "  %s\"upload_session_avg\":\"%.2f\"\n",
 		indent,
 		(double)upload_bytes / 125 / durationsecs
 	);

@@ -909,15 +909,41 @@ get_key_from_config() {
 }
 
 check_gw_mac() {
-	mac_sys=$(cat "/sys/class/net/$ifname/address")
+	mac_sys=$(cat "/sys/class/net/$ifname/address" 2> /dev/null)
+	error_code=$?
 	mac_sys=${mac_sys:0:17}
 
 	if [ "$gw_mac" = "00:00:00:00:00:00" ] || [ -z "$gw_mac" ]; then
 		gw_mac=$mac_sys
 	elif [ "$mac_sys" != "$gw_mac" ]; then
-		ndspid=$(pgrep '/usr/bin/opennds')
-		echo "Warning, gateway mac changed from [$gw_mac] to [$mac_sys]" | logger -p "daemon.warn" -s -t "opennds[$ndspid]"
+		syslogmessage="Warning, gateway mac changed from [$gw_mac] to [$mac_sys]"
+		debugtype="warn"
+		write_to_syslog
 		gw_mac=$mac_sys
+	fi
+}
+
+check_gw_ip() {
+
+	if [ -z "$ifname" ]; then
+		gw_ip="error"
+		error_code=1
+	else
+		alias_check=$(ip -f inet addr | grep "inet" | awk '{printf "%s \n", $0}' | grep -c "$ifname ")
+
+		if [ "$alias_check" -ne 1 ]; then
+			gw_ip="error"
+			error_code=1
+			if [ "$alias_check" -gt 1 ]; then
+				syslogmessage="$ifname - IP address aliasing forbidden. Configure a VLAN instead."
+				debugtype="err"
+				write_to_syslog
+			fi
+		else
+			ip_str=$(ip -f inet addr | grep "inet" | awk '{printf "%s \n", $0}' | grep "$ifname ")
+			gw_ip=$(echo "$ip_str" | awk '{print $2}' | awk -F "/" '{printf "%s", $1}')
+			error_code=0
+		fi
 	fi
 }
 
@@ -933,6 +959,26 @@ dhcp_check() {
 		fi
 	done
 }
+
+wait_for_interface () {
+	local ifname="$1"
+	local timeout=10
+
+	for i in $(seq $timeout); do
+		if [ $(ip link show $ifname 2> /dev/null | grep -c -w "state UP") -eq 1 ]; then
+			ifstatus="up"
+			break
+		fi
+		sleep 1
+		if [ $i == $timeout ] ; then
+			syslogmessage="$ifname is not up - giving up for now."
+			debugtype="warn"
+			write_to_syslog
+			ifstatus="down"
+		fi
+	done
+}
+
 
 #### end of functions ####
 
@@ -990,7 +1036,32 @@ elif [ "$1" = "gatewaymac" ]; then
 
 	check_gw_mac
 	printf "$gw_mac"
-	exit 0
+	exit "$error_code"
+
+elif [ "$1" = "gatewayid" ]; then
+	# Check gatewaymac based gatewayid
+	ifname=$2
+	check_gw_mac
+	gw_id=$(echo "$gw_mac" | awk -F ":" '{printf "%s%s%s%s%s%s", $1, $2, $3, $4, $5, $6}')
+	printf "$gw_id"
+	exit "$error_code"
+
+elif [ "$1" = "gatewayip" ]; then
+	# Get gatewayip and return value
+	# Check for invalid aliases
+	# Returns gateway ip address or error message with error code
+	ifname=$2
+
+	wait_for_interface "$ifname"
+
+	if [ "$ifstatus"  = "up" ]; then
+		check_gw_ip
+		printf "$gw_ip"
+		exit "$error_code"
+	else
+		printf "error"
+		exit 1
+	fi
 
 elif [ "$1" = "gatewayroute" ]; then
 	# Check for valid route to upstream (WAN) gateway

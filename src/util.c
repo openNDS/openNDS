@@ -525,25 +525,18 @@ get_iface_ip(const char ifname[], int ip6)
 		snprintf(iptype, sizeof(iptype), "inet");
  	}
 
-	snprintf(cmd, sizeof(cmd), "ip address | grep -A2 ': %s' | grep '%s ' | awk '$NF == \"%s\" {print $2}' | awk -F'/' 'NR==1 {printf $1}'",
+	snprintf(cmd, sizeof(cmd), "/usr/lib/opennds/libopennds.sh gatewayip \"%s\" \"%s\"",
 		ifname,
-		iptype,
-		ifname
+		iptype
 	);
 
 	debug(LOG_NOTICE, "Attempting to Bind to interface: %s", ifname);
 
-	for (i=0; i<10; i=i+1) {
-		execute_ret(addrbuf, sizeof(addrbuf), cmd);
-		if (is_addr(addrbuf) == 1) {
-			break;
-		} else {
-			debug(LOG_NOTICE, "Interface: %s is not yet ready - waiting...", ifname);
-			sleep(1);
-		}
+	if (execute_ret(addrbuf, sizeof(addrbuf), cmd) == 0) {
+		return safe_strdup(addrbuf);
+	} else {
+		return "error";
 	}
-
-	return safe_strdup(addrbuf);
 }
 
 char *

@@ -578,6 +578,26 @@ setup_from_config(void)
 	free(dnscmd);
 
 	// Encode gatewayname
+	char idbuf[STATUS_BUF] = {0};
+	char cmd[256] = {0};
+	char gatewayid[256] = {0};
+
+	if (config->enable_serial_number_suffix == 1) {
+
+		snprintf(cmd, sizeof(cmd), "/usr/lib/opennds/libopennds.sh gatewayid \"%s\"",
+			config->gw_interface
+		);
+
+		if (execute_ret(idbuf, sizeof(idbuf), cmd) == 0) {
+			snprintf(gatewayid, sizeof(gatewayid), "%s S/N:%s ",
+				config->gw_name,
+				idbuf
+			);
+			debug(LOG_NOTICE, "Adding Serial Number suffix [%s] to gatewayname", idbuf);
+			config->gw_name = safe_strdup(gatewayid);
+		}
+	}
+
 	htmlentityencode(gw_name_entityencoded, sizeof(gw_name_entityencoded), config->gw_name, strlen(config->gw_name));
 	config->http_encoded_gw_name = safe_strdup(gw_name_entityencoded);
 

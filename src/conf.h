@@ -56,6 +56,7 @@
 #define DEFAULT_GATEWAYINTERFACE "br-lan"
 #define DEFAULT_GATEWAY_IPRANGE "0.0.0.0/0"
 #define DEFAULT_GATEWAYNAME "openNDS"
+#define DEFAULT_ENABLE_SERIAL_NUMBER_SUFFIX 1
 #define DEFAULT_GATEWAYPORT 2050
 #define DEFAULT_GATEWAYFQDN "status.client"
 #define DEFAULT_DHCP_DEFAULT_URL_ENABLE 1
@@ -192,6 +193,7 @@ typedef struct {
 	int maxclients;					//@brief Maximum number of clients allowed
 	int online_status;					//@brief Online status of the router, 1=online, 0=offline
 	char *gw_name;						//@brief Name of the gateway; e.g. its SSID or a unique identifier for use in a remote FAS
+	int enable_serial_number_suffix;			//@brief Enable/disable serial number suffix to gateway name
 	char *http_encoded_gw_name;				//@brief http encoded name of the gateway, used as a templated variable in splash.htm
 	char *url_encoded_gw_name;				//@brief url encoded name of the gateway used as variable in Preauth
 	char *gw_interface;					//@brief Interface we will manage

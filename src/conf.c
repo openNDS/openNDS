@@ -71,6 +71,7 @@ typedef enum {
 	oMaxClients,
 	oOnlineStatus,
 	oGatewayName,
+	oEnableSerialNumberSuffix,
 	oGatewayInterface,
 	oGatewayIPRange,
 	oGatewayIP,
@@ -150,6 +151,7 @@ static const struct {
 	{ "maxclients", oMaxClients },
 	{ "online_status", oOnlineStatus },
 	{ "gatewayname", oGatewayName },
+	{ "enable_serial_number_suffix", oEnableSerialNumberSuffix },
 	{ "gatewayinterface", oGatewayInterface },
 	{ "gatewayiprange", oGatewayIPRange },
 	{ "gatewayip", oGatewayIP },
@@ -251,6 +253,7 @@ config_init(void)
 	config.maxclients = DEFAULT_MAXCLIENTS;
 	config.online_status = DEFAULT_ONLINE_STATUS;
 	config.gw_name = safe_strdup(DEFAULT_GATEWAYNAME);
+	config.enable_serial_number_suffix = DEFAULT_ENABLE_SERIAL_NUMBER_SUFFIX;
 	config.http_encoded_gw_name = NULL;
 	config.url_encoded_gw_name = NULL;
 	config.gw_fqdn = safe_strdup(DEFAULT_GATEWAYFQDN);
@@ -849,6 +852,13 @@ config_read(const char *filename)
 			break;
 		case oGatewayName:
 			config.gw_name = safe_strdup(p1);
+			break;
+		case oEnableSerialNumberSuffix:
+			if (sscanf(p1, "%d", &config.enable_serial_number_suffix) < 1) {
+				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+				debug(LOG_ERR, "Exiting...");
+				exit(1);
+			}
 			break;
 		case oGatewayFQDN:
 			config.gw_fqdn = safe_strdup(p1);

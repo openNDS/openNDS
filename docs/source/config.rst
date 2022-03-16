@@ -501,6 +501,21 @@ Example:
 
 ``option gatewayname 'OpenWrt openNDS'``
 
+Serial Number Suffix Enable
+***************************
+
+Appends a serial number suffix to the gatewayname string.
+
+openNDS constructs a serial number based on the router mac address and adds it to the gatewayname
+
+Default 1 (enabled)
+
+To disable, set to 0
+
+Example:
+
+``option enable_serial_number_suffix '0'``
+
 Set GatewayFQDN
 ***************
 

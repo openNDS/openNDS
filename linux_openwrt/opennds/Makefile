@@ -7,8 +7,8 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=opennds
 PKG_FIXUP:=autoreconf
-PKG_VERSION:=9.6.0
-PKG_RELEASE:=2
+PKG_VERSION:=9.7.0
+PKG_RELEASE:=1
 
 PKG_SOURCE_URL:=https://codeload.github.com/opennds/opennds/tar.gz/v$(PKG_VERSION)?
 PKG_SOURCE:=opennds-$(PKG_VERSION).tar.gz

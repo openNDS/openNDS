@@ -1,6 +1,6 @@
 .\" Man page generated from reStructuredText.
 .
-.TH "OPENNDS" "1" "Feb 18, 2022" "9.6.0" "openNDS"
+.TH "OPENNDS" "1" "Mar 16, 2022" "9.7.0" "openNDS"
 .SH NAME
 opennds \- opennds Documentation
 .
@@ -101,6 +101,39 @@ NDS can be used as the "Engine" behind the most sophisticated Captive Portal sys
 .UNINDENT
 .UNINDENT
 .SH WHAT'S NEW? - CHANGELOG
+.sp
+opennds (9.7.0)
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+This version adds new functionality, and fixes some issues
+.IP \(bu 2
+Add \- option to append serial number suffix to gatewayname [bluewavenet]
+.IP \(bu 2
+Add \- block use of ip aliases on gateway interface [doctor\-ox] [bluewavenet]
+.IP \(bu 2
+Fix \- ndsctl json syntax error [bluewavenet]
+.IP \(bu 2
+Add \- check for null variables in key value pairs in MHD callbacks [bluewavenet]
+.IP \(bu 2
+Fix \- changed some notice messages into debug messages [bluewavenet]
+.IP \(bu 2
+Fix \- possible return of incorrect pid [doctor\-ox] [bluewavenet]
+.IP \(bu 2
+Fix \- possible abiguities resulting in failure to parse parameters correctly [bluewavenet]
+.IP \(bu 2
+Fix \- Remove deprecated get_client_token.sh [bluewavenet]
+.IP \(bu 2
+Fix \- Prevent possible malformed mac address returned from dhcpcheck() [doctor\-ox] [bluewavenet]
+.UNINDENT
+.UNINDENT
+.UNINDENT
+\(em Rob White <\fI\%dot@blue\-wave.net\fP>  Wed, 16 Mar 2022 15:54:29 +0000
+.UNINDENT
+.UNINDENT
 .sp
 opennds (9.6.0)
 .INDENT 0.0
@@ -2138,6 +2171,19 @@ Instead use:
 Example:
 .sp
 \fBoption gatewayname \(aqOpenWrt openNDS\(aq\fP
+.SS Serial Number Suffix Enable
+.sp
+Appends a serial number suffix to the gatewayname string.
+.sp
+openNDS constructs a serial number based on the router mac address and adds it to the gatewayname
+.sp
+Default 1 (enabled)
+.sp
+To disable, set to 0
+.sp
+Example:
+.sp
+\fBoption enable_serial_number_suffix \(aq0\(aq\fP
 .SS Set GatewayFQDN
 .sp
 Default: status.client

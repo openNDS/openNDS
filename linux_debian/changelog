@@ -1,3 +1,18 @@
+opennds (9.7.0); urgency=medium
+
+  * This version adds new functionality, and fixes some issues
+  * Add - option to append serial number suffix to gatewayname [bluewavenet]
+  * Add - block use of ip aliases on gateway interface [doctor-ox] [bluewavenet]
+  * Fix - ndsctl json syntax error [bluewavenet]
+  * Add - check for null variables in key value pairs in MHD callbacks [bluewavenet]
+  * Fix - changed some notice messages into debug messages [bluewavenet]
+  * Fix - possible return of incorrect pid [doctor-ox] [bluewavenet]
+  * Fix - possible abiguities resulting in failure to parse parameters correctly [bluewavenet]
+  * Fix - Remove deprecated get_client_token.sh [bluewavenet]
+  * Fix - Prevent possible malformed mac address returned from dhcpcheck() [doctor-ox] [bluewavenet]
+
+ -- Rob White <dot@blue-wave.net>  Wed, 16 Mar 2022 15:54:29 +0000
+
 opennds (9.6.0-1); urgency=medium
 
   * This version adds new functionality, and fixes some issues

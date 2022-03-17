@@ -517,7 +517,6 @@ get_iface_ip(const char ifname[], int ip6)
 	char addrbuf[INET6_ADDRSTRLEN] = {0};
 	char cmd[256] = {0};
 	char iptype[8] = {0};
-	int i;
 
 	if (ip6) {
 		snprintf(iptype, sizeof(iptype), "inet6");

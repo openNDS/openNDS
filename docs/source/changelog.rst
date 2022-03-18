@@ -4,6 +4,7 @@ What's New? - ChangeLog
 opennds (9.7.0)
 
   * This version adds new functionality, and fixes some issues
+  * Fix - syntax error (missing comma) in awk command in bash on generic Linux [bluewavenet]
   * Add - option to append serial number suffix to gatewayname [bluewavenet]
   * Add - block use of ip aliases on gateway interface [doctor-ox] [bluewavenet]
   * Fix - ndsctl json syntax error [bluewavenet]

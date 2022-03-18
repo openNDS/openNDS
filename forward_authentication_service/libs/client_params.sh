@@ -312,7 +312,7 @@ if [ "$status" = "status" ] || [ "$status" = "err511" ]; then
 	for element in $querystr; do
 		htmlentityencode "$element"
 		element=$entityencoded
-		varname=$(echo "$element" | awk -F'=' '$2!="" {printf "%s" $1}')
+		varname=$(echo "$element" | awk -F'=' '$2!="" {printf "%s", $1}')
 		queryvarlist="$queryvarlist $varname"
 	done
 

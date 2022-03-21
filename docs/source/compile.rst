@@ -43,9 +43,9 @@ You can find a release version number for openNDS at https://github.com/openNDS/
 
 .. code::
 
- wget https://codeload.github.com/opennds/opennds/tar.gz/v7.0.1
- tar -xf v9.1.0
- cd openNDS-9.1.0
+ wget https://github.com/openNDS/openNDS/archive/refs/tags/v9.7.0.tar.gz
+ tar -xf v9.7.0.tar.gz
+ cd openNDS-9.7.0
  make
  sudo make install
  sudo systemctl enable opennds

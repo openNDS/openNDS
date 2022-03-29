@@ -6,42 +6,47 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=opennds
-PKG_FIXUP:=autoreconf
-PKG_VERSION:=9.7.0
-PKG_RELEASE:=1
+PKG_VERSION:=9.8.0beta
+PKG_RELEASE:=2
 
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/opennds/opennds/tar.gz/v$(PKG_VERSION)?
-PKG_SOURCE:=opennds-$(PKG_VERSION).tar.gz
-PKG_HASH:= #shasum -a 256 of tar.gz of source files goes here
+PKG_HASH:=#shasum -a 256 of tar.gz of source files goes here
 PKG_BUILD_DIR:=$(BUILD_DIR)/openNDS-$(PKG_VERSION)
 
 PKG_MAINTAINER:=Rob White <rob@blue-wave.net>
+PKG_LICENSE:=GPL-2.0-or-later
+PKG_LICENSE_FILES:=COPYING
+
+PKG_FIXUP:=autoreconf
 PKG_BUILD_PARALLEL:=1
-PKG_LICENSE:=GPL-2.0+
 
 include $(INCLUDE_DIR)/package.mk
 
 define Package/opennds
-	SUBMENU:=Captive Portals
-	SECTION:=net
-	CATEGORY:=Network
+  SUBMENU:=Captive Portals
+  SECTION:=net
+  CATEGORY:=Network
 	# For post OpenWrt 21.02.xx nft support:
-	DEPENDS:=+iptables-nft +kmod-ipt-conntrack +kmod-ipt-nat +libmicrohttpd-no-ssl
+  DEPENDS:=+iptables-nft +kmod-ipt-conntrack +kmod-ipt-nat +libmicrohttpd-no-ssl
 	# For OpenWrt 21.02.xx and earlier, ipt support:
 	#DEPENDS:=+libpthread +iptables-mod-ipopt +libmicrohttpd-no-ssl
-	TITLE:=Open public network gateway daemon
-	URL:=https://github.com/opennds/opennds
-	CONFLICTS:=nodogsplash nodogsplash2
+  TITLE:=Open public network gateway daemon
+  URL:=https://github.com/opennds/opennds
+	# For post OpenWrt 21.02.xx nft support:
+  CONFLICTS:=nodogsplash nodogsplash2 iptables-legacy
+	# For OpenWrt 21.02.xx and earlier, ipt support:
+	#CONFLICTS:=nodogsplash nodogsplash2
 endef
 
 define Package/opennds/description
-	openNDS is a Captive Portal solution that offers an instant way to provide restricted access to the Internet.
-	With little or no configuration, a dynamically generated and adaptive splash page sequence is automatically served.
-	Both client driven Captive Portal Detection (CPD) and gateway driven Captive Portal Identification (CPI - RFC 8910 and RFC 8908) are supported.
-	Internet access is granted by either a click to continue button, or after credential verification as a result of filling in a login form.
-	The package incorporates the FAS API allowing many flexible customisation options.
-	The creation of sophisticated third party authentication applications is fully supported.
-	Internet hosted https portals can be implemented with no security errors, to inspire maximum user confidence.
+  openNDS is a Captive Portal solution that offers an instant way to provide restricted access to the Internet.
+  With little or no configuration, a dynamically generated and adaptive splash page sequence is automatically served.
+  Both client driven Captive Portal Detection (CPD) and gateway driven Captive Portal Identification (CPI - RFC 8910 and RFC 8908) are supported.
+  Internet access is granted by either a click to continue button, or after credential verification as a result of filling in a login form.
+  The package incorporates the FAS API allowing many flexible customisation options.
+  The creation of sophisticated third party authentication applications is fully supported.
+  Internet hosted https portals can be implemented with no security errors, to inspire maximum user confidence.
 endef
 
 define Package/opennds/install
@@ -88,3 +93,4 @@ define Package/opennds/conffiles
 endef
 
 $(eval $(call BuildPackage,opennds))
+

@@ -1350,7 +1350,16 @@ elif [ "$1" = "dhcpcheck" ]; then
 		dhcp_check
 
 		if [ -z "$dhcprecord" ]; then
-			exit 1
+			gatewayinterface=""
+			option="gatewayinterface"
+			get_option_from_config
+			arprecord=$(cat /proc/net/arp | grep $gatewayinterface | grep $iptocheck | tail -1 | awk '{printf "%s", $4}')
+			if [-z "$arprecord"]; then
+				exit 1
+			else
+				printf "%s" "$arprecord"
+				exit 0
+			fi
 		else
 			printf "%s" "$dhcprecord"
 			exit 0

@@ -1,6 +1,7 @@
 [Unit]
 Description=openNDS Captive Portal
 After=network.target
+Documentation=man:opennds
 
 [Service]
 Type=forking

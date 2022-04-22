@@ -865,7 +865,7 @@ config_read(const char *filename)
 			break;
 		case oStatusPath:
 			if (!((stat(p1, &sb) == 0) && S_ISREG(sb.st_mode) && (sb.st_mode & S_IXUSR))) {
-				debug(LOG_ERR, "StatusPath does not exist or is not executeable: %s", p1);
+				debug(LOG_ERR, "StatusPath does not exist or is not executable: %s", p1);
 				debug(LOG_ERR, "Exiting...");
 				exit(1);
 			}
@@ -913,7 +913,7 @@ config_read(const char *filename)
 		case oThemeSpecPath:
 			config.themespec_path = safe_strdup(p1);
 			if (!((stat(p1, &sb) == 0) && S_ISREG(sb.st_mode) && (sb.st_mode & S_IXUSR))) {
-				debug(LOG_ERR, "ThemeSpec program does not exist or is not executeable: %s", p1);
+				debug(LOG_ERR, "ThemeSpec program does not exist or is not executable: %s", p1);
 				debug(LOG_ERR, "Exiting...");
 				exit(1);
 			}
@@ -979,7 +979,7 @@ config_read(const char *filename)
 		case oBinAuth:
 			config.binauth = safe_strdup(p1);
 			if (!((stat(p1, &sb) == 0) && S_ISREG(sb.st_mode) && (sb.st_mode & S_IXUSR))) {
-				debug(LOG_ERR, "binauth program does not exist or is not executeable: %s", p1);
+				debug(LOG_ERR, "binauth program does not exist or is not executable: %s", p1);
 				debug(LOG_ERR, "Exiting...");
 				exit(1);
 			}
@@ -987,7 +987,7 @@ config_read(const char *filename)
 		case oPreAuth:
 			config.preauth = safe_strdup(p1);
 			if (!((stat(p1, &sb) == 0) && S_ISREG(sb.st_mode) && (sb.st_mode & S_IXUSR))) {
-				debug(LOG_ERR, "preauth program does not exist or is not executeable: %s", p1);
+				debug(LOG_ERR, "preauth program does not exist or is not executable: %s", p1);
 				debug(LOG_ERR, "Exiting...");
 				exit(1);
 			}

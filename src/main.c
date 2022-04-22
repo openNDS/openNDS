@@ -647,7 +647,7 @@ setup_from_config(void)
 
 	// If PreAuth is enabled, override any FAS configuration and check script exists
 	if (config->preauth) {
-		debug(LOG_NOTICE, "Preauth is Enabled - Overiding FAS configuration.\n");
+		debug(LOG_NOTICE, "Preauth is Enabled - Overriding FAS configuration.\n");
 		debug(LOG_INFO, "Preauth Script is %s\n", config->preauth);
 
 

@@ -42,6 +42,7 @@ install:
 	cp linux_openwrt/opennds/files/etc/config/opennds $(DESTDIR)/etc/opennds/opennds.uci
 	cp resources/splash.css $(DESTDIR)/etc/opennds/htdocs/
 	cp resources/splash.jpg $(DESTDIR)/etc/opennds/htdocs/images/
+	mkdir -p $(DESTDIR)/etc/systemd/system
 	cp resources/opennds.service $(DESTDIR)/etc/systemd/system/
 	mkdir -p $(DESTDIR)/usr/lib/opennds
 	cp forward_authentication_service/binauth/binauth_log.sh $(DESTDIR)/usr/lib/opennds/

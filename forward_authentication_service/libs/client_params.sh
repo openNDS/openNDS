@@ -148,7 +148,7 @@ header() {
 		<meta http-equiv=\"Expires\" content=\"0\">
 		<meta charset=\"utf-8\">
 		<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
-		<link rel=\"shortcut icon\" href=\"$url/images/splash.jpg\" type=\"image/x-icon\">
+		<link rel=\"shortcut icon\" href=\"$url/$imagepath\" type=\"image/x-icon\">
 		<link rel=\"stylesheet\" type=\"text/css\" href=\"$url/splash.css\">
 		<title>$gatewaynamehtml Client Session Status</title>
 		</head>
@@ -171,10 +171,12 @@ footer() {
 	echo "
 		<hr>
 		<div style=\"font-size:0.5em;\">
-			<img style=\"height:30px; width:60px; float:left;\" src=\"$url/images/splash.jpg\" alt=\"Splash Page: For access to the Internet.\">
-			&copy; The openNDS Project 2015 - $year<br>
-			openNDS $version
-			<br><br>
+			<br>
+			<img style=\"width:60px; height:60px; float:left;\" src=\"$url/$imagepath\" alt=\"Splash Page: For access to the Internet.\">
+			&copy; Portal: BlueWave Projects and Services 2015 - $year<br>
+			<br>
+			Portal Version: $version
+			<br><br><br><br>
 		</div>
 		</div>
 		</div>
@@ -288,6 +290,34 @@ if [ -z "$clientip" ]; then
 	exit 1
 fi
 
+# Download remote resources eg. images and html if not already present
+# Images and data files are defined in the openNDS config file using fas_custom_images_list and fas_custom_files_list
+# This is the same set of resources that are used in ThemeSpec PreAuth scripts.
+# Default logo is the openNDS splash image (/etc/opennds/htdocs/images/splash.jpg)
+#
+# An example logo can be found in the git repository (https://raw.githubusercontent.com/openNDS/openNDS/master/resources/avatar.png)
+# In the OpenWrt UCI config file for openNDS, add the line:
+# 	list fas_custom_images_list 'logo_png=https://raw.githubusercontent.com/openNDS/openNDS/master/resources/avatar.png'
+#
+# For more details see:
+# https://opennds.readthedocs.io/en/stable/customparams.html
+#
+# Do the download(s):
+
+# This default status.client page can by example show a custom logo:
+customimagelist=$(uci -q get opennds.@opennds[0].fas_custom_images_list | grep "logo_")
+
+
+if [ ! -z "$customimagelist" ] && [ ! -e "/etc/opennds/htdocs/ndsremote/logo.png" ]; then
+	/usr/lib/opennds/libopennds.sh download "/usr/lib/opennds/download_resources.sh" "" "" "0" "" &>/dev/null
+fi
+
+if [ ! -z "$customimagelist" ] && [ -e "/etc/opennds/htdocs/ndsremote/logo.png" ]; then
+	imagepath="ndsremote/logo.png"
+else
+	imagepath="images/splash.jpg"
+fi
+
 if [ "$status" = "status" ] || [ "$status" = "err511" ]; then
 	parse_parameters
 
@@ -303,21 +333,21 @@ if [ "$status" = "status" ] || [ "$status" = "err511" ]; then
 		ndsctlcmd="b64decode $b64query"
 		do_ndsctl
 		querystr=$ndsctlout	
+
+		# strip off leading "?" character
+		querystr=${querystr:1:1024}
+		queryvarlist=""
+
+		for element in $querystr; do
+			htmlentityencode "$element"
+			element=$entityencoded
+			varname=$(echo "$element" | awk -F'=' '$2!="" {printf "%s", $1}')
+			queryvarlist="$queryvarlist $varname"
+		done
+
+		query=$querystr
+		parse_variables
 	fi
-
-	# strip off leasing "?" character
-	querystr=${querystr:1:1024}
-	queryvarlist=""
-
-	for element in $querystr; do
-		htmlentityencode "$element"
-		element=$entityencoded
-		varname=$(echo "$element" | awk -F'=' '$2!="" {printf "%s", $1}')
-		queryvarlist="$queryvarlist $varname"
-	done
-
-	query=$querystr
-	parse_variables
 
 	header
 	body

@@ -67,6 +67,8 @@ install:
 	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/opennds/authmon.sh
 	cp forward_authentication_service/libs/dnsconfig.sh $(DESTDIR)/usr/lib/opennds/
 	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/opennds/dnsconfig.sh
+	cp forward_authentication_service/libs/download_resources.sh $(DESTDIR)/usr/lib/opennds/
+	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/opennds/download_resources.sh
 	cp forward_authentication_service/libs/post-request.php $(DESTDIR)/usr/lib/opennds/
 	cp forward_authentication_service/fas-aes/fas-aes.php $(DESTDIR)/etc/opennds/
 	cp forward_authentication_service/fas-hid/fas-hid.php $(DESTDIR)/etc/opennds/

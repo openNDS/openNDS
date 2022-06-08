@@ -682,6 +682,7 @@ function insert_css() {
 
 	.insert {
 		background: rgba(350, 350, 350, 0.9);
+		border: 2px solid #aaa;
 		margin: 10px -12px 0;
 		border-radius: 15px;
 		min-width: 200px;

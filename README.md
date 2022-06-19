@@ -1,10 +1,14 @@
 ## 0. The openNDS project
 
-openNDS is a Captive Portal solution that offers an instant way to provide restricted access to the Internet.
+openNDS (a short form of "open Network Demarcation Service") is a Captive Portal.
 
-With little or no configuration, a dynamically generated and adaptive splash page sequence is automatically served. Internet access is granted by either a click to continue button, or after credential verification.
+It provides a border control gateway between a public local area network and the Internet.
 
-The package incorporates the FAS API allowing many flexible customisation options. The creation of sophisticated third party authentication applications is fully supported.
+In its default configuration, openNDS offers a dynamically generated and adaptive splash page sequence. Internet access is granted by a click to continue button, accepting Terms of Service. A simple option enables input forms for user login.
+
+The package incorporates the FAS API allowing many flexible customisation options.
+
+The creation of sophisticated third party authentication applications is fully supported.
 
 Internet hosted **https portals** can be implemented with no security errors, to inspire maximum user confidence.
 

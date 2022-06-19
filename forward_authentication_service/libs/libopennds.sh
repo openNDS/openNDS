@@ -102,6 +102,10 @@ get_image_file() {
 
 	fi
 
+	syslogmessage="Download request for [$imageurl]"
+	debugtype="info"
+	write_to_syslog
+
 	setcontents=""
 
 	customimageroot="/ndsremote"

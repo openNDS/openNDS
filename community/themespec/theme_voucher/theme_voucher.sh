@@ -5,7 +5,7 @@
 #This software is released under the GNU GPL license.
 #
 # Warning - shebang sh is for compatibliity with busybox ash (eg on OpenWrt)
-# This is changed to bash automatically by Makefile for generic Linux
+# This must be changed to bash for use on generic Linux
 #
 
 # Title of this theme:
@@ -84,7 +84,27 @@ check_voucher() {
 		#echo "Invalid Voucher - Voucher must be alphanumeric (and dash) of 9 chars."
 		return 1
 	fi
-	voucher_roll="/usr/lib/opennds/vouchers.txt"
+
+	##############################################################################################################################
+	# WARNING
+	# The voucher roll is written to on every login
+	# If its location is on router flash, this **WILL** result in non-repairable failure of the flash memory
+	# and therefore the router itself. This will happen, most likely within several months depending on the number of logins.
+	#
+	# The location is set here to be the same location as the openNDS log (logdir)
+	# By default this will be on the tmpfs (ramdisk) of the operating system.
+	# Files stored here will not survive a reboot.
+
+	voucher_roll="$logdir""vouchers.txt"
+
+	#
+	# In a production system, the mountpoint for logdir should be changed to the mount point of some external storage
+	# eg a usb stick, an external drive, a network shared drive etc.
+	#
+	# See "Customise the Logfile location" at the end of this file
+	#
+	##############################################################################################################################
+
 	output=$(grep $voucher $voucher_roll | head -n 1) # Store first occurence of voucher as variable
 	#echo "$output <br>" #Matched line
  	if [ $(echo -n $output | wc -w) -ge 1 ]; then 
@@ -468,7 +488,10 @@ fasvarlist="$fasvarlist $additionalthemevars"
 # Set the user info string for logs (this can contain any useful information)
 userinfo="$title"
 
-# Customise the Logfile location. Note: the default uses the tmpfs "temporary" directory to prevent flash wear.
+##############################################################################################################################
+# Customise the Logfile location.
+##############################################################################################################################
+#Note: the default uses the tmpfs "temporary" directory to prevent flash wear.
 # Override the defaults to a custom location eg a mounted USB stick.
 #mountpoint="/mylogdrivemountpoint"
 #logdir="$mountpoint/ndslog/"

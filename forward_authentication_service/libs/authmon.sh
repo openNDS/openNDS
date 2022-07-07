@@ -90,6 +90,7 @@ do_ndsctl
 debuglevel=$(echo "$ndsctlout" | grep "Debug Level" | awk '{printf $4}')
 version=$(echo "$ndsctlout" | grep "Version" | awk '{printf $2}')
 echo "debuglevel=$debuglevel"
+
 # Get PID For syslog
 ndspid=$(pgrep '/usr/bin/opennds')
 
@@ -99,6 +100,9 @@ gatewayhash=$2
 phpcli=$3
 loopinterval=10
 postrequest="/usr/lib/opennds/post-request.php"
+
+# Diagnostic output to stdio. Useful when run in foreground mode
+echo "$1 $2 $3" > /tmp/authmonargs
 
 # Construct our user agent string:
 user_agent="openNDS(authmon;NDS:$version;)"
@@ -118,11 +122,15 @@ fi
 
 # Call postrequest with action.
 # Action can be "list" (list and delete from FAS auth log), "view" (view and leave in FAS auth log) or "clear" (clear any stale FAS auth log entries)
+
 # Initialise by clearing stale FAS auth log entries
 action="clear"
 payload="none"
 ret=$($phpcli -f "$postrequest" "$url" "$action" "$gatewayhash" "$user_agent" "$payload")
 
+if [ $debuglevel -ge 3 ]; then
+	echo "authmon - action $action, response [$ret]" | logger -p "daemon.debug" -s -t "opennds[$ndspid]"
+fi
 
 # Main loop:
 while true; do

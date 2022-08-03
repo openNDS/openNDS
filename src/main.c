@@ -88,6 +88,27 @@ static pthread_t tid_client_check = 0;
 // Time when opennds started
 time_t started_time = 0;
 
+static void catcher(int sig) {
+}
+
+static void ignore_sigpipe(void) {
+	struct sigaction oldsig;
+	struct sigaction sig;
+
+	sig.sa_handler = &catcher;
+	sigemptyset (&sig.sa_mask);
+	#ifdef SA_INTERRUPT
+	sig.sa_flags = SA_INTERRUPT;  /* SunOS */
+	#else
+	sig.sa_flags = SA_RESTART;
+	#endif
+	if (0 != sigaction (SIGPIPE, &sig, &oldsig)) {
+		fprintf (stderr, "Failed to install SIGPIPE handler: %s\n", strerror (errno));
+	}
+}
+
+
+
 /**@internal
  * @brief Handles SIGCHLD signals to avoid zombie processes
  *
@@ -892,6 +913,8 @@ setup_from_config(void)
 	}
 	free(debuglevel);
 
+	write_ndsinfo();
+
 	debug(LOG_NOTICE, "openNDS is now running.\n");
 }
 
@@ -909,6 +932,8 @@ main_loop(void)
 
 	// Set up everything we need based on the configuration
 	setup_from_config();
+
+	ignore_sigpipe();
 
 	// Start watchdog, client statistics and timeout clean-up thread
 	result = pthread_create(&tid_client_check, NULL, thread_client_timeout_check, NULL);
@@ -978,3 +1003,5 @@ int main(int argc, char **argv)
 
 	return 0; // never reached
 }
+
+

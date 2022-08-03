@@ -92,49 +92,53 @@ parse_variables() {
 }
 
 parse_parameters() {
-	ndsctlcmd="json $clientip"
 
-	do_ndsctl
+	if [ "$status" = "status" ]; then
+		ndsctlcmd="json $clientip"
+		do_ndsctl
 
-	if [ "$ndsstatus" = "ready" ]; then
-		param_str=$ndsctlout
+		if [ "$ndsstatus" = "ready" ]; then
+			param_str=$ndsctlout
 
-		for param in gatewayname gatewayaddress gatewayfqdn mac version ip client_type clientif session_start session_end \
-			last_active token state upload_rate_limit_threshold download_rate_limit_threshold \
-			upload_packet_rate upload_bucket_size download_packet_rate download_bucket_size \
-			upload_quota download_quota upload_this_session download_this_session upload_session_avg download_session_avg
-		do
-			val=$(echo "$param_str" | grep "\"$param\":" | awk -F'"' '{printf "%s", $4}')
+			for param in gatewayname gatewayaddress gatewayfqdn mac version ip client_type clientif session_start session_end \
+				last_active token state upload_rate_limit_threshold download_rate_limit_threshold \
+				upload_packet_rate upload_bucket_size download_packet_rate download_bucket_size \
+				upload_quota download_quota upload_this_session download_this_session upload_session_avg download_session_avg
+			do
+				val=$(echo "$param_str" | grep "\"$param\":" | awk -F'"' '{printf "%s", $4}')
 
-			if [ "$val" = "null" ]; then
-				val="Unlimited"
-			fi
+				if [ "$val" = "null" ]; then
+					val="Unlimited"
+				fi
 
-			if [ -z "$val" ]; then
-				eval $param=$(echo "Unavailable")
+				if [ -z "$val" ]; then
+					eval $param=$(echo "Unavailable")
+				else
+					eval $param=$(echo "\"$val\"")
+				fi
+			done
+
+			# url decode and html entity encode gatewayname
+			gatewayname_dec=$(printf "${gatewayname//%/\\x}")
+			htmlentityencode "$gatewayname_dec"
+			gatewaynamehtml=$entityencoded
+
+			# Get client_zone from clientif
+			get_client_zone
+
+			# Get human readable times:
+			sessionstart=$(date -d @$session_start)
+
+			if [ "$session_end" = "Unlimited" ]; then
+				sessionend=$session_end
 			else
-				eval $param=$(echo "\"$val\"")
+				sessionend=$(date -d @$session_end)
 			fi
-		done
 
-		# url decode and html entity encode gatewayname
-		gatewayname_dec=$(printf "${gatewayname//%/\\x}")
-		htmlentityencode "$gatewayname_dec"
-		gatewaynamehtml=$entityencoded
-
-		# Get client_zone from clientif
-		get_client_zone
-
-		# Get human readable times:
-		sessionstart=$(date -d @$session_start)
-
-		if [ "$session_end" = "Unlimited" ]; then
-			sessionend=$session_end
-		else
-			sessionend=$(date -d @$session_end)
+			lastactive=$(date -d @$last_active)
 		fi
-
-		lastactive=$(date -d @$last_active)
+	else
+		. /tmp/ndscids/ndsinfo
 	fi
 }
 

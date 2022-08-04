@@ -90,8 +90,10 @@ void start_mhd(void)
 			config->gw_port,
 			NULL, NULL,
 			libmicrohttpd_cb, NULL,
+			MHD_OPTION_CONNECTION_LIMIT, (unsigned int) 100,
 			MHD_OPTION_CONNECTION_TIMEOUT, (unsigned int) 120,
 			MHD_OPTION_LISTENING_ADDRESS_REUSE, 1,
+			MHD_OPTION_LISTEN_BACKLOG_SIZE, (unsigned int) 128,
 			MHD_OPTION_END))
 				== NULL) {
 			debug(LOG_ERR, "Could not create web server: %s", strerror(errno));
@@ -105,8 +107,10 @@ void start_mhd(void)
 			config->gw_port,
 			NULL, NULL,
 			libmicrohttpd_cb, NULL,
+			MHD_OPTION_CONNECTION_LIMIT, (unsigned int) 100,
 			MHD_OPTION_CONNECTION_TIMEOUT, (unsigned int) 120,
 			MHD_OPTION_LISTENING_ADDRESS_REUSE, 1,
+			MHD_OPTION_LISTEN_BACKLOG_SIZE, (unsigned int) 128,
 			MHD_OPTION_UNESCAPE_CALLBACK, unescape, NULL,
 			MHD_OPTION_END))
 				== NULL) {
@@ -1622,7 +1626,7 @@ static int send_error(struct MHD_Connection *connection, int error)
 	case 511:
 		get_client_ip(ip, connection);
 
-		page_511 = safe_calloc(HTMLMAXSIZE);
+		page_511 = safe_calloc(SMALL_BUF * 2);
 		safe_asprintf(&cmd, "%s err511 '%s'", config->status_path, ip);
 
 		if (execute_ret_url_encoded(page_511, HTMLMAXSIZE - 1, cmd) == 0) {
@@ -1631,15 +1635,22 @@ static int send_error(struct MHD_Connection *connection, int error)
 		free(cmd);
 
 		response = MHD_create_response_from_buffer(strlen(page_511), (char *)page_511, MHD_RESPMEM_MUST_FREE);
-		MHD_add_response_header(response, "Content-Type", mimetype);
-		ret = MHD_queue_response(connection, MHD_HTTP_NETWORK_AUTHENTICATION_REQUIRED, response);
 
-		if (ret == MHD_NO) {
-			debug(LOG_ERR, "send_error 511: Error queueing response");
-		} else {
-			debug(LOG_DEBUG, "send_error 511: Response is Queued");
+		if (response) {
+			MHD_add_response_header(response, "Content-Type", mimetype);
+			MHD_add_response_header(response, MHD_HTTP_HEADER_CONNECTION, "close");
+			ret = MHD_queue_response(connection, MHD_HTTP_NETWORK_AUTHENTICATION_REQUIRED, response);
+
+			if (ret == MHD_NO) {
+				debug(LOG_ERR, "send_error 511: Error queueing response");
+			} else {
+				debug(LOG_DEBUG, "send_error 511: Response is Queued");
+			}
+
+			break;
 		}
 
+		debug(LOG_ERR, "send_error 511: Error queueing response");
 		break;
 	}
 

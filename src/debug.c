@@ -41,6 +41,7 @@ static int do_log(int level, int debuglevel) {
 	switch (level) {
 		case LOG_EMERG:
 		case LOG_ERR:
+		case LOG_CRIT:
 			// quiet
 			return (debuglevel >= 0);
 		case LOG_WARNING:

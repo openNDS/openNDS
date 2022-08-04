@@ -189,6 +189,63 @@ int stopdaemon(int daemonpid)
 	return ret;
 }
 
+int write_ndsinfo(void)
+{
+	char *cmd;
+	char *msg;
+	char write_yes[] = "done";
+
+	s_config *config = config_get_config();
+
+	msg = safe_calloc(SMALL_BUF);
+	safe_asprintf(&cmd,
+		"/usr/lib/opennds/libopennds.sh write ndsinfo '%s' 'tmpfsmountpoint=\"%s\"'",
+		config->tmpfsmountpoint,
+		config->tmpfsmountpoint
+	);
+	execute_ret_url_encoded(msg, SMALL_BUF - 1, cmd);
+
+	msg = safe_calloc(SMALL_BUF);
+	safe_asprintf(&cmd,
+		"/usr/lib/opennds/libopennds.sh write ndsinfo '%s' 'gatewaynamehtml=\"%s\"'",
+		config->tmpfsmountpoint,
+		config->http_encoded_gw_name
+	);
+	execute_ret_url_encoded(msg, SMALL_BUF - 1, cmd);
+
+	msg = safe_calloc(SMALL_BUF);
+	safe_asprintf(&cmd,
+		"/usr/lib/opennds/libopennds.sh write ndsinfo '%s' 'gatewayaddress=\"%s\"'",
+		config->tmpfsmountpoint,
+		config->gw_ip
+	);
+	execute_ret_url_encoded(msg, SMALL_BUF - 1, cmd);
+
+	msg = safe_calloc(SMALL_BUF);
+	safe_asprintf(&cmd,
+		"/usr/lib/opennds/libopennds.sh write ndsinfo '%s' 'gatewayfqdn=\"%s\"'",
+		config->tmpfsmountpoint,
+		config->gw_fqdn
+	);
+	execute_ret_url_encoded(msg, SMALL_BUF - 1, cmd);
+
+	msg = safe_calloc(SMALL_BUF);
+	safe_asprintf(&cmd,
+		"/usr/lib/opennds/libopennds.sh write ndsinfo '%s' 'version=%s'",
+		config->tmpfsmountpoint,
+		VERSION
+	);
+	execute_ret_url_encoded(msg, SMALL_BUF - 1, cmd);
+
+	if (strcmp(msg, write_yes) != 0) {
+		debug(LOG_ERR, "Unable to write ndsinfo, exiting ...");
+		exit(1);
+	}
+
+	free(msg);
+	free(cmd);
+}
+
 int check_routing(int watchdog)
 {
 	// Check routing configuration

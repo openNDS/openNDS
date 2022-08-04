@@ -272,13 +272,9 @@ body() {
 	elif [ "$status" = "err511" ]; then
 
 		pagebody="
-			<h1>Network Authentication Required</h1>
-			<form action=\"$url\" method=\"get\">
-			<input type=\"submit\" value=\"Refresh\">
-			</form>
-			<br>
+			<h1>To login, click or tap the Continue button</h1>
 			<form action=\"$url/login\" method=\"get\" target=\"_blank\">
-			<input type=\"submit\" value=\"Portal Login\" >
+			<input type=\"submit\" value=\"Continue\" >
 			</form>
 		"
 

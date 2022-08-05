@@ -43,14 +43,14 @@ You can find a release version number for openNDS at https://github.com/openNDS/
 
 .. code::
 
- wget https://codeload.github.com/opennds/opennds/tar.gz/v7.0.1
- tar -xf v9.1.0
- cd openNDS-9.1.0
+ wget https://codeload.github.com/opennds/opennds/tar.gz/v9.8.0
+ tar -xf v9.8.0
+ cd openNDS-9.8.0
  make
  sudo make install
  sudo systemctl enable opennds
 
-Where "9.1.0" is the openNDS version we are using in this example.
+Where "9.8.0" is the openNDS version we are using in this example.
 
 openNDS should now start automatically at boot time.
 

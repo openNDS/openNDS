@@ -1,6 +1,35 @@
 What's New? - ChangeLog
 #######################
 
+opennds (9.8.0)
+
+  * This version adds new functionality, and fixes some issues
+  * Fix - Remove deprecated Debian specific files [bluewavenet]
+  * Add - More css updates [bluewavenet]
+  * Add - user friendly RFC8910 page511 text and remove refresh button [bluewavenet]
+  * Fix - MHD becomes unresponsive serving page 511 for rfc8910 clients [bluewavenet]
+  * Add - extra startup settings - ignore_sigpipe and write nds info [bluewavenet]
+  * Add - set MHD connection limit to 100, set MHD listen backlog size to 128, set MHD_HTTP_HEADER_CONNECTION "close" [bluewavenet]
+  * Fix - Add missing LOG_CRIT in debug [bluewavenet]
+  * Add - some useful diagnostic output in authmon [bluewavenet]
+  * Fix - Move testing to community [bluewavenet]
+  * Fix - Community - Use tmpfs by default for vouchers.txt file [bluewavenet]
+  * Add - README with use instructions and notice about flash wearout [fservida]
+  * Fix - Refactor folder structure for community themespec [fservida]
+  * Add - Create vouchers.txt [fservida]
+  * Add - Create theme_voucher.sh [fservida]
+  * Update - README.md [bluewavenet]
+  * Add - image download info message [bluewavenet]
+  * Add - css updates [dianariyanto]
+  * Add - allow downloaded remotes refresh for all modes [bluewavenet]
+  * Add - download_resources.sh to installed files [bluewavenet]
+  * Add - support for download of custom images and files in the status.client page [bluewavenet]
+  * Remove - Debian man page support [bluewavenet]
+  * Fix - Add missing mkdir command in Makefile [dzatoah]
+  * Fix - typos in src/{conf, main}.c [dzatoah]
+
+ -- Rob White <dot@blue-wave.net>  Wed, 05 Aug 2022 15:00:13 +0000
+
 opennds (9.7.0)
 
   * This version adds new functionality, and fixes some issues

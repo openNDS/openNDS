@@ -45,10 +45,12 @@ footer() {
 	echo "
 		<hr>
 		<div style=\"font-size:0.5em;\">
-			<img style=\"height:30px; width:60px; float:left;\" src=\"$imagepath\" alt=\"Splash Page: For access to the Internet.\">
-			&copy; The openNDS Project 2015 - $year<br>
-			openNDS $version
-			<br><br>
+			<br>
+			<img style=\"height:60px; width:60px; float:left;\" src=\"$imagepath\" alt=\"Splash Page: For access to the Internet.\">
+			&copy; Portal: BlueWave Projects and Services 2015 - $year<br>
+			<br>
+			Portal Version: $version
+			<br><br><br><br>
 		</div>
 		</div>
 		</div>
@@ -58,8 +60,6 @@ footer() {
 
 	exit 0
 }
-
-
 
 name_email_login() {
 	# In this example, we check that both the username and email address fields have been filled in.

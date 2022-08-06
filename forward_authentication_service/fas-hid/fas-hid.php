@@ -409,9 +409,9 @@ function footer() {
 	echo "
 		<hr>
 		<div style=\"font-size:0.5em;\">
-			<img style=\"height:30px; width:60px; float:left;\" src=\"$imagepath\" alt=\"Splash Page: For access to the Internet.\">
+			<img style=\"height:60px; width:60px; float:left;\" src=\"$imagepath\" alt=\"Splash Page: For access to the Internet.\">
 			&copy; The openNDS Project 2015 - $year<br>
-			openNDS $version
+			Portal Version: $version
 			<br><br>
 		</div>
 		</div>
@@ -614,34 +614,32 @@ function insert_css() {
 	}
 
 	hr {
-		display: block;
-		margin-top: 0.5em;
-		margin-bottom: 0.5em;
-		margin-left: auto;
-		margin-right: auto;
-		border-style: inset;
-		margin: 10px 0;
-		border: 2px solid rgba(0, 0, 0, 0.1);
-		border-radius: 3px;
+		display:block;
+		margin-top:0.5em;
+		margin-bottom:0.5em;
+		margin-left:auto;
+		margin-right:auto;
+		border-style:inset;
+		border-width:5px;
 	}
 
 	.offset {
 		background: rgba(300, 300, 300, 0.6);
-		margin: auto;
-		padding: 20px 24px 10px;
-		max-width: 600px;
-		min-width: 210px;
-		border-radius: 15px;
+		border-radius: 10px;
+		margin-left:auto;
+		margin-right:auto;
+		max-width:600px;
+		min-width:200px;
+		padding: 5px;
 	}
 
 	.insert {
-		background: rgba(350, 350, 350, 0.9);
+		background: rgba(350, 350, 350, 0.7);
 		border: 2px solid #aaa;
-		margin: 10px -12px 0;
-		border-radius: 15px;
-		min-width: 200px;
-		max-width: 100%;
-		padding: 15px 15px 20px;
+		border-radius: 10px;
+		min-width:200px;
+		max-width:100%;
+		padding: 5px;
 	}
 
 	.insert > h1 {
@@ -666,7 +664,7 @@ function insert_css() {
 	}
 
 	input[type=submit], input[type=button] {
-		font-size: 1em;
+			font-size: 1em;
 		line-height: 2em;
 		height: 2em;
 		font-weight: bold;

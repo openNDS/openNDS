@@ -13,9 +13,9 @@ If the client has been authenticated in the normal way by the client CPD process
 
 A list of allowed quotas and current usage is displayed along with "Refresh" and "Logout" buttons.
 
-If the client has not been authenticated, or has been deauthenticated due to timeout or quota usage, then a "*Error 511 Network Authentication Required*" page is displayed with "Refresh" and "Portal Login" buttons.
+If the client has not been authenticated, or has been deauthenticated due to timeout or quota usage, then a "*Error 511 Network Authentication Required*" page is displayed with a "Continue" button for logging in.
 
-The "Portal Login" button allows the client to immediately attempt to login without waiting for the client CPD to trigger.
+The "Continue" button allows the client to immediately attempt to login without waiting for the client CPD to trigger.
 
 The URL used to access this page can be changed by setting the config option gatewayfqdn.
 
@@ -35,6 +35,26 @@ For best results it is recommended that gatewayfqdn is set to two words separate
 An alternate Useful Example:
 
 ``option gatewayfqdn 'login.page'``
+
+Custom Files and Images
+***********************
+Custom files and images can be included in the Status Page.
+These can be used to display useful information, advertisements, logos etc..
+By default the standard openNDS logo is displayed, but a venue or company logo can be displayed by simply configuring in the openNDS config.
+
+For example, to display the OpenWrt logo, add the following line to the openNDS config:
+
+``list fas_custom_images_list 'logo_png=https://openwrt.org/_media/logo.png'``
+
+Custom downloaded images are stored in ``/etc/opennds/htdocs/ndsremote/``
+
+and custom files are stored in ``/etc/opennds/htdocs/ndsdata/``
+
+Both image files and data files are refreshed according to the openNDS remotes_refresh_interval option. For example to refresh every 10 minutes, include the config:
+
+``option remotes_refresh_interval '10'``
+
+This means that the remote source can be set up to provide a different file at every refresh interval, particularly useful for providing dynamic news or advertising in a custom status page.
 
 Custom Status Page
 ******************

@@ -16,7 +16,8 @@ openNDS is released under the GNU General Public License.
 * openNDS: https://github.com/openNDS/openNDS
 * Original Homepage *down*: http://kokoro.ucsd.edu/nodogsplash
 * Archive: https://web.archive.org/web/20140210131130/http://kokoro.ucsd.edu/nodogsplash
-* Wifidog: http://dev.wifidog.org/
+* Wifidog *down*: http://dev.wifidog.org/
+* Archive: https://web.archive.org/web/20220518120459/http://dev.wifidog.org/wiki/About
 * NoDogSplash: https://github.com/nodogsplash/nodogsplash
 * GNU GPL: http://www.gnu.org/copyleft/gpl.html
 

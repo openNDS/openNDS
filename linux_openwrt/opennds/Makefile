@@ -6,8 +6,8 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=opennds
-PKG_VERSION:=9.8.0beta
-PKG_RELEASE:=2
+PKG_VERSION:=9.8.0
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/opennds/opennds/tar.gz/v$(PKG_VERSION)?
@@ -30,13 +30,10 @@ define Package/opennds
 	# For post OpenWrt 21.02.xx nft support:
   DEPENDS:=+iptables-nft +kmod-ipt-conntrack +kmod-ipt-nat +libmicrohttpd-no-ssl
 	# For OpenWrt 21.02.xx and earlier, ipt support:
-	#DEPENDS:=+libpthread +iptables-mod-ipopt +libmicrohttpd-no-ssl
+	# D@EPENDS:=+kmod-ipt-conntrack +kmod-ipt-nat +libmicrohttpd-no-ssl
   TITLE:=Open public network gateway daemon
   URL:=https://github.com/opennds/opennds
-	# For post OpenWrt 21.02.xx nft support:
-  CONFLICTS:=nodogsplash nodogsplash2 iptables-legacy
-	# For OpenWrt 21.02.xx and earlier, ipt support:
-	#CONFLICTS:=nodogsplash nodogsplash2
+  CONFLICTS:=nodogsplash
 endef
 
 define Package/opennds/description

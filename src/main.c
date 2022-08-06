@@ -915,6 +915,12 @@ setup_from_config(void)
 
 	write_ndsinfo();
 
+	// Test for Y2.038K bug
+
+	if (sizeof(time_t) == 4) {
+		debug(LOG_WARNING, "WARNING - Year 2038 bug detected in system (32 bit time). Continuing.....");
+	}
+
 	debug(LOG_NOTICE, "openNDS is now running.\n");
 }
 

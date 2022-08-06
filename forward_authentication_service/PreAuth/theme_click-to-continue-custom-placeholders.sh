@@ -65,9 +65,9 @@ footer() {
 	echo "
 		<hr>
 		<div style=\"font-size:0.5em;\">
-			<img style=\"height:30px; width:60px; float:left;\" src=\"$imagepath\" alt=\"Splash Page: For access to the Internet.\">
+			<img style=\"height:60px; width:60px; float:left;\" src=\"$imagepath\" alt=\"Splash Page: For access to the Internet.\">
 			&copy; The openNDS Project 2015 - $year<br>
-			openNDS $version
+			Portal Version: $version
 			<br><br>
 		</div>
 		</div>

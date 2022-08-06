@@ -43,9 +43,9 @@ footer() {
 	echo "
 		<hr>
 		<div style=\"font-size:0.5em;\">
-			<img style=\"height:30px; width:60px; float:left;\" src=\"$imagepath\" alt=\"Splash Page: For access to the Internet.\">
+			<img style=\"height:60px; width:60px; float:left;\" src=\"$imagepath\" alt=\"Splash Page: For access to the Internet.\">
 			&copy; The openNDS Project 2015 - $year<br>
-			openNDS $version
+			Portal Version: $version
 			<br><br>
 		</div>
 		</div>
@@ -117,8 +117,6 @@ check_voucher() {
 		voucher_quota_up=$(echo -n $output | sed -r "s#([a-zA-Z0-9-]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+)#\5#")
 		voucher_time_limit=$(echo -n $output | sed -r "s#([a-zA-Z0-9-]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+)#\6#")
 		voucher_first_punched=$(echo -n $output | sed -r "s#([a-zA-Z0-9-]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+)#\7#")
-		#echo "Voucher: $voucher_token, Speed Down: $voucher_rate_down, Speed Up: $voucher_rate_up, Max Down: $voucher_quota_down, Max Up: $voucher_quota_up, Validity: $voucher_time_limit, Used on: $voucher_first_punched <br>"
-		#echo "Current Time: $current_time <br>"
 		
 		# Set limits according to voucher
 		upload_rate=$voucher_rate_up

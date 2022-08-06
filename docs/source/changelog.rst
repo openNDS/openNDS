@@ -4,6 +4,7 @@ What's New? - ChangeLog
 opennds (9.8.0)
 
   * This version adds new functionality, and fixes some issues
+  * Add - Check on startup for Y2.038K bug (32 bit time) [bluewavenet]
   * Fix - Remove deprecated Debian specific files [bluewavenet]
   * Add - More css updates [bluewavenet]
   * Add - user friendly RFC8910 page511 text and remove refresh button [bluewavenet]

@@ -75,7 +75,7 @@ int count_substrings(char* string, char* substring);
 int stopdaemon(int daemonpid);
 
 // @brief write_ndsinfo
-int write_ndsinfo(void);
+void write_ndsinfo(void);
 
 /* @brief writes an element or elements of client info to the cidfile,
  * mode can be:

@@ -189,7 +189,7 @@ int stopdaemon(int daemonpid)
 	return ret;
 }
 
-int write_ndsinfo(void)
+void write_ndsinfo(void)
 {
 	char *cmd;
 	char *msg;

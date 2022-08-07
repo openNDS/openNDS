@@ -138,7 +138,8 @@ parse_parameters() {
 			lastactive=$(date -d @$last_active)
 		fi
 	else
-		. /tmp/ndscids/ndsinfo
+		mountpoint=$(/usr/lib/opennds/libopennds.sh tmpfs)
+		. $mountpoint/ndscids/ndsinfo
 	fi
 }
 
@@ -305,7 +306,15 @@ fi
 # Do the download(s):
 
 # This default status.client page can by example show a custom logo:
-customimagelist=$(uci -q get opennds.@opennds[0].fas_custom_images_list | grep "logo_")
+ucipath=$(type uci)
+retcode="$?"
+
+if [ "$retcode" = "0" ]; then
+	customimagelist=$(uci -q get opennds.@opennds[0].fas_custom_images_list | grep "logo_")
+else
+	#not supported
+	customimagelist=""
+fi
 
 
 if [ ! -z "$customimagelist" ] && [ ! -e "/etc/opennds/htdocs/ndsremote/logo.png" ]; then

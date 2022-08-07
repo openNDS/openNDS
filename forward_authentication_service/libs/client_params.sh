@@ -306,7 +306,7 @@ fi
 # Do the download(s):
 
 # This default status.client page can by example show a custom logo:
-ucipath=$(type uci)
+ucipath=$(type uci &>/dev/null)
 retcode="$?"
 
 if [ "$retcode" = "0" ]; then

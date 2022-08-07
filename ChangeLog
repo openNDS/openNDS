@@ -1,6 +1,14 @@
 opennds (9.8.0)
 
   * This version adds new functionality, and fixes some issues
+  * Fix - suppress stderr in client_params in generic linux [bluewavenet]
+  * Fix - client_params on generic linux, remote logo not supported yet [bluewavenet]
+  * Fix - compiler warning [bluewavenet]
+  * Fix - set voucher script as executable [bluewavenet]
+  * Update OpenWrt Makefile [bluewavenet]
+  * Add - format footer in Themespec scripts [bluewavenet]
+  * Update footer on all scripts [bluewavenet]
+  * Update - Community Voucher Themespec [bluewavenet]
   * Add - Check on startup for Y2.038K bug (32 bit time) [bluewavenet]
   * Fix - Remove deprecated Debian specific files [bluewavenet]
   * Add - More css updates [bluewavenet]

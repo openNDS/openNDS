@@ -122,9 +122,9 @@ write:
 
         arg2: contains the cid (client id)
 
-        arg2: contains mountpoint of the ndscids database
+        arg3: contains mountpoint of the ndscids database
 
-        arg3: contains info element
+        arg4: contains info element
 
     *returns*: "done"
 

@@ -65,7 +65,7 @@ static int send_error(struct MHD_Connection *connection, int error);
 static int send_redirect_temp(struct MHD_Connection *connection, t_client *client, const char *url);
 static int is_foreign_hosts(struct MHD_Connection *connection, const char *host);
 static int get_query(struct MHD_Connection *connection, char **collect_query, const char *separator);
-static char *construct_querystring(t_client *client, char *originurl, char *querystr);
+static char *construct_querystring(struct MHD_Connection *connection, t_client *client, char *originurl, char *querystr);
 static const char *get_redirect_url(struct MHD_Connection *connection);
 static const char *lookup_mimetype(const char *filename);
 
@@ -615,7 +615,7 @@ static int authenticate_client(struct MHD_Connection *connection,
 			debug(LOG_DEBUG, "redirect_url after binauth deny: %s", redirect_url);
 			debug(LOG_DEBUG, "redirect_url_enc after binauth deny: %s", redirect_url_enc);
 
-			querystr=construct_querystring(client, redirect_url_enc, querystr);
+			querystr=construct_querystring(connection, client, redirect_url_enc, querystr);
 			ret = encode_and_redirect_to_splashpage(connection, client, redirect_url_enc, querystr);
 			return ret;
 		}
@@ -758,9 +758,14 @@ static int authenticated(struct MHD_Connection *connection,
 		auth_client_deauth(client->id, "client_deauth");
 		debug(LOG_DEBUG, "Post deauth redirection [%s]", config->gw_address);
 		redirect_to_us = safe_calloc(QUERYMAXLEN);
-			safe_asprintf(&redirect_to_us, "http://%s/",
-				config->gw_address
-			);
+
+		if (!redirect_to_us) {
+			ret = send_error(connection, 503);
+			free(redirect_to_us);
+			return ret;
+		}
+
+		safe_asprintf(&redirect_to_us, "http://%s/", config->gw_address);
 
 		return send_redirect_temp(connection, client, redirect_to_us);
 	}
@@ -770,7 +775,21 @@ static int authenticated(struct MHD_Connection *connection,
 
 		if (config->fas_port && !config->preauth) {
 			query = safe_calloc(QUERYMAXLEN);
+
+			if (!query) {
+				ret = send_error(connection, 503);
+				free(query);
+				return ret;
+			}
+
 			fasurl = safe_calloc(QUERYMAXLEN);
+
+			if (!fasurl) {
+				ret = send_error(connection, 503);
+				free(fasurl);
+				return ret;
+			}
+
 			get_query(connection, &query, HTMLQUERYSEPARATOR);
 			safe_asprintf(&fasurl, "%s%s%sstatus=authenticated",
 				config->fas_url,
@@ -805,6 +824,13 @@ static int authenticated(struct MHD_Connection *connection,
 
 		if (config->fas_port) {
 			query = safe_calloc(QUERYMAXLEN);
+
+			if (!query) {
+				ret = send_error(connection, 503);
+				free(query);
+				return ret;
+			}
+
 			get_query(connection, &query, QUERYSEPARATOR);
 
 			safe_asprintf(&fasurl, "%s%sstatus=authenticated",
@@ -823,16 +849,36 @@ static int authenticated(struct MHD_Connection *connection,
 	// User just entered gatewayaddress:gatewayport so give them the info page
 	if (strcmp(url, "/") == 0 || strcmp(url, "/login") == 0) {
 		query = safe_calloc(QUERYMAXLEN);
+
+		if (!query) {
+			ret = send_error(connection, 503);
+			free(query);
+			return ret;
+		}
+
 		get_query(connection, &query, QUERYSEPARATOR);
 		debug(LOG_DEBUG, "status_query=[%s]", query);
 
 		buff = safe_calloc(MID_BUF);
+
+		if (!buff) {
+			ret = send_error(connection, 503);
+			free(buff);
+			return ret;
+		}
 
 		b64_encode(buff, MID_BUF, query, strlen(query));
 
 		debug(LOG_DEBUG, "b64_status_query=[%s]", buff);
 
 		msg = safe_calloc(HTMLMAXSIZE);
+
+		if (!msg) {
+			ret = send_error(connection, 503);
+			free(msg);
+			return ret;
+		}
+
 		rc = execute_ret(msg, HTMLMAXSIZE - 1, "%s status '%s' '%s'", config->status_path, client->ip, buff);
 
 		if (rc != 0) {
@@ -891,6 +937,12 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 
 		msg = safe_calloc(HTMLMAXSIZE);
 
+		if (!msg) {
+			ret = send_error(connection, 503);
+			free(msg);
+			return ret;
+		}
+
 		safe_asprintf(&cmd, "%s '%s' '%s' '%d' '%s'", config->preauth, enc_query, enc_user_agent, config->login_option_enabled, config->themespec_path);
 		rc = execute_ret_url_encoded(msg, HTMLMAXSIZE - 1, cmd);
 		free(cmd);
@@ -929,16 +981,23 @@ static int send_json(struct MHD_Connection *connection, const char *json)
 	int ret;
 	struct MHD_Response *response;
 
-	msg = safe_calloc(HTMLMAXSIZE);
-	snprintf(msg, HTMLMAXSIZE, "%s", json);
+	msg = safe_calloc(SMALL_BUF * 2);
+
+	if (!msg) {
+		ret = send_error(connection, 503);
+		free(msg);
+		return ret;
+	}
+
+	safe_asprintf(&msg, "%s", json);
 
 	debug(LOG_DEBUG, "json string [%s],  buffer [%s]", json, msg);
 
 	response = MHD_create_response_from_buffer(strlen(msg), (char *)msg, MHD_RESPMEM_MUST_FREE);
 
 	if (!response) {
-		ret = send_error(connection, 503);
 		free(msg);
+		ret = send_error(connection, 503);
 		return ret;
 	}
 
@@ -957,9 +1016,7 @@ static int send_json(struct MHD_Connection *connection, const char *json)
  * @param mac
  * @return
  */
-static int preauthenticated(struct MHD_Connection *connection,
-							const char *url,
-							t_client *client)
+static int preauthenticated(struct MHD_Connection *connection, const char *url, t_client *client)
 {
 	s_config *config = config_get_config();
 	const char *host = config->gw_address;
@@ -997,7 +1054,7 @@ static int preauthenticated(struct MHD_Connection *connection,
 
 	if (accept && strcmp(accept, "application/captive+json") == 0) {
 		debug(LOG_DEBUG, "preauthenticated: Accept header [%s]", accept);
-		debug(LOG_INFO, "preauthenticated: RFC 8908 captive+json request received from client at [%s] [%s]", client->ip, client->mac);
+		debug(LOG_NOTICE, "preauthenticated: RFC 8908 captive+json request received from client at [%s] [%s]", client->ip, client->mac);
 
 		client->client_type = "cpi_api";
 
@@ -1011,11 +1068,25 @@ static int preauthenticated(struct MHD_Connection *connection,
 		debug(LOG_DEBUG, "originurl: %s", originurl);
 
 		querystr = safe_calloc(QUERYMAXLEN);
-		querystr=construct_querystring(client, originurl, querystr);
-		debug(LOG_NOTICE, "Constructed query string [%s]", querystr);
-		debug(LOG_NOTICE, "FAS url [%s]", config->fas_url);
+
+		if (!querystr) {
+			ret = send_error(connection, 503);
+			free(querystr);
+			return ret;
+		}
+
+		querystr=construct_querystring(connection, client, originurl, querystr);
+		debug(LOG_DEBUG, "Constructed query string [%s]", querystr);
+		debug(LOG_DEBUG, "FAS url [%s]", config->fas_url);
 
 		captive_json = safe_calloc(QUERYMAXLEN);
+
+		if (!captive_json) {
+			ret = send_error(connection, 503);
+			free(captive_json);
+			return ret;
+		}
+
 		safe_asprintf(&captive_json, "{ \"captive\": true, \"user-portal-url\": \"%s%s\" }", config->fas_url, querystr);
 
 		debug(LOG_DEBUG, "captive_json [%s]", captive_json);
@@ -1039,6 +1110,13 @@ static int preauthenticated(struct MHD_Connection *connection,
 
 		debug(LOG_DEBUG, "preauthdir url detected: %s", url);
 		query = safe_calloc(QUERYMAXLEN);
+
+		if (!query) {
+			ret = send_error(connection, 503);
+			free(query);
+			return ret;
+		}
+
 		get_query(connection, &query, QUERYSEPARATOR);
 		debug(LOG_DEBUG, "preauthenticated: show_preauthpage [%s]", query);
 		ret = show_preauthpage(connection, query);
@@ -1076,7 +1154,14 @@ static int preauthenticated(struct MHD_Connection *connection,
 			// user used an invalid token, redirect to splashpage but hold query "redir" intact
 			uh_urlencode(originurl, sizeof(originurl), redirect_url, strlen(redirect_url));
 			querystr = safe_calloc(QUERYMAXLEN);
-			querystr = construct_querystring(client, originurl, querystr);
+
+			if (!querystr) {
+				ret = send_error(connection, 503);
+				free(querystr);
+				return ret;
+			}
+
+			querystr = construct_querystring(connection, client, originurl, querystr);
 
 			ret = encode_and_redirect_to_splashpage(connection, client, originurl, querystr);
 			free(querystr);
@@ -1145,8 +1230,23 @@ static int redirect_to_splashpage(struct MHD_Connection *connection, t_client *c
 	char *querystr;
 
 	query = safe_calloc(QUERYMAXLEN);
+
+	if (!query) {
+		ret = send_error(connection, 503);
+		free(query);
+		return ret;
+	}
+
 	querystr = safe_calloc(QUERYMAXLEN);
+
+	if (!querystr) {
+		ret = send_error(connection, 503);
+		free(querystr);
+		return ret;
+	}
+
 	get_query(connection, &query, separator);
+
 	if (!query) {
 		debug(LOG_DEBUG, "Unable to get query string - error 503");
 		free(query);
@@ -1159,7 +1259,7 @@ static int redirect_to_splashpage(struct MHD_Connection *connection, t_client *c
 	uh_urlencode(originurl, sizeof(originurl), originurl_raw, strlen(originurl_raw));
 	debug(LOG_DEBUG, "originurl: %s", originurl);
 
-	querystr=construct_querystring(client, originurl, querystr);
+	querystr=construct_querystring(connection, client, originurl, querystr);
 	ret = encode_and_redirect_to_splashpage(connection, client, originurl, querystr);
 	free(originurl_raw);
 	free(query);
@@ -1171,7 +1271,7 @@ static int redirect_to_splashpage(struct MHD_Connection *connection, t_client *c
  * @brief construct_querystring
  * @return the querystring
  */
-static char *construct_querystring(t_client *client, char *originurl, char *querystr ) {
+static char *construct_querystring(struct MHD_Connection *connection, t_client *client, char *originurl, char *querystr ) {
 
 	char cid[87] = {0};
 	char *clienttype;
@@ -1379,17 +1479,20 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 
 		msg = safe_calloc(QUERYMAXLEN);
 
-		if (! execute_ret_url_encoded(msg, QUERYMAXLEN - 1, phpcmd) == 0) {
-			debug(LOG_ERR, "Error encrypting query string. %s", msg);
+		if (!msg) {
+			send_error(connection, 503);
+			free(msg);
+		} else {
+
+			if (! execute_ret_url_encoded(msg, QUERYMAXLEN - 1, phpcmd) == 0) {
+				debug(LOG_ERR, "Error encrypting query string. %s", msg);
+			}
+
+			snprintf(querystr, QUERYMAXLEN, "%s", msg);
+
+			free(msg);
+			free(phpcmd);
 		}
-
-		snprintf(querystr, QUERYMAXLEN,
-			"%s",
-			msg
-		);
-
-		free(msg);
-		free(phpcmd);
 
 	} else {
 		snprintf(querystr, QUERYMAXLEN, "?clientip=%s&gatewayname=%s", client->ip, config->url_encoded_gw_name);
@@ -1571,9 +1674,9 @@ static int send_error(struct MHD_Connection *connection, int error)
 	const char *page_400 = "<html><head><title>Error 400</title></head><body><h1>Error 400 - Bad Request</h1></body></html>";
 	const char *page_403 = "<html><head><title>Error 403</title></head><body><h1>Error 403 - Forbidden - Access Denied to this Client!</h1></body></html>";
 	const char *page_404 = "<html><head><title>Error 404</title></head><body><h1>Error 404 - Not Found</h1></body></html>";
-	const char *page_500 = "<html><head><title>Error 500</title></head><body><h1>Error 500 - Internal Server Error. Oh no!</h1></body></html>";
+	const char *page_500 = "<html><head><title>Error 500</title></head><body><h1>Error 500 - Internal Server Error: Oh no!</h1></body></html>";
 	const char *page_501 = "<html><head><title>Error 501</title></head><body><h1>Error 501 - Not Implemented</h1></body></html>";
-	const char *page_503 = "<html><head><title>Error 503</title></head><body><h1>Error 503 - Internal Server Error</h1></body></html>";
+	const char *page_503 = "<html><head><title>Error 503</title></head><body><h1>Error 503 - Internal Server Error: Out of Memory</h1></body></html>";
 	char *page_511;
 	char *cmd = NULL;
 	const char *mimetype = lookup_mimetype("foo.html");
@@ -1627,6 +1730,13 @@ static int send_error(struct MHD_Connection *connection, int error)
 		get_client_ip(ip, connection);
 
 		page_511 = safe_calloc(SMALL_BUF * 2);
+
+		if (!page_511) {
+			ret = send_error(connection, 503);
+			free(page_511);
+			break;
+		}
+
 		safe_asprintf(&cmd, "%s err511 '%s'", config->status_path, ip);
 
 		if (execute_ret_url_encoded(page_511, HTMLMAXSIZE - 1, cmd) == 0) {

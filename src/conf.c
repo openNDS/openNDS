@@ -414,7 +414,7 @@ add_ruleset(const char rulesetname[])
 	debug(LOG_DEBUG, "add_ruleset(): Creating FirewallRuleSet %s ruleset [%s].", rulesetname, ruleset);
 
 	// Create and place at head of config.rulesets
-	ruleset = safe_malloc(sizeof(t_firewall_ruleset));
+	ruleset = safe_calloc(sizeof(t_firewall_ruleset));
 	memset(ruleset, 0, sizeof(t_firewall_ruleset));
 	ruleset->name = safe_strdup(rulesetname);
 	ruleset->next = config.rulesets;
@@ -661,7 +661,7 @@ _parse_firewall_rule(t_firewall_ruleset *ruleset, char *leftover)
 	}
 
 	// Generate rule record
-	tmp = safe_malloc(sizeof(t_firewall_rule));
+	tmp = safe_calloc(sizeof(t_firewall_rule));
 	memset((void *)tmp, 0, sizeof(t_firewall_rule));
 	tmp->target = target;
 	if (protocol != NULL)
@@ -1264,7 +1264,7 @@ int add_to_walledgarden_fqdn_list(const char possiblefqdn[])
 		sscanf(possiblefqdn, "%s", fqdn);
 
 		// Add FQDN to head of list
-		p = safe_malloc(sizeof(t_WGFQDN));
+		p = safe_calloc(sizeof(t_WGFQDN));
 		p->wgfqdn = safe_strdup(fqdn);
 		p->next = config.walledgarden_fqdn_list;
 		config.walledgarden_fqdn_list = p;
@@ -1283,7 +1283,7 @@ int add_to_walledgarden_port_list(const char possibleport[])
 	sscanf(possibleport, "%hu", &port);
 
 	// Add walled garden port to head of list
-	p = safe_malloc(sizeof(t_WGP));
+	p = safe_calloc(sizeof(t_WGP));
 	p->wgport = port;
 	p->next = config.walledgarden_port_list;
 	config.walledgarden_port_list = p;
@@ -1299,7 +1299,7 @@ int add_to_fas_custom_parameters_list(const char possibleparam[])
 	sscanf(possibleparam, "%s", param);
 
 	// Add Parameter to head of list
-	p = safe_malloc(sizeof(t_FASPARAM));
+	p = safe_calloc(sizeof(t_FASPARAM));
 	p->fasparam = safe_strdup(param);
 	p->next = config.fas_custom_parameters_list;
 
@@ -1316,7 +1316,7 @@ int add_to_fas_custom_variables_list(const char possiblevar[])
 	sscanf(possiblevar, "%s", var);
 
 	// Add Variable to head of list
-	p = safe_malloc(sizeof(t_FASVAR));
+	p = safe_calloc(sizeof(t_FASVAR));
 	p->fasvar = safe_strdup(var);
 	p->next = config.fas_custom_variables_list;
 
@@ -1333,7 +1333,7 @@ int add_to_fas_custom_images_list(const char possibleimage[])
 	sscanf(possibleimage, "%s", image);
 
 	// Add Image to head of list
-	p = safe_malloc(sizeof(t_FASIMG));
+	p = safe_calloc(sizeof(t_FASIMG));
 	p->fasimg = safe_strdup(image);
 	p->next = config.fas_custom_images_list;
 
@@ -1350,7 +1350,7 @@ int add_to_fas_custom_files_list(const char possiblefile[])
 	sscanf(possiblefile, "%s", file);
 
 	// Add File to head of list
-	p = safe_malloc(sizeof(t_FASFILE));
+	p = safe_calloc(sizeof(t_FASFILE));
 	p->fasfile = safe_strdup(file);
 	p->next = config.fas_custom_files_list;
 
@@ -1383,7 +1383,7 @@ int add_to_trusted_mac_list(const char possiblemac[])
 	}
 
 	// Add MAC to head of list
-	p = safe_malloc(sizeof(t_MAC));
+	p = safe_calloc(sizeof(t_MAC));
 	p->mac = safe_strdup(mac);
 	p->next = config.trustedmaclist;
 	config.trustedmaclist = p;
@@ -1541,7 +1541,7 @@ int add_to_blocked_mac_list(const char possiblemac[])
 	}
 
 	// Add MAC to head of list
-	p = safe_malloc(sizeof(t_MAC));
+	p = safe_calloc(sizeof(t_MAC));
 	p->mac = safe_strdup(mac);
 	p->next = config.blockedmaclist;
 	config.blockedmaclist = p;
@@ -1652,7 +1652,7 @@ int add_to_allowed_mac_list(const char possiblemac[])
 	}
 
 	// Add MAC to head of list
-	p = safe_malloc(sizeof(t_MAC));
+	p = safe_calloc(sizeof(t_MAC));
 	p->mac = safe_strdup(mac);
 	p->next = config.allowedmaclist;
 	config.allowedmaclist = p;

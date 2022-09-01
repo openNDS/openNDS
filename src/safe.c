@@ -43,7 +43,6 @@ void * safe_calloc (size_t size)
 	retval = calloc(1, size);
 	if (!retval) {
 		debug(LOG_CRIT, "Failed to calloc %d bytes of memory: %s. Bailing out.", size, strerror(errno));
-		exit(1);
 	}
 	return (retval);
 }
@@ -54,7 +53,6 @@ void * safe_malloc (size_t size)
 	retval = malloc(size);
 	if (!retval) {
 		debug(LOG_CRIT, "Failed to malloc %d bytes of memory: %s. Bailing out.", size, strerror(errno));
-		exit(1);
 	}
 	return (retval);
 }
@@ -64,12 +62,12 @@ char * safe_strdup(const char s[])
 	char * retval = NULL;
 	if (!s) {
 		debug(LOG_CRIT, "safe_strdup called with NULL which would have crashed strdup. Bailing out.");
-		exit(1);
+		return ("error");
 	}
 	retval = strdup(s);
 	if (!retval) {
 		debug(LOG_CRIT, "Failed to duplicate a string: %s. Bailing out.", strerror(errno));
-		exit(1);
+		return ("error");
 	}
 	return (retval);
 }
@@ -94,7 +92,7 @@ int safe_vasprintf(char **strp, const char *fmt, va_list ap)
 
 	if (retval == -1) {
 		debug(LOG_CRIT, "Failed to vasprintf: %s.  Bailing out", strerror(errno));
-		exit (1);
+		return ("error");
 	}
 
 	return (retval);
@@ -106,7 +104,8 @@ pid_t safe_fork(void)
 	result = fork();
 
 	if (result == -1) {
-		debug(LOG_CRIT, "Failed to fork: %s. Bailing out", strerror(errno));
+		debug(LOG_CRIT, "Failed to fork: %s. Unable to continue - Exiting......", strerror(errno));
+		sleep (5);
 		abort();
 	} else if (result == 0) {
 		// I'm the child - do some cleanup

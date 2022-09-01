@@ -274,6 +274,11 @@ write_log
 # Set length of session in seconds (eg 24 hours is 86400 seconds - if set to 0 then defaults to global or FAS sessiontimeout value):
 session_length=0
 
+custom=$8
+custom=$(/usr/lib/opennds/unescape.sh -url "$custom")
+custom=$(ndsctl b64decode "$custom")
+session_length=$(echo "$custom" | awk -F"session_length=" '{printf "%d", $2}')
+
 # Set Rate and Quota values for the client
 # The session length, rate and quota values are determined globaly or by FAS/PreAuth on a per client basis.
 # rates are in kb/s, quotas are in kB. Setting to 0 means no limit

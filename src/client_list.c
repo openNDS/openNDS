@@ -111,8 +111,7 @@ _client_list_append(const char mac[], const char ip[])
 		client = client->next;
 	}
 
-	client = safe_malloc(sizeof(t_client));
-	memset(client, 0, sizeof(t_client));
+	client = safe_calloc(sizeof(t_client));
 
 	client->mac = safe_strdup(mac);
 	client->ip = safe_strdup(ip);

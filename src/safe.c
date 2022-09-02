@@ -92,7 +92,7 @@ int safe_vasprintf(char **strp, const char *fmt, va_list ap)
 
 	if (retval == -1) {
 		debug(LOG_CRIT, "Failed to vasprintf: %s.  Bailing out", strerror(errno));
-		return ("error");
+		return (retval);
 	}
 
 	return (retval);

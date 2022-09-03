@@ -922,6 +922,8 @@ iptables_download_ratelimit_enable(t_client *client, int enable)
 		bucket = (packets - packet_limit) / packet_limit;
 	}
 
+	bucket = bucket * config->download_bucket_ratio;
+
 	if ( bucket < 5) {
 		bucket = 5;
 	}
@@ -930,8 +932,6 @@ iptables_download_ratelimit_enable(t_client *client, int enable)
 	if ( packet_limit > 300000) {
 		packet_limit = 300000;
 	}
-
-	bucket = bucket * config->download_bucket_ratio;
 
 	if ( bucket > config->max_download_bucket_size) {
 		bucket = config->max_download_bucket_size;
@@ -1009,6 +1009,8 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 		bucket = (packets - packet_limit) / packet_limit;
 	}
 
+	bucket = bucket * config->upload_bucket_ratio;
+
 	if ( bucket < 5) {
 		bucket = 5;
 	}
@@ -1017,8 +1019,6 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 	if ( packet_limit > 300000) {
 		packet_limit = 300000;
 	}
-
-	bucket = bucket * config->upload_bucket_ratio;
 
 	if ( bucket > config->max_upload_bucket_size) {
 		bucket = config->max_upload_bucket_size;

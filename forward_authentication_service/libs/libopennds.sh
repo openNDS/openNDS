@@ -312,15 +312,25 @@ do_ndsctl () {
 				break
 			fi
 
+			if [ $keyword = "deauthenticated." ]; then
+				ndsstatus="deauthenticated"
+				break
+			fi
+
+
 		done
 
 		keyword=""
 
-		if [ $tic = $timeout ] ; then
+		if [ $tic = $timeout ] && [ -z $libcall ] ; then
 			busy_page
 		fi
 
 		if [ "$ndsstatus" = "authenticated" ]; then
+			break
+		fi
+
+		if [ "$ndsstatus" = "deauthenticated" ]; then
 			break
 		fi
 
@@ -1360,6 +1370,47 @@ elif [ "$1" = "dhcpcheck" ]; then
 			exit 0
 		fi
 	fi
+
+elif [ "$1" = "deauth" ]; then
+	# Deauths a client by ip or mac address
+	# $2 contains the ip or mac address
+	# Returns the status of the deauth request
+
+	if [ -z "$2" ]; then
+		exit 1
+	else
+		clientaddress=$2
+		libcall="yes"
+		ndsctlcmd="deauth $clientaddress"
+		do_ndsctl
+
+		authstat=$ndsctlout
+		# $authstat contains the response from do_ndsctl
+		echo "$authstat"
+	fi
+
+	exit 0
+
+elif [ "$1" = "daemon_deauth" ]; then
+	# Initiates a daemon process to deauth a client by ip or mac address
+	# Can be called from a binauth script
+	# $2 contains the ip or mac address
+	# Returns the pid of the daemon_deauth process
+	# The actual client deauth will be reported in the syslog if sucessful
+
+	if [ -z "$2" ]; then
+		exit 1
+	else
+		clientaddress=$2
+		daemoncmd="/usr/lib/opennds/libopennds.sh deauth $clientaddress"
+		ndsctlcmd="b64encode \"$daemoncmd\""
+		do_ndsctl
+
+		daemon_deauth=$(/usr/lib/opennds/libopennds.sh "startdaemon" "$ndsctlout")
+		echo "$daemon_deauth"
+	fi
+
+	exit 0
 
 else
 	#Display a splash page sequence using a Themespec

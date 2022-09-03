@@ -507,7 +507,7 @@ static int _execute_ret(char* msg, int msg_len, const char *cmd)
 	rc = pclose(fp);
 
 	if (WIFSIGNALED(rc) != 0) {
-		debug(LOG_WARNING, "Command process exited due to signal %d", WTERMSIG(rc));
+		debug(LOG_NOTICE, "Command process exited due to signal %d", WTERMSIG(rc));
 	}
 
 	rc = WEXITSTATUS(rc);

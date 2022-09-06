@@ -970,8 +970,17 @@ dhcp_check() {
 		if [ -e "$dhcpdb" ]; then
 			dhcprecord=$(grep -w "$iptocheck" "$dhcpdb" | tail -1 | awk '{printf "%s", $2}')
 			break
+		else
+			dbfile="no"
 		fi
 	done
+
+	# If leases file has been moved elsewhere, report as an error
+	if [ "$dbfile" = "no" ]; then
+		syslogmessage="Cannot find dhcp database."
+		debugtype="warn"
+		write_to_syslog
+	fi
 }
 
 wait_for_interface () {

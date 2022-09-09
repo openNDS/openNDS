@@ -580,6 +580,46 @@ check_authenticated() {
 	fi
 }
 
+urlencode() {
+	entitylist="
+		s/%/%25/g
+		s/\s/%20/g
+		s/\"/%22/g
+		s/>/%3E/g
+		s/</%3C/g
+		s/'/%27/g
+		s/\`/%60/g
+	"
+	local buffer="$1"
+
+	for entity in $entitylist; do
+		urlencoded=$(echo "$buffer" | sed "$entity")
+		buffer=$urlencoded
+	done
+
+	urlencoded=$(echo "$buffer" | awk '{ gsub(/\$/, "\%24"); print }')
+}
+
+urldecode() {
+	entitylist="
+		s/%22/\"/g
+		s/%3E/>/g
+		s/%3C/</g
+		s/%27/'/g
+		s/%60/\`/g
+		s/%25/%/g
+	"
+	local buffer="$1"
+
+	for entity in $entitylist; do
+		urldecoded=$(echo "$buffer" | sed "$entity")
+		buffer=$urldecoded
+	done
+
+	buffer=$(echo "$buffer" | awk '{ gsub(/\%24/, "\$"); print }')
+	urldecoded=$(echo "$buffer" | awk '{ gsub(/\%20/, " "); print }')
+}
+
 
 htmlentityencode() {
 	entitylist="
@@ -908,7 +948,9 @@ get_option_from_config() {
 		param=$(cat "/etc/opennds/opennds.conf" | awk -F"$option " '{printf("%s", $2)}')
 	fi
 
-	eval $option=$param
+	urlencode "$param"
+	param=$urlencoded
+	eval $option="$param" &>/dev/null
 }
 
 get_key_from_config() {
@@ -1206,6 +1248,11 @@ elif [ "$1" = "download" ]; then
 	# $5 contains the refresh flag, set to 0 to download if missing, 1 to refresh downloads, 3 to skip downloads
 	# $6 contains the webroot
 
+	if [ -z "$2" ]; then
+		printf "%s" "Bad ThemeSpec"
+		exit 1
+	fi
+
 	if [ -z "$6" ]; then
 		webroot="/etc/opennds/htdocs"
 	else
@@ -1420,6 +1467,32 @@ elif [ "$1" = "daemon_deauth" ]; then
 	fi
 
 	exit 0
+
+elif [ "$1" = "urlencode" ]; then
+	# Urlencodes a string
+	# $2 contains the string to encode
+	# Returns the encoded string
+
+	if [ -z "$2" ]; then
+		exit 1
+	else
+		urlencode "$2"
+		printf "%s" "$urlencoded"
+		exit 0
+	fi
+
+elif [ "$1" = "urldecode" ]; then
+	# Urldecodes a string
+	# $2 contains the string to decode
+	# Returns the decoded string
+
+	if [ -z "$2" ]; then
+		exit 1
+	else
+		urldecode "$2"
+		printf "%s" "$urldecoded"
+		exit 0
+	fi
 
 else
 	#Display a splash page sequence using a Themespec

@@ -6,16 +6,14 @@
 
 # Get configured option
 get_option_from_config() {
-	local param=""
+	option_value=""
 
 	if [ -e "/etc/config/opennds" ]; then
-		param=$(uci -q get opennds.@opennds[0].$option | awk '{printf("%s", $0)}')
+		option_value=$(uci -q get opennds.@opennds[0].$option | awk '{printf("%s", $0)}')
 
 	elif [ -e "/etc/opennds/opennds.conf" ]; then
-		param=$(cat "/etc/opennds/opennds.conf" | awk -F"$option" '{printf("%s", $2)}')
+		option_value=$(cat "/etc/opennds/opennds.conf" | awk -F"$option " '{printf("%s", $2)}')
 	fi
-
-	eval $option=$param
 }
 
 # Function to send commands to openNDS:
@@ -98,7 +96,16 @@ ndspid=$(pgrep '/usr/bin/opennds')
 url=$1
 gatewayhash=$2
 phpcli=$3
-loopinterval=10
+
+option="nat_traversal_poll_interval"
+get_option_from_config
+loop_interval=$option_value
+echo "!!$loop_interval!!"
+
+if [ "$loop_interval" -le 0 ] || [ "$loop_interval" -ge 60 ]; then
+	loop_interval=10
+fi
+
 postrequest="/usr/lib/opennds/post-request.php"
 
 # Diagnostic output to stdio. Useful when run in foreground mode
@@ -131,6 +138,11 @@ ret=$($phpcli -f "$postrequest" "$url" "$action" "$gatewayhash" "$user_agent" "$
 if [ $debuglevel -ge 3 ]; then
 	echo "authmon - action $action, response [$ret]" | logger -p "daemon.debug" -s -t "opennds[$ndspid]"
 fi
+
+if [ $debuglevel -ge 1 ]; then
+	echo "authmon - nat_traversal_poll_interval is $loop_interval second(s)" | logger -p "daemon.notice" -s -t "opennds[$ndspid]"
+fi
+
 
 # Main loop:
 while true; do
@@ -208,6 +220,6 @@ while true; do
 	fi
 
 	# Sleep for a while:
-	sleep $loopinterval
+	sleep $loop_interval
 done
 

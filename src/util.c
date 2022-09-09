@@ -368,6 +368,10 @@ int download_remotes(int refresh)
 	int daemonpid = 0;
 	s_config *config = config_get_config();
 
+	if (config->themespec_path == NULL) {
+		return 0;
+	}
+
 	if(refresh == 0) {
 		debug(LOG_DEBUG, "Background Checking of remotes for: %s\n", config->themespec_path);
 	} else {

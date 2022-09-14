@@ -239,6 +239,49 @@ dhcpcheck:
 
     *returns*: The mac address that was allocated to the ip address or null and exit code 1 if not allocated
 
+deauth:
+-------
+
+	arg1: "deauth", deauthenticates a client by ip or mac address
+
+        arg2: contains the ip or mac address
+
+    *Can NOT be called from a binauth script*
+
+
+    *returns*: the status of the deauth request
+
+daemon_deauth:
+--------------
+
+    arg1: "daemon_deauth", initiates a daemon process to deauth a client by ip or mac address
+
+        arg2: contains the ip or mac address
+
+    *Can be called from a binauth script*
+
+    *returns* the pid of the daemon_deauth process
+
+    The actual client deauth will be reported in the syslog if successful
+
+urlencode:
+----------
+
+    arg1: "urlencode", urlencode a string
+
+        arg2: contains the string to be encoded
+
+    *returns* the encoded string
+
+urldecode:
+----------
+
+    arg1: "urldecode", urldecode a string
+
+        arg2: contains the string to be decoded
+
+    *returns* the decoded string
+
 ?fas:
 -----
     **arg1**: "*?fas=<b64string>*", generates ThemeSpec html using b64encoded data sent from openNDS

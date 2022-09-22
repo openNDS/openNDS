@@ -752,7 +752,7 @@ ndsctl_status(FILE *fp)
 	if ((now - started_time) > sysuptime) {
 		uptimesecs = sysuptime;
 	} else {
-		uptimesecs = now - started_time;
+		uptimesecs = (now - started_time) + 1;
 	}
 
 	fprintf(fp, "Version: " VERSION "\n");

@@ -412,8 +412,8 @@ fw_refresh_client_list(void)
 				cp1->counters.out_window_start
 			);
 
-			durationsecs = (now - cp1->window_start);
-
+			durationsecs = ((now - cp1->window_start)+1);
+			// Note: 1 second added to prevent divide by zero if this code runs within 1 second of the client being authenticated
 
 			// Calculate actual rates
 			download_bytes = (cp1->counters.incoming - cp1->counters.in_window_start);

@@ -916,7 +916,7 @@ iptables_download_ratelimit_enable(t_client *client, int enable)
 		bucket = 5;
 	} else {
 		average_packet_size = (client->counters.incoming - client->counters.incoming_previous) /
-			(client->counters.inpackets - client->counters.inpackets_previous);
+			(client->counters.inpackets - client->counters.inpackets_previous) + 1;
 		packet_limit = client->download_rate * 1024 * 60 / average_packet_size / 8; // packets per minute
 		packets = client->downrate * 1024 * 60 / average_packet_size / 8; // packets per minute
 		bucket = (packets - packet_limit) / packet_limit;
@@ -1003,7 +1003,7 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 		bucket = 5;
 	} else {
 		average_packet_size = (client->counters.outgoing - client->counters.outgoing_previous) /
-			(client->counters.outpackets - client->counters.outpackets_previous);
+			(client->counters.outpackets - client->counters.outpackets_previous) + 1;
 		packet_limit = client->upload_rate * 1024 * 60 / average_packet_size / 8; // packets per minute
 		packets = client->uprate * 1024 * 60 / average_packet_size / 8; // packets per minute
 		bucket = (packets - packet_limit) / packet_limit;

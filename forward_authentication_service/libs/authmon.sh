@@ -108,8 +108,10 @@ fi
 
 postrequest="/usr/lib/opennds/post-request.php"
 
-# Diagnostic output to stdio. Useful when run in foreground mode
-echo "$1 $2 $3" > /tmp/authmonargs
+# Save startup arguments for libopennds
+echo "url=$1" > $mountpoint/ndscids/authmonargs
+echo "gatewayhash=$2" >> $mountpoint/ndscids/authmonargs
+echo "phpcli=$3" >> $mountpoint/ndscids/authmonargs
 
 # Construct our user agent string:
 user_agent="openNDS(authmon;NDS:$version;)"

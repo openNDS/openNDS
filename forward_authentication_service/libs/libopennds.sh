@@ -906,6 +906,8 @@ config_input_fields () {
 
 check_mhd() {
 	fetch=$(type -t uclient-fetch)
+	configure_log_location
+	heartbeatpath="$mountpoint/ndscids/heartbeat"
 	mhdstatus="2"
 	local timeout=4
 
@@ -916,6 +918,8 @@ check_mhd() {
 			# MHD response fail - wait then try again:
 			sleep 1
 		elif [ "$mhdstatus" = "1" ]; then
+			timestamp=$(date +%s)
+			echo $timestamp > $heartbeatpath
 			break
 		fi
 	done
@@ -1044,6 +1048,23 @@ wait_for_interface () {
 	done
 }
 
+send_post_data () {
+	option="fas_secure_enabled"
+	get_option_from_config
+
+	if [ "$fas_secure_enabled" -eq 3 ]; then
+		configure_log_location
+		. $mountpoint/ndscids/ndsinfo
+		. $mountpoint/ndscids/authmonargs
+		postrequest="/usr/lib/opennds/post-request.php"
+
+		# Construct our user agent string:
+		user_agent="openNDS(libopennds;NDS:$version;)"
+
+		returned_data=$($phpcli -f "$postrequest" "$url" "$action" "$gatewayhash" "$user_agent" "$payload")
+
+	fi
+}
 
 #### end of functions ####
 
@@ -1491,6 +1512,45 @@ elif [ "$1" = "urldecode" ]; then
 	else
 		urldecode "$2"
 		printf "%s" "$urldecoded"
+		exit 0
+	fi
+
+elif [ "$1" = "send_to_fas_deauthed" ]; then
+	# Sends deauthed notification to an https fas
+	# $2 contains the b64 encoded deauthentication log.
+	#
+	# The decoded deauthentication log is of the format:
+	# method=[method], clientmac=[clientmac], bytes_incoming=[bytes_incoming],
+	#	bytes_outgoing=[bytes_outgoing], session_start=[session_start],
+	#	session_end=$6, token=[token], custom=[custom data as sent to binauth]
+	#
+	# Returns exit code 0 if sent, 1 if failed
+
+	if [ -z "$2" ]; then
+		exit 1
+	else
+		payload=$2
+		action="deauthed"
+		send_post_data
+		printf "%s" "$returned_data"
+		exit 0
+	fi
+
+elif [ "$1" = "send_to_fas_custom" ]; then
+	# Sends a custom string to an https fas
+	# $2 contains the b64 encoded string to send
+	#
+	# The format of the decoded custom string is not defined, so is fully customisable.
+	#
+	# Returns exit code 0 if sent, 1 if failed
+
+	if [ -z "$2" ]; then
+		exit 1
+	else
+		payload=$2
+		action="custom"
+		send_post_data
+		printf "%s" "$returned_data"
 		exit 0
 	fi
 

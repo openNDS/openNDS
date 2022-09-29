@@ -1060,7 +1060,6 @@ send_post_data () {
 
 		# Construct our user agent string:
 		user_agent="openNDS(libopennds;NDS:$version;)"
-
 		returned_data=$($phpcli -f "$postrequest" "$url" "$action" "$gatewayhash" "$user_agent" "$payload")
 
 	fi
@@ -1517,9 +1516,9 @@ elif [ "$1" = "urldecode" ]; then
 
 elif [ "$1" = "send_to_fas_deauthed" ]; then
 	# Sends deauthed notification to an https fas
-	# $2 contains the b64 encoded deauthentication log.
+	# $2 contains the deauthentication log.
 	#
-	# The decoded deauthentication log is of the format:
+	# The deauthentication log is of the format:
 	# method=[method], clientmac=[clientmac], bytes_incoming=[bytes_incoming],
 	#	bytes_outgoing=[bytes_outgoing], session_start=[session_start],
 	#	session_end=$6, token=[token], custom=[custom data as sent to binauth]
@@ -1538,9 +1537,9 @@ elif [ "$1" = "send_to_fas_deauthed" ]; then
 
 elif [ "$1" = "send_to_fas_custom" ]; then
 	# Sends a custom string to an https fas
-	# $2 contains the b64 encoded string to send
+	# $2 contains the string to send
 	#
-	# The format of the decoded custom string is not defined, so is fully customisable.
+	# The format of the custom string is not defined, so is fully customisable.
 	#
 	# Returns exit code 0 if sent, 1 if failed
 

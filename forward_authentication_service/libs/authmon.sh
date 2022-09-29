@@ -100,9 +100,8 @@ phpcli=$3
 option="nat_traversal_poll_interval"
 get_option_from_config
 loop_interval=$option_value
-echo "!!$loop_interval!!"
 
-if [ "$loop_interval" -le 0 ] || [ "$loop_interval" -ge 60 ]; then
+if [ "$loop_interval" = "" ] || [ "$loop_interval" -le 0 ] || [ "$loop_interval" -ge 60 ]; then
 	loop_interval=10
 fi
 

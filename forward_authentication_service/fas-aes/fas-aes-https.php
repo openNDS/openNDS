@@ -252,35 +252,105 @@ function get_image($url, $imagetype) {
 	readfile($url);
 }
 
+function auth_get_custom() {
+	// Add your own function to handle auth_get custom payload
+	$payload_decoded=base64_decode($_POST["payload"]);
+
+	$logpath=$GLOBALS["logpath"];
+	$log=date('Y-m-d H:i:s', $_SERVER['REQUEST_TIME']).
+		", $payload_decoded\n";
+
+	if ($logpath == "") {
+		$logfile="ndslog/customlog_log.php";
+
+		if (!file_exists($logfile)) {
+			@file_put_contents($logfile, "<?php exit(0); ?>\n");
+		}
+	} else {
+		$logfile="$logpath"."ndslog/customlog_log.log";
+	}
+
+	@file_put_contents($logfile, $log,  FILE_APPEND );
+
+	echo "ack";
+
+}
+
+function auth_get_deauthed() {
+	// Add your own function to handle auth_get deauthed payload
+	// By default it isappended to the FAS deauth log
+	$payload_decoded=base64_decode($_POST["payload"]);
+
+	$logpath=$GLOBALS["logpath"];
+	$log=date('Y-m-d H:i:s', $_SERVER['REQUEST_TIME']).
+		", $payload_decoded\n";
+
+	if ($logpath == "") {
+		$logfile="ndslog/deauthlog_log.php";
+
+		if (!file_exists($logfile)) {
+			@file_put_contents($logfile, "<?php exit(0); ?>\n");
+		}
+	} else {
+		$logfile="$logpath"."ndslog/deauthlog_log.log";
+	}
+
+	@file_put_contents($logfile, $log,  FILE_APPEND );
+
+	echo "ack";
+
+
+}
+
 function auth_get() {
 	/* Send and/or clear the Auth List when requested by openNDS
 		When a client was verified, their parameters were added to the "auth list"
 		The auth list is sent to openNDS when authmon requests it.
 
 		auth_get:
-		auth_get is sent by authmon in a POST request and can have the following values:
+		auth_get is sent by authmon or libopennds in a POST request and can have the following values:
 
-		1. Value "list" sends the auth list and deletes each client entry currently on that list.
+		1. Value "list".
+			FAS sends the auth list and deletes each client entry currently on that list.
 
-		2. Value "view" sends the auth list and checks for an ack list of successfully authenticated clients from previous auth lists.
-		Clients on the auth list are only deleted if they are in a received ack list.
-		Authmon sends the ack list as acknowledgement of all clients in the previous auth list that were successfully authenticated.
-		"view" is the default method used by authmon.
+		2. Value "view".
+			FAS checks the received payload for an ack list of successfully authenticated clients from previous auth lists.
+			Clients on the auth list are only deleted if they are in a received ack list.
+			Authmon will have sent the ack list as acknowledgement of all clients that were successfully authenticated in the previous auth list.
+			Finally FAS replies by sending the next auth list.
+			"view" is the default method used by authmon.
 
-		3. Value "clear" is a housekeeping function and is called by authmon on startup of openNDS.
-		The auth list is cleared as any entries held by this FAS at the time of openNDS startup will be stale.
+		3. Value "clear".
+			This is a housekeeping function and is called by authmon on startup of openNDS.
+			The auth list is cleared as any entries held by this FAS at the time of openNDS startup will be stale.
+
+		4. Value "deauthed".
+			FAS receives a payload containing notification of deauthentication of a client and the reason for that notification.
+			FAS replies with an ack., confirming reception of the notification.
+
+		5. Value "custom".
+			FAS receives a payload containing a b64 encoded string to be used by FAS to provide custom functionality.
+			FAS replies with an ack., confirming reception of the custom string.
 	*/
 
 	$logpath=$GLOBALS["logpath"];
 
 	if (isset($_POST["auth_get"])) {
 
-		$acklist=base64_decode($_POST["payload"]);
-
 		if (isset($_POST["gatewayhash"])) {
 			$gatewayhash=$_POST["gatewayhash"];
 		} else {
 			# invalid call, so:
+			exit(0);
+		}
+
+		if ($_POST["auth_get"] == "deauthed") {
+			auth_get_deauthed();
+			exit(0);
+		}
+
+		if ($_POST["auth_get"] == "custom") {
+			auth_get_custom();
 			exit(0);
 		}
 
@@ -303,6 +373,8 @@ function auth_get() {
 
 		# Set default empty authlist:
 		$authlist="*";
+
+		$acklist=base64_decode($_POST["payload"]);
 
 		if ($_POST["auth_get"] == "list") {
 			$auth_list=scandir("$logpath"."$gatewayhash");

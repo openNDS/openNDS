@@ -282,6 +282,32 @@ urldecode:
 
     *returns* the decoded string
 
+send_to_fas_deauthed:
+---------------------
+
+**Note:** This library function is used by the default binauth_log.sh script. The default remote FAS script fas-aes-https.php writes the received deauthentication data to a deauth log.
+
+    arg1: send_to_fas_deauthed, Sends deauthed notification to an https fas
+        arg2: contains the deauthentication log.
+
+    The deauthentication log is of the format:
+
+``method=[method], clientmac=[clientmac], bytes_incoming=[bytes_incoming],
+bytes_outgoing=[bytes_outgoing], session_start=[session_start],
+session_end=$6, token=[token], custom=[custom data as sent to binauth]``
+
+Returns exit code 0 if sent, 1 if failed
+
+send_to_fas_custom:
+-------------------
+
+    arg1: send_to_fas_custom, Sends a custom string to an https fas
+        arg2: contains the string to send
+
+    The format of the custom string is not defined, so is fully customisable.
+
+Returns exit code 0 if sent, 1 if failed
+
 ?fas:
 -----
     **arg1**: "*?fas=<b64string>*", generates ThemeSpec html using b64encoded data sent from openNDS

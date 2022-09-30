@@ -71,6 +71,29 @@ Finally you must tell UCI to commit your changes to the configuration file:
 
   uci commit opennds
 
+API Informational files
+***********************
+
+A number of API informational files are created on startup and contain useful system information to be used by customisation scripts.
+
+These files are located on the logfile mountpoint in the ndscids folder.
+Typically the logfile mountpoint is /tmp or /run depending on the Linux distribution.
+
+The "ndsinfo" file
+==================
+
+This file contains the runtime values of gatewayname, gatewayaddress, gatewayfqdn and the openNDS version.
+
+The "authmonargs" File
+======================
+
+This file contains the runtime values of the url of the remote FAS server, the gateway hash of the current instance of openNDS, and the phpcli command name on the openNDS system.
+
+The "heartbeat" file
+====================
+
+This file contains the timestamp of the last openNDS heartbeat. The file is re-written at the start of every new checkinterval cycle.
+
 The Legacy Click and Go Splash Page
 ************************************
 

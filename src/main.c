@@ -610,7 +610,7 @@ setup_from_config(void)
 		);
 
 		if (execute_ret(idbuf, sizeof(idbuf), cmd) == 0) {
-			snprintf(gatewayid, sizeof(gatewayid), "%s S/N:%s ",
+			snprintf(gatewayid, sizeof(gatewayid), "%s Node:%s ",
 				config->gw_name,
 				idbuf
 			);

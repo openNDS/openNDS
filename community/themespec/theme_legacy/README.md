@@ -5,7 +5,7 @@ Legacy splash pages used the long deprecated NDS template system. The code suppo
 
 Only gatewayname, tok, redir and authaction variables from the original template system are supported.
 
-#WARNING:
+# WARNING:
 The client is NOT required to accept a terms of service statement and does not receive any indication of a privacy policy.
 
 Use of this ThemeSpec may make you personally liable for misuse of the Internet connection and may not comply with your country or state regulations. Use at your own risk at public venues.
@@ -20,7 +20,7 @@ SSH into a terminal session on the router and use the following commands:
        cd /etc/opennds/htdocs
        wget https://raw.githubusercontent.com/openNDS/openNDS/master/community/themespec/theme_legacy/splash.html
 
-**Now you need to activate the voucher script.**
+**Activate the ThemeSpec script.**
 
 Use the following commands:
 

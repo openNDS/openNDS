@@ -223,6 +223,8 @@ As BinAuth can be enabled at the same time as FAS, a BinAuth script may be used 
 
 The example BinAuth script, binauth_log.sh, is designed to locally log details of each client authentication and receives client data including the token, ipaddress and macaddress. In addition it receives the custom data string sent from FAS.
 
+In addition, if option fas_secure_enabled is set to 3, binauth_log.sh sends a deauthentication log to the remote https FAS whenever a client is deauthenticated.
+
 Manual Access of NDS Virtual URL
 ********************************
 
@@ -311,6 +313,8 @@ fas-aes.php
 fas-aes-https.php
 -----------------
 **You can run the FAS example script, fas-aes-https.php**, remotely on an Internet based https FAS server. The use of https protocol is enforced.
+
+Library calls can be made on the openNDS router to send deauthentication information and custom strings to an https FAS, and this example script will write received data to a log file on the FAS server. The example binauth_log.sh script makes use of this functionality to inform the remote FAS of the deauthentication of a client.
 
 On the openNDS device, a minimum of 64MB of ram may be sufficient, but 128MB is recommended.
 

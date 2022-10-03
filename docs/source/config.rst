@@ -979,6 +979,22 @@ Example:
 
 ``option fas_secure_enabled '3'``
 
+Set NAT Traversal Poll Interval
+*******************************
+
+Sets the polling interval for NAT Traversal in seconds
+
+Default 10 seconds
+
+Allowed values between 1 and 60 seconds inclusive
+
+Defaults to 10 seconds if set outside this range
+
+Effective only when option fas_secure_enabled is set to 3
+
+Example:
+
+``option nat_traversal_poll_interval '5'``
 
 Set PreAuth
 ***********

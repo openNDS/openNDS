@@ -368,6 +368,10 @@ int download_remotes(int refresh)
 	int daemonpid = 0;
 	s_config *config = config_get_config();
 
+	if (config->themespec_path == NULL) {
+		return 0;
+	}
+
 	if(refresh == 0) {
 		debug(LOG_DEBUG, "Background Checking of remotes for: %s\n", config->themespec_path);
 	} else {
@@ -507,7 +511,7 @@ static int _execute_ret(char* msg, int msg_len, const char *cmd)
 	rc = pclose(fp);
 
 	if (WIFSIGNALED(rc) != 0) {
-		debug(LOG_WARNING, "Command process exited due to signal %d", WTERMSIG(rc));
+		debug(LOG_NOTICE, "Command process exited due to signal %d", WTERMSIG(rc));
 	}
 
 	rc = WEXITSTATUS(rc);
@@ -748,7 +752,7 @@ ndsctl_status(FILE *fp)
 	if ((now - started_time) > sysuptime) {
 		uptimesecs = sysuptime;
 	} else {
-		uptimesecs = now - started_time;
+		uptimesecs = (now - started_time) + 1;
 	}
 
 	fprintf(fp, "Version: " VERSION "\n");

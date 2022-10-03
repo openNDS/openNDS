@@ -218,6 +218,13 @@ else
 	# Build the log entry:
 	log_entry="method=$1, clientmac=$2, bytes_incoming=$3, bytes_outgoing=$4, session_start=$5, session_end=$6, token=$7, custom=$customdata"
 
+	action=$(echo "$1" | awk -F"_" '{printf("%s", $2)}')
+
+	# Send the deauth log to FAS if fas_secure_enabled = 3, if not =3 library call does nothing
+	if [ "$action" = "deauth" ]; then
+		returned=$(/usr/lib/opennds/libopennds.sh "send_to_fas_deauthed" "$log_entry")
+	fi
+
 fi
 
 # In the case of ThemeSpec, get the client id information from the cid database

@@ -1,5 +1,5 @@
-The Client Status/Error511 Page
-###############################
+The Client Status/CPI (Captive Portal Information) Page
+#######################################################
 
 If the client is redirected by the CPI (RFC 8910) process, this page is displayed.
 
@@ -7,13 +7,13 @@ This page is also accessible by any connected client at the default url:
 
 http://status.client
 
+**If the client is not authenticated**, then this page is also known as the Error511 page, as it serves to the client the "511 Network Authentication Required" html status code and a button is displayed to allow the client to log in.
+
+**If the client is authenticated**, a page is served displaying the Gatewayname and the Network Zone the client device is currently using.
+
 Default "Quick Status" and optional "Advanced Status" options can be selected.
 
-If the client has been authenticated in the normal way by the client CPD process, a page is served displaying the Gatewayname and the Network Zone the client device is currently using.
-
 A list of allowed quotas and current usage is displayed along with "Refresh" and "Logout" buttons.
-
-If the client has not been authenticated, or has been deauthenticated due to timeout or quota usage, then a "*Error 511 Network Authentication Required*" page is displayed with a "Continue" button for logging in.
 
 The "Continue" button allows the client to immediately attempt to login without waiting for the client CPD to trigger.
 
@@ -23,18 +23,13 @@ For best results it is recommended that gatewayfqdn is set to two words separate
 
 	``option gatewayfqdn 'my.status'``
 
- **Warning** - if set, services on port 80 of the gateway will no longer be accessible (eg Luci AdminUI)
-
- By default, the Error511/Status page will be found at ``http://status.client/`` by a redirection of port 80 to ``http://gatewayaddress:gatewayport/``
-
  ***Disable GatewayFQDN*** by setting the option to 'disable'
  ie:
 
  ``option gatewayfqdn 'disable'``
 
-An alternate Useful Example:
+ **Warning** - if enabled, services on port 80 of the gateway will no longer be accessible (eg the OpenWrt Luci AdminUI)
 
-``option gatewayfqdn 'login.page'``
 
 Custom Files and Images
 ***********************

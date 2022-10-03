@@ -123,7 +123,7 @@ Instead of waiting for the client to test for Internet access using its vendor s
 
 Any clients supporting this method will open their CPD browser pointing at the specified URL instead of waiting for a redirection.
 
-This is a new and somewhat experimental standard with very few clients supporting it, but this is likely to change rapidly as the standard matures.
+This is a new and somewhat experimental standard but at the time of writing (September 2022) an increasing number of new clients are beginning to support it as their implementations of the standard mature.
 
 This method is enabled in openNDS by default, but can be disabled (see "Dhcp option 114 Enable - RFC8910" in the Configuration Options section).
 
@@ -133,7 +133,7 @@ Captive Portal Identification With Portal API (RFC 8910 / RFC 8908)
 The RFC8908 Captive Portal API extends Captive Portal Identification by adding an API by which a client device can access the Portal.
 This is supported in openNDS from version 9.5.0 onwards.
 
-At the time of writing (November 2021), very few client devices support this API.
+At the time of writing (September 2022), very few client devices support this API.
 
 Network Zone Detection (Where is the Client Connected?)
 *******************************************************

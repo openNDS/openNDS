@@ -14,15 +14,17 @@ config opennds
 	# debuglevel
 	# Set Debug Level (0-3)
 	# Default: 1
-	# 0 : Silent (only initial startup, LOG_ERR and LOG_EMERG LOG_CRIT messages will be seen, otherwise there will be no logging.)
-	# 1 : LOG_ERR, LOG_EMERG, LOG_CRIT, LOG_WARNING and LOG_NOTICE (this is the default level).
+	# 0 : Silent (only initial startup, LOG_ERR, LOG_EMERG and LOG_CRIT messages will be seen, otherwise there will be no logging.)
+	# 1 : LOG_ERR, LOG_EMERG, LOG_CRIT, LOG_WARNING and LOG_NOTICE. (Level 1 is the default level.)
 	# 2 : debuglevel 1  + LOG_INFO
 	# 3 : debuglevel 2 + LOG_DEBUG
-	#option debuglevel '1'
+	#option debuglevel '2'
 	###########################################################################################
 
-	# fwhook_enabled
+	# fwhook_enabled (deprecated)
 	# Firewall Restart hook
+	# This is required for OpenWrt Firewall 3 (OpenWrt 21.02.3 and earlier)
+	# It is not needed and has no effect for OpenWrt Firewall 4 NFT (OpenWrt 22.03.0 and later)
 	# Set to 0 to disable hook that makes opennds restart when the firewall restarts.
 	# This hook is needed as a restart of Firewall overwrites opennds iptables entries.
 	option fwhook_enabled '1'
@@ -681,6 +683,19 @@ config opennds
 	#
 	# Note: Option faskey must be pre shared with the FAs script in use (including any ThemeSpec local file) if fas secure is set to levels 1, 2 and 3.
 	#option fas_secure_enabled '1'
+	###########################################################################################
+
+	# NAT Traversal Poll Interval
+	# Sets the polling interval for NAT Traversal in seconds
+	#
+	# Default 10 seconds
+	# Allowed values between 1 and 60 seconds inclusive
+	# Defaults to 10 seconds if set outside this range
+	#
+	# Effective only when option fas_secure_enabled is set to 3
+	#
+	# Example:
+	#option nat_traversal_poll_interval '5'
 	###########################################################################################
 
 	# PreAuth

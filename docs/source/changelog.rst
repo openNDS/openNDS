@@ -1,6 +1,31 @@
 What's New? - ChangeLog
 #######################
 
+opennds (9.9.0)
+
+  * This version adds new functionality, and fixes some issues
+  * Fix - ensure nat_traversal_poll_interval defaults to 10 seconds [bluewavenet]
+  * Add - process send_to_fas_deauthed and send_to_fas_custom in fas-aes-https [bluewavenet]
+  * Add - support for send_to_fas_deauthed library call in binauth_log.sh [bluewavenet]
+  * Add - heartbeat file containing timestamp [bluewavenet]
+  * Add - send_to_fas_deauthed and send_to_fas_custom library calls [bluewavenet]
+  * Add - Save authmon daemon startup arguments for libopennds [bluewavenet]
+  * Fix - potential divide by zero errors [bluewavenet]
+  * Add - option nat_traversal_poll_interval [bluewavenet]
+  * Add - Library calls for urlencode and urldecode[bluewavenet]
+  * Fix - Don't download remotes if ThemeSpec not configured [bluewavenet]
+  * Add - Error report in syslog if dhcp database is not found [bluewavenet]
+  * Add - library calls, deauth and daemon_deauth [bluewavenet]
+  * Fix - change WTERMSIG log from WARNING to NOTICE [bluewavenet]
+  * Add - Set minimum bucket size to 5 regardless of configured bucket ratio [bluewavenet]
+  * Fix - safe_vasprint return value [bluewavenet]
+  * Add - test if safe_calloc failed and serve error 503 [bluewavenet]
+  * Add - use calloc instead of malloc[bluewavenet]
+  * fix - safe functions to return error rather than exit [bluewavenet]
+  * Add - b64decode custom string received by binauth script [bluewavenet]
+
+ -- Rob White <dot@blue-wave.net>  Thu, 29 Sep 2022 16:52:46 +0000
+
 opennds (9.8.0)
 
   * This version adds new functionality, and fixes some issues

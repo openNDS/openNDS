@@ -312,15 +312,25 @@ do_ndsctl () {
 				break
 			fi
 
+			if [ $keyword = "deauthenticated." ]; then
+				ndsstatus="deauthenticated"
+				break
+			fi
+
+
 		done
 
 		keyword=""
 
-		if [ $tic = $timeout ] ; then
+		if [ $tic = $timeout ] && [ -z $libcall ] ; then
 			busy_page
 		fi
 
 		if [ "$ndsstatus" = "authenticated" ]; then
+			break
+		fi
+
+		if [ "$ndsstatus" = "deauthenticated" ]; then
 			break
 		fi
 
@@ -568,6 +578,46 @@ check_authenticated() {
 		read_terms
 		footer
 	fi
+}
+
+urlencode() {
+	entitylist="
+		s/%/%25/g
+		s/\s/%20/g
+		s/\"/%22/g
+		s/>/%3E/g
+		s/</%3C/g
+		s/'/%27/g
+		s/\`/%60/g
+	"
+	local buffer="$1"
+
+	for entity in $entitylist; do
+		urlencoded=$(echo "$buffer" | sed "$entity")
+		buffer=$urlencoded
+	done
+
+	urlencoded=$(echo "$buffer" | awk '{ gsub(/\$/, "\%24"); print }')
+}
+
+urldecode() {
+	entitylist="
+		s/%22/\"/g
+		s/%3E/>/g
+		s/%3C/</g
+		s/%27/'/g
+		s/%60/\`/g
+		s/%25/%/g
+	"
+	local buffer="$1"
+
+	for entity in $entitylist; do
+		urldecoded=$(echo "$buffer" | sed "$entity")
+		buffer=$urldecoded
+	done
+
+	buffer=$(echo "$buffer" | awk '{ gsub(/\%24/, "\$"); print }')
+	urldecoded=$(echo "$buffer" | awk '{ gsub(/\%20/, " "); print }')
 }
 
 
@@ -856,6 +906,8 @@ config_input_fields () {
 
 check_mhd() {
 	fetch=$(type -t uclient-fetch)
+	configure_log_location
+	heartbeatpath="$mountpoint/ndscids/heartbeat"
 	mhdstatus="2"
 	local timeout=4
 
@@ -866,6 +918,8 @@ check_mhd() {
 			# MHD response fail - wait then try again:
 			sleep 1
 		elif [ "$mhdstatus" = "1" ]; then
+			timestamp=$(date +%s)
+			echo $timestamp > $heartbeatpath
 			break
 		fi
 	done
@@ -898,7 +952,9 @@ get_option_from_config() {
 		param=$(cat "/etc/opennds/opennds.conf" | awk -F"$option " '{printf("%s", $2)}')
 	fi
 
-	eval $option=$param
+	urlencode "$param"
+	param=$urlencoded
+	eval $option="$param" &>/dev/null
 }
 
 get_key_from_config() {
@@ -960,8 +1016,17 @@ dhcp_check() {
 		if [ -e "$dhcpdb" ]; then
 			dhcprecord=$(grep -w "$iptocheck" "$dhcpdb" | tail -1 | awk '{printf "%s", $2}')
 			break
+		else
+			dbfile="no"
 		fi
 	done
+
+	# If leases file has been moved elsewhere, report as an error
+	if [ "$dbfile" = "no" ]; then
+		syslogmessage="Cannot find dhcp database."
+		debugtype="warn"
+		write_to_syslog
+	fi
 }
 
 wait_for_interface () {
@@ -983,6 +1048,22 @@ wait_for_interface () {
 	done
 }
 
+send_post_data () {
+	option="fas_secure_enabled"
+	get_option_from_config
+
+	if [ "$fas_secure_enabled" -eq 3 ]; then
+		configure_log_location
+		. $mountpoint/ndscids/ndsinfo
+		. $mountpoint/ndscids/authmonargs
+		postrequest="/usr/lib/opennds/post-request.php"
+
+		# Construct our user agent string:
+		user_agent="openNDS(libopennds;NDS:$version;)"
+		returned_data=$($phpcli -f "$postrequest" "$url" "$action" "$gatewayhash" "$user_agent" "$payload")
+
+	fi
+}
 
 #### end of functions ####
 
@@ -1187,6 +1268,11 @@ elif [ "$1" = "download" ]; then
 	# $5 contains the refresh flag, set to 0 to download if missing, 1 to refresh downloads, 3 to skip downloads
 	# $6 contains the webroot
 
+	if [ -z "$2" ]; then
+		printf "%s" "Bad ThemeSpec"
+		exit 1
+	fi
+
 	if [ -z "$6" ]; then
 		webroot="/etc/opennds/htdocs"
 	else
@@ -1359,6 +1445,112 @@ elif [ "$1" = "dhcpcheck" ]; then
 			printf "%s" "$dhcprecord"
 			exit 0
 		fi
+	fi
+
+elif [ "$1" = "deauth" ]; then
+	# Deauths a client by ip or mac address
+	# $2 contains the ip or mac address
+	# Returns the status of the deauth request
+
+	if [ -z "$2" ]; then
+		exit 1
+	else
+		clientaddress=$2
+		libcall="yes"
+		ndsctlcmd="deauth $clientaddress"
+		do_ndsctl
+
+		authstat=$ndsctlout
+		# $authstat contains the response from do_ndsctl
+		echo "$authstat"
+	fi
+
+	exit 0
+
+elif [ "$1" = "daemon_deauth" ]; then
+	# Initiates a daemon process to deauth a client by ip or mac address
+	# Can be called from a binauth script
+	# $2 contains the ip or mac address
+	# Returns the pid of the daemon_deauth process
+	# The actual client deauth will be reported in the syslog if sucessful
+
+	if [ -z "$2" ]; then
+		exit 1
+	else
+		clientaddress=$2
+		daemoncmd="/usr/lib/opennds/libopennds.sh deauth $clientaddress"
+		ndsctlcmd="b64encode \"$daemoncmd\""
+		do_ndsctl
+
+		daemon_deauth=$(/usr/lib/opennds/libopennds.sh "startdaemon" "$ndsctlout")
+		echo "$daemon_deauth"
+	fi
+
+	exit 0
+
+elif [ "$1" = "urlencode" ]; then
+	# Urlencodes a string
+	# $2 contains the string to encode
+	# Returns the encoded string
+
+	if [ -z "$2" ]; then
+		exit 1
+	else
+		urlencode "$2"
+		printf "%s" "$urlencoded"
+		exit 0
+	fi
+
+elif [ "$1" = "urldecode" ]; then
+	# Urldecodes a string
+	# $2 contains the string to decode
+	# Returns the decoded string
+
+	if [ -z "$2" ]; then
+		exit 1
+	else
+		urldecode "$2"
+		printf "%s" "$urldecoded"
+		exit 0
+	fi
+
+elif [ "$1" = "send_to_fas_deauthed" ]; then
+	# Sends deauthed notification to an https fas
+	# $2 contains the deauthentication log.
+	#
+	# The deauthentication log is of the format:
+	# method=[method], clientmac=[clientmac], bytes_incoming=[bytes_incoming],
+	#	bytes_outgoing=[bytes_outgoing], session_start=[session_start],
+	#	session_end=$6, token=[token], custom=[custom data as sent to binauth]
+	#
+	# Returns exit code 0 if sent, 1 if failed
+
+	if [ -z "$2" ]; then
+		exit 1
+	else
+		payload=$2
+		action="deauthed"
+		send_post_data
+		printf "%s" "$returned_data"
+		exit 0
+	fi
+
+elif [ "$1" = "send_to_fas_custom" ]; then
+	# Sends a custom string to an https fas
+	# $2 contains the string to send
+	#
+	# The format of the custom string is not defined, so is fully customisable.
+	#
+	# Returns exit code 0 if sent, 1 if failed
+
+	if [ -z "$2" ]; then
+		exit 1
+	else
+		payload=$2
+		action="custom"
+		send_post_data
+		printf "%s" "$returned_data"
+		exit 0
 	fi
 
 else

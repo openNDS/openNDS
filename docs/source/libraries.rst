@@ -239,6 +239,75 @@ dhcpcheck:
 
     *returns*: The mac address that was allocated to the ip address or null and exit code 1 if not allocated
 
+deauth:
+-------
+
+	arg1: "deauth", deauthenticates a client by ip or mac address
+
+        arg2: contains the ip or mac address
+
+    *Can NOT be called from a binauth script*
+
+
+    *returns*: the status of the deauth request
+
+daemon_deauth:
+--------------
+
+    arg1: "daemon_deauth", initiates a daemon process to deauth a client by ip or mac address
+
+        arg2: contains the ip or mac address
+
+    *Can be called from a binauth script*
+
+    *returns* the pid of the daemon_deauth process
+
+    The actual client deauth will be reported in the syslog if successful
+
+urlencode:
+----------
+
+    arg1: "urlencode", urlencode a string
+
+        arg2: contains the string to be encoded
+
+    *returns* the encoded string
+
+urldecode:
+----------
+
+    arg1: "urldecode", urldecode a string
+
+        arg2: contains the string to be decoded
+
+    *returns* the decoded string
+
+send_to_fas_deauthed:
+---------------------
+
+**Note:** This library function is used by the default binauth_log.sh script. The default remote FAS script fas-aes-https.php writes the received deauthentication data to a deauth log.
+
+    arg1: send_to_fas_deauthed, Sends deauthed notification to an https fas
+        arg2: contains the deauthentication log.
+
+    The deauthentication log is of the format:
+
+``method=[method], clientmac=[clientmac], bytes_incoming=[bytes_incoming],
+bytes_outgoing=[bytes_outgoing], session_start=[session_start],
+session_end=$6, token=[token], custom=[custom data as sent to binauth]``
+
+Returns exit code 0 if sent, 1 if failed
+
+send_to_fas_custom:
+-------------------
+
+    arg1: send_to_fas_custom, Sends a custom string to an https fas
+        arg2: contains the string to send
+
+    The format of the custom string is not defined, so is fully customisable.
+
+Returns exit code 0 if sent, 1 if failed
+
 ?fas:
 -----
     **arg1**: "*?fas=<b64string>*", generates ThemeSpec html using b64encoded data sent from openNDS

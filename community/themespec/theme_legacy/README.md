@@ -6,9 +6,11 @@ Legacy splash pages used the long deprecated NDS template system. The code suppo
 Only gatewayname, tok, redir and authaction variables from the original template system are supported.
 
 # WARNING:
-The client is NOT required to accept a terms of service statement and does not receive any indication of a privacy policy.
+Using the legacy splash.html file, the client is NOT required to accept a terms of service statement and does not receive any indication of a privacy policy.
 
-Use of this ThemeSpec may make you personally liable for misuse of the Internet connection and may not comply with your country or state regulations. Use at your own risk at public venues.
+Use of the unchanged simple legacy splash.html file with this ThemeSpec, at a public venue, may make you personally liable for misuse of the Internet connection and may not comply with your country or state regulations. Use at your own risk at public venues.
+
+For simplicity, it is recommended that the default theme_click-to-continue script is used instead, where html content of the splash page sequence can be edited within the script itself.
 
 # Installation (openWRT)
 **Copy the themespec (theme_click-to-continue-legacy.sh) file and the splash.html file.**

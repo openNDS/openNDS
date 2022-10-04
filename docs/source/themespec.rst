@@ -171,3 +171,26 @@ For this example theme_user-email-login-custom-placeholders is called:
  * libopennds calls landing_page() - the landing page defined in themespec is served to the client.
  * libopennds finally calls openNDS to authenticate the client, passing on any quotas specific to the theme or client.
 
+Community Provided ThemeSpec scripts
+************************************
+
+Community provided Themespec scripts are not included in the compiled package, instead they are kept in the Github repository for download.
+
+A description and installation instructions will be provided in a README.md file for each community script.
+
+The first two community scripts are:
+
+Theme Voucher
+-------------
+This ThemeSpec provides a simple portal requiring a voucher to login.
+
+Theme Legacy
+------------
+This ThemeSpec enables the legacy splash.html portal page from a Themespec script.
+
+Link to community Scripts
+-------------------------
+The full list of Community scripts can be seen here:
+
+https://github.com/openNDS/openNDS/tree/master/community/themespec
+

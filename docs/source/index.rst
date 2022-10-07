@@ -6,8 +6,9 @@
 Welcome to the documentation for openNDS
 ========================================
 
-openNDS is a high performance, small footprint Captive Portal,
-offering by default a simple splash page restricted Internet connection, yet incorporates an API that allows the creation of sophisticated authentication applications.
+openNDS (a short form of "open Network Demarcation Service") is a high performance, small footprint, Captive Portal.
+
+It provides a border control gateway between a public local area network and the Internet, offering by default a simple splash page restricted Internet connection, yet incorporates an API that allows the creation of sophisticated authentication applications.
 
 It is a fork of the NoDogSplash project that in turn was derived originally from the codebase of the Wifi Guard Dog project.
 

@@ -37,13 +37,9 @@ define Package/opennds
 endef
 
 define Package/opennds/description
-  openNDS is a Captive Portal solution that offers an instant way to provide restricted access to the Internet.
-  With little or no configuration, a dynamically generated and adaptive splash page sequence is automatically served.
-  Both client driven Captive Portal Detection (CPD) and gateway driven Captive Portal Identification (CPI - RFC 8910 and RFC 8908) are supported.
-  Internet access is granted by either a click to continue button, or after credential verification as a result of filling in a login form.
-  The package incorporates the FAS API allowing many flexible customisation options.
-  The creation of sophisticated third party authentication applications is fully supported.
-  Internet hosted https portals can be implemented with no security errors, to inspire maximum user confidence.
+  openNDS (a short form of "open Network Demarcation Service") is a high performance, small footprint, Captive Portal.
+  It provides a border control gateway between a public local area network and the Internet.
+  Both the client driven Captive Portal Detection (CPD) method and gateway driven Captive Portal Identification method (CPI - RFC 8910 and RFC 8908) are supported.
 endef
 
 define Package/opennds/install

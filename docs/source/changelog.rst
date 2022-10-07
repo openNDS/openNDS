@@ -4,6 +4,7 @@ What's New? - ChangeLog
 opennds (9.9.0)
 
   * This version adds new functionality, and fixes some issues
+  * Add - Community ThemeSpec to support legacy splash.html [bluewavenet]
   * Fix - ensure nat_traversal_poll_interval defaults to 10 seconds [bluewavenet]
   * Add - process send_to_fas_deauthed and send_to_fas_custom in fas-aes-https [bluewavenet]
   * Add - support for send_to_fas_deauthed library call in binauth_log.sh [bluewavenet]

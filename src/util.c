@@ -512,9 +512,11 @@ static int _execute_ret(char* msg, int msg_len, const char *cmd)
 
 	if (WIFSIGNALED(rc) != 0) {
 		debug(LOG_NOTICE, "Command process exited due to signal %d", WTERMSIG(rc));
+		debug(LOG_NOTICE, "Requested command: [%s]", cmd);
+		rc = WTERMSIG(rc);
+	} else {
+		rc = WEXITSTATUS(rc);
 	}
-
-	rc = WEXITSTATUS(rc);
 
 abort:
 

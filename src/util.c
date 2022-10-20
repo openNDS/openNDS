@@ -477,6 +477,7 @@ static int _execute_ret(char* msg, int msg_len, const char *cmd)
 	struct sigaction sa, oldsa;
 	FILE *fp;
 	int rc;
+	size_t byte_count;
 
 	debug(LOG_DEBUG, "Executing command: %s", cmd);
 
@@ -504,7 +505,12 @@ static int _execute_ret(char* msg, int msg_len, const char *cmd)
 
 	if (msg && msg_len > 0) {
 		debug(LOG_DEBUG, "Reading command output");
-		rc = fread(msg, msg_len - 1, 1, fp);
+		byte_count = fread(msg, 1, msg_len - 1, fp);
+
+		if (byte_count == msg_len - 1) {
+			debug(LOG_ERR, "Buffer overflow, output may be truncated.");
+		}
+
 		debug(LOG_DEBUG, "command output: [%s]", msg);
 	}
 
@@ -604,7 +610,7 @@ get_iface_ip(const char ifname[], int ip6)
 char *
 get_iface_mac(const char ifname[])
 {
-	char addrbuf[18] = {0};
+	char addrbuf[20] = {0};
 	char cmd[128] = {0};
 	s_config *config;
 

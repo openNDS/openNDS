@@ -1403,20 +1403,30 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 						safe_asprintf(&cidinfo, "clientif=\"%s\"\0", clientif);
 						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
-						safe_asprintf(&cidinfo, "themespec=\"%s\"\0", config->themespec_path);
-						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
+						if (config->themespec_path) {
+							safe_asprintf(&cidinfo, "themespec=\"%s\"\0", config->themespec_path);
+							write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
+						}
 
-						safe_asprintf(&cidinfo, "%s\0", config->custom_params);
-						write_client_info(msg, STATUS_BUF, "parse", cid, cidinfo);
+						if (config->custom_params) {
+							safe_asprintf(&cidinfo, "%s\0", config->custom_params);
+							write_client_info(msg, STATUS_BUF, "parse", cid, cidinfo);
+						}
 
-						safe_asprintf(&cidinfo, "%s\0", config->custom_vars);
-						write_client_info(msg, STATUS_BUF, "parse", cid, cidinfo);
+						if (config->custom_vars) {
+							safe_asprintf(&cidinfo, "%s\0", config->custom_vars);
+							write_client_info(msg, STATUS_BUF, "parse", cid, cidinfo);
+						}
 
-						safe_asprintf(&cidinfo, "%s\0", config->custom_images);
-						write_client_info(msg, STATUS_BUF, "parse", cid, cidinfo);
+						if (config->custom_images) {
+							safe_asprintf(&cidinfo, "%s\0", config->custom_images);
+							write_client_info(msg, STATUS_BUF, "parse", cid, cidinfo);
+						}
 
-						safe_asprintf(&cidinfo, "%s\0", config->custom_files);
-						write_client_info(msg, STATUS_BUF, "parse", cid, cidinfo);
+						if (config->custom_files) {
+							safe_asprintf(&cidinfo, "%s\0", config->custom_files);
+							write_client_info(msg, STATUS_BUF, "parse", cid, cidinfo);
+						}
 
 						free(msg);
 						free(cidinfo);

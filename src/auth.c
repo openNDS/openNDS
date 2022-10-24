@@ -517,7 +517,7 @@ fw_refresh_client_list(void)
 
 				//Handle download rate limiting
 
-				if ((cp1->rate_exceeded&1) == 1) {
+				if (cp1->download_rate > 0 && (cp1->rate_exceeded&1) == 1) {
 					// note checked for bit 0 of rate_exceeded set to 1, it was so we are here 
 					if (cp1->download_rate > 0 && cp1->download_rate > downrate) {
 						// dropped below threshold
@@ -552,10 +552,8 @@ fw_refresh_client_list(void)
 						// refresh rate limiting
 						debug(LOG_DEBUG, "Above threshold - Refreshing Download Rate Limiting for [%s] [%s]", cp1->ip, cp1->mac);
 						action = DISABLE;
-						debug(LOG_DEBUG, "Refresh - Disabling Download Rate Limiting for [%s] [%s]", cp1->ip, cp1->mac);
 						iptables_download_ratelimit_enable(cp1, action);
 						action = ENABLE;
-						debug(LOG_DEBUG, "Refresh - Enabling Download Rate Limiting for [%s] [%s]", cp1->ip, cp1->mac);
 						iptables_download_ratelimit_enable(cp1, action);
 					}
 				}
@@ -563,7 +561,7 @@ fw_refresh_client_list(void)
 				//Handle upload rate limiting
 				debug(LOG_DEBUG, "cp1->upload_rate: %llu uprate: %llu", cp1->upload_rate, uprate);
 
-				if ((cp1->rate_exceeded&2) == 2) {
+				if (cp1->upload_rate > 0 && (cp1->rate_exceeded&2) == 2) {
 					// note checked for bit 1 of rate_exceeded set to 1, it was so we are here 
 					if (cp1->upload_rate > 0 && cp1->upload_rate > uprate) {
 
@@ -589,6 +587,7 @@ fw_refresh_client_list(void)
 						}
 					} else {
 						// refresh rate limiting
+						debug(LOG_DEBUG, "Above threshold - Refreshing Upload Rate Limiting for [%s] [%s]", cp1->ip, cp1->mac);
 						action = DISABLE;
 						iptables_upload_ratelimit_enable(cp1, action);
 						action = ENABLE;

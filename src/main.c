@@ -122,21 +122,20 @@ sigchld_handler(int s)
 	int	status;
 	pid_t rc;
 
-	debug(LOG_DEBUG, "SIGCHLD handler: Trying to reap a child");
-
 	rc = waitpid(-1, &status, WNOHANG | WUNTRACED);
 
 	if (rc == -1) {
-		if (errno == ECHILD) {
-			debug(LOG_DEBUG, "SIGCHLD handler: waitpid(): No child exists now.");
-		} else {
-			debug(LOG_ERR, "SIGCHLD handler: Error reaping child (waitpid() returned -1): %s", strerror(errno));
+		if (errno != ECHILD) {
+			debug(LOG_ERR, "SIGCHLD handler: Error reaping child process (waitpid() returned -1): %s", strerror(errno));
 		}
 		return;
 	}
 
 	if (WIFEXITED(status)) {
-		debug(LOG_DEBUG, "SIGCHLD handler: Process PID %d exited normally, status %d", (int)rc, WEXITSTATUS(status));
+
+		if (rc != 0) {
+			debug(LOG_DEBUG, "SIGCHLD handler: Process PID %d exited normally, status %d", (int)rc, WEXITSTATUS(status));
+		}
 		return;
 	}
 

@@ -132,7 +132,10 @@ int startdaemon(char *cmd, int daemonpid)
 	ret = execute_ret_url_encoded(msg, STATUS_BUF - 1, daemoncmd);
 
 	if (ret == 0) {
-		debug(LOG_DEBUG, "Daemon pid: %s", msg);
+
+		if (strcmp(msg, "0") != 0) {
+			debug(LOG_DEBUG, "Daemon pid: %s", msg);
+		}
 	} else {
 		debug(LOG_INFO, "Failed start daemon from [%s] - retrying", cmd);
 		sleep(1);
@@ -140,7 +143,10 @@ int startdaemon(char *cmd, int daemonpid)
 		ret = execute_ret_url_encoded(msg, STATUS_BUF - 1, daemoncmd);
 
 		if (ret == 0) {
-			debug(LOG_DEBUG, "Daemon pid: %s", msg);
+
+			if (strcmp(msg, "0") != 0) {
+				debug(LOG_DEBUG, "Daemon pid: %s", msg);
+			}
 		} else {
 			debug(LOG_INFO, "Failed start daemon from [%s] - giving up", cmd);
 		}
@@ -173,7 +179,7 @@ int stopdaemon(int daemonpid)
 	if (ret == 0) {
 		debug(LOG_DEBUG, "stopdaemon, pid: [%d], %s", daemonpid, msg);
 	} else {
-		debug(LOG_INFO, "Failed stop daemon pid [%d] - retrying", daemonpid);
+		debug(LOG_INFO, "Failed stopdaemon pid [%d] - retrying", daemonpid);
 		sleep(1);
 
 		ret = execute_ret_url_encoded(msg, STATUS_BUF - 1, daemoncmd);
@@ -391,7 +397,10 @@ int download_remotes(int refresh)
 		debug(LOG_DEBUG, "Starting daemon: %s\n", cmd);
 
 		if (startdaemon(cmd, daemonpid) == 0) {
-			debug(LOG_DEBUG, "daemon(%s) pid is [%d]", cmd, daemonpid);
+
+			if (daemonpid != 0) {
+				debug(LOG_DEBUG, "daemon(%s) pid is [%d]", cmd, daemonpid);
+			}
 		} else {
 			debug(LOG_DEBUG, "Cannot download remotes - daemon failed to start");
 		}
@@ -477,11 +486,11 @@ static int _execute_ret(char* msg, int msg_len, const char *cmd)
 	struct sigaction sa, oldsa;
 	FILE *fp;
 	int rc;
+	size_t byte_count;
 
 	debug(LOG_DEBUG, "Executing command: %s", cmd);
 
 	// Temporarily get rid of SIGCHLD handler (see main.c), until child exits.
-	debug(LOG_DEBUG,"Setting default SIGCHLD handler SIG_DFL");
 	sa.sa_handler = SIG_DFL;
 	sigemptyset(&sa.sa_mask);
 	sa.sa_flags = SA_NOCLDSTOP | SA_RESTART;
@@ -504,17 +513,24 @@ static int _execute_ret(char* msg, int msg_len, const char *cmd)
 
 	if (msg && msg_len > 0) {
 		debug(LOG_DEBUG, "Reading command output");
-		rc = fread(msg, msg_len - 1, 1, fp);
+		byte_count = fread(msg, 1, msg_len - 1, fp);
+
+		if (byte_count == msg_len - 1) {
+			debug(LOG_ERR, "Buffer overflow, output may be truncated.");
+		}
+
 		debug(LOG_DEBUG, "command output: [%s]", msg);
 	}
 
 	rc = pclose(fp);
 
 	if (WIFSIGNALED(rc) != 0) {
-		debug(LOG_NOTICE, "Command process exited due to signal %d", WTERMSIG(rc));
+		debug(LOG_NOTICE, "Command process exited due to signal [%d]", WTERMSIG(rc));
+		debug(LOG_NOTICE, "Requested command: [%s]", cmd);
+		rc = WTERMSIG(rc);
+	} else {
+		rc = WEXITSTATUS(rc);
 	}
-
-	rc = WEXITSTATUS(rc);
 
 abort:
 
@@ -602,7 +618,7 @@ get_iface_ip(const char ifname[], int ip6)
 char *
 get_iface_mac(const char ifname[])
 {
-	char addrbuf[18] = {0};
+	char addrbuf[20] = {0};
 	char cmd[128] = {0};
 	s_config *config;
 

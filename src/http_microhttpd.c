@@ -883,7 +883,9 @@ static int authenticated(struct MHD_Connection *connection,
 
 		if (rc != 0) {
 			debug(LOG_WARNING, "Script: %s - failed to execute", config->status_path);
-			return 0;
+			ret = send_error(connection, 503);
+			free(msg);
+			return ret;
 		}
 
 		// serve the script output (in msg)
@@ -1401,20 +1403,30 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 						safe_asprintf(&cidinfo, "clientif=\"%s\"\0", clientif);
 						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
-						safe_asprintf(&cidinfo, "themespec=\"%s\"\0", config->themespec_path);
-						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
+						if (config->themespec_path) {
+							safe_asprintf(&cidinfo, "themespec=\"%s\"\0", config->themespec_path);
+							write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
+						}
 
-						safe_asprintf(&cidinfo, "%s\0", config->custom_params);
-						write_client_info(msg, STATUS_BUF, "parse", cid, cidinfo);
+						if (config->custom_params) {
+							safe_asprintf(&cidinfo, "%s\0", config->custom_params);
+							write_client_info(msg, STATUS_BUF, "parse", cid, cidinfo);
+						}
 
-						safe_asprintf(&cidinfo, "%s\0", config->custom_vars);
-						write_client_info(msg, STATUS_BUF, "parse", cid, cidinfo);
+						if (config->custom_vars) {
+							safe_asprintf(&cidinfo, "%s\0", config->custom_vars);
+							write_client_info(msg, STATUS_BUF, "parse", cid, cidinfo);
+						}
 
-						safe_asprintf(&cidinfo, "%s\0", config->custom_images);
-						write_client_info(msg, STATUS_BUF, "parse", cid, cidinfo);
+						if (config->custom_images) {
+							safe_asprintf(&cidinfo, "%s\0", config->custom_images);
+							write_client_info(msg, STATUS_BUF, "parse", cid, cidinfo);
+						}
 
-						safe_asprintf(&cidinfo, "%s\0", config->custom_files);
-						write_client_info(msg, STATUS_BUF, "parse", cid, cidinfo);
+						if (config->custom_files) {
+							safe_asprintf(&cidinfo, "%s\0", config->custom_files);
+							write_client_info(msg, STATUS_BUF, "parse", cid, cidinfo);
+						}
 
 						free(msg);
 						free(cidinfo);
@@ -1674,9 +1686,10 @@ static int send_error(struct MHD_Connection *connection, int error)
 	const char *page_400 = "<html><head><title>Error 400</title></head><body><h1>Error 400 - Bad Request</h1></body></html>";
 	const char *page_403 = "<html><head><title>Error 403</title></head><body><h1>Error 403 - Forbidden - Access Denied to this Client!</h1></body></html>";
 	const char *page_404 = "<html><head><title>Error 404</title></head><body><h1>Error 404 - Not Found</h1></body></html>";
-	const char *page_500 = "<html><head><title>Error 500</title></head><body><h1>Error 500 - Internal Server Error: Oh no!</h1></body></html>";
+	const char *page_500 = "<html><head><title>Error 500</title></head><body><h1>Error 500 - Internal Server Error: Oh No!</h1></body></html>";
 	const char *page_501 = "<html><head><title>Error 501</title></head><body><h1>Error 501 - Not Implemented</h1></body></html>";
-	const char *page_503 = "<html><head><title>Error 503</title></head><body><h1>Error 503 - Internal Server Error: Out of Memory</h1></body></html>";
+	const char *page_503 = "<html><head><title>Error 503</title></head><body><h1>Error 503 - Service Unavailable. This may be a temporary condition."
+		"</h1></body></html>";
 	char *page_511;
 	char *cmd = NULL;
 	const char *mimetype = lookup_mimetype("foo.html");
@@ -1722,9 +1735,10 @@ static int send_error(struct MHD_Connection *connection, int error)
 		ret = MHD_queue_response(connection, MHD_HTTP_NOT_IMPLEMENTED, response);
 		break;
 	case 503:
+		debug(LOG_INFO, "503: [%s] ", (char *)page_503);
 		response = MHD_create_response_from_buffer(strlen(page_503), (char *)page_503, MHD_RESPMEM_MUST_COPY);
 		MHD_add_response_header(response, "Content-Type", mimetype);
-		ret = MHD_queue_response(connection, MHD_HTTP_INTERNAL_SERVER_ERROR, response);
+		ret = MHD_queue_response(connection, MHD_HTTP_SERVICE_UNAVAILABLE, response);
 		break;
 	case 511:
 		get_client_ip(ip, connection);
@@ -1741,7 +1755,15 @@ static int send_error(struct MHD_Connection *connection, int error)
 
 		if (execute_ret_url_encoded(page_511, HTMLMAXSIZE - 1, cmd) == 0) {
 			debug(LOG_INFO, "Network Authentication Required - page_511 html generated for [%s]", ip);
+		} else {
+			debug(LOG_WARNING, "Script: %s - failed to execute", config->status_path);
+			ret = send_error(connection, 503);
+			free(cmd);
+			free(page_511);
+			return ret;
 		}
+
+
 		free(cmd);
 
 		response = MHD_create_response_from_buffer(strlen(page_511), (char *)page_511, MHD_RESPMEM_MUST_FREE);

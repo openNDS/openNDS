@@ -1106,9 +1106,11 @@ This can be problematic as sites can use many dynamic ip addresses.
 
 However, manual configuration does not require any additional dependencies (ie additional installed packages).
 
-Manual configuration example:
+Note that standard unencrypted HTTP port (TCP port 80) is used for captive portal detection (CPD) and 
+access to external websites should use HTTPS (TCP port 443) for security. 
+It is still possible to allow TCP port 80 by using Autonomous Walled Garden approach.
 
-``list preauthenticated_users 'allow tcp port 80 to 112.122.123.124'``
+Manual configuration example:
 
 ``list preauthenticated_users 'allow udp port 8020 to 112.122.123.124'``
 

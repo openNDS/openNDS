@@ -12,6 +12,10 @@ Access to other web sites may be manually granted so clients can be served conte
 
 A set of such web sites is referred to as a Walled Garden.
 
+Note that standard unencrypted HTTP port (TCP port 80) is used for captive portal detection (CPD) and 
+access to external websites should use HTTPS (TCP port 443) for security.
+It is still possible to allow TCP port 80 by using Autonomous Walled Garden approach.
+
 Autonomous Walled Garden
 ************************
 

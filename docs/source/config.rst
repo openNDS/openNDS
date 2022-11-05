@@ -1150,8 +1150,8 @@ Add Facebook to the Walled Garden
 
 To add Facebook to the Walled Garden, the list entries would be:
 
-``list walledgarden_fqdn_list 'facebook.com fbcdn.net'``
-``list walledgarden_port_list '443'``
+| ``list walledgarden_fqdn_list 'facebook.com fbcdn.net'``
+| ``list walledgarden_port_list '443'``
 
 
 Add Paypal to the Walled Garden

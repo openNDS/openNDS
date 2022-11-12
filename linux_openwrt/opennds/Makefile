@@ -6,7 +6,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=opennds
-PKG_VERSION:=9.9.0
+PKG_VERSION:=9.9.1
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
@@ -27,10 +27,7 @@ define Package/opennds
   SUBMENU:=Captive Portals
   SECTION:=net
   CATEGORY:=Network
-	# For post OpenWrt 21.02.xx nft support:
   DEPENDS:=+iptables-nft +kmod-ipt-conntrack +kmod-ipt-nat +libmicrohttpd-no-ssl
-	# For OpenWrt 21.02.xx and earlier, ipt support:
-	# D@EPENDS:=+kmod-ipt-conntrack +kmod-ipt-nat +libmicrohttpd-no-ssl
   TITLE:=Open public network gateway daemon
   URL:=https://github.com/opennds/opennds
   CONFLICTS:=nodogsplash

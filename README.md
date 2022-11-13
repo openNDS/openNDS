@@ -1,8 +1,12 @@
-## 0. The openNDS project
+## 1. The openNDS project
 
-openNDS (a short form of "open Network Demarcation Service") is a Captive Portal.
+openNDS (open Network Demarcation Service) is a high performance, small footprint, Captive Portal.
 
 It provides a border control gateway between a public local area network and the Internet.
+
+It supports all ranges between small stand alone venues through to large mesh networks with multiple portal entry points.
+
+Both the client driven Captive Portal Detection (CPD) method and gateway driven Captive Portal Identification method (CPI - RFC 8910 and RFC 8908) are supported.
 
 In its default configuration, openNDS offers a dynamically generated and adaptive splash page sequence. Internet access is granted by a click to continue button, accepting Terms of Service. A simple option enables input forms for user login.
 
@@ -11,10 +15,6 @@ The package incorporates the FAS API allowing many flexible customisation option
 The creation of sophisticated third party authentication applications is fully supported.
 
 Internet hosted **https portals** can be implemented with no security errors, to inspire maximum user confidence.
-
-## 1. Overview
-
-**openNDS** is a high performance, small footprint Captive Portal, offering by default a simple restricted Internet connection, yet incorporates a comprehensive API that allows the creation of sophisticated authentication applications.
 
 ## 2. Captive Portal Detection (CPD) and Captive Portal Identification (CPI)
 

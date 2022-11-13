@@ -253,7 +253,7 @@ A device with 16MB flash or greater and 128MB ram or greater is recommended as a
 
  We will use port 2080 in this example.
 
- Install the module php7-cgi. Further modules may be required depending on your requirements.
+ Install the module php8-cgi. Further modules may be required depending on your requirements.
 
  To enable FAS with php in uhttpd you must add the lines:
 
@@ -322,11 +322,11 @@ Example Script File fas-aes.php
 -------------------------------
 Http protocol is enforced.
 
-Assuming you have installed your web server of choice, configured it for port 2080 and added PHP support using the package php7-cgi, you can do the following.
+Assuming you have installed your web server of choice, configured it for port 2080 and added PHP support using the package php8-cgi, you can do the following.
 
  (Under other operating systems you may need to edit the opennds.conf file in /etc/opennds instead, but the process is very similar.)
 
- * Install the packages php7-cli and php7-mod-openssl
+ * Install the packages php8-cli and php8-mod-openssl
 
  * Create a folder for the FAS script eg: /[server-web-root]/nds/ on the Internet FAS server
 
@@ -356,7 +356,7 @@ Assuming you have access to an Internet based https web server you can do the fo
 
  (Under other operating systems you may need to edit the opennds.conf file in /etc/opennds instead, but the process is very similar.)
 
- * Install the packages php7-cli and php7-mod-openssl on your NDS router
+ * Install the packages php8-cli and php8-mod-openssl on your NDS router
 
  * Create a folder for the FAS script eg: /[server-web-root]/nds/ on the Internet FAS server
 

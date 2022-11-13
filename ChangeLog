@@ -1,3 +1,19 @@
+opennds (9.9.1)
+
+  * This version fixes some issues
+  * Fix - minimalise deprecated legacy .conf file
+  * Fix - Prevent rate limit refresh if rate limit is set to 0 [bluewavenet]
+  * Fix - Mute some unneccessary debug messages [bluewavenet]
+  * Fix - do not write unconfigured (null) parameters to client id file (cidfile) [bluewavenet]
+  * Fix - Prevent error "Command process exited due to signal 13" when executing an external script [bluewavenet]
+  * Fix - use WTERMSIG() return code for _execute_ret when execute fails [bluewavenet]
+  * Fix - use correct response type for error 503 [bluewavenet]
+  * Update Makefile description [bluewavenet]
+  * Add - Community Local FAS install script [bluewavenet]
+  * Update - Mention TCP port 80 requires AutonomousWG [afriza]
+
+ -- Rob White <dot@blue-wave.net>  Thu, 12 Nov 2022 20:39:31 +0000
+
 opennds (9.9.0)
 
   * This version adds new functionality, and fixes some issues

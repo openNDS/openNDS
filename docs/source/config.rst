@@ -1106,9 +1106,9 @@ This can be problematic as sites can use many dynamic ip addresses.
 
 However, manual configuration does not require any additional dependencies (ie additional installed packages).
 
-Note that standard unencrypted HTTP port (TCP port 80) is used for captive portal detection (CPD) and 
-access to external websites should use HTTPS (TCP port 443) for security. 
-It is still possible to allow TCP port 80 by using Autonomous Walled Garden approach.
+Note that standard unencrypted HTTP port (TCP port 80) is used for captive portal detection (CPD) and access to external websites should use HTTPS (TCP port 443) for security.
+
+It is however, still possible to allow TCP port 80 by using the Autonomous Walled Garden approach.
 
 Manual configuration example:
 
@@ -1151,6 +1151,7 @@ Add Facebook to the Walled Garden
 To add Facebook to the Walled Garden, the list entries would be:
 
 ``list walledgarden_fqdn_list 'facebook.com fbcdn.net'``
+
 ``list walledgarden_port_list '443'``
 
 

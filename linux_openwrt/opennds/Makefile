@@ -36,8 +36,8 @@ endef
 define Package/opennds/description
   openNDS (open Network Demarcation Service) is a high performance, small footprint, Captive Portal.
   It provides a border control gateway between a public local area network and the Internet.
-  It supports all ranges between small stand alone venues through to large mesh networks with multiple portal entry points.
-  Both the client driven Captive Portal Detection (CPD) method and gateway driven Captive Portal Identification method (CPI - RFC 8910 and RFC 8908) are supported.
+  It supports all scenarios ranging from small stand alone venues through to large mesh networks with multiple portal entry points.
+  Both the client driven Captive Portal Detection method (CPD) and gateway driven Captive Portal Identification method (CPI - RFC 8910 and RFC 8908) are supported.
   This version requires iptables-nft.
 endef
 
@@ -86,4 +86,3 @@ define Package/opennds/conffiles
 endef
 
 $(eval $(call BuildPackage,opennds))
-

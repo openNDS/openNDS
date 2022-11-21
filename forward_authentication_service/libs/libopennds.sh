@@ -597,7 +597,7 @@ urlencode() {
 		buffer=$urlencoded
 	done
 
-	urlencoded=$(echo "$buffer" | awk '{ gsub(/\$/, "\%24"); print }')
+	urlencoded=$(echo "$buffer" | awk '{ gsub(/\$/, "\\%24"); print }')
 }
 
 urldecode() {
@@ -616,8 +616,8 @@ urldecode() {
 		buffer=$urldecoded
 	done
 
-	buffer=$(echo "$buffer" | awk '{ gsub(/\%24/, "\$"); print }')
-	urldecoded=$(echo "$buffer" | awk '{ gsub(/\%20/, " "); print }')
+	buffer=$(echo "$buffer" | awk '{ gsub(/%24/, "$"); print }')
+	urldecoded=$(echo "$buffer" | awk '{ gsub(/%20/, " "); print }')
 }
 
 
@@ -648,7 +648,6 @@ htmlentitydecode() {
 		s/\&lt;/</g
 		s/\&#37;/%/g
 		s/\&#39;/'/g
-		s/\&#96;/\`/g
 	"
 	local buffer="$1"
 
@@ -657,7 +656,8 @@ htmlentitydecode() {
 		buffer=$entitydecoded
 	done
 
-	entitydecoded=$(echo "$buffer" | awk '{ gsub(/\\&#36;/, "\$"); print }')
+	buffer=$(echo "$buffer" | awk '{ gsub(/&#96;/, "\\`"); print }')
+	entitydecoded=$(echo "$buffer" | awk '{ gsub(/&#36;/, "\\$"); print }')
 }
 
 get_client_zone () {
@@ -1511,6 +1511,32 @@ elif [ "$1" = "urldecode" ]; then
 	else
 		urldecode "$2"
 		printf "%s" "$urldecoded"
+		exit 0
+	fi
+
+elif [ "$1" = "htmlentityencode" ]; then
+	# Htmlentityencodes a string
+	# $2 contains the string to encode
+	# Returns the encoded string
+
+	if [ -z "$2" ]; then
+		exit 1
+	else
+		htmlentityencode "$2"
+		printf "%s" "$entityencoded"
+		exit 0
+	fi
+
+elif [ "$1" = "htmlentitydecode" ]; then
+	# Htmlentitydecodes a string
+	# $2 contains the string to decode
+	# Returns the decoded string
+
+	if [ -z "$2" ]; then
+		exit 1
+	else
+		htmlentitydecode "$2"
+		printf "%s" "$entitydecoded"
 		exit 0
 	fi
 

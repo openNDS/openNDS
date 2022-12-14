@@ -4,7 +4,7 @@
  This is a FAS script providing an example of remote Forward Authentication for openNDS (NDS) on an http web server supporting PHP.
 
  The following NDS configurations must be set:
- 1. fasport: Set to the port number the remote webserver is using (typically port 80)
+ 1. fasport: Set to the port number the remote webserver is using (typically port 443)
 
  2. faspath: This is the path from the FAS Web Root to the location of this FAS script (not from the file system root).
 	eg. /nds/fas-aes-https.php
@@ -27,10 +27,10 @@
 
 	The query string will also contain a randomly generated initialization vector to be used by the FAS for decryption.
 
-	The "php-cli" package and the "php-openssl" module must both be installed for fas_secure level 2.
+	The "php-cli" package and the "php-openssl" module must both be installed for fas_secure level 2 and above.
 
  openNDS does not have "php-cli" and "php-openssl" as dependencies, but will exit gracefully at runtime if this package and module
- are not installed when fas_secure_enabled is set to level 3.
+ are not installed when fas_secure_enabled is set to level 2 or 3.
 
  The FAS must use the initialisation vector passed with the query string and the pre shared faskey to decrypt the required information.
 

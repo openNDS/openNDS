@@ -21,13 +21,19 @@ config opennds
 	#option debuglevel '2'
 	###########################################################################################
 
-	# fwhook_enabled (deprecated)
+	# fwhook_enabled
 	# Firewall Restart hook
+	# Default: 0 (disabled)
 	# This is required for OpenWrt Firewall 3 (OpenWrt 21.02.3 and earlier)
-	# It is not needed and has no effect for OpenWrt Firewall 4 NFT (OpenWrt 22.03.0 and later)
+	# It is not required for OpenWrt Firewall 4 NFT (OpenWrt 22.03.0 and later)
+	#
+	# For OpenWrt Firewall 4 NFT, it is useful for forcing a restart of openNDS on a network hotplug event.
+	# Generally this is not desirable, but in some edge cases might be required.
+	#
 	# Set to 0 to disable hook that makes opennds restart when the firewall restarts.
-	# This hook is needed as a restart of Firewall overwrites opennds iptables entries.
-	option fwhook_enabled '1'
+	# Set to 1 to enable
+	#
+	#option fwhook_enabled '0'
 	###########################################################################################
 
 	# ndsctlsocket

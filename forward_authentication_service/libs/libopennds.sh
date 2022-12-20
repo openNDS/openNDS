@@ -1078,11 +1078,8 @@ users_to_router () {
 		option="users_to_router_passthrough"
 		get_option_from_config
 
-		if [ "$users_to_router_passthrough" = "1" ]; then
+		if [ "$users_to_router_passthrough" = "1" ] || [ "$mode" = "cleanup" ]; then
 			mode="passthrough"
-			syslogmessage="Option users_to_router_passthrough is enabled."
-			debugtype="notice"
-			write_to_syslog
 		fi
 
 		option="gatewayinterface"
@@ -1626,7 +1623,7 @@ elif [ "$1" = "users_to_router" ]; then
 	# Allow: (default) OpenNDS firewall controls all access for users to the router.
 	# Passthrough: Facilitates chaining to lower priority nftables tables/chains (eg FW4 in OpenWrt)
 	#
-	# $2 is the mode to set (ie allow or passthrough)
+	# $2 is the mode to set (ie allow, passthrough or cleanup)
 	#
 	# Returns exit code 0 if set, 1 if failed
 

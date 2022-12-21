@@ -1065,6 +1065,45 @@ send_post_data () {
 	fi
 }
 
+users_to_router () {
+
+	fw4=$(type fw4)
+	ret=$?
+
+	if [ $ret -ne 0 ]; then
+		syslogmessage="Library call \"users_to_router\" not supported on this system - passthrough mode is on"
+		debugtype="warn"
+		write_to_syslog
+	else
+		option="users_to_router_passthrough"
+		get_option_from_config
+
+		if [ "$users_to_router_passthrough" = "1" ] || [ "$mode" = "cleanup" ]; then
+			mode="passthrough"
+		fi
+
+		option="gatewayinterface"
+		get_option_from_config
+
+		if [ -z "$gatewayinterface" ]; then
+			gatewayinterface="br-lan"
+		fi
+
+		inputchain=$(nft list table inet fw4 | grep -w "$gatewayinterface" | grep "jump input" | awk -F" jump " '{print $2}' | awk -F" " '{print $1}')
+
+		rulehandle=$(nft -a list chain inet fw4 "$inputchain" | grep -w "users_to_router" | awk -F" " '{printf "%s" $NF}')
+
+		if [ ! -z "$rulehandle" ]; then
+			nft delete rule inet fw4 "$inputchain" handle "$rulehandle"
+		fi
+
+		if [ "$mode" != "passthrough" ]; then
+			nft insert rule inet fw4 "$inputchain" counter accept comment "\"!opennds: users_to_router\""
+			ret=$?
+		fi
+	fi
+}
+
 #### end of functions ####
 
 
@@ -1578,6 +1617,24 @@ elif [ "$1" = "send_to_fas_custom" ]; then
 		printf "%s" "$returned_data"
 		exit 0
 	fi
+
+elif [ "$1" = "users_to_router" ]; then
+	# Sets allow or passthrough mode for users_to_router rules.
+	# Allow: (default) OpenNDS firewall controls all access for users to the router.
+	# Passthrough: Facilitates chaining to lower priority nftables tables/chains (eg FW4 in OpenWrt)
+	#
+	# $2 is the mode to set (ie allow, passthrough or cleanup)
+	#
+	# Returns exit code 0 if set, 1 if failed
+
+	if [ -z "$2" ]; then
+		mode="allow"
+	else
+		mode=$2
+		users_to_router "$mode"
+	fi
+
+	exit $ret
 
 else
 	#Display a splash page sequence using a Themespec

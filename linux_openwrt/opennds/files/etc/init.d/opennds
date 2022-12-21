@@ -9,8 +9,8 @@ STOP=95
 
 USE_PROCD=1
 
-IPT=/usr/sbin/iptables
-WD_DIR=/usr/bin
+# IPT=/usr/sbin/iptables
+# WD_DIR=/usr/bin
 
 # Run in PROCD (-f) and log to SYSLOG (-s)
 OPTIONS="-f -s"
@@ -148,6 +148,8 @@ start_service() {
 
   config_load opennds
   config_foreach create_instance opennds
+
+  /usr/lib/opennds/libopennds.sh users_to_router allow
 }
 
 stop_service() {
@@ -155,4 +157,5 @@ stop_service() {
   # Otherwise procd will restart opennds twice. First time starting
   # opennds fails, second time it succeeds.
   sleep 1
+  /usr/lib/opennds/libopennds.sh users_to_router cleanup
 }

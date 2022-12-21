@@ -7,10 +7,6 @@ config opennds
 	option enabled 1
 	###########################################################################################
 
-	# Use deprecated generic configuration file (not recommended)
-	#option config '/etc/opennds/opennds.conf'
-	###########################################################################################
-
 	# debuglevel
 	# Set Debug Level (0-3)
 	# Default: 1
@@ -23,17 +19,13 @@ config opennds
 
 	# fwhook_enabled
 	# Firewall Restart hook
-	# Default: 0 (disabled)
-	# This is required for OpenWrt Firewall 3 (OpenWrt 21.02.3 and earlier)
-	# It is not required for OpenWrt Firewall 4 NFT (OpenWrt 22.03.0 and later)
+	# Default: 1 (enabled)
+	# It is required for OpenWrt Firewall 4 NFT (OpenWrt 22.03.0 and later)
 	#
-	# For OpenWrt Firewall 4 NFT, it is useful for forcing a restart of openNDS on a network hotplug event.
-	# Generally this is not desirable, but in some edge cases might be required.
+	# Warning: Disabling this option may soft brick your router
+	# This option should always be enabled.
 	#
-	# Set to 0 to disable hook that makes opennds restart when the firewall restarts.
-	# Set to 1 to enable
-	#
-	#option fwhook_enabled '0'
+	#option fwhook_enabled '1'
 	###########################################################################################
 
 	# ndsctlsocket
@@ -273,7 +265,7 @@ config opennds
 	# Maximum number of Local Log Entries
 	# Default 100
 	# Minimum value 0
-	# Maximum value - limited only be free storage space on the logging mountpoint
+	# Maximum value - limited only by free storage space on the logging mountpoint
 	#
 	# If set to '0' there is no limit
 	#
@@ -308,8 +300,8 @@ config opennds
 	# WebRoot
 	# Default: /etc/opennds/htdocs
 	#
-	# The local path where the system css file, and legacy splash page content resides.
-	# ie. Serve the file splash.html from this directory
+	# The local path where the system css file, and default splash page image resides.
+	# ie. Serve the file splash.css from this directory
 	#option webroot '/etc/opennds/htdocs'
 	###########################################################################################
 
@@ -318,7 +310,7 @@ config opennds
 	# Use this option to set the device opennds will bind to.
 	# The value may be an interface section in /etc/config/network or a device name such as br-lan.
 	# The selected interface must be allocated an IPv4 address.
-	# In OpenWrt this is normally br-lan, in generic Linux it might be wlan0
+	# In OpenWrt this is normally br-lan, in generic Linux it might be something else.
 	#
 	#option gatewayinterface 'br-lan'
 	###########################################################################################
@@ -328,6 +320,8 @@ config opennds
 	#
 	# openNDS's own http server uses gateway address as its IP address.
 	# The port it listens to at that IP can be set here; default is 2050.
+	# This option rarely needs to be changed
+	# Warning: Port 80 is forbidden.
 	#
 	#option gatewayport '2050'
 	###########################################################################################
@@ -337,7 +331,7 @@ config opennds
 	#
 	# gatewayname is used as an identifier for the instance of openNDS
 	#
-	# It is displayed on the default static splash page and the default preauth login script.
+	# It is displayed on the default splash page sequence.
 	#
 	# It is particularly useful in the case of a single remote FAS server that serves multiple
 	# openNDS sites, allowing the FAS to customise its response for each site.
@@ -398,7 +392,7 @@ config opennds
 	# The maximum number of clients allowed to connect
 	# This should be less than or equal to the number of allowed DHCP leases
 	# For example:
-	option maxclients '250'
+	#option maxclients '500'
 	###########################################################################################
 
 	# Client timeouts in minutes
@@ -406,12 +400,12 @@ config opennds
 	# preauthidletimeout is the time in minutes after which a client is disconnected if not authenticated
 	# ie the client has not attempted to authenticate for this period
 	# Default 30 minutes
-	#option preauthidletimeout '30'
+	#option preauthidletimeout '15'
 
 	# authidletimeout is the time in minutes after which an idle client is disconnected
 	# ie the client has not used the network access for this period
 	# Default 120 minutes
-	#option authidletimeout '120'
+	#option authidletimeout '180'
 
 	# Session Timeout is the interval after which clients are forced out (a value of 0 means never)
 	# Clients will be deauthenticated at the end of this period
@@ -420,6 +414,7 @@ config opennds
 	#option sessiontimeout '1200'
 	###########################################################################################
 
+	# checkinterval
 	# The interval in seconds at which opennds checks client timeout and quota status
 	# Default 15 seconds
 	# Example: Set to 30 seconds
@@ -637,10 +632,11 @@ config opennds
 	# Default: 1234567890
 	# A key phrase for NDS to encrypt the query string sent to FAS
 	# Can be any text string with no white space
-	#
+	# Hint and Example: Choose a secret string and use sha256sum utility to generate a hash.
+	# eg. Use the command - echo "secret key" | sha256sum
 	# Option faskey must be pre-shared with FAS.
 	#
-	#option faskey '1234567890'
+	#option faskey '328411b33fe55127421fa394995711658526ed47d0affad3fe56a0b3930c8689'
 	###########################################################################################
 
 	# Option: fas_secure_enabled
@@ -655,7 +651,7 @@ config opennds
 	# The FAS is enforced by NDS to use http protocol.
 	# The client token will be hashed and sent to the FAS along with other relevent information in a base 64 encoded string
 	#
-	# FAS must return the sha256sum of the concatenation of hid(the hashed original token), and faskey to be used by NDS for client authentication.
+	# FAS must return the sha256sum of the concatenation of hid (the hashed original token), and faskey to be used by NDS for client authentication.
 	# This is returned to FAS for authentication
 	#
 
@@ -736,24 +732,24 @@ config opennds
 
 	# Grant Access For Authenticated Users (allow and passthrough):
 	#
-	# Access can be allowed by openNDS directly, overriding the operating system firewall rules
-	# or Access can be allowed by openNDS but the final decision can be passed on to the operating system firewall.
+	# Access can be allowed by openNDS directly, overriding firewall rules that might be set elsewhere
+	# or Access can be allowed by openNDS but the final decision can be passed on to other firewall rules that might be set.
 	#
 	# Default: list authenticated_users 'passthrough all'
 	#
 	# Any entries set here, or above in Block Access, will override the default
 	#
-	# Example: Grant access overriding operating system firewall
+	# Example: Grant access overriding firewall rules that might be set elsewhere.
 	#list authenticated_users 'allow all'
 	#
 	# Example: 
-	# Grant access to https web sites, subject to the operating system firewall rules
+	# Grant access to https web sites, subject to firewall rules that might be set elsewhere.
 	#list authenticated_users 'passthrough tcp port 443'
 	#
-	# Grant access to http web sites, overriding the operating system firewall rules.
+	# Grant access to http web sites, overriding firewall rules that might be set elsewhere.
 	#list authenticated_users 'allow tcp port 80'
 	#
-	# Grant access to udp services at address 123.1.1.1, on port 5000, overriding the operating system firewall rules.
+	# Grant access to udp services at address 123.1.1.1, on port 5000, overriding firewall rules that might be set elsewhere.
 	#list authenticated_users 'allow udp port 5000 to 123.1.1.1'
 	#
 	###########################################################################################
@@ -762,7 +758,7 @@ config opennds
 	#
 	#	*****IMPORTANT*****
 	#
-	# To support RFC8910 Captive Portal Identification
+	# To enable RFC8910 Captive Portal Identification
 	#	AND to help prevent DNS tunnelling, DNS Hijacking and generally improve security,
 	#
 	# 	****DO NOT ALLOW ACCESS TO EXTERNAL DNS SERVICES****
@@ -830,14 +826,21 @@ config opennds
 
 	# User access to the router
 	#
-	# Essential - Allow ports for DNS and DHCP (disabling these will soft brick your router):
+	# users_to_router_passthrough
+	# Default 0 (disabled)
+	#
+	# Warning: Enabling this option may soft brick your router
+	# If enabled you must allow access to essential services via rules configured in the system firewall
+
+	#option users_to_router_passthrough '0'
+
+	# Essential Services - Allow ports for DNS and DHCP (disabling these will soft brick your router):
 	list users_to_router 'allow tcp port 53'
 	list users_to_router 'allow udp port 53'
 	list users_to_router 'allow udp port 67'
 
-	# Optional - Allow ports for SSH/HTTP/HTTPS:
+	# Optional Services - Allow ports for SSH/HTTPS:
 	list users_to_router 'allow tcp port 22'
-	list users_to_router 'allow tcp port 80'
 	list users_to_router 'allow tcp port 443'
 	###########################################################################################
 
@@ -846,14 +849,17 @@ config opennds
 	###########################################################################################
 
 	# dhcp_default_url_enable
+	#
 	# Sends "default_url" (dhcp option 114) with all replies to dhcp requests
 	# Required for RFC8910 Captive Portal Identification
+	#
 	# Default 1 (enabled)
-	# To disable, set to 0
+	# Warning: Disabling will prevent RFC8910/8908 clients from logging in to the portal
+	#
 	#option dhcp_default_url_enable '1'
 	###########################################################################################
 
-	# openNDS uses specific HEXADECIMAL values to mark packets used by iptables as a bitwise mask.
+	# openNDS uses specific HEXADECIMAL values to mark packets used by iptables/nftables as a bitwise mask.
 	# This mask can conflict with the requirements of other packages.
 	#
 	# However the defaults are fully compatible with the defaults used in mwan3 and sqm

@@ -906,9 +906,11 @@ config_input_fields () {
 
 check_mhd() {
 	fetch=$(type -t uclient-fetch)
+	fw4=$(type -t fw4)
 	configure_log_location
 	heartbeatpath="$mountpoint/ndscids/heartbeat"
 	mhdstatus="2"
+	nftstatus="2"
 	local timeout=4
 
 	for tic in $(seq $timeout); do
@@ -923,6 +925,39 @@ check_mhd() {
 			break
 		fi
 	done
+
+	for tic in $(seq $timeout); do
+		nft_get_status
+
+		if [ "$nftstatus" = "2" ]; then
+			# NFT response fail - wait then try again:
+			sleep 1
+		elif [ "$nftstatus" = "1" ]; then
+			break
+		fi
+	done
+
+	if [ "$nftstatus" = "2" ]; then
+		syslogmessage="The openNDS nftables ruleset is missing or has been removed by another process."
+		debugtype="emerg"
+		write_to_syslog
+		syslogmessage="Restarting...."
+		debugtype="warn"
+		write_to_syslog
+		/etc/init.d/opennds restart
+		exit 0
+	fi
+}
+
+nft_get_status() {
+
+	if [ ! -z "$fw4" ]; then
+		nfttest=$(nft -a list chain ip filter ndsNET 2> /dev/null)
+
+		if [ ! -z "$nfttest" ]; then
+			nftstatus="1"
+		fi
+	fi
 }
 
 mhd_get_status() {

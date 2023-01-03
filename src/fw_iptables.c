@@ -146,8 +146,8 @@ _iptables_check_mark_masking()
 	}
 
 	// See if kernel supports mark masking
-	if (0 == iptables_do_command("-t filter -I FORWARD 1 -m mark --mark 0x%x/0x%x -j REJECT", FW_MARK_BLOCKED, FW_MARK_MASK)) {
-		iptables_do_command("-t filter -D FORWARD 1"); // delete test rule we just inserted
+	if (0 == iptables_do_command("-t filter -I " CHAIN_FORWARD " 1 -m mark --mark 0x%x/0x%x -j REJECT", FW_MARK_BLOCKED, FW_MARK_MASK)) {
+		iptables_do_command("-t filter -D " CHAIN_FORWARD " 1"); // delete test rule we just inserted
 		debug(LOG_DEBUG, "Kernel supports mark masking.");
 		char *tmp = NULL;
 		safe_asprintf(&tmp,"/0x%x",FW_MARK_MASK);
@@ -243,6 +243,7 @@ _iptables_compile(const char table[], const char chain[], t_firewall_rule *rule)
 		break;
 	}
 
+	debug(LOG_DEBUG, "iptables compile: table [%s ], chain [ %s ], mode [ %s ]", table, chain, mode);
 	snprintf(command, sizeof(command),  "-t %s -A %s ", table, chain);
 
 	if (rule->mask != NULL) {
@@ -556,10 +557,10 @@ iptables_fw_init(void)
 	rc |= iptables_do_command("-t filter -N " CHAIN_TRUSTED);
 	rc |= iptables_do_command("-t filter -N " CHAIN_TRUSTED_TO_ROUTER);
 
-	// filter INPUT chain
+	// filter CHAIN_INPUT chain
 
 	// packets coming in on gw_interface jump to CHAIN_TO_ROUTER
-	rc |= iptables_do_command("-t filter -I INPUT -i %s -s %s -j " CHAIN_TO_ROUTER, gw_interface, gw_iprange);
+	rc |= iptables_do_command("-t filter -I " CHAIN_INPUT " -i %s -s %s -j " CHAIN_TO_ROUTER, gw_interface, gw_iprange);
 	// CHAIN_TO_ROUTER packets marked BLOCKED DROP
 	rc |= iptables_do_command("-t filter -A " CHAIN_TO_ROUTER " -m mark --mark 0x%x%s -j DROP", FW_MARK_BLOCKED, markmask);
 	// CHAIN_TO_ROUTER, invalid packets DROP
@@ -621,11 +622,11 @@ iptables_fw_init(void)
 	}
 
 	/*
-	 * filter FORWARD chain
+	 * filter CHAIN_FORWARD chain
 	 */
 
 	// packets coming in on gw_interface jump to CHAIN_TO_INTERNET
-	rc |= iptables_do_command("-t filter -I FORWARD -i %s -s %s -j " CHAIN_TO_INTERNET, gw_interface, gw_iprange);
+	rc |= iptables_do_command("-t filter -I " CHAIN_FORWARD " -i %s -s %s -j " CHAIN_TO_INTERNET, gw_interface, gw_iprange);
 	// CHAIN_TO_INTERNET packets marked BLOCKED DROP
 	rc |= iptables_do_command("-t filter -A " CHAIN_TO_INTERNET " -m mark --mark 0x%x%s -j DROP", FW_MARK_BLOCKED, markmask);
 	// CHAIN_TO_INTERNET, invalid packets DROP
@@ -808,8 +809,8 @@ iptables_fw_destroy(void)
 	// Everything in the filter table
 
 	debug(LOG_DEBUG, "Destroying chains in the FILTER table");
-	iptables_fw_destroy_mention("filter", "INPUT", CHAIN_TO_ROUTER);
-	iptables_fw_destroy_mention("filter", "FORWARD", CHAIN_TO_INTERNET);
+	iptables_fw_destroy_mention("filter", CHAIN_INPUT, CHAIN_TO_ROUTER);
+	iptables_fw_destroy_mention("filter", CHAIN_FORWARD, CHAIN_TO_INTERNET);
 	iptables_do_command("-t filter -F " CHAIN_TO_ROUTER);
 	iptables_do_command("-t filter -F " CHAIN_TO_INTERNET);
 	iptables_do_command("-t filter -F " CHAIN_AUTHENTICATED);

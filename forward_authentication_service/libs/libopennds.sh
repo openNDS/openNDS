@@ -1129,7 +1129,7 @@ users_to_router () {
 		rulehandle=$(nft -a list chain inet fw4 "$inputchain" | grep -w "users_to_router" | awk -F" " '{printf "%s" $NF}')
 
 		if [ ! -z "$rulehandle" ]; then
-			nft delete rule inet fw4 "$inputchain" handle "$rulehandle"
+			nft delete rule inet fw4 "$inputchain" handle "$rulehandle" &> /dev/null
 		fi
 
 		if [ "$mode" != "passthrough" ]; then
@@ -1138,6 +1138,52 @@ users_to_router () {
 		fi
 	fi
 }
+
+pre_setup () {
+	option="gatewayinterface"
+	get_option_from_config
+
+	if [ -z "$gatewayinterface" ]; then
+		gatewayinterface="br-lan"
+	fi
+
+	ndstables="filter mangle nat"
+
+	for ndstable in $ndstables; do
+		nft list table ip "$ndstable" &>/dev/null
+		ret=$?
+
+		if [ $ret -gt 0 ]; then
+			# Table does not exist
+			nft add table ip $ndstable
+			ret=$?
+
+			if [ $ret -gt 0 ]; then
+				break
+			fi
+		fi
+	done
+
+	# Tables should now exist, flush and initialise chains:
+
+	nft delete chain ip filter ndsINP &> /dev/null
+	nft delete chain ip filter ndsFWD &> /dev/null
+	nft delete chain ip filter nds_allow_INP &> /dev/null
+	nft delete chain ip filter nds_allow_FWD &> /dev/null
+
+	nft add chain ip filter ndsINP "{ type filter hook input priority -100 ; }"
+	nft add chain ip filter ndsFWD "{ type filter hook forward priority -100 ; }"
+
+	nft add chain ip filter nds_allow_INP "{ type filter hook input priority 100 ; }"
+	nft add chain ip filter nds_allow_FWD "{ type filter hook forward priority 100 ; }"
+
+	nft insert rule ip filter nds_allow_INP iifname "\"$gatewayinterface\"" counter accept comment "\"!opennds: allow input\""
+	nft insert rule ip filter nds_allow_FWD iifname "\"$gatewayinterface\"" counter accept comment "\"!opennds: allow forward\""
+
+	ret=$?
+
+}
+
 
 #### end of functions ####
 
@@ -1668,6 +1714,15 @@ elif [ "$1" = "users_to_router" ]; then
 		mode=$2
 		users_to_router "$mode"
 	fi
+
+	exit $ret
+
+elif [ "$1" = "pre_setup" ]; then
+	# Pre-setup before openNDS does its built in configuration
+	# After essential pre-setup, the customisation script file /usr/lib/opennds/custom_presetup.sh is included
+	# Returns exit code 0 if done, 1 if failed
+
+	pre_setup
 
 	exit $ret
 

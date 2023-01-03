@@ -295,6 +295,7 @@ setup_from_config(void)
 	t_WGFQDN *allowed_wgfqdn;
 	char wgfqdns[1024] = {0};
 	char *dnscmd;
+	char *setupcmd;
 
 	s_config *config;
 
@@ -319,6 +320,16 @@ setup_from_config(void)
 	debug(LOG_INFO, "tmpfs mountpoint is [%s]", config->tmpfsmountpoint);
 	// Before we do anything else, reset the firewall (cleans it, in case we are restarting after opennds crash)
 	iptables_fw_destroy();
+
+	// Call pre setup library function
+	safe_asprintf(&setupcmd, "/usr/lib/opennds/libopennds.sh \"pre_setup\"");
+	msg = safe_calloc(STATUS_BUF);
+
+	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, setupcmd) == 0) {
+		debug(LOG_INFO, "Pre-Setup request sent");
+	}
+	free(setupcmd);
+	free(msg);
 
 	// Check for libmicrohttp version at runtime, ie actual installed version
 	int major = 0;

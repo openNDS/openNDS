@@ -771,6 +771,8 @@ iptables_fw_init(void)
 int
 iptables_fw_destroy(void)
 {
+	char *delchainscmd;
+	char *msg;
 	fw_quiet = 1;
 	s_config *config;
 
@@ -809,8 +811,10 @@ iptables_fw_destroy(void)
 	// Everything in the filter table
 
 	debug(LOG_DEBUG, "Destroying chains in the FILTER table");
-	iptables_fw_destroy_mention("filter", CHAIN_INPUT, CHAIN_TO_ROUTER);
-	iptables_fw_destroy_mention("filter", CHAIN_FORWARD, CHAIN_TO_INTERNET);
+	//iptables_fw_destroy_mention("filter", CHAIN_INPUT, CHAIN_TO_ROUTER);
+	//iptables_fw_destroy_mention("filter", CHAIN_FORWARD, CHAIN_TO_INTERNET);
+	iptables_do_command("-t filter -F " CHAIN_INPUT);
+	iptables_do_command("-t filter -F " CHAIN_FORWARD);
 	iptables_do_command("-t filter -F " CHAIN_TO_ROUTER);
 	iptables_do_command("-t filter -F " CHAIN_TO_INTERNET);
 	iptables_do_command("-t filter -F " CHAIN_AUTHENTICATED);
@@ -823,6 +827,16 @@ iptables_fw_destroy(void)
 	iptables_do_command("-t filter -X " CHAIN_UPLOAD_RATE);
 	iptables_do_command("-t filter -X " CHAIN_TRUSTED);
 	iptables_do_command("-t filter -X " CHAIN_TRUSTED_TO_ROUTER);
+
+	// Call pre setup library function
+	safe_asprintf(&delchainscmd, "/usr/lib/opennds/libopennds.sh \"delete_chains\"");
+	msg = safe_calloc(STATUS_BUF);
+
+	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, delchainscmd) == 0) {
+		debug(LOG_INFO, "Chain delete request sent");
+	}
+	free(delchainscmd);
+	free(msg);
 
 	fw_quiet = 0;
 

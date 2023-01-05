@@ -1139,6 +1139,13 @@ users_to_router () {
 	fi
 }
 
+delete_chains () {
+	nft delete chain ip filter ndsINP &> /dev/null
+	nft delete chain ip filter ndsFWD &> /dev/null
+	nft delete chain ip filter nds_allow_INP &> /dev/null
+	nft delete chain ip filter nds_allow_FWD &> /dev/null
+}
+
 pre_setup () {
 	option="gatewayinterface"
 	get_option_from_config
@@ -1166,10 +1173,7 @@ pre_setup () {
 
 	# Tables should now exist, flush and initialise chains:
 
-	nft delete chain ip filter ndsINP &> /dev/null
-	nft delete chain ip filter ndsFWD &> /dev/null
-	nft delete chain ip filter nds_allow_INP &> /dev/null
-	nft delete chain ip filter nds_allow_FWD &> /dev/null
+	delete_chains
 
 	nft add chain ip filter ndsINP "{ type filter hook input priority -100 ; }"
 	nft add chain ip filter ndsFWD "{ type filter hook forward priority -100 ; }"
@@ -1719,12 +1723,18 @@ elif [ "$1" = "users_to_router" ]; then
 
 elif [ "$1" = "pre_setup" ]; then
 	# Pre-setup before openNDS does its built in configuration
-	# After essential pre-setup, the customisation script file /usr/lib/opennds/custom_presetup.sh is included
 	# Returns exit code 0 if done, 1 if failed
 
 	pre_setup
 
 	exit $ret
+
+elif [ "$1" = "delete_chains" ]; then
+	# Delete the openNDS nft chains
+
+	delete_chains
+
+	exit 0
 
 else
 	#Display a splash page sequence using a Themespec

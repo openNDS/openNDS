@@ -1140,10 +1140,57 @@ users_to_router () {
 }
 
 delete_chains () {
-	nft delete chain ip filter ndsINP &> /dev/null
-	nft delete chain ip filter ndsFWD &> /dev/null
+	# If upgrading from 9.9.1 or earlier we need to clear our rules from INPUT and FORWARD chains
+	table="filter"; src_chain="FORWARD"; dst_chain="ndsNET"
+	delete_rule
+
+	table="filter"; src_chain="INPUT"; dst_chain="ndsRTR"
+	delete_rule
+
+	# now we can delete the chains:
+	# in the filter table
 	nft delete chain ip filter nds_allow_INP &> /dev/null
 	nft delete chain ip filter nds_allow_FWD &> /dev/null
+	nft delete chain ip filter ndsNET &> /dev/null
+	nft delete chain ip filter ndsRTR &> /dev/null
+	nft delete chain ip filter ndsAUT &> /dev/null
+	nft delete chain ip filter ndsULR &> /dev/null
+	nft delete chain ip filter ndsTRU &> /dev/null
+	nft delete chain ip filter ndsTRT &> /dev/null
+
+	# in the nat table
+	# We should not delete the nat/PREROUTING chain in case someone else is using it, so flush only our rules
+	table="nat"; src_chain="PREROUTING"; dst_chain="ndsOUT"
+	delete_rule
+
+	nft delete chain ip nat "$dst_chain" &> /dev/null
+
+	# in the mangle table
+	# We should not delete the mangle/PREROUTING and mangle/POSTROUTING chains in case someone else is using them, so flush only our rules
+
+	table="mangle"; src_chain="PREROUTING"; dst_chains="ndsTRU ndsBLK ndsALW ndsOUT"
+
+	for dst_chain in $dst_chains; do
+		delete_rule
+	done
+
+	table="mangle"; src_chain="POSTROUTING"; dst_chain="ndsINC"
+	delete_rule
+
+	nft delete chain ip mangle ndsTRU &> /dev/null 
+	nft delete chain ip mangle ndsBLK &> /dev/null
+	nft delete chain ip mangle ndsALW &> /dev/null
+	nft delete chain ip mangle ndsOUT &> /dev/null
+	nft delete chain ip mangle ndsINC &> /dev/null
+}
+
+delete_rule () {
+	# Requires table, src_chain and dst_chain variables
+	rule=$(nft -a list table ip "$table" 2> /dev/null | grep -w -A 30 "chain $src_chain" | grep -w "jump $dst_chain" | awk -F "handle " '{printf "%s", $2}')
+
+	if [ ! -z $rule ]; then
+		nft delete rule ip "$table" "$src_chain" handle "$rule"
+	fi
 }
 
 pre_setup () {
@@ -1175,8 +1222,20 @@ pre_setup () {
 
 	delete_chains
 
-	nft add chain ip filter ndsINP "{ type filter hook input priority -100 ; }"
-	nft add chain ip filter ndsFWD "{ type filter hook forward priority -100 ; }"
+	# Test INPUT and FORWARD chain priority
+	input_priority=$(nft -a list table ip filter 2> /dev/null | grep -w -A1 "chain INPUT" | grep -w "priority -100")
+
+	if [ -z $input_priority ]; then
+		nft rename chain ip filter INPUT INPUT_LEGACY 2> /dev/null
+		nft add chain ip filter INPUT "{ type filter hook input priority -100 ; }" 2> /dev/null
+	fi
+
+	forward_priority=$(nft -a list table ip filter 2> /dev/null | grep -w -A1 "chain FORWARD" | grep -w "priority -100")
+
+	if [ -z $forward_priority ]; then
+		nft rename chain ip filter FORWARD FORWARD_LEGACY 2> /dev/null
+		nft add chain ip filter FORWARD "{ type filter hook forward priority -100 ; }" 2> /dev/null
+	fi
 
 	nft add chain ip filter nds_allow_INP "{ type filter hook input priority 100 ; }"
 	nft add chain ip filter nds_allow_FWD "{ type filter hook forward priority 100 ; }"

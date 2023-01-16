@@ -784,51 +784,17 @@ iptables_fw_destroy(void)
 
 	// Everything in the mangle table
 	debug(LOG_DEBUG, "Destroying chains in the MANGLE table");
-	iptables_fw_destroy_mention("mangle", "PREROUTING", CHAIN_TRUSTED);
-	iptables_fw_destroy_mention("mangle", "PREROUTING", CHAIN_BLOCKED);
-	iptables_fw_destroy_mention("mangle", "PREROUTING", CHAIN_ALLOWED);
-	iptables_fw_destroy_mention("mangle", "PREROUTING", CHAIN_OUTGOING);
-	iptables_fw_destroy_mention("mangle", "POSTROUTING", CHAIN_INCOMING);
-	iptables_do_command("-t mangle -F " CHAIN_TRUSTED);
-	iptables_do_command("-t mangle -F " CHAIN_BLOCKED);
-	iptables_do_command("-t mangle -F " CHAIN_ALLOWED);
-	iptables_do_command("-t mangle -F " CHAIN_OUTGOING);
-	iptables_do_command("-t mangle -F " CHAIN_INCOMING);
-	iptables_do_command("-t mangle -X " CHAIN_TRUSTED);
-	iptables_do_command("-t mangle -X " CHAIN_BLOCKED);
-	iptables_do_command("-t mangle -X " CHAIN_ALLOWED);
-	iptables_do_command("-t mangle -X " CHAIN_OUTGOING);
-	iptables_do_command("-t mangle -X " CHAIN_INCOMING);
 
 	// Everything in the nat table (ip4 only)
 	if (!config->ip6) {
 		debug(LOG_DEBUG, "Destroying chains in the NAT table");
-		iptables_fw_destroy_mention("nat", "PREROUTING", CHAIN_OUTGOING);
-		iptables_do_command("-t nat -F " CHAIN_OUTGOING);
-		iptables_do_command("-t nat -X " CHAIN_OUTGOING);
 	}
 
 	// Everything in the filter table
 
 	debug(LOG_DEBUG, "Destroying chains in the FILTER table");
-	//iptables_fw_destroy_mention("filter", CHAIN_INPUT, CHAIN_TO_ROUTER);
-	//iptables_fw_destroy_mention("filter", CHAIN_FORWARD, CHAIN_TO_INTERNET);
-	iptables_do_command("-t filter -F " CHAIN_INPUT);
-	iptables_do_command("-t filter -F " CHAIN_FORWARD);
-	iptables_do_command("-t filter -F " CHAIN_TO_ROUTER);
-	iptables_do_command("-t filter -F " CHAIN_TO_INTERNET);
-	iptables_do_command("-t filter -F " CHAIN_AUTHENTICATED);
-	iptables_do_command("-t filter -F " CHAIN_UPLOAD_RATE);
-	iptables_do_command("-t filter -F " CHAIN_TRUSTED);
-	iptables_do_command("-t filter -F " CHAIN_TRUSTED_TO_ROUTER);
-	iptables_do_command("-t filter -X " CHAIN_TO_ROUTER);
-	iptables_do_command("-t filter -X " CHAIN_TO_INTERNET);
-	iptables_do_command("-t filter -X " CHAIN_AUTHENTICATED);
-	iptables_do_command("-t filter -X " CHAIN_UPLOAD_RATE);
-	iptables_do_command("-t filter -X " CHAIN_TRUSTED);
-	iptables_do_command("-t filter -X " CHAIN_TRUSTED_TO_ROUTER);
 
-	// Call pre setup library function
+	// Call library function to delete chains
 	safe_asprintf(&delchainscmd, "/usr/lib/opennds/libopennds.sh \"delete_chains\"");
 	msg = safe_calloc(STATUS_BUF);
 

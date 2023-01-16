@@ -33,9 +33,9 @@
 
 /*@{*/
 /**Iptable chain names used by opennds */
-#define CHAIN_FORWARD "ndsFWD"
+#define CHAIN_FORWARD "FORWARD"
 #define CHAIN_FORWARD_ALLOW "nds_allow_FWD"
-#define CHAIN_INPUT "ndsINP"
+#define CHAIN_INPUT "INPUT"
 #define CHAIN_INPUT_ALLOW "nds_allow_INP"
 #define CHAIN_TO_INTERNET "ndsNET"
 #define CHAIN_TO_ROUTER "ndsRTR"

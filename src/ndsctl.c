@@ -21,7 +21,7 @@
 /** @file ndsctl.c
     @brief Monitoring and control of opennds, client part
     @author Copyright (C) 2004 Alexandre Carmel-Veilleux <acv@acv.ca>
-    @author Copyright (C) 2015-2022 Modifications and additions by BlueWave Projects and Services <opennds@blue-wave.net>
+    @author Copyright (C) 2015-2023 Modifications and additions by BlueWave Projects and Services <opennds@blue-wave.net>
     @author Copyright (C) 2021 ndsctl_lock() and ndsctl_unlock() based on code by Linus Lüssing <ll@simonwunderlich.de>
 */
 

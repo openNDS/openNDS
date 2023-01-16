@@ -1,5 +1,5 @@
 #!/bin/sh
-#Copyright (C) BlueWave Projects and Services 2015-2022
+#Copyright (C) BlueWave Projects and Services 2015-2023
 
 do_ndsctl () {
 

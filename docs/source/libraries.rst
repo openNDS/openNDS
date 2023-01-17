@@ -308,6 +308,32 @@ send_to_fas_custom:
 
 Returns exit code 0 if sent, 1 if failed
 
+users_to_router:
+----------------
+
+    arg1: users_to_router, sets allow or passthrough mode for users_to_router rules.
+
+        arg2: the mode to set (ie allow, passthrough or cleanup)
+
+
+    Passthrough facilitates chaining to lower priority nftables tables/chains (eg FW4 in OpenWrt)
+
+Returns exit code 0 if set, 1 if failed
+
+pre_setup:
+----------
+
+    arg1: pre_setup, creates/configures openNDS nftables base chains
+
+Returns exit code 0 if successful, 1 if failed
+
+delete_chains:
+--------------
+
+    arg1: delete_chains, deletes the openNDS nftables base chains
+
+Returns exit code 0 always
+
 ?fas:
 -----
     **arg1**: "*?fas=<b64string>*", generates ThemeSpec html using b64encoded data sent from openNDS

@@ -1167,9 +1167,31 @@ To add Paypal to the Walled Garden, the list entries would be:
 User Access to Services On the Router
 *************************************
 
-Access is automatically granted to resources required for normal operation of the captive portal.
+Access is automatically granted to resources required for normal operation of the captive portal and all other access is blocked.
 
-Additional access falls into two categories:
+By default the user to router access rules are **not** passed through to the system firewall for additional processing.
+
+Users to Router Passthrough
+---------------------------
+
+(Applies to OpenWrt only)
+
+Default: 0 (disabled)
+
+To enable passthrough, set to 1
+
+``option users_to_router_passthrough '1'``
+
+**WARNING**: Do not enable unless you know what you are doing.
+
+*Enabling passthrough may well soft brick your router, particularly if openNDS is bound to a guest network.*
+
+Access to the router.
+---------------------
+
+Access falls into two categories:
+ * Essential
+ * Optional
 
 Essential Access
 ----------------

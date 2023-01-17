@@ -1781,7 +1781,8 @@ elif [ "$1" = "users_to_router" ]; then
 	exit $ret
 
 elif [ "$1" = "pre_setup" ]; then
-	# Pre-setup before openNDS does its built in configuration
+	# creates/configures openNDS nftables base chains
+
 	# Returns exit code 0 if done, 1 if failed
 
 	pre_setup
@@ -1789,7 +1790,7 @@ elif [ "$1" = "pre_setup" ]; then
 	exit $ret
 
 elif [ "$1" = "delete_chains" ]; then
-	# Delete the openNDS nft chains
+	# Deletes the openNDS nftables base chains
 
 	delete_chains
 

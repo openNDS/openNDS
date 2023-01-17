@@ -977,8 +977,6 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
  */
 static int send_json(struct MHD_Connection *connection, const char *json)
 {
-	s_config *config = config_get_config();
-
 	char *msg;
 	int ret;
 	struct MHD_Response *response;

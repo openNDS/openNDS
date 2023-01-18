@@ -321,7 +321,7 @@ do_ndsctl () {
 
 		keyword=""
 
-		if [ $tic = $timeout ] && [ -z $libcall ] ; then
+		if [ $tic = $timeout ] && [ -z "$libcall" ] ; then
 			busy_page
 		fi
 
@@ -670,7 +670,7 @@ get_client_zone () {
 		client_if_string=$(/usr/lib/opennds/get_client_interface.sh $client_mac)
 		failcheck=$(echo "$client_if_string" | grep -w  "get_client_interface")
 
-		if [ -z $failcheck ]; then
+		if [ -z "$failcheck" ]; then
 			client_if=$(echo "$client_if_string" | awk '{printf $1}')
 			client_meshnode=$(echo "$client_if_string" | awk '{printf $2}' | awk -F ':' '{print $1$2$3$4$5$6}')
 			local_mesh_if=$(echo "$client_if_string" | awk '{printf $3}')
@@ -904,8 +904,12 @@ config_input_fields () {
 }
 
 check_mhd() {
-	fetch=$(type -t uclient-fetch)
-	fw4=$(type -t fw4)
+	type uclient-fetch &>/dev/null
+	fetch=$?
+
+	type uci &>/dev/null
+	uci=$?
+
 	configure_log_location
 	heartbeatpath="$mountpoint/ndscids/heartbeat"
 	mhdstatus="2"
@@ -943,25 +947,28 @@ check_mhd() {
 		syslogmessage="Restarting...."
 		debugtype="warn"
 		write_to_syslog
-		/etc/init.d/opennds restart
+
+		if [ -z "$uci" ]; then
+			systemctl restart opennds
+		else
+			/etc/init.d/opennds restart
+		fi
+
 		exit 0
 	fi
 }
 
 nft_get_status() {
+	nfttest=$(nft -a list chain ip filter ndsNET 2> /dev/null)
 
-	if [ ! -z "$fw4" ]; then
-		nfttest=$(nft -a list chain ip filter ndsNET 2> /dev/null)
-
-		if [ ! -z "$nfttest" ]; then
-			nftstatus="1"
-		fi
+	if [ ! -z "$nfttest" ]; then
+		nftstatus="1"
 	fi
 }
 
 mhd_get_status() {
 
-	if [ -z "$fetch" ]; then
+	if [ "$fetch" -eq 1 ]; then
 		mhdtest=$(wget -t 1 -T 1 -O - "http://$gw_address/mhdstatus" 2>&1 | grep -w  "<br>OK<br>")
 
 		if [ ! -z "$mhdtest" ]; then
@@ -1005,7 +1012,8 @@ get_key_from_config() {
 check_gw_mac() {
 	mac_sys=$(cat "/sys/class/net/$ifname/address" 2> /dev/null)
 	error_code=$?
-	mac_sys=${mac_sys:0:17}
+
+	mac_sys=$(echo $mac_sys | awk -F":" '{printf "%s%s%s%s%s%s", $1, $2, $3, $4, $5, $6}')
 
 	if [ "$gw_mac" = "00:00:00:00:00:00" ] || [ -z "$gw_mac" ]; then
 		gw_mac=$mac_sys
@@ -1149,21 +1157,21 @@ delete_chains () {
 
 	# now we can delete the chains:
 	# in the filter table
-	nft delete chain ip filter nds_allow_INP &> /dev/null
-	nft delete chain ip filter nds_allow_FWD &> /dev/null
-	nft delete chain ip filter ndsNET &> /dev/null
-	nft delete chain ip filter ndsRTR &> /dev/null
-	nft delete chain ip filter ndsAUT &> /dev/null
-	nft delete chain ip filter ndsULR &> /dev/null
-	nft delete chain ip filter ndsTRU &> /dev/null
-	nft delete chain ip filter ndsTRT &> /dev/null
+	nft delete chain ip filter nds_allow_INP 2> /dev/null
+	nft delete chain ip filter nds_allow_FWD 2> /dev/null
+	nft delete chain ip filter ndsNET 2> /dev/null
+	nft delete chain ip filter ndsRTR 2> /dev/null
+	nft delete chain ip filter ndsAUT 2> /dev/null
+	nft delete chain ip filter ndsULR 2> /dev/null
+	nft delete chain ip filter ndsTRU 2> /dev/null
+	nft delete chain ip filter ndsTRT 2> /dev/null
 
 	# in the nat table
 	# We should not delete the nat/PREROUTING chain in case someone else is using it, so flush only our rules
 	table="nat"; src_chain="PREROUTING"; dst_chain="ndsOUT"
 	delete_rule
 
-	nft delete chain ip nat "$dst_chain" &> /dev/null
+	nft delete chain ip nat "$dst_chain" 2> /dev/null
 
 	# in the mangle table
 	# We should not delete the mangle/PREROUTING and mangle/POSTROUTING chains in case someone else is using them, so flush only our rules
@@ -1177,23 +1185,43 @@ delete_chains () {
 	table="mangle"; src_chain="POSTROUTING"; dst_chain="ndsINC"
 	delete_rule
 
-	nft delete chain ip mangle ndsTRU &> /dev/null 
-	nft delete chain ip mangle ndsBLK &> /dev/null
-	nft delete chain ip mangle ndsALW &> /dev/null
-	nft delete chain ip mangle ndsOUT &> /dev/null
-	nft delete chain ip mangle ndsINC &> /dev/null
+	nft delete chain ip mangle ndsTRU 2> /dev/null 
+	nft delete chain ip mangle ndsBLK 2> /dev/null
+	nft delete chain ip mangle ndsALW 2> /dev/null
+	nft delete chain ip mangle ndsOUT 2> /dev/null
+	nft delete chain ip mangle ndsINC 2> /dev/null
 }
 
 delete_rule () {
 	# Requires table, src_chain and dst_chain variables
 	rule=$(nft -a list table ip "$table" 2> /dev/null | grep -w -A 30 "chain $src_chain" | grep -w "jump $dst_chain" | awk -F "handle " '{printf "%s", $2}')
 
-	if [ ! -z $rule ]; then
+	if [ ! -z "$rule" ]; then
 		nft delete rule ip "$table" "$src_chain" handle "$rule"
 	fi
 }
 
 pre_setup () {
+	nft=$(type nft)
+	ret=$?
+
+	if [ $ret -ne 0 ]; then
+		syslogmessage="The nftables package is required - unable to continue"
+		debugtype="warn"
+		write_to_syslog
+
+		uci=$(type uci)
+
+		if [ -z "$uci" ]; then
+			systemctl stop opennds
+		else
+			/etc/init.d/opennds stop
+		fi
+
+		exit 1
+
+	fi
+
 	option="gatewayinterface"
 	get_option_from_config
 
@@ -1225,14 +1253,14 @@ pre_setup () {
 	# Test INPUT and FORWARD chain priority
 	input_priority=$(nft -a list table ip filter 2> /dev/null | grep -w -A1 "chain INPUT" | grep -w "priority -100")
 
-	if [ -z $input_priority ]; then
+	if [ -z "$input_priority" ]; then
 		nft rename chain ip filter INPUT INPUT_LEGACY 2> /dev/null
 		nft add chain ip filter INPUT "{ type filter hook input priority -100 ; }" 2> /dev/null
 	fi
 
 	forward_priority=$(nft -a list table ip filter 2> /dev/null | grep -w -A1 "chain FORWARD" | grep -w "priority -100")
 
-	if [ -z $forward_priority ]; then
+	if [ -z "$forward_priority" ]; then
 		nft rename chain ip filter FORWARD FORWARD_LEGACY 2> /dev/null
 		nft add chain ip filter FORWARD "{ type filter hook forward priority -100 ; }" 2> /dev/null
 	fi

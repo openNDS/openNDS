@@ -1190,7 +1190,12 @@ iptables_fw_counters_update(void)
 	af = config->ip6 ? AF_INET6 : AF_INET;
 
 	// Look for outgoing (upload) traffic of authenticated clients.
+
+	/* Old iptables method:
 	safe_asprintf(&script, "%s %s", "iptables", "-v -n -x -t filter -L " CHAIN_UPLOAD_RATE);
+	*/
+
+	safe_asprintf(&script, "nft list chain ip filter %s", CHAIN_UPLOAD_RATE);
 	output = popen(script, "r");
 	free(script);
 
@@ -1204,10 +1209,15 @@ iptables_fw_counters_update(void)
 	while (('\n' != fgetc(output)) && !feof(output)) {}
 
 	while (!feof(output)) {
+		/* scan the old iptables format:
 		rc = fscanf(output, " %llu %llu %s %*s %*s %*s %*s %15[0-9.]", &packets, &counter, target, ip);
+		*/
+
+		rc = fscanf(output, " %*s %*s %15[0-9.] %*s %*s %llu %*s %llu %s", ip, &packets, &counter, target);
+
 		// eat rest of line
 		while (('\n' != fgetc(output)) && !feof(output)) {}
-		if (4 == rc && !strcmp(target, "RETURN")) {
+		if (4 == rc && !strcmp(target, "return")) {
 			// Sanity
 			if (!inet_pton(af, ip, &tempaddr)) {
 				debug(LOG_WARNING, "I was supposed to read an IP address but instead got [%s] - ignoring it", ip);

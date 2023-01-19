@@ -948,7 +948,7 @@ check_mhd() {
 		debugtype="warn"
 		write_to_syslog
 
-		if [ -z "$uci" ]; then
+		if [ "$uci" -eq 1 ]; then
 			systemctl restart opennds
 		else
 			/etc/init.d/opennds restart

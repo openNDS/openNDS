@@ -4,6 +4,9 @@ What's New? - ChangeLog
 opennds (9.10.0)
 
   * This version adds new functionality, and fixes some issues
+  * Fix - unable to read client upload traffic volume on some versions of iptables-nft (generic Linux) [bluewavenet]
+  * Fix - compatibility with bash shell on generic Linux [bluewavenet]
+  * Fix - compiler warning, unused variable [bluewavenet]
   * Fix - silently continue if fw4 table is not found [bluewavenet]
   * Add - Start daemon earlier on boot [bluewavenet]
   * Fix - compatibility with legacy iptables packages [bluewavenet]

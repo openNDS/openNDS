@@ -8,6 +8,10 @@ Make sure the development suite for your Linux distribution is installed.
 
 The libmicrohttpd library (MHD) is a dependency of openNDS so compiling and installing this is a prerequisite.
 
+The nftables and iptables-nft packages are also dependencies, so should also be installed as prerequisites.
+
+The "php cli" and "php openssl" packages are required for fas_secure levels 2 and 3 operation. These may be separate packages or one large package, depending on the Linux distribution. Not required for level 1 or Themespec operation.
+
 **First**, create a working directory and "cd" into it.
 
 **Next, Download and un-tar the libmicrohttpd source files.**

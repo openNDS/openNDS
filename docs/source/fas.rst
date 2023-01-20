@@ -53,7 +53,7 @@ Security
 
    The cipher used is "AES-256-CBC".
 
-   The "php-cli" package and the "php-openssl" module must both be installed for fas_secure level 2.
+   The "php cli" package and the "php openssl" module must both be installed for fas_secure levels 2 and 3.
 
    openNDS does not depend on this package and module, but will exit gracefully if this package and module are not installed when this level is set.
 

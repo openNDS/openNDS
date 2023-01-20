@@ -1,6 +1,5 @@
 #!/bin/sh
-#Copyright (C) The openNDS Contributors 2004-2022
-#Copyright (C) BlueWave Projects and Services 2015-2022
+#Copyright (C) BlueWave Projects and Services 2015-2023
 #This software is released under the GNU GPL license.
 #
 # WARNING - shebang "sh" is for compatiblity with busybox ash (eg on OpenWrt)
@@ -322,7 +321,7 @@ do_ndsctl () {
 
 		keyword=""
 
-		if [ $tic = $timeout ] && [ -z $libcall ] ; then
+		if [ $tic = $timeout ] && [ -z "$libcall" ] ; then
 			busy_page
 		fi
 
@@ -671,7 +670,7 @@ get_client_zone () {
 		client_if_string=$(/usr/lib/opennds/get_client_interface.sh $client_mac)
 		failcheck=$(echo "$client_if_string" | grep -w  "get_client_interface")
 
-		if [ -z $failcheck ]; then
+		if [ -z "$failcheck" ]; then
 			client_if=$(echo "$client_if_string" | awk '{printf $1}')
 			client_meshnode=$(echo "$client_if_string" | awk '{printf $2}' | awk -F ':' '{print $1$2$3$4$5$6}')
 			local_mesh_if=$(echo "$client_if_string" | awk '{printf $3}')
@@ -905,10 +904,16 @@ config_input_fields () {
 }
 
 check_mhd() {
-	fetch=$(type -t uclient-fetch)
+	type uclient-fetch &>/dev/null
+	fetch=$?
+
+	type uci &>/dev/null
+	uci=$?
+
 	configure_log_location
 	heartbeatpath="$mountpoint/ndscids/heartbeat"
 	mhdstatus="2"
+	nftstatus="2"
 	local timeout=4
 
 	for tic in $(seq $timeout); do
@@ -923,11 +928,47 @@ check_mhd() {
 			break
 		fi
 	done
+
+	for tic in $(seq $timeout); do
+		nft_get_status
+
+		if [ "$nftstatus" = "2" ]; then
+			# NFT response fail - wait then try again:
+			sleep 1
+		elif [ "$nftstatus" = "1" ]; then
+			break
+		fi
+	done
+
+	if [ "$nftstatus" = "2" ]; then
+		syslogmessage="The openNDS nftables ruleset is missing or has been removed by another process."
+		debugtype="emerg"
+		write_to_syslog
+		syslogmessage="Restarting...."
+		debugtype="warn"
+		write_to_syslog
+
+		if [ "$uci" -eq 1 ]; then
+			systemctl restart opennds
+		else
+			/etc/init.d/opennds restart
+		fi
+
+		exit 0
+	fi
+}
+
+nft_get_status() {
+	nfttest=$(nft -a list chain ip filter ndsNET 2> /dev/null)
+
+	if [ ! -z "$nfttest" ]; then
+		nftstatus="1"
+	fi
 }
 
 mhd_get_status() {
 
-	if [ -z "$fetch" ]; then
+	if [ "$fetch" -eq 1 ]; then
 		mhdtest=$(wget -t 1 -T 1 -O - "http://$gw_address/mhdstatus" 2>&1 | grep -w  "<br>OK<br>")
 
 		if [ ! -z "$mhdtest" ]; then
@@ -971,7 +1012,8 @@ get_key_from_config() {
 check_gw_mac() {
 	mac_sys=$(cat "/sys/class/net/$ifname/address" 2> /dev/null)
 	error_code=$?
-	mac_sys=${mac_sys:0:17}
+
+	mac_sys=$(echo $mac_sys | awk -F":" '{printf "%s%s%s%s%s%s", $1, $2, $3, $4, $5, $6}')
 
 	if [ "$gw_mac" = "00:00:00:00:00:00" ] || [ -z "$gw_mac" ]; then
 		gw_mac=$mac_sys
@@ -1089,20 +1131,150 @@ users_to_router () {
 			gatewayinterface="br-lan"
 		fi
 
-		inputchain=$(nft list table inet fw4 | grep -w "$gatewayinterface" | grep "jump input" | awk -F" jump " '{print $2}' | awk -F" " '{print $1}')
+		inputchain=$(nft list table inet fw4 2> /dev/null | grep -w "$gatewayinterface" | grep "jump input"\
+			| awk -F" jump " '{print $2}' | awk -F" " '{print $1}')
 
-		rulehandle=$(nft -a list chain inet fw4 "$inputchain" | grep -w "users_to_router" | awk -F" " '{printf "%s" $NF}')
+		rulehandle=$(nft -a list chain inet fw4 "$inputchain" 2> /dev/null | grep -w "users_to_router" | awk -F" " '{printf "%s" $NF}')
 
 		if [ ! -z "$rulehandle" ]; then
-			nft delete rule inet fw4 "$inputchain" handle "$rulehandle"
+			nft delete rule inet fw4 "$inputchain" handle "$rulehandle" 2> /dev/null
 		fi
 
 		if [ "$mode" != "passthrough" ]; then
-			nft insert rule inet fw4 "$inputchain" counter accept comment "\"!opennds: users_to_router\""
+			nft insert rule inet fw4 "$inputchain" counter accept comment "\"!opennds: users_to_router\"" 2> /dev/null
 			ret=$?
 		fi
 	fi
 }
+
+delete_chains () {
+	# If upgrading from 9.9.1 or earlier we need to clear our rules from INPUT and FORWARD chains
+	table="filter"; src_chain="FORWARD"; dst_chain="ndsNET"
+	delete_rule
+
+	table="filter"; src_chain="INPUT"; dst_chain="ndsRTR"
+	delete_rule
+
+	# now we can delete the chains:
+	# in the filter table
+	nft delete chain ip filter nds_allow_INP 2> /dev/null
+	nft delete chain ip filter nds_allow_FWD 2> /dev/null
+	nft delete chain ip filter ndsNET 2> /dev/null
+	nft delete chain ip filter ndsRTR 2> /dev/null
+	nft delete chain ip filter ndsAUT 2> /dev/null
+	nft delete chain ip filter ndsULR 2> /dev/null
+	nft delete chain ip filter ndsTRU 2> /dev/null
+	nft delete chain ip filter ndsTRT 2> /dev/null
+
+	# in the nat table
+	# We should not delete the nat/PREROUTING chain in case someone else is using it, so flush only our rules
+	table="nat"; src_chain="PREROUTING"; dst_chain="ndsOUT"
+	delete_rule
+
+	nft delete chain ip nat "$dst_chain" 2> /dev/null
+
+	# in the mangle table
+	# We should not delete the mangle/PREROUTING and mangle/POSTROUTING chains in case someone else is using them, so flush only our rules
+
+	table="mangle"; src_chain="PREROUTING"; dst_chains="ndsTRU ndsBLK ndsALW ndsOUT"
+
+	for dst_chain in $dst_chains; do
+		delete_rule
+	done
+
+	table="mangle"; src_chain="POSTROUTING"; dst_chain="ndsINC"
+	delete_rule
+
+	nft delete chain ip mangle ndsTRU 2> /dev/null 
+	nft delete chain ip mangle ndsBLK 2> /dev/null
+	nft delete chain ip mangle ndsALW 2> /dev/null
+	nft delete chain ip mangle ndsOUT 2> /dev/null
+	nft delete chain ip mangle ndsINC 2> /dev/null
+}
+
+delete_rule () {
+	# Requires table, src_chain and dst_chain variables
+	rule=$(nft -a list table ip "$table" 2> /dev/null | grep -w -A 30 "chain $src_chain" | grep -w "jump $dst_chain" | awk -F "handle " '{printf "%s", $2}')
+
+	if [ ! -z "$rule" ]; then
+		nft delete rule ip "$table" "$src_chain" handle "$rule"
+	fi
+}
+
+pre_setup () {
+	nft=$(type nft)
+	ret=$?
+
+	if [ $ret -ne 0 ]; then
+		syslogmessage="The nftables package is required - unable to continue"
+		debugtype="warn"
+		write_to_syslog
+
+		uci=$(type uci)
+
+		if [ -z "$uci" ]; then
+			systemctl stop opennds
+		else
+			/etc/init.d/opennds stop
+		fi
+
+		exit 1
+
+	fi
+
+	option="gatewayinterface"
+	get_option_from_config
+
+	if [ -z "$gatewayinterface" ]; then
+		gatewayinterface="br-lan"
+	fi
+
+	ndstables="filter mangle nat"
+
+	for ndstable in $ndstables; do
+		nft list table ip "$ndstable" &>/dev/null
+		ret=$?
+
+		if [ $ret -gt 0 ]; then
+			# Table does not exist
+			nft add table ip $ndstable
+			ret=$?
+
+			if [ $ret -gt 0 ]; then
+				break
+			fi
+		fi
+	done
+
+	# Tables should now exist, flush and initialise chains:
+
+	delete_chains
+
+	# Test INPUT and FORWARD chain priority
+	input_priority=$(nft -a list table ip filter 2> /dev/null | grep -w -A1 "chain INPUT" | grep -w "priority -100")
+
+	if [ -z "$input_priority" ]; then
+		nft rename chain ip filter INPUT INPUT_LEGACY 2> /dev/null
+		nft add chain ip filter INPUT "{ type filter hook input priority -100 ; }" 2> /dev/null
+	fi
+
+	forward_priority=$(nft -a list table ip filter 2> /dev/null | grep -w -A1 "chain FORWARD" | grep -w "priority -100")
+
+	if [ -z "$forward_priority" ]; then
+		nft rename chain ip filter FORWARD FORWARD_LEGACY 2> /dev/null
+		nft add chain ip filter FORWARD "{ type filter hook forward priority -100 ; }" 2> /dev/null
+	fi
+
+	nft add chain ip filter nds_allow_INP "{ type filter hook input priority 100 ; }"
+	nft add chain ip filter nds_allow_FWD "{ type filter hook forward priority 100 ; }"
+
+	nft insert rule ip filter nds_allow_INP iifname "\"$gatewayinterface\"" counter accept comment "\"!opennds: allow input\""
+	nft insert rule ip filter nds_allow_FWD iifname "\"$gatewayinterface\"" counter accept comment "\"!opennds: allow forward\""
+
+	ret=$?
+
+}
+
 
 #### end of functions ####
 
@@ -1635,6 +1807,22 @@ elif [ "$1" = "users_to_router" ]; then
 	fi
 
 	exit $ret
+
+elif [ "$1" = "pre_setup" ]; then
+	# creates/configures openNDS nftables base chains
+
+	# Returns exit code 0 if done, 1 if failed
+
+	pre_setup
+
+	exit $ret
+
+elif [ "$1" = "delete_chains" ]; then
+	# Deletes the openNDS nftables base chains
+
+	delete_chains
+
+	exit 0
 
 else
 	#Display a splash page sequence using a Themespec

@@ -23,7 +23,7 @@
   @brief Firewall iptables functions
   @author Copyright (C) 2004 Philippe April <papril777@yahoo.com>
   @author Copyright (C) 2007 Paul Kube <nodogsplash@kokoro.ucsd.edu>
-  @author Copyright (C) 2015-2022 Modifications and additions by BlueWave Projects and Services <opennds@blue-wave.net>
+  @author Copyright (C) 2015-2023 Modifications and additions by BlueWave Projects and Services <opennds@blue-wave.net>
  */
 
 #define _GNU_SOURCE
@@ -146,8 +146,8 @@ _iptables_check_mark_masking()
 	}
 
 	// See if kernel supports mark masking
-	if (0 == iptables_do_command("-t filter -I FORWARD 1 -m mark --mark 0x%x/0x%x -j REJECT", FW_MARK_BLOCKED, FW_MARK_MASK)) {
-		iptables_do_command("-t filter -D FORWARD 1"); // delete test rule we just inserted
+	if (0 == iptables_do_command("-t filter -I " CHAIN_FORWARD " 1 -m mark --mark 0x%x/0x%x -j REJECT", FW_MARK_BLOCKED, FW_MARK_MASK)) {
+		iptables_do_command("-t filter -D " CHAIN_FORWARD " 1"); // delete test rule we just inserted
 		debug(LOG_DEBUG, "Kernel supports mark masking.");
 		char *tmp = NULL;
 		safe_asprintf(&tmp,"/0x%x",FW_MARK_MASK);
@@ -243,6 +243,7 @@ _iptables_compile(const char table[], const char chain[], t_firewall_rule *rule)
 		break;
 	}
 
+	debug(LOG_DEBUG, "iptables compile: table [%s ], chain [ %s ], mode [ %s ]", table, chain, mode);
 	snprintf(command, sizeof(command),  "-t %s -A %s ", table, chain);
 
 	if (rule->mask != NULL) {
@@ -556,10 +557,10 @@ iptables_fw_init(void)
 	rc |= iptables_do_command("-t filter -N " CHAIN_TRUSTED);
 	rc |= iptables_do_command("-t filter -N " CHAIN_TRUSTED_TO_ROUTER);
 
-	// filter INPUT chain
+	// filter CHAIN_INPUT chain
 
 	// packets coming in on gw_interface jump to CHAIN_TO_ROUTER
-	rc |= iptables_do_command("-t filter -I INPUT -i %s -s %s -j " CHAIN_TO_ROUTER, gw_interface, gw_iprange);
+	rc |= iptables_do_command("-t filter -I " CHAIN_INPUT " -i %s -s %s -j " CHAIN_TO_ROUTER, gw_interface, gw_iprange);
 	// CHAIN_TO_ROUTER packets marked BLOCKED DROP
 	rc |= iptables_do_command("-t filter -A " CHAIN_TO_ROUTER " -m mark --mark 0x%x%s -j DROP", FW_MARK_BLOCKED, markmask);
 	// CHAIN_TO_ROUTER, invalid packets DROP
@@ -621,11 +622,11 @@ iptables_fw_init(void)
 	}
 
 	/*
-	 * filter FORWARD chain
+	 * filter CHAIN_FORWARD chain
 	 */
 
 	// packets coming in on gw_interface jump to CHAIN_TO_INTERNET
-	rc |= iptables_do_command("-t filter -I FORWARD -i %s -s %s -j " CHAIN_TO_INTERNET, gw_interface, gw_iprange);
+	rc |= iptables_do_command("-t filter -I " CHAIN_FORWARD " -i %s -s %s -j " CHAIN_TO_INTERNET, gw_interface, gw_iprange);
 	// CHAIN_TO_INTERNET packets marked BLOCKED DROP
 	rc |= iptables_do_command("-t filter -A " CHAIN_TO_INTERNET " -m mark --mark 0x%x%s -j DROP", FW_MARK_BLOCKED, markmask);
 	// CHAIN_TO_INTERNET, invalid packets DROP
@@ -770,6 +771,8 @@ iptables_fw_init(void)
 int
 iptables_fw_destroy(void)
 {
+	char *delchainscmd;
+	char *msg;
 	fw_quiet = 1;
 	s_config *config;
 
@@ -781,47 +784,25 @@ iptables_fw_destroy(void)
 
 	// Everything in the mangle table
 	debug(LOG_DEBUG, "Destroying chains in the MANGLE table");
-	iptables_fw_destroy_mention("mangle", "PREROUTING", CHAIN_TRUSTED);
-	iptables_fw_destroy_mention("mangle", "PREROUTING", CHAIN_BLOCKED);
-	iptables_fw_destroy_mention("mangle", "PREROUTING", CHAIN_ALLOWED);
-	iptables_fw_destroy_mention("mangle", "PREROUTING", CHAIN_OUTGOING);
-	iptables_fw_destroy_mention("mangle", "POSTROUTING", CHAIN_INCOMING);
-	iptables_do_command("-t mangle -F " CHAIN_TRUSTED);
-	iptables_do_command("-t mangle -F " CHAIN_BLOCKED);
-	iptables_do_command("-t mangle -F " CHAIN_ALLOWED);
-	iptables_do_command("-t mangle -F " CHAIN_OUTGOING);
-	iptables_do_command("-t mangle -F " CHAIN_INCOMING);
-	iptables_do_command("-t mangle -X " CHAIN_TRUSTED);
-	iptables_do_command("-t mangle -X " CHAIN_BLOCKED);
-	iptables_do_command("-t mangle -X " CHAIN_ALLOWED);
-	iptables_do_command("-t mangle -X " CHAIN_OUTGOING);
-	iptables_do_command("-t mangle -X " CHAIN_INCOMING);
 
 	// Everything in the nat table (ip4 only)
 	if (!config->ip6) {
 		debug(LOG_DEBUG, "Destroying chains in the NAT table");
-		iptables_fw_destroy_mention("nat", "PREROUTING", CHAIN_OUTGOING);
-		iptables_do_command("-t nat -F " CHAIN_OUTGOING);
-		iptables_do_command("-t nat -X " CHAIN_OUTGOING);
 	}
 
 	// Everything in the filter table
 
 	debug(LOG_DEBUG, "Destroying chains in the FILTER table");
-	iptables_fw_destroy_mention("filter", "INPUT", CHAIN_TO_ROUTER);
-	iptables_fw_destroy_mention("filter", "FORWARD", CHAIN_TO_INTERNET);
-	iptables_do_command("-t filter -F " CHAIN_TO_ROUTER);
-	iptables_do_command("-t filter -F " CHAIN_TO_INTERNET);
-	iptables_do_command("-t filter -F " CHAIN_AUTHENTICATED);
-	iptables_do_command("-t filter -F " CHAIN_UPLOAD_RATE);
-	iptables_do_command("-t filter -F " CHAIN_TRUSTED);
-	iptables_do_command("-t filter -F " CHAIN_TRUSTED_TO_ROUTER);
-	iptables_do_command("-t filter -X " CHAIN_TO_ROUTER);
-	iptables_do_command("-t filter -X " CHAIN_TO_INTERNET);
-	iptables_do_command("-t filter -X " CHAIN_AUTHENTICATED);
-	iptables_do_command("-t filter -X " CHAIN_UPLOAD_RATE);
-	iptables_do_command("-t filter -X " CHAIN_TRUSTED);
-	iptables_do_command("-t filter -X " CHAIN_TRUSTED_TO_ROUTER);
+
+	// Call library function to delete chains
+	safe_asprintf(&delchainscmd, "/usr/lib/opennds/libopennds.sh \"delete_chains\"");
+	msg = safe_calloc(STATUS_BUF);
+
+	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, delchainscmd) == 0) {
+		debug(LOG_INFO, "Chain delete request sent");
+	}
+	free(delchainscmd);
+	free(msg);
 
 	fw_quiet = 0;
 
@@ -1209,7 +1190,12 @@ iptables_fw_counters_update(void)
 	af = config->ip6 ? AF_INET6 : AF_INET;
 
 	// Look for outgoing (upload) traffic of authenticated clients.
+
+	/* Old iptables method:
 	safe_asprintf(&script, "%s %s", "iptables", "-v -n -x -t filter -L " CHAIN_UPLOAD_RATE);
+	*/
+
+	safe_asprintf(&script, "nft list chain ip filter %s", CHAIN_UPLOAD_RATE);
 	output = popen(script, "r");
 	free(script);
 
@@ -1223,10 +1209,15 @@ iptables_fw_counters_update(void)
 	while (('\n' != fgetc(output)) && !feof(output)) {}
 
 	while (!feof(output)) {
+		/* scan the old iptables format:
 		rc = fscanf(output, " %llu %llu %s %*s %*s %*s %*s %15[0-9.]", &packets, &counter, target, ip);
+		*/
+
+		rc = fscanf(output, " %*s %*s %15[0-9.] %*s %*s %llu %*s %llu %s", ip, &packets, &counter, target);
+
 		// eat rest of line
 		while (('\n' != fgetc(output)) && !feof(output)) {}
-		if (4 == rc && !strcmp(target, "RETURN")) {
+		if (4 == rc && !strcmp(target, "return")) {
 			// Sanity
 			if (!inet_pton(af, ip, &tempaddr)) {
 				debug(LOG_WARNING, "I was supposed to read an IP address but instead got [%s] - ignoring it", ip);

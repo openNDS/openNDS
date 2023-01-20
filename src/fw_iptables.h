@@ -22,7 +22,7 @@
     @brief Firewall iptables functions
     @author Copyright (C) 2004 Philippe April <papril777@yahoo.com>
     @author Copyright (C) 2007 Paul Kube <nodogsplash@kokoro.ucsd.edu>
-    @author Copyright (C) 2015-2022 Modifications and additions by BlueWave Projects and Services <opennds@blue-wave.net>
+    @author Copyright (C) 2015-2023 Modifications and additions by BlueWave Projects and Services <opennds@blue-wave.net>
 */
 
 #ifndef _FW_IPTABLES_H_
@@ -33,6 +33,10 @@
 
 /*@{*/
 /**Iptable chain names used by opennds */
+#define CHAIN_FORWARD "FORWARD"
+#define CHAIN_FORWARD_ALLOW "nds_allow_FWD"
+#define CHAIN_INPUT "INPUT"
+#define CHAIN_INPUT_ALLOW "nds_allow_INP"
 #define CHAIN_TO_INTERNET "ndsNET"
 #define CHAIN_TO_ROUTER "ndsRTR"
 #define CHAIN_TRUSTED_TO_ROUTER "ndsTRT"

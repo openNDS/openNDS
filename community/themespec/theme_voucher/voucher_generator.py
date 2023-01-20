@@ -1,4 +1,5 @@
 # Hotspot Voucher Generator
+#Copyright (C) Francesco Servida 2023
 
 import random
 import string

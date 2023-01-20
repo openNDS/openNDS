@@ -1,3 +1,26 @@
+opennds (9.10.0)
+
+  * This version adds new functionality, and fixes some issues
+  * Fix - unable to read client upload traffic volume on some versions of iptables-nft (generic Linux) [bluewavenet]
+  * Fix - compatibility with bash shell on generic Linux [bluewavenet]
+  * Fix - compiler warning, unused variable [bluewavenet]
+  * Fix - silently continue if fw4 table is not found [bluewavenet]
+  * Add - Start daemon earlier on boot [bluewavenet]
+  * Fix - compatibility with legacy iptables packages [bluewavenet]
+  * Add - call to delete nft chains [bluewavenet]
+  * Fix - stop using legacy INPUT and FORWARD chains [bluewavenet]
+  * Add - watchdog restart if openNDS nftables ruleset is missing [bluewavenet]
+  * Add - automated rule setting/deleting for users_to_router [bluewavenet]
+  * Add - Change fwhook to add users to router rule to fw4 on OpenWrt [bluewavenet]
+  * Add - Set allow or passthrough mode for users_to_router rules [bluewavenet]
+  * Fix - set fwhook default to disabled to prevent restart on hotplug event [bluewavenet]
+  * Fix - fas-aes-https description comments [bluewavenet]
+  * Fix - icon overspill on splash pages [bluewavenet]
+  * Fix - missing config option in community script [bluewavenet]
+  * Fix - urlencode handling of "$" character and add htmlentity encode/decode library call [bluewavenet]
+
+ -- Rob White <dot@blue-wave.net>  Tue, 17 Jan 2023 14:33:27 +0000
+
 opennds (9.9.1)
 
   * This version fixes some issues

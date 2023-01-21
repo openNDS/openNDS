@@ -565,8 +565,14 @@ iptables_fw_init(void)
 	rc |= iptables_do_command("-t filter -A " CHAIN_TO_ROUTER " -m mark --mark 0x%x%s -j DROP", FW_MARK_BLOCKED, markmask);
 	// CHAIN_TO_ROUTER, invalid packets DROP
 	rc |= iptables_do_command("-t filter -A " CHAIN_TO_ROUTER " -m conntrack --ctstate INVALID -j DROP");
-	// CHAIN_TO_ROUTER, related and established packets ACCEPT
-	rc |= iptables_do_command("-t filter -A " CHAIN_TO_ROUTER " -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT");
+	/* CHAIN_TO_ROUTER, related and established packets ACCEPT
+		This allows clients full access to the router
+		Commented out to block all access not specifically allowed in the ruleset
+		TODO: Should this be an option?
+	*/
+
+	//rc |= iptables_do_command("-t filter -A " CHAIN_TO_ROUTER " -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT");
+
 	// CHAIN_TO_ROUTER, bogus SYN packets DROP
 	rc |= iptables_do_command("-t filter -A " CHAIN_TO_ROUTER " -p tcp --tcp-flags SYN SYN \\! --tcp-option 2 -j DROP");
 
@@ -613,8 +619,13 @@ iptables_fw_init(void)
 		// CHAIN_TO_ROUTER, append the "users-to-router" ruleset
 		rc |= _iptables_append_ruleset("filter", "users-to-router", CHAIN_TO_ROUTER);
 
-		// CHAIN_TO_ROUTER packets marked AUTHENTICATED RETURN
-		rc |= iptables_do_command("-t filter -A " CHAIN_TO_ROUTER " -m mark --mark 0x%x%s -j RETURN", FW_MARK_AUTHENTICATED, markmask);
+		/* CHAIN_TO_ROUTER packets marked AUTHENTICATED RETURN
+		This allows clients full access to the router
+		Commented out to block all access not specifically allowed in the ruleset
+		TODO: Should this be an option?
+		*/
+
+		// rc |= iptables_do_command("-t filter -A " CHAIN_TO_ROUTER " -m mark --mark 0x%x%s -j RETURN", FW_MARK_AUTHENTICATED, markmask);
 
 		// everything else, REJECT
 		rc |= iptables_do_command("-t filter -A " CHAIN_TO_ROUTER " -j REJECT --reject-with %s-port-unreachable", ICMP_TYPE);

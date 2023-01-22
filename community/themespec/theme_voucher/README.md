@@ -60,7 +60,7 @@ eg a usb stick, an external drive, a network shared drive etc.
 File MUST be:
 
 * CSV style table, with comma (",") separators. No headers.
-* 7 Columns: voucher_token, voucher_length (minutes), voucher_upload_rate, voucher_dowload_rate, voucher_upload_quota, voucher_download_quota (kBps), 0 (expiration time placeholder, for when voucher is used)
+* 7 Columns: voucher_token, voucher_length (minutes), voucher_upload_rate, voucher_download_rate (kbps), voucher_upload_quota, voucher_download_quota (kBps), 0 (expiration time placeholder, for when voucher is used)
 
 The Voucher-Code MUST respect the following:
 

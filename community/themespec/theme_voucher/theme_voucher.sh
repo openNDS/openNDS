@@ -11,12 +11,26 @@
 # read language strings
 . /usr/lib/opennds/theme_voucher_*.sh
 
+[[ "$logdir" == ""  ]] && logdir="/tmp/ndslog/"
 voucher_roll="$logdir""vouchers.txt"
+voucher_flash="/usr/lib/opennds/vouchers.txt"
+
+# generate vouchers
+if ! [ -e $voucher_flash ]; then
+	rm $voucher_roll
+	count=408
+	while [ $count -gt 0 ]; do
+		token=$(</dev/urandom tr -dc A-Za-z0-9 | head -c 8)
+		echo ${token:0:4}-${token:4:4},600,1024,4096,0,0,0  >> $voucher_roll
+		count=$(( $count - 1 )) # minutes_valid, speed_up, down, quota_up, down, used_token
+	done
+	cp $voucher_roll $voucher_flash
+fi
 
 # if voucher does not exist in tmpfs, copy it from flash to tmpfs
-# you may create a cron job to update it from tmpfs to flash, once a month may not harm the flash.
-[ -e $voucher_roll ] || cp /usr/opennds/vouchers.txt $voucher_roll
+[ -e $voucher_roll ] || cp $voucher_flash $voucher_roll
 
+# you may create a cron job to update it from tmpfs to flash, once a month may not harm the flash.
 
 
 # Title of this theme:
@@ -139,7 +153,7 @@ check_voucher() {
 	#echo "$output <br>" #Matched line
 
 	
-	IFS=',' read -r voucher_token voucher_length voucher_upload_rate voucher_dowload_rate voucher_upload_quota voucher_download_quota voucher_expiration << EOF
+	IFS=',' read -r voucher_token voucher_length voucher_upload_rate voucher_download_rate voucher_upload_quota voucher_download_quota voucher_expiration << EOF
 $output
 EOF
 
@@ -153,7 +167,7 @@ EOF
 	fi
 
 	# Refresh quotas with ones imported from the voucher roll.
-	quotas="$voucher_length $voucher_upload_rate $voucher_dowload_rate $voucher_upload_quota $voucher_download_quota"
+	quotas="$voucher_length $voucher_upload_rate $voucher_download_rate $voucher_upload_quota $voucher_download_quota"
 
 
 	if [ $voucher_length -gt 0 ]; then

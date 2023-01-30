@@ -1253,12 +1253,20 @@ pre_setup () {
 	# Test INPUT and FORWARD chain priority
 	input_priority=$(nft -a list table ip filter 2> /dev/null | grep -w -A1 "chain INPUT" | grep -w "priority -100")
 
+	## Disable input priority setting for compatiblility with iptables v1.8.8 (OpenWrt master)
+	input_priority="disable"
+	##
+
 	if [ -z "$input_priority" ]; then
 		nft rename chain ip filter INPUT INPUT_LEGACY 2> /dev/null
 		nft add chain ip filter INPUT "{ type filter hook input priority -100 ; }" 2> /dev/null
 	fi
 
 	forward_priority=$(nft -a list table ip filter 2> /dev/null | grep -w -A1 "chain FORWARD" | grep -w "priority -100")
+
+	## Disable forward priority setting for compatiblility with iptables v1.8.8 (OpenWrt master)
+	forward_priority="disable"
+	##
 
 	if [ -z "$forward_priority" ]; then
 		nft rename chain ip filter FORWARD FORWARD_LEGACY 2> /dev/null

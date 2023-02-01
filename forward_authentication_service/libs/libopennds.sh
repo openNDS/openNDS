@@ -959,7 +959,7 @@ check_mhd() {
 }
 
 nft_get_status() {
-	nfttest=$(nft -a list chain ip filter ndsNET 2> /dev/null)
+	nfttest=$(nft -a list chain ip nds_filter ndsNET 2> /dev/null)
 
 	if [ ! -z "$nfttest" ]; then
 		nftstatus="1"
@@ -1148,33 +1148,15 @@ users_to_router () {
 }
 
 delete_chains () {
-	# If upgrading from 9.9.1 or earlier we need to clear our rules from INPUT and FORWARD chains
+	# If upgrading from 9.9.1 or earlier we need to clear our rules from legacy chains
 	table="filter"; src_chain="FORWARD"; dst_chain="ndsNET"
 	delete_rule
 
 	table="filter"; src_chain="INPUT"; dst_chain="ndsRTR"
 	delete_rule
 
-	# now we can delete the chains:
-	# in the filter table
-	nft delete chain ip filter nds_allow_INP 2> /dev/null
-	nft delete chain ip filter nds_allow_FWD 2> /dev/null
-	nft delete chain ip filter ndsNET 2> /dev/null
-	nft delete chain ip filter ndsRTR 2> /dev/null
-	nft delete chain ip filter ndsAUT 2> /dev/null
-	nft delete chain ip filter ndsULR 2> /dev/null
-	nft delete chain ip filter ndsTRU 2> /dev/null
-	nft delete chain ip filter ndsTRT 2> /dev/null
-
-	# in the nat table
-	# We should not delete the nat/PREROUTING chain in case someone else is using it, so flush only our rules
 	table="nat"; src_chain="PREROUTING"; dst_chain="ndsOUT"
 	delete_rule
-
-	nft delete chain ip nat "$dst_chain" 2> /dev/null
-
-	# in the mangle table
-	# We should not delete the mangle/PREROUTING and mangle/POSTROUTING chains in case someone else is using them, so flush only our rules
 
 	table="mangle"; src_chain="PREROUTING"; dst_chains="ndsTRU ndsBLK ndsALW ndsOUT"
 
@@ -1185,11 +1167,10 @@ delete_chains () {
 	table="mangle"; src_chain="POSTROUTING"; dst_chain="ndsINC"
 	delete_rule
 
-	nft delete chain ip mangle ndsTRU 2> /dev/null 
-	nft delete chain ip mangle ndsBLK 2> /dev/null
-	nft delete chain ip mangle ndsALW 2> /dev/null
-	nft delete chain ip mangle ndsOUT 2> /dev/null
-	nft delete chain ip mangle ndsINC 2> /dev/null
+	# now we can delete our chains - the quickest way is to delete our tables:
+	nft delete table ip nds_filter 2> /dev/null
+	nft delete table ip nds_mangle 2> /dev/null
+	nft delete table ip nds_nat 2> /dev/null
 }
 
 delete_rule () {
@@ -1229,7 +1210,11 @@ pre_setup () {
 		gatewayinterface="br-lan"
 	fi
 
-	ndstables="filter mangle nat"
+	# Delete any legacy iptables chains left from previous versions and any of our tables left in limbo
+	delete_chains
+
+	# Create our tables:
+	ndstables="nds_filter nds_mangle nds_nat"
 
 	for ndstable in $ndstables; do
 		nft list table ip "$ndstable" &>/dev/null
@@ -1246,43 +1231,29 @@ pre_setup () {
 		fi
 	done
 
-	# Tables should now exist, flush and initialise chains:
 
-	delete_chains
+	# add required chains
+	nft add chain ip nds_filter ndsINP "{ type filter hook input priority -100 ; }" 2> /dev/null
+	nft add chain ip nds_filter ndsFWD "{ type filter hook forward priority -100 ; }" 2> /dev/null
+	nft add chain ip nds_nat ndsPRE "{ type nat hook prerouting priority -100 ; }"
+	nft add chain ip nds_mangle ndsPRE "{ type filter hook prerouting priority -100 ; }"
+	nft add chain ip nds_mangle ndsPOST "{ type filter hook postrouting priority -100 ; }"
+	nft add chain ip nds_filter nds_allow_INP "{ type filter hook input priority 100 ; }"
+	nft add chain ip nds_filter nds_allow_FWD "{ type filter hook forward priority 100 ; }"
 
-	# Test INPUT and FORWARD chain priority
-	input_priority=$(nft -a list table ip filter 2> /dev/null | grep -w -A1 "chain INPUT" | grep -w "priority -100")
-
-	## Disable input priority setting for compatiblility with iptables v1.8.8 (OpenWrt master)
-	input_priority="disable"
-	##
-
-	if [ -z "$input_priority" ]; then
-		nft rename chain ip filter INPUT INPUT_LEGACY 2> /dev/null
-		nft add chain ip filter INPUT "{ type filter hook input priority -100 ; }" 2> /dev/null
-	fi
-
-	forward_priority=$(nft -a list table ip filter 2> /dev/null | grep -w -A1 "chain FORWARD" | grep -w "priority -100")
-
-	## Disable forward priority setting for compatiblility with iptables v1.8.8 (OpenWrt master)
-	forward_priority="disable"
-	##
-
-	if [ -z "$forward_priority" ]; then
-		nft rename chain ip filter FORWARD FORWARD_LEGACY 2> /dev/null
-		nft add chain ip filter FORWARD "{ type filter hook forward priority -100 ; }" 2> /dev/null
-	fi
-
-	nft add chain ip filter nds_allow_INP "{ type filter hook input priority 100 ; }"
-	nft add chain ip filter nds_allow_FWD "{ type filter hook forward priority 100 ; }"
-
-	nft insert rule ip filter nds_allow_INP iifname "\"$gatewayinterface\"" counter accept comment "\"!opennds: allow input\""
-	nft insert rule ip filter nds_allow_FWD iifname "\"$gatewayinterface\"" counter accept comment "\"!opennds: allow forward\""
+	# add initial rules
+	nft insert rule ip nds_filter nds_allow_INP iifname "\"$gatewayinterface\"" counter accept comment "\"!opennds: allow input\""
+	nft insert rule ip nds_filter nds_allow_FWD iifname "\"$gatewayinterface\"" counter accept comment "\"!opennds: allow forward\""
 
 	ret=$?
 
 }
 
+ipt_to_nft () {
+	nftstr=$($cmd $cmdstr)
+	retval=$($nftstr)
+	ret=$?
+}
 
 #### end of functions ####
 
@@ -1831,6 +1802,26 @@ elif [ "$1" = "delete_chains" ]; then
 	delete_chains
 
 	exit 0
+
+elif [ "$1" = "ipt_to_nft" ]; then
+	# Translates ipt to nft and executes
+	# $2 is the command name
+	# $3 is the ipt command string
+
+	if [ -z "$2" ]; then
+		exit 4
+	fi
+
+	if [ -z "$3" ]; then
+		exit 4
+	fi
+
+	cmd=$2
+	cmdstr=$3
+	
+	ipt_to_nft
+
+	exit $ret
 
 else
 	#Display a splash page sequence using a Themespec

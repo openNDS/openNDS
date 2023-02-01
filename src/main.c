@@ -520,8 +520,8 @@ setup_from_config(void)
 			debug(LOG_NOTICE, "dnsmasq ipset support is available");
 		} else {
 			debug(LOG_ERR, "Please install dnsmasq full version with ipset compile option");
-			debug(LOG_ERR, "Exiting...");
-			exit(1);
+			//debug(LOG_ERR, "Exiting...");
+			//exit(1);
 		}
 		free(msg);
 

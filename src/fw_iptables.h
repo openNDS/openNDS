@@ -46,7 +46,6 @@
 #define CHAIN_INCOMING  "ndsINC"
 #define CHAIN_UPLOAD_RATE  "ndsULR"
 #define CHAIN_AUTHENTICATED     "ndsAUT"
-#define CHAIN_PREAUTHENTICATED   "ndsPRE"
 #define CHAIN_BLOCKED    "ndsBLK"
 #define CHAIN_ALLOWED    "ndsALW"
 #define CHAIN_TRUSTED    "ndsTRU"

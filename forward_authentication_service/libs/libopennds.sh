@@ -1255,6 +1255,19 @@ ipt_to_nft () {
 	ret=$?
 }
 
+delete_client_rule () {
+
+	if [ "$nds_verdict" = "all" ]; then
+		local handles=$(nft -a list chain ip "$nds_table" "$nds_chain" | grep -w "$client_ip" | awk -F"handle " '{printf "%s ", $2}')
+	else
+		local handles=$(nft -a list chain ip "$nds_table" "$nds_chain" | grep -w "$client_ip" | grep -w "$nds_verdict" | awk -F"handle " '{printf "%s ", $2}')
+	fi
+
+	for rulehandle in $handles; do
+		nft delete rule ip $nds_table "$nds_chain" handle "$rulehandle" 2> /dev/null
+	done
+}
+
 #### end of functions ####
 
 
@@ -1802,6 +1815,31 @@ elif [ "$1" = "delete_chains" ]; then
 	delete_chains
 
 	exit 0
+
+elif [ "$1" = "delete_client_rule" ]; then
+	# Deletes a client rule
+	# $2 is the table
+	# $3 is the chain
+	# $4 is the verdict - accept, drop, queue, continue, return, jump, goto or all
+	# $5 is the client ip address
+
+	nds_table=$2
+	nds_chain=$3
+	nds_verdict=$4
+	client_ip=$5
+
+	verdicts="accept drop queue continue return jump goto all"
+
+	for verdict in $verdicts; do
+
+		if [ "$verdict" = "$nds_verdict" ]; then
+			delete_client_rule
+			exit 0
+		fi
+	done
+
+	# bad verdict
+	exit 1
 
 elif [ "$1" = "ipt_to_nft" ]; then
 	# Translates ipt to nft and executes

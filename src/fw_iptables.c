@@ -50,7 +50,7 @@
 #include "util.h"
 
 // iptables v1.4.17
-#define MIN_IPTABLES_VERSION (1 * 10000 + 4 * 100 + 17)
+#define MIN_IPTABLES_VERSION (1 * 10000 + 8 * 100 + 7)
 
 static char *_iptables_compile(const char[], const char[], t_firewall_rule *);
 static int _iptables_append_ruleset(const char[], const char[], const char[]);
@@ -134,30 +134,16 @@ _iptables_init_marks()
 int
 _iptables_check_mark_masking()
 {
-	// See if kernel supports mark or-ing
+
+	// nft migration - default to mark or-ing
 	fw_quiet = 1; // do it quietly
-	//if (0 == iptables_do_command("-t nds_mangle -I PREROUTING 1 -j MARK --or-mark 0x%x", FW_MARK_BLOCKED)) {
-	///	iptables_do_command("-t nds_mangle -D PREROUTING 1"); // delete test rule we just inserted
-	//	debug(LOG_DEBUG, "Kernel supports --or-mark.");
-		markop = "--or-mark";
-	//} else {
-	//	debug(LOG_INFO,"Kernel does not support iptables --or-mark. Using --set-mark instead.");
-	//	markop = "--set-mark";
-	//}
+	markop = "--or-mark";
 
-	// See if kernel supports mark masking
-	//if (0 == iptables_do_command("-t nds_filter -I " CHAIN_FORWARD " 1 -m mark --mark 0x%x/0x%x -j REJECT", FW_MARK_BLOCKED, FW_MARK_MASK)) {
-	//	iptables_do_command("-t nds_filter -D " CHAIN_FORWARD " 1"); // delete test rule we just inserted
-	//	debug(LOG_DEBUG, "Kernel supports mark masking.");
-		char *tmp = NULL;
-		safe_asprintf(&tmp,"/0x%x",FW_MARK_MASK);
-		markmask = tmp;
-	//} else {
-	//	debug(LOG_INFO, "Kernel does not support iptables mark masking. Using empty mask.");
-	//	markmask = "";
-	//}
+	char *tmp = NULL;
+	safe_asprintf(&tmp,"/0x%x",FW_MARK_MASK);
+	markmask = tmp;
 
-	debug(LOG_DEBUG, "Iptables mark op \"%s\" and mark mask \"%s\".", markop, markmask);
+	//debug(LOG_DEBUG, "Iptables mark op \"%s\" and mark mask \"%s\".", markop, markmask);
 
 	fw_quiet = 0; // restore verbosity
 
@@ -354,9 +340,9 @@ int get_iptables_version()
 	int patch;
 	int rc;
 
-	rc = execute_ret(buf, sizeof(buf), "iptables -V");
+	rc = execute_ret(buf, sizeof(buf), "iptables-translate -V");
 
-	if (rc == 0 && sscanf(buf, "iptables v%d.%d.%d", &major, &minor, &patch) == 3) {
+	if (rc == 0 && sscanf(buf, "iptables-translate v%d.%d.%d", &major, &minor, &patch) == 3) {
 		return major * 10000 + minor * 100 + patch;
 	} else {
 		return -1;
@@ -659,8 +645,8 @@ iptables_fw_init(void)
 
 	// Allow access to Walled Garden ipset - CHAIN_TO_INTERNET packets for Walled Garden, ACCEPT
 	if (config->walledgarden_fqdn_list != NULL && config->walledgarden_port_list == NULL) {
-		rc |= iptables_do_command("-t nds_filter -I " CHAIN_TO_INTERNET " -m set --match-set walledgarden dst -j ACCEPT");
-		rc |= iptables_do_command("-t nds_nat -I " CHAIN_OUTGOING " -m set --match-set walledgarden dst -j ACCEPT");
+		//rc |= iptables_do_command("-t nds_filter -I " CHAIN_TO_INTERNET " -m set --match-set walledgarden dst -j ACCEPT");
+		//rc |= iptables_do_command("-t nds_nat -I " CHAIN_OUTGOING " -m set --match-set walledgarden dst -j ACCEPT");
 		debug(LOG_WARNING, "No Walled Garden Ports are specified - ALL ports are allowed - this may break some client CPDs.");
 		debug(LOG_WARNING, "No Walled Garden Ports are specified - eg. if apple.com is added, Apple devices will not trigger the portal.");
 	}
@@ -930,7 +916,7 @@ iptables_download_ratelimit_enable(t_client *client, int enable)
 		debug(LOG_INFO, "Average Download Packet Size for [%s] is [%llu] bytes", client->ip, average_packet_size);
 		debug(LOG_INFO, "Download Rate Limiting of [%s %s] to [%llu] packets/min, bucket size [%llu]", client->ip, client->mac, packet_limit, bucket);
 		// Remove non-rate limiting rule set for this client
-		rc |= iptables_do_command("-t nds_mangle -D " CHAIN_INCOMING " -d %s -j ACCEPT", client->ip);
+		rc = execute("/usr/lib/opennds/libopennds.sh delete_client_rule nds_mangle \"%s\" \"%s\" \"%s\"", CHAIN_INCOMING, "accept", client->ip);
 
 		rc |= iptables_do_command("-t nds_mangle -A " CHAIN_INCOMING " -d %s -c %llu %llu -m limit --limit %llu/min --limit-burst %llu -j ACCEPT",
 			client->ip,
@@ -949,16 +935,11 @@ iptables_download_ratelimit_enable(t_client *client, int enable)
 		debug(LOG_DEBUG, "client->inc_packet_limit %llu client->download_bucket_size %llu", client->inc_packet_limit, client->download_bucket_size);
 
 		// Remove rate limiting download rule set for this client
-		rc |= iptables_do_command("-t nds_mangle -D " CHAIN_INCOMING " -d %s -m limit --limit %llu/min --limit-burst %llu -j ACCEPT",
-			client->ip,
-			client->inc_packet_limit,
-			client->download_bucket_size
-		);
+		rc = execute("/usr/lib/opennds/libopennds.sh delete_client_rule nds_mangle \"%s\" \"%s\" \"%s\"", CHAIN_INCOMING, "accept", client->ip);
+		rc = execute("/usr/lib/opennds/libopennds.sh delete_client_rule nds_mangle \"%s\" \"%s\" \"%s\"", CHAIN_INCOMING, "drop", client->ip);
 
 		client->inc_packet_limit = 0;
 		client->download_bucket_size = 0;
-
-		rc |= iptables_do_command("-t nds_mangle -D " CHAIN_INCOMING " -d %s -j DROP", client->ip);
 
 		rc |= iptables_do_command("-t nds_mangle -A " CHAIN_INCOMING " -d %s -c %llu %llu -j ACCEPT",
 			client->ip,
@@ -1018,9 +999,8 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 		debug(LOG_INFO, "Upload Rate Limiting of [%s %s] to [%llu] packets/min, bucket size [%llu]", client->ip, client->mac, packet_limit, bucket);
 
 		// Remove non rate limiting rule set for this client
-		rc |= iptables_do_command("-t nds_filter -D " CHAIN_UPLOAD_RATE " -s %s -j RETURN",
-			client->ip
-		);
+		rc = execute("/usr/lib/opennds/libopennds.sh delete_client_rule nds_filter \"%s\" \"%s\" \"%s\"", CHAIN_UPLOAD_RATE, "return", client->ip);
+
 		// Add rate limiting upload rule set for this client
 		rc |= iptables_do_command("-t nds_filter -I " CHAIN_UPLOAD_RATE " -s %s -j DROP", client->ip);
 		rc |= iptables_do_command("-t nds_filter -I " CHAIN_UPLOAD_RATE " -s %s -c %llu %llu -m limit --limit %llu/min --limit-burst %llu -j RETURN",
@@ -1037,7 +1017,8 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 
 	if (enable == 0) {
 		// Remove rate limiting upload rule set for this client
-		rc |= iptables_fw_destroy_mention("filter", CHAIN_UPLOAD_RATE, client->ip);
+		rc = execute("/usr/lib/opennds/libopennds.sh delete_client_rule nds_filter \"%s\" \"%s\" \"%s\"", CHAIN_UPLOAD_RATE, "return", client->ip);
+		rc = execute("/usr/lib/opennds/libopennds.sh delete_client_rule nds_filter \"%s\" \"%s\" \"%s\"", CHAIN_UPLOAD_RATE, "drop", client->ip);
 
 		client->out_packet_limit = 0;
 		client->upload_bucket_size = 0;
@@ -1095,9 +1076,9 @@ iptables_fw_deauthenticate(t_client *client)
 	// Remove the authentication rules.
 	debug(LOG_NOTICE, "Deauthenticating %s %s", client->ip, client->mac);
 
-	rc |= iptables_fw_destroy_mention("mangle", CHAIN_OUTGOING, client->ip);
-	rc |= iptables_fw_destroy_mention("filter", CHAIN_UPLOAD_RATE, client->ip);
-	rc |= iptables_fw_destroy_mention("mangle", CHAIN_INCOMING, client->ip);
+	rc = execute("/usr/lib/opennds/libopennds.sh delete_client_rule nds_mangle \"%s\" all \"%s\"", CHAIN_OUTGOING, client->ip);
+	rc = execute("/usr/lib/opennds/libopennds.sh delete_client_rule nds_filter \"%s\" all \"%s\"", CHAIN_UPLOAD_RATE, client->ip);
+	rc = execute("/usr/lib/opennds/libopennds.sh delete_client_rule nds_mangle \"%s\" all \"%s\"", CHAIN_INCOMING, client->ip);
 
 	return rc;
 }
@@ -1107,27 +1088,27 @@ unsigned long long int
 iptables_fw_total_upload()
 {
 	FILE *output;
-	const char *script;
+	char *script;
 	char target[MAX_BUF];
 	int rc;
+	unsigned long long int packets;
 	unsigned long long int counter;
 
 	// Look for outgoing traffic
-	script = "iptables -v -n -x -t nds_mangle -L PREROUTING";
+	safe_asprintf(&script, "nft list chain ip nds_mangle %s | grep -w %s ", CHAIN_PREROUTING, CHAIN_OUTGOING);
 	output = popen(script, "r");
+	free (script);
+	
 	if (!output) {
 		debug(LOG_ERR, "popen(): %s", strerror(errno));
 		return 0;
 	}
 
-	// skip the first two lines
-	while (('\n' != fgetc(output)) && !feof(output)) {}
-	while (('\n' != fgetc(output)) && !feof(output)) {}
-
 	while (!feof(output)) {
-		rc = fscanf(output, "%*d %llu %s ", &counter, target);
-		if (2 == rc && !strcmp(target,CHAIN_OUTGOING)) {
-			debug(LOG_DEBUG, "Total outgoing Bytes=%llu", counter);
+		rc = fscanf(output, "%*s %*s %*s %*s %llu %*s %llu %*s %s ", &packets, &counter, target);
+		
+		if (3 == rc && !strcmp(target,CHAIN_OUTGOING)) {
+			debug(LOG_DEBUG, "Total outgoing traffic [%llu] packets, [%llu] bytes", packets, counter);
 			pclose(output);
 			return counter;
 		}
@@ -1145,27 +1126,30 @@ unsigned long long int
 iptables_fw_total_download()
 {
 	FILE *output;
-	const char *script;
+	char *script;
 	char target[MAX_BUF];
 	int rc;
+	unsigned long long int packets;
 	unsigned long long int counter;
 
 	// Look for incoming traffic
-	script = "iptables -v -n -x -t nds_mangle -L POSTROUTING";
+	safe_asprintf(&script, "nft list chain ip nds_mangle %s | grep -w %s ", CHAIN_POSTROUTING, CHAIN_INCOMING);
 	output = popen(script, "r");
+	free (script);
+
+	output = popen(script, "r");
+
+
 	if (!output) {
 		debug(LOG_ERR, "popen(): %s", strerror(errno));
 		return 0;
 	}
 
-	// skip the first two lines
-	while (('\n' != fgetc(output)) && !feof(output)) {}
-	while (('\n' != fgetc(output)) && !feof(output)) {}
-
 	while (!feof(output)) {
-		rc = fscanf(output, "%*s %llu %s ", &counter, target);
-		if (2 == rc && !strcmp(target, CHAIN_INCOMING)) {
-			debug(LOG_DEBUG, "Total incoming Bytes=%llu", counter);
+		rc = fscanf(output, "%*s %*s %*s %*s %llu %*s %llu %*s %s ", &packets, &counter, target);
+		
+		if (3 == rc && !strcmp(target, CHAIN_INCOMING)) {
+			debug(LOG_DEBUG, "Total incoming traffic [%llu] packets, [%llu] bytes", packets, counter);
 			pclose(output);
 			return counter;
 		}
@@ -1198,12 +1182,7 @@ iptables_fw_counters_update(void)
 	af = config->ip6 ? AF_INET6 : AF_INET;
 
 	// Look for outgoing (upload) traffic of authenticated clients.
-
-	/* Old iptables method:
-	safe_asprintf(&script, "%s %s", "iptables", "-v -n -x -t nds_filter -L " CHAIN_UPLOAD_RATE);
-	*/
-
-	safe_asprintf(&script, "nft list chain ip filter %s", CHAIN_UPLOAD_RATE);
+	safe_asprintf(&script, "nft list chain ip nds_filter %s", CHAIN_UPLOAD_RATE);
 	output = popen(script, "r");
 	free(script);
 
@@ -1217,10 +1196,6 @@ iptables_fw_counters_update(void)
 	while (('\n' != fgetc(output)) && !feof(output)) {}
 
 	while (!feof(output)) {
-		/* scan the old iptables format:
-		rc = fscanf(output, " %llu %llu %s %*s %*s %*s %*s %15[0-9.]", &packets, &counter, target, ip);
-		*/
-
 		rc = fscanf(output, " %*s %*s %15[0-9.] %*s %*s %llu %*s %llu %s", ip, &packets, &counter, target);
 
 		// eat rest of line
@@ -1262,7 +1237,7 @@ iptables_fw_counters_update(void)
 	pclose(output);
 
 	// Look for incoming (download) traffic
-	safe_asprintf(&script, "%s %s", "iptables", "-v -n -x -t nds_mangle -L " CHAIN_INCOMING);
+	safe_asprintf(&script, "nft list chain ip nds_mangle %s", CHAIN_INCOMING);
 	output = popen(script, "r");
 	free(script);
 
@@ -1276,11 +1251,14 @@ iptables_fw_counters_update(void)
 	while (('\n' != fgetc(output)) && !feof(output)) {}
 
 	while (!feof(output)) {
-		rc = fscanf(output, " %llu %llu %s %*s %*s %*s %*s %*s %15[0-9.]", &packets, &counter, target, ip);
+		rc = fscanf(output, " %*s %*s %15[0-9.] %*s %*s %llu %*s %llu %s", ip, &packets, &counter, target);
+
 		// eat rest of line
 		while (('\n' != fgetc(output)) && !feof(output)) {}
-		if (4 == rc && !strcmp(target, "ACCEPT")) {
-			// Sanity
+
+		// Sanity check
+		if (4 == rc && !strcmp(target, "accept")) {
+
 			if (!inet_pton(af, ip, &tempaddr)) {
 				debug(LOG_WARNING, "I was supposed to read an IP address but instead got [%s] - ignoring it", ip);
 				continue;

@@ -296,6 +296,7 @@ setup_from_config(void)
 	char wgfqdns[1024] = {0};
 	char *dnscmd;
 	char *setupcmd;
+	int rc = 0;
 
 	s_config *config;
 
@@ -499,76 +500,6 @@ setup_from_config(void)
 		free(msg);
 	}
 
-	// For Walled Garden - Check we have ipset support and if we do, set it up
-	if (config->walledgarden_fqdn_list) {
-		// Check ipset command is available
-		msg = safe_calloc(SMALL_BUF);
-
-		if (execute_ret_url_encoded(msg, SMALL_BUF - 1, "ipset -v") == 0) {
-			debug(LOG_NOTICE, "ipset support is available");
-		} else {
-			debug(LOG_ERR, "ipset support not available - please install package to provide it");
-			debug(LOG_ERR, "Exiting...");
-			exit(1);
-		}
-		free(msg);
-
-		// Check we have dnsmasq ipset compile option
-		msg = safe_calloc(SMALL_BUF);
-
-		if (execute_ret_url_encoded(msg, SMALL_BUF - 1, "dnsmasq --version | grep ' ipset '") == 0) {
-			debug(LOG_NOTICE, "dnsmasq ipset support is available");
-		} else {
-			debug(LOG_ERR, "Please install dnsmasq full version with ipset compile option");
-			//debug(LOG_ERR, "Exiting...");
-			//exit(1);
-		}
-		free(msg);
-
-		// If Walled Garden ipset exists, destroy it.
-		msg = safe_calloc(SMALL_BUF);
-		execute_ret_url_encoded(msg, SMALL_BUF - 1, "ipset destroy walledgarden");
-		free(msg);
-		
-		// Set up the Walled Garden
-		msg = safe_calloc(SMALL_BUF);
-
-		if (execute_ret_url_encoded(msg, SMALL_BUF - 1, "ipset create walledgarden hash:ip") == 0) {
-			debug(LOG_INFO, "Walled Garden ipset created");
-		} else {
-			debug(LOG_ERR, "Failed to create Walled Garden");
-			debug(LOG_ERR, "Exiting...");
-			exit(1);
-		}
-		free(msg);
-
-		// Configure dnsmasq
-
-		for (allowed_wgfqdn = config->walledgarden_fqdn_list; allowed_wgfqdn != NULL; allowed_wgfqdn = allowed_wgfqdn->next) {
-
-			// Make sure we don't have a buffer overflow:
-			if ((sizeof(wgfqdns) - strlen(wgfqdns)) > (strlen(allowed_wgfqdn->wgfqdn) + 15)) {
-				strcat(wgfqdns, "/");
-				strcat(wgfqdns, allowed_wgfqdn->wgfqdn);
-			} else {
-				break;
-			}
-		}
-
-		strcat(wgfqdns, "/walledgarden");
-		debug(LOG_DEBUG, "Dnsmasq Walled Garden config [%s]", wgfqdns);
-		safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"ipsetconf\" \"%s\"", wgfqdns);
-		msg = safe_calloc(STATUS_BUF);
-
-		if (execute_ret_url_encoded(msg, STATUS_BUF - 1, dnscmd) == 0) {
-			debug(LOG_INFO, "Dnsmasq configured for Walled Garden");
-		} else {
-			debug(LOG_ERR, "Walled Garden Dnsmasq setup script failed to execute");
-		}
-		free(dnscmd);
-		free(msg);
-	}
-
 	if (config->dhcp_default_url_enable == 1) {
 		debug(LOG_DEBUG, "Enabling RFC8910 support");
 
@@ -600,13 +531,6 @@ setup_from_config(void)
 		free(dnscmd);
 		free(msg);
 	}
-
-	// Restart dnsmasq
-	safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" &");
-	debug(LOG_DEBUG, "restart command [ %s ]", dnscmd);
-	system(dnscmd);
-	debug(LOG_INFO, "Dnsmasq restarted");
-	free(dnscmd);
 
 	// Encode gatewayname
 	char idbuf[STATUS_BUF] = {0};

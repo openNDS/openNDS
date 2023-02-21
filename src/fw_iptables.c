@@ -49,8 +49,8 @@
 #include "debug.h"
 #include "util.h"
 
-// iptables v1.4.17
-#define MIN_IPTABLES_VERSION (1 * 10000 + 8 * 100 + 7)
+// iptables v1.8.0
+#define MIN_IPTABLES_VERSION (1 * 10000 + 8 * 100 + 0)
 
 static char *_iptables_compile(const char[], const char[], t_firewall_rule *);
 static int _iptables_append_ruleset(const char[], const char[], const char[]);
@@ -183,6 +183,44 @@ iptables_do_command(const char *format, ...)
 	}
 
 	debug(LOG_DEBUG,"iptables command [ %s ], return code [ %d ]", fmt_cmd, rc);
+	free(fmt_cmd);
+
+	return rc;
+}
+
+// @internal
+int
+nftables_do_command(const char *format, ...)
+{
+	va_list vlist;
+	char *fmt_cmd = NULL;
+	s_config *config;
+	char *nftables;
+	int rc;
+	int i;
+
+	va_start(vlist, format);
+	safe_vasprintf(&fmt_cmd, format, vlist);
+	va_end(vlist);
+
+	config = config_get_config();
+
+	nftables = config->ip6 ? "nft" : "nft";
+
+	for (i = 0; i < 5; i++) {
+
+		rc = execute("\"%s\" \"%s\"", nftables, fmt_cmd);
+
+		if (rc == 4) {
+			/* nftables error code 4 indicates a resource problem that might
+			 * be temporary. So we retry to insert the rule a few times. (Mitar) */
+			sleep(1);
+		} else {
+			break;
+		}
+	}
+
+	debug(LOG_DEBUG,"nftables command [ %s ], return code [ %d ]", fmt_cmd, rc);
 	free(fmt_cmd);
 
 	return rc;
@@ -369,6 +407,8 @@ iptables_fw_init(void)
 	t_WGP *allowed_wgport;
 	int rc = 0;
 	int macmechanism;
+	char *msg;
+	char *dnscmd;
 
 	debug(LOG_NOTICE, "Initializing firewall rules");
 
@@ -643,32 +683,6 @@ iptables_fw_init(void)
 		rc |= iptables_do_command("-t nds_filter -A " CHAIN_TO_INTERNET " -p tcp --destination %s --dport %d -j ACCEPT", fas_remoteip, fas_port);
 	}
 
-	// Allow access to Walled Garden ipset - CHAIN_TO_INTERNET packets for Walled Garden, ACCEPT
-	if (config->walledgarden_fqdn_list != NULL && config->walledgarden_port_list == NULL) {
-		//rc |= iptables_do_command("-t nds_filter -I " CHAIN_TO_INTERNET " -m set --match-set walledgarden dst -j ACCEPT");
-		//rc |= iptables_do_command("-t nds_nat -I " CHAIN_OUTGOING " -m set --match-set walledgarden dst -j ACCEPT");
-		debug(LOG_WARNING, "No Walled Garden Ports are specified - ALL ports are allowed - this may break some client CPDs.");
-		debug(LOG_WARNING, "No Walled Garden Ports are specified - eg. if apple.com is added, Apple devices will not trigger the portal.");
-	}
-
-	if (config->walledgarden_fqdn_list != NULL && config->walledgarden_port_list != NULL) {
-		for (allowed_wgport = config->walledgarden_port_list; allowed_wgport != NULL; allowed_wgport = allowed_wgport->next) {
-			debug(LOG_INFO, "Iptables: walled garden port [%u]", allowed_wgport->wgport);
-
-			if (allowed_wgport->wgport == 80) {
-				debug(LOG_WARNING, "Walled Garden Port 80 specified - this may break some client CPDs.");
-				debug(LOG_WARNING, "Walled Garden Port 80 specified - eg. if apple.com is added, Apple devices will not trigger the portal.");
-			}
-			rc |= iptables_do_command("-t nds_filter -I " CHAIN_TO_INTERNET " -p tcp --dport %u -m set --match-set walledgarden dst -j ACCEPT",
-				allowed_wgport->wgport
-			);
-			rc |= iptables_do_command("-t nds_nat -I " CHAIN_OUTGOING " -p tcp --dport %u -m set --match-set walledgarden dst -j ACCEPT",
-				allowed_wgport->wgport
-			);
-		}
-	}
-
-
 	// CHAIN_TO_INTERNET, packets marked TRUSTED:
 
 	/* if trusted-users ruleset is empty:
@@ -744,10 +758,44 @@ iptables_fw_init(void)
 	// CHAIN_TO_INTERNET, all other packets REJECT
 	rc |= iptables_do_command("-t nds_filter -A " CHAIN_TO_INTERNET " -j REJECT --reject-with %s-port-unreachable", ICMP_TYPE);
 
+	// For Walled Garden - Check we have nftset support and if we do, set it up
+	if (config->walledgarden_fqdn_list) {
+
+		// Check we have dnsmasq nftset compile option
+		msg = safe_calloc(SMALL_BUF);
+
+		if (execute_ret_url_encoded(msg, SMALL_BUF - 1, "dnsmasq --version | grep ' nftset '") == 0) {
+			debug(LOG_NOTICE, "dnsmasq nftset support is available");
+			free(msg);
+			// If Walled Garden nftset exists, destroy it.
+			msg = safe_calloc(SMALL_BUF);
+			execute_ret_url_encoded(msg, SMALL_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset delete walledgarden");
+			free(msg);
+
+			// Set up the Walled Garden
+			msg = safe_calloc(SMALL_BUF);
+
+			if (execute_ret_url_encoded(msg, STATUS_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset insert walledgarden ") == 0) {
+				debug(LOG_INFO, "Walled Garden Setup Request sent");
+			}
+			free(msg);
+		} else {
+			debug(LOG_ERR, "Please install dnsmasq full version with nftset compile option");
+			free(msg);
+		}
+	}
+
 	/*
 	 * End of filter table chains and rules
 	 **************************************
 	 */
+
+	// Restart dnsmasq
+	safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" &");
+	debug(LOG_DEBUG, "restart command [ %s ]", dnscmd);
+	system(dnscmd);
+	debug(LOG_INFO, "Dnsmasq restarted");
+	free(dnscmd);
 
 	free(gw_interface);
 	free(gw_iprange);

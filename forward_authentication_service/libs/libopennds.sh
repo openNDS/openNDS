@@ -987,7 +987,7 @@ get_option_from_config() {
 	param=""
 
 	if [ -e "/etc/config/opennds" ]; then
-		param=$(uci -q get opennds.@opennds[0].$option | awk '{printf("%s", $0)}')
+		param=$(uci -q get opennds.@opennds[0].$option | awk '{printf("%s", $0)}' | tr -d "'")
 
 	elif [ -e "/etc/opennds/opennds.conf" ]; then
 		param=$(cat "/etc/opennds/opennds.conf" | awk -F"$option " '{printf("%s", $2)}')
@@ -1266,6 +1266,76 @@ delete_client_rule () {
 	for rulehandle in $handles; do
 		nft delete rule ip $nds_table "$nds_chain" handle "$rulehandle" 2> /dev/null
 	done
+}
+
+nft_set () {
+	# Define the dnsmask config file location for generic Linux
+	# Edit this if your system uses a non standard locations:
+	conflocation="/etc/dnsmasq.conf"
+
+
+	uciconfig=$(uci show dhcp 2>/dev/null)
+
+	if [ "$nftsetmode" = "delete" ]; then
+		# Delete rules using the set, the set itself and the Dnsmasq config
+
+		if [ -z "$uciconfig" ]; then
+			# Generic Linux
+			linnum=$(cat /etc/dnsmasq.conf | grep -n -w "walledgarden" | awk -F":" '{printf "%s", $1}')
+			sed "$linnum""d" "/tmp/etc/dnsmasq.conf"
+		else
+			uci -q delete dhcp.nds_nftset
+		fi
+		# Todo: Do we need to delete the rule?
+	else
+
+		if [ "$nftsetmode" = "add" ] || [ "$nftsetmode" = "insert" ]; then
+			# Add the set, add/insert the rule and the Dnsmasq config
+			nft add set ip nds_filter walledgarden { type ipv4_addr\; size 128\; }
+			#ports=$(uci -q get opennds.@opennds[0].walledgarden_port_list | tr -d "'")
+
+			option="walledgarden_port_list"
+			get_option_from_config
+			ports=$walledgarden_port_list
+			urldecode "$ports"
+			ports="$urldecoded"
+
+			if [ -z "$ports" ]; then
+				nft $nftsetmode rule ip nds_filter ndsNET counter ip daddr @walledgarden accept
+				ret=$?
+			else
+				numports=$(uci -q get opennds.@opennds[0].walledgarden_port_list | tr -d "'" | awk '{print NF}')
+
+				if [ "$numports" -gt 1 ]; then
+					ports=$(printf "$ports" | tr -d "'" | tr -s " " ",")
+				fi
+
+				nft $nftsetmode rule ip nds_filter ndsNET counter ip daddr @walledgarden tcp dport {$ports} accept
+			fi
+
+			if [ -z "$uciconfig" ]; then
+				# Generic Linux
+#nftset=/facebook.com/fbcdn.net/paypal.com/paypalobjects.com/4#ip#nds_filter#walledgarden
+			else
+				# OpenWrt
+				uci -q set dhcp.nds_nftset='ipset'
+				ucicmd="add_list dhcp.nds_nftset.name='$nftsetname'"
+				echo $ucicmd | uci -q batch
+				uci -q set dhcp.nds_nftset.table='nds_filter'
+				uci -q set dhcp.nds_nftset.table_family='ip'
+
+				domains=$(uci -q get opennds.@opennds[0].walledgarden_fqdn_list | tr -d "'")
+
+				for domain in $domains; do
+					ucicmd="add_list dhcp.nds_nftset.domain='$domain'"
+					echo $ucicmd | uci -q batch
+				done
+			fi
+		else
+			# invalid nftsetmode
+			exit 4
+		fi
+	fi
 }
 
 #### end of functions ####
@@ -1858,6 +1928,26 @@ elif [ "$1" = "ipt_to_nft" ]; then
 	cmdstr=$3
 	
 	ipt_to_nft
+
+	exit $ret
+
+elif [ "$1" = "nftset" ]; then
+	# Creates walledgarden nftset
+	# $2 is add, insert or delete the rule
+	# $3 is the nftset name
+
+	if [ -z "$2" ]; then
+		exit 4
+	fi
+
+	if [ -z "$3" ]; then
+		exit 4
+	fi
+
+	nftsetmode=$2
+	nftsetname=$3
+
+	nft_set
 
 	exit $ret
 

@@ -94,6 +94,9 @@ const char *fw_connection_state_as_string(int mark);
 /** @brief Fork an iptables command */
 int iptables_do_command(const char format[], ...);
 
+/** @brief Fork an nftables command */
+int nftables_do_command(const char format[], ...);
+
 int iptables_block_mac(const char mac[]);
 int iptables_unblock_mac(const char mac[]);
 

@@ -959,7 +959,7 @@ check_mhd() {
 }
 
 nft_get_status() {
-	nfttest=$(nft -a list chain ip filter ndsNET 2> /dev/null)
+	nfttest=$(nft -a list chain ip nds_filter ndsNET 2> /dev/null)
 
 	if [ ! -z "$nfttest" ]; then
 		nftstatus="1"
@@ -987,7 +987,7 @@ get_option_from_config() {
 	param=""
 
 	if [ -e "/etc/config/opennds" ]; then
-		param=$(uci -q get opennds.@opennds[0].$option | awk '{printf("%s", $0)}')
+		param=$(uci -q get opennds.@opennds[0].$option | awk '{printf("%s", $0)}' | tr -d "'")
 
 	elif [ -e "/etc/opennds/opennds.conf" ]; then
 		param=$(cat "/etc/opennds/opennds.conf" | awk -F"$option " '{printf("%s", $2)}')
@@ -1148,33 +1148,15 @@ users_to_router () {
 }
 
 delete_chains () {
-	# If upgrading from 9.9.1 or earlier we need to clear our rules from INPUT and FORWARD chains
+	# If upgrading from 9.9.1 or earlier we need to clear our rules from legacy chains
 	table="filter"; src_chain="FORWARD"; dst_chain="ndsNET"
 	delete_rule
 
 	table="filter"; src_chain="INPUT"; dst_chain="ndsRTR"
 	delete_rule
 
-	# now we can delete the chains:
-	# in the filter table
-	nft delete chain ip filter nds_allow_INP 2> /dev/null
-	nft delete chain ip filter nds_allow_FWD 2> /dev/null
-	nft delete chain ip filter ndsNET 2> /dev/null
-	nft delete chain ip filter ndsRTR 2> /dev/null
-	nft delete chain ip filter ndsAUT 2> /dev/null
-	nft delete chain ip filter ndsULR 2> /dev/null
-	nft delete chain ip filter ndsTRU 2> /dev/null
-	nft delete chain ip filter ndsTRT 2> /dev/null
-
-	# in the nat table
-	# We should not delete the nat/PREROUTING chain in case someone else is using it, so flush only our rules
 	table="nat"; src_chain="PREROUTING"; dst_chain="ndsOUT"
 	delete_rule
-
-	nft delete chain ip nat "$dst_chain" 2> /dev/null
-
-	# in the mangle table
-	# We should not delete the mangle/PREROUTING and mangle/POSTROUTING chains in case someone else is using them, so flush only our rules
 
 	table="mangle"; src_chain="PREROUTING"; dst_chains="ndsTRU ndsBLK ndsALW ndsOUT"
 
@@ -1185,11 +1167,10 @@ delete_chains () {
 	table="mangle"; src_chain="POSTROUTING"; dst_chain="ndsINC"
 	delete_rule
 
-	nft delete chain ip mangle ndsTRU 2> /dev/null 
-	nft delete chain ip mangle ndsBLK 2> /dev/null
-	nft delete chain ip mangle ndsALW 2> /dev/null
-	nft delete chain ip mangle ndsOUT 2> /dev/null
-	nft delete chain ip mangle ndsINC 2> /dev/null
+	# now we can delete our chains - the quickest way is to delete our tables:
+	nft delete table ip nds_filter 2> /dev/null
+	nft delete table ip nds_mangle 2> /dev/null
+	nft delete table ip nds_nat 2> /dev/null
 }
 
 delete_rule () {
@@ -1229,7 +1210,11 @@ pre_setup () {
 		gatewayinterface="br-lan"
 	fi
 
-	ndstables="filter mangle nat"
+	# Delete any legacy iptables chains left from previous versions and any of our tables left in limbo
+	delete_chains
+
+	# Create our tables:
+	ndstables="nds_filter nds_mangle nds_nat"
 
 	for ndstable in $ndstables; do
 		nft list table ip "$ndstable" &>/dev/null
@@ -1246,43 +1231,121 @@ pre_setup () {
 		fi
 	done
 
-	# Tables should now exist, flush and initialise chains:
 
-	delete_chains
+	# add required chains
+	nft add chain ip nds_filter ndsINP "{ type filter hook input priority -100 ; }" 2> /dev/null
+	nft add chain ip nds_filter ndsFWD "{ type filter hook forward priority -100 ; }" 2> /dev/null
+	nft add chain ip nds_nat ndsPRE "{ type nat hook prerouting priority -100 ; }"
+	nft add chain ip nds_mangle ndsPRE "{ type filter hook prerouting priority -100 ; }"
+	nft add chain ip nds_mangle ndsPOST "{ type filter hook postrouting priority -100 ; }"
+	nft add chain ip nds_filter nds_allow_INP "{ type filter hook input priority 100 ; }"
+	nft add chain ip nds_filter nds_allow_FWD "{ type filter hook forward priority 100 ; }"
 
-	# Test INPUT and FORWARD chain priority
-	input_priority=$(nft -a list table ip filter 2> /dev/null | grep -w -A1 "chain INPUT" | grep -w "priority -100")
-
-	## Disable input priority setting for compatiblility with iptables v1.8.8 (OpenWrt master)
-	input_priority="disable"
-	##
-
-	if [ -z "$input_priority" ]; then
-		nft rename chain ip filter INPUT INPUT_LEGACY 2> /dev/null
-		nft add chain ip filter INPUT "{ type filter hook input priority -100 ; }" 2> /dev/null
-	fi
-
-	forward_priority=$(nft -a list table ip filter 2> /dev/null | grep -w -A1 "chain FORWARD" | grep -w "priority -100")
-
-	## Disable forward priority setting for compatiblility with iptables v1.8.8 (OpenWrt master)
-	forward_priority="disable"
-	##
-
-	if [ -z "$forward_priority" ]; then
-		nft rename chain ip filter FORWARD FORWARD_LEGACY 2> /dev/null
-		nft add chain ip filter FORWARD "{ type filter hook forward priority -100 ; }" 2> /dev/null
-	fi
-
-	nft add chain ip filter nds_allow_INP "{ type filter hook input priority 100 ; }"
-	nft add chain ip filter nds_allow_FWD "{ type filter hook forward priority 100 ; }"
-
-	nft insert rule ip filter nds_allow_INP iifname "\"$gatewayinterface\"" counter accept comment "\"!opennds: allow input\""
-	nft insert rule ip filter nds_allow_FWD iifname "\"$gatewayinterface\"" counter accept comment "\"!opennds: allow forward\""
+	# add initial rules
+	nft insert rule ip nds_filter nds_allow_INP iifname "\"$gatewayinterface\"" counter accept comment "\"!opennds: allow input\""
+	nft insert rule ip nds_filter nds_allow_FWD iifname "\"$gatewayinterface\"" counter accept comment "\"!opennds: allow forward\""
 
 	ret=$?
 
 }
 
+ipt_to_nft () {
+	nftstr=$($cmd $cmdstr)
+	retval=$($nftstr)
+	ret=$?
+}
+
+delete_client_rule () {
+
+	if [ "$nds_verdict" = "all" ]; then
+		local handles=$(nft -a list chain ip "$nds_table" "$nds_chain" | grep -w "$client_ip" | awk -F"handle " '{printf "%s ", $2}')
+	else
+		local handles=$(nft -a list chain ip "$nds_table" "$nds_chain" | grep -w "$client_ip" | grep -w "$nds_verdict" | awk -F"handle " '{printf "%s ", $2}')
+	fi
+
+	for rulehandle in $handles; do
+		nft delete rule ip $nds_table "$nds_chain" handle "$rulehandle" 2> /dev/null
+	done
+}
+
+nft_set () {
+	# Define the dnsmask config file location for generic Linux
+	# Edit this if your system uses a non standard locations:
+	conflocation="/etc/dnsmasq.conf"
+
+
+	uciconfig=$(uci show dhcp 2>/dev/null)
+
+	if [ "$nftsetmode" = "delete" ]; then
+		# Delete rules using the set, the set itself and the Dnsmasq config
+
+		if [ -z "$uciconfig" ]; then
+			# Generic Linux
+			linnum=$(cat /etc/dnsmasq.conf | grep -n -w "walledgarden" | awk -F":" '{printf "%s", $1}')
+			sed "$linnum""d" "/tmp/etc/dnsmasq.conf"
+		else
+			uci -q delete dhcp.nds_nftset
+		fi
+		# Todo: Do we need to delete the rule?
+	else
+
+		if [ "$nftsetmode" = "add" ] || [ "$nftsetmode" = "insert" ]; then
+			# Add the set, add/insert the rule and the Dnsmasq config
+			nft add set ip nds_filter walledgarden { type ipv4_addr\; size 128\; }
+			#ports=$(uci -q get opennds.@opennds[0].walledgarden_port_list | tr -d "'")
+
+			option="walledgarden_port_list"
+			get_option_from_config
+			ports=$walledgarden_port_list
+			urldecode "$ports"
+			ports="$urldecoded"
+
+			if [ -z "$ports" ]; then
+				nft $nftsetmode rule ip nds_filter ndsNET counter ip daddr @walledgarden accept
+				ret=$?
+			else
+				numports=$(echo $ports | tr -d "'" | awk '{printf NF}')
+
+				if [ "$numports" -gt 1 ]; then
+					ports=$(printf "$ports" | tr -d "'" | tr -s " " ",")
+				fi
+
+				nft $nftsetmode rule ip nds_filter ndsNET counter ip daddr @walledgarden tcp dport {$ports} accept
+			fi
+
+			if [ -z "$uciconfig" ]; then
+				# Generic Linux
+				nftsetconf="$nftset="
+				fqdns=$(cat /etc/opennds/opennds.conf | grep "walledgarden_fqdn_list" | awk -F"walledgarden_fqdn_list" '{printf $2}')
+
+				for fqdn in $fqdns; do
+					nftsetconf="$nftsetconf/$fqdn"
+				done
+
+				nftsetconf="$nftsetconf/4#ip#nds_filter#walledgarden"
+				echo "$nftsetconf" >> "$conflocation"
+
+			else
+				# OpenWrt
+				uci -q set dhcp.nds_nftset='ipset'
+				ucicmd="add_list dhcp.nds_nftset.name='$nftsetname'"
+				echo $ucicmd | uci -q batch
+				uci -q set dhcp.nds_nftset.table='nds_filter'
+				uci -q set dhcp.nds_nftset.table_family='ip'
+
+				domains=$(uci -q get opennds.@opennds[0].walledgarden_fqdn_list | tr -d "'")
+
+				for domain in $domains; do
+					ucicmd="add_list dhcp.nds_nftset.domain='$domain'"
+					echo $ucicmd | uci -q batch
+				done
+			fi
+		else
+			# invalid nftsetmode
+			exit 4
+		fi
+	fi
+}
 
 #### end of functions ####
 
@@ -1831,6 +1894,71 @@ elif [ "$1" = "delete_chains" ]; then
 	delete_chains
 
 	exit 0
+
+elif [ "$1" = "delete_client_rule" ]; then
+	# Deletes a client rule
+	# $2 is the table
+	# $3 is the chain
+	# $4 is the verdict - accept, drop, queue, continue, return, jump, goto or all
+	# $5 is the client ip address
+
+	nds_table=$2
+	nds_chain=$3
+	nds_verdict=$4
+	client_ip=$5
+
+	verdicts="accept drop queue continue return jump goto all"
+
+	for verdict in $verdicts; do
+
+		if [ "$verdict" = "$nds_verdict" ]; then
+			delete_client_rule
+			exit 0
+		fi
+	done
+
+	# bad verdict
+	exit 1
+
+elif [ "$1" = "ipt_to_nft" ]; then
+	# Translates ipt to nft and executes
+	# $2 is the command name
+	# $3 is the ipt command string
+
+	if [ -z "$2" ]; then
+		exit 4
+	fi
+
+	if [ -z "$3" ]; then
+		exit 4
+	fi
+
+	cmd=$2
+	cmdstr=$3
+	
+	ipt_to_nft
+
+	exit $ret
+
+elif [ "$1" = "nftset" ]; then
+	# Creates walledgarden nftset
+	# $2 is add, insert or delete the rule
+	# $3 is the nftset name
+
+	if [ -z "$2" ]; then
+		exit 4
+	fi
+
+	if [ -z "$3" ]; then
+		exit 4
+	fi
+
+	nftsetmode=$2
+	nftsetname=$3
+
+	nft_set
+
+	exit $ret
 
 else
 	#Display a splash page sequence using a Themespec

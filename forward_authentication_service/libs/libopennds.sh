@@ -1304,7 +1304,7 @@ nft_set () {
 				nft $nftsetmode rule ip nds_filter ndsNET counter ip daddr @walledgarden accept
 				ret=$?
 			else
-				numports=$(uci -q get opennds.@opennds[0].walledgarden_port_list | tr -d "'" | awk '{print NF}')
+				numports=$(echo $ports | tr -d "'" | awk '{printf NF}')
 
 				if [ "$numports" -gt 1 ]; then
 					ports=$(printf "$ports" | tr -d "'" | tr -s " " ",")
@@ -1315,7 +1315,16 @@ nft_set () {
 
 			if [ -z "$uciconfig" ]; then
 				# Generic Linux
-#nftset=/facebook.com/fbcdn.net/paypal.com/paypalobjects.com/4#ip#nds_filter#walledgarden
+				nftsetconf="$nftset="
+				fqdns=$(cat /etc/opennds/opennds.conf | grep "walledgarden_fqdn_list" | awk -F"walledgarden_fqdn_list" '{printf $2}')
+
+				for fqdn in $fqdns; do
+					nftsetconf="$nftsetconf/$fqdn"
+				done
+
+				nftsetconf="$nftsetconf/4#ip#nds_filter#walledgarden"
+				echo "$nftsetconf" >> "$conflocation"
+
 			else
 				# OpenWrt
 				uci -q set dhcp.nds_nftset='ipset'

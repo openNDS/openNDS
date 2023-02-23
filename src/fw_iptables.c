@@ -50,7 +50,7 @@
 #include "util.h"
 
 // iptables v1.8.0
-#define MIN_IPTABLES_VERSION (1 * 10000 + 8 * 100 + 0)
+#define MIN_IPTABLES_VERSION (1 * 10000 + 8 * 100 + 7)
 
 static char *_iptables_compile(const char[], const char[], t_firewall_rule *);
 static int _iptables_append_ruleset(const char[], const char[], const char[]);
@@ -404,7 +404,6 @@ iptables_fw_init(void)
 	t_MAC *pt;
 	t_MAC *pb;
 	t_MAC *pa;
-	t_WGP *allowed_wgport;
 	int rc = 0;
 	int macmechanism;
 	char *msg;

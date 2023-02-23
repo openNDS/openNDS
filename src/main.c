@@ -292,11 +292,8 @@ setup_from_config(void)
 	struct stat sb;
 	time_t sysuptime;
 	time_t now = time(NULL);
-	t_WGFQDN *allowed_wgfqdn;
-	char wgfqdns[1024] = {0};
 	char *dnscmd;
 	char *setupcmd;
-	int rc = 0;
 
 	s_config *config;
 

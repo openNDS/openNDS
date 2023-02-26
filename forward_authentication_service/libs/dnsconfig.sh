@@ -55,24 +55,6 @@ elif [ "$setconf" = "revert" ]; then
 	printf "%s" "done"
 	exit 0
 
-elif [ "$setconf" = "ipsetconf" ]; then
-	ipsetconf=$2	
-
-	if [ -z "$uciconfig" ]; then
-		sed -i '/System\|walledgarden/d' $conflocation
-		echo "ipset=$ipsetconf" >> $conflocation
-	else
-		# OpenWrt
-		# Note we do not commit here so that the config changes do NOT survive a reboot and can be reverted without writing to config files
-		del_ipset="del_list dhcp.@dnsmasq[0].ipset='$ipsetconf'"
-		add_ipset="add_list dhcp.@dnsmasq[0].ipset='$ipsetconf'"
-		echo $del_ipset | uci batch
-		echo $add_ipset | uci batch
-	fi
-
-	printf "%s" "done"
-	exit 0
-
 elif [ "$setconf" = "hostconf" ]; then
 	gw_ip=$2
 	gw_fqdn=$3

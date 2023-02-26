@@ -33,9 +33,11 @@
 
 /*@{*/
 /**Iptable chain names used by opennds */
-#define CHAIN_FORWARD "FORWARD"
+#define CHAIN_PREROUTING "ndsPRE"
+#define CHAIN_POSTROUTING "ndsPOST"
+#define CHAIN_FORWARD "ndsFWD"
 #define CHAIN_FORWARD_ALLOW "nds_allow_FWD"
-#define CHAIN_INPUT "INPUT"
+#define CHAIN_INPUT "ndsINP"
 #define CHAIN_INPUT_ALLOW "nds_allow_INP"
 #define CHAIN_TO_INTERNET "ndsNET"
 #define CHAIN_TO_ROUTER "ndsRTR"
@@ -44,7 +46,6 @@
 #define CHAIN_INCOMING  "ndsINC"
 #define CHAIN_UPLOAD_RATE  "ndsULR"
 #define CHAIN_AUTHENTICATED     "ndsAUT"
-#define CHAIN_PREAUTHENTICATED   "ndsPRE"
 #define CHAIN_BLOCKED    "ndsBLK"
 #define CHAIN_ALLOWED    "ndsALW"
 #define CHAIN_TRUSTED    "ndsTRU"
@@ -92,6 +93,9 @@ const char *fw_connection_state_as_string(int mark);
 
 /** @brief Fork an iptables command */
 int iptables_do_command(const char format[], ...);
+
+/** @brief Fork an nftables command */
+int nftables_do_command(const char format[], ...);
 
 int iptables_block_mac(const char mac[]);
 int iptables_unblock_mac(const char mac[]);

@@ -143,7 +143,7 @@ _iptables_check_mark_masking()
 	safe_asprintf(&tmp,"/0x%x",FW_MARK_MASK);
 	markmask = tmp;
 
-	//debug(LOG_DEBUG, "Iptables mark op \"%s\" and mark mask \"%s\".", markop, markmask);
+	debug(LOG_DEBUG, "Iptables mark op \"%s\" and mark mask \"%s\".", markop, markmask);
 
 	fw_quiet = 0; // restore verbosity
 
@@ -194,8 +194,6 @@ nftables_do_command(const char *format, ...)
 {
 	va_list vlist;
 	char *fmt_cmd = NULL;
-	s_config *config;
-	char *nftables;
 	int rc;
 	int i;
 
@@ -203,13 +201,9 @@ nftables_do_command(const char *format, ...)
 	safe_vasprintf(&fmt_cmd, format, vlist);
 	va_end(vlist);
 
-	config = config_get_config();
-
-	nftables = config->ip6 ? "nft" : "nft";
-
 	for (i = 0; i < 5; i++) {
 
-		rc = execute("\"%s\" \"%s\"", nftables, fmt_cmd);
+		rc = execute("nft %s", fmt_cmd);
 
 		if (rc == 4) {
 			/* nftables error code 4 indicates a resource problem that might
@@ -220,7 +214,7 @@ nftables_do_command(const char *format, ...)
 		}
 	}
 
-	debug(LOG_DEBUG,"nftables command [ %s ], return code [ %d ]", fmt_cmd, rc);
+	debug(LOG_DEBUG,"nftables command [ %s ], iteration [ %d ]return code [ %d ]", fmt_cmd, i, rc);
 	free(fmt_cmd);
 
 	return rc;
@@ -474,18 +468,19 @@ iptables_fw_init(void)
 	 *
 	 */
 
+
 	// Create new chains in the mangle table
-	rc |= iptables_do_command("-t nds_mangle -N " CHAIN_TRUSTED); // for marking trusted packets
-	rc |= iptables_do_command("-t nds_mangle -N " CHAIN_BLOCKED); // for marking blocked packets
-	rc |= iptables_do_command("-t nds_mangle -N " CHAIN_ALLOWED); // for marking allowed packets
-	rc |= iptables_do_command("-t nds_mangle -N " CHAIN_INCOMING); // for counting incoming packets
-	rc |= iptables_do_command("-t nds_mangle -N " CHAIN_OUTGOING); // for marking authenticated packets, and for counting outgoing packets
+	rc |= nftables_do_command("add chain ip nds_mangle " CHAIN_TRUSTED); // for marking trusted packets
+	rc |= nftables_do_command("add chain ip nds_mangle " CHAIN_BLOCKED); // for marking blocked packets
+	rc |= nftables_do_command("add chain ip nds_mangle " CHAIN_ALLOWED); // for marking allowed packets
+	rc |= nftables_do_command("add chain ip nds_mangle " CHAIN_INCOMING); // for counting incoming packets
+	rc |= nftables_do_command("add chain ip nds_mangle " CHAIN_OUTGOING); // for marking authenticated packets, and for counting outgoing packets
 
 	// Assign jumps to these new chains
-	rc |= iptables_do_command("-t nds_mangle -I %s 1 -i %s -s %s -j %s", CHAIN_PREROUTING, gw_interface, gw_iprange, CHAIN_OUTGOING);
-	rc |= iptables_do_command("-t nds_mangle -I %s 2 -i %s -s %s -j %s", CHAIN_PREROUTING, gw_interface, gw_iprange, CHAIN_BLOCKED);
-	rc |= iptables_do_command("-t nds_mangle -I %s 3 -i %s -s %s -j %s", CHAIN_PREROUTING, gw_interface, gw_iprange, CHAIN_TRUSTED);
-	rc |= iptables_do_command("-t nds_mangle -I %s 1 -o %s -d %s -j %s", CHAIN_POSTROUTING, gw_interface, gw_iprange, CHAIN_INCOMING);
+	rc |= nftables_do_command("insert rule ip nds_mangle %s iifname \"%s\" counter jump %s", CHAIN_PREROUTING, gw_interface, CHAIN_OUTGOING);
+	rc |= nftables_do_command("insert rule ip nds_mangle %s iifname \"%s\" counter jump %s", CHAIN_PREROUTING, gw_interface, CHAIN_BLOCKED);
+	rc |= nftables_do_command("insert rule ip nds_mangle %s iifname \"%s\" counter jump %s", CHAIN_PREROUTING, gw_interface, CHAIN_TRUSTED);
+	rc |= nftables_do_command("insert rule ip nds_mangle %s oifname \"%s\" counter jump %s", CHAIN_POSTROUTING, gw_interface, CHAIN_INCOMING);
 
 	// Rules to mark as trusted MAC address packets in mangle PREROUTING
 	for (; pt != NULL; pt = pt->next) {
@@ -531,32 +526,33 @@ iptables_fw_init(void)
 	 
 	if (!config->ip6) {
 		// Create new chains in nat table
-		rc |= iptables_do_command("-t nds_nat -N " CHAIN_OUTGOING);
+		rc |= nftables_do_command("add chain ip nds_nat " CHAIN_OUTGOING);
 
 		// nat PREROUTING chain
 
 		// packets coming in on gw_interface jump to CHAIN_OUTGOING
-		rc |= iptables_do_command("-t nds_nat -I " CHAIN_PREROUTING " -i %s -s %s -j " CHAIN_OUTGOING, gw_interface, gw_iprange);
+		rc |= nftables_do_command("insert rule ip nds_nat %s iifname \"%s\" counter jump %s", CHAIN_PREROUTING, gw_interface, CHAIN_OUTGOING);
+
 		// CHAIN_OUTGOING, packets marked TRUSTED  ACCEPT
-		rc |= iptables_do_command("-t nds_nat -A " CHAIN_OUTGOING " -m mark --mark 0x%x%s -j RETURN", FW_MARK_TRUSTED, markmask);
+		rc |= nftables_do_command("add rule ip nds_nat %s mark and 0x%x == 0x%x counter return", CHAIN_OUTGOING, FW_MARK_MASK, FW_MARK_TRUSTED);
+
 		// CHAIN_OUTGOING, packets marked AUTHENTICATED  ACCEPT
-		rc |= iptables_do_command("-t nds_nat -A " CHAIN_OUTGOING " -m mark --mark 0x%x%s -j RETURN", FW_MARK_AUTHENTICATED, markmask);
+		rc |= nftables_do_command("add rule ip nds_nat %s mark and 0x%x == 0x%x counter return", CHAIN_OUTGOING, FW_MARK_MASK, FW_MARK_AUTHENTICATED);
 
 		// Allow access to remote FAS - CHAIN_OUTGOING and CHAIN_TO_INTERNET packets for remote FAS, ACCEPT
 		if (fas_port && strcmp(fas_remoteip, gw_ip)) {
 			rc |= iptables_do_command("-t nds_nat -A " CHAIN_OUTGOING " -p tcp --destination %s --dport %d -j ACCEPT", fas_remoteip, fas_port);
+
 		}
 
 		// CHAIN_OUTGOING, packets for tcp port 80, redirect to gw_port on primary address for the iface
-		rc |= iptables_do_command("-t nds_nat -A " CHAIN_OUTGOING " -p tcp --dport 80 -j DNAT --to-destination %s", gw_address);
+		rc |= nftables_do_command("add rule ip nds_nat %s tcp dport 80 counter dnat to %s", CHAIN_OUTGOING, gw_address);
+
 		// CHAIN_OUTGOING, other packets ACCEPT
-		rc |= iptables_do_command("-t nds_nat -A " CHAIN_OUTGOING " -j ACCEPT");
+		rc |= nftables_do_command("add rule ip nds_nat %s counter accept", CHAIN_OUTGOING);
 
 		if (strcmp(config->gw_fqdn, "disable") != 0) {
-			rc |= iptables_do_command("-t nds_nat -I " CHAIN_OUTGOING " -p tcp --destination %s --dport 80 -j REDIRECT --to-port %d",
-				config->gw_ip,
-				config->gw_port
-			);
+			rc |= nftables_do_command("insert rule ip nds_nat ndsOUT ip daddr %s tcp dport 80 counter redirect to :%d", config->gw_ip, config->gw_port);
 		}
 	}
 	/*
@@ -572,38 +568,30 @@ iptables_fw_init(void)
 	 */
 
 	// Create new chains in the filter table
-	rc |= iptables_do_command("-t nds_filter -N " CHAIN_TO_INTERNET);
-	rc |= iptables_do_command("-t nds_filter -N " CHAIN_TO_ROUTER);
-	rc |= iptables_do_command("-t nds_filter -N " CHAIN_AUTHENTICATED);
-	rc |= iptables_do_command("-t nds_filter -N " CHAIN_UPLOAD_RATE);
-	rc |= iptables_do_command("-t nds_filter -N " CHAIN_TRUSTED);
-	rc |= iptables_do_command("-t nds_filter -N " CHAIN_TRUSTED_TO_ROUTER);
+	rc |= nftables_do_command("add chain ip nds_filter " CHAIN_TO_INTERNET);
+	rc |= nftables_do_command("add chain ip nds_filter " CHAIN_TO_ROUTER);
+	rc |= nftables_do_command("add chain ip nds_filter " CHAIN_AUTHENTICATED);
+	rc |= nftables_do_command("add chain ip nds_filter " CHAIN_UPLOAD_RATE);
+	rc |= nftables_do_command("add chain ip nds_filter " CHAIN_TRUSTED);
+	rc |= nftables_do_command("add chain ip nds_filter " CHAIN_TRUSTED_TO_ROUTER);
 
 	// filter CHAIN_INPUT chain
 
 	// packets coming in on gw_interface jump to CHAIN_TO_ROUTER
-	rc |= iptables_do_command("-t nds_filter -I " CHAIN_INPUT " -i %s -s %s -j " CHAIN_TO_ROUTER, gw_interface, gw_iprange);
+	rc |= nftables_do_command("insert rule ip nds_filter %s iifname \"%s\" counter jump %s", CHAIN_INPUT, gw_interface, CHAIN_TO_ROUTER);
+
 	// CHAIN_TO_ROUTER packets marked BLOCKED DROP
-	rc |= iptables_do_command("-t nds_filter -A " CHAIN_TO_ROUTER " -m mark --mark 0x%x%s -j DROP", FW_MARK_BLOCKED, markmask);
+	rc |= nftables_do_command("add rule ip nds_filter %s mark and 0x%x == 0x%x counter drop", CHAIN_TO_ROUTER, FW_MARK_MASK, FW_MARK_BLOCKED);
+
 	// CHAIN_TO_ROUTER, invalid packets DROP
-	rc |= iptables_do_command("-t nds_filter -A " CHAIN_TO_ROUTER " -m conntrack --ctstate INVALID -j DROP");
-	/* CHAIN_TO_ROUTER, related and established packets ACCEPT
-		This allows clients full access to the router
-		Commented out to block all access not specifically allowed in the ruleset
-		TODO: Should this be an option?
-	*/
-
-	//rc |= iptables_do_command("-t nds_filter -A " CHAIN_TO_ROUTER " -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT");
-
-	// CHAIN_TO_ROUTER, bogus SYN packets DROP
-	rc |= iptables_do_command("-t nds_filter -A " CHAIN_TO_ROUTER " -p tcp --tcp-flags SYN SYN \\! --tcp-option 2 -j DROP");
+	rc |= nftables_do_command("nft add rule ip nds_filter %s ct state invalid counter drop", CHAIN_TO_ROUTER);
 
 	// CHAIN_TO_ROUTER, packets to HTTP listening on gw_port on router ACCEPT
-	rc |= iptables_do_command("-t nds_filter -A " CHAIN_TO_ROUTER " -p tcp --dport %d -j ACCEPT", gw_port);
+	rc |= nftables_do_command("nft add rule ip nds_filter %s tcp dport %d counter accept", CHAIN_TO_ROUTER, gw_port);
 
 	// CHAIN_TO_ROUTER, packets to HTTP listening on fas_port on router ACCEPT
-	if (fas_port && !strcmp(fas_remoteip, gw_ip)) {
-		rc |= iptables_do_command("-t nds_filter -A " CHAIN_TO_ROUTER " -p tcp --dport %d -j ACCEPT", fas_port);
+	if (fas_port != gw_port && strcmp(fas_remoteip, gw_ip) == 0) {
+		rc |= nftables_do_command("nft add rule ip nds_filter %s tcp dport %d counter accept", CHAIN_TO_ROUTER, fas_port);
 	}
 
 	// CHAIN_TO_ROUTER, packets marked TRUSTED:
@@ -614,10 +602,7 @@ iptables_fw_init(void)
 	 *    jump to CHAIN_TRUSTED_TO_ROUTER, and load and use users-to-router ruleset
 	 */
 	if (is_empty_ruleset("trusted-users-to-router")) {
-		rc |= iptables_do_command("-t nds_filter -A " CHAIN_TO_ROUTER " -m mark --mark 0x%x%s -j %s",
-			FW_MARK_TRUSTED, markmask,
-			get_empty_ruleset_policy("trusted-users-to-router")
-		);
+		rc |= iptables_do_command("-t nds_filter -A " CHAIN_TO_ROUTER " -m mark --mark 0x%x%s -j %s", FW_MARK_TRUSTED, markmask, get_empty_ruleset_policy("trusted-users-to-router")		);
 	} else {
 		rc |= iptables_do_command("-t nds_filter -A " CHAIN_TO_ROUTER " -m mark --mark 0x%x%s -j " CHAIN_TRUSTED_TO_ROUTER, FW_MARK_TRUSTED, markmask);
 		// CHAIN_TRUSTED_TO_ROUTER, related and established packets ACCEPT

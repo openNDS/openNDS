@@ -12,6 +12,7 @@
 . /usr/lib/opennds/theme_voucher_*.sh
 
 [[ "$logdir" == ""  ]] && logdir="/tmp/ndslog/"
+mkdir -p $logdir
 voucher_roll="$logdir""vouchers.txt"
 voucher_flash="/usr/lib/opennds/vouchers.txt"
 
@@ -110,7 +111,9 @@ generate_splash_sequence() {
 #### custom functions ####
 
 voucher_validation() {
-
+	
+	sleep 2 # simple anti brute force prevention
+	
 	check_voucher
 	if [ $? -eq 0 ]; then
 

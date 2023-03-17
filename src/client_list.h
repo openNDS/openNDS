@@ -47,7 +47,7 @@ typedef struct _t_counters {
 /** Client node for the connected client linked list.
  */
 typedef struct _t_client {
-	struct _t_client *next;			/**< @brief Pointer to the next client */
+	struct _t_client *next;				/**< @brief Pointer to the next client */
 	char *ip;					/**< @brief Client IP address */
 	char *mac;					/**< @brief Client MAC address */
 	char *token;					/**< @brief Client token */
@@ -63,6 +63,8 @@ typedef struct _t_client {
 	int window_counter;				/**< @brief Rate Check Window counter */
 	int rate_exceeded;				/**< @brief Rate Exceeded Check flag */
 	int initial_loop;				/**< @brief Check client initial loop flag */
+	int upload_limiting;				/**< @brief Limiting status flag */
+	int download_limiting;				/**< @brief Limiting status flag */
 	unsigned long long int upload_rate;		/**< @brief Client Upload rate limit, kb/s */
 	unsigned long long int download_rate;		/**< @brief Client Download rate limit, kb/s */
 	unsigned long long int uprate;			/**< @brief Current Client Upload rate, kb/s */

@@ -577,6 +577,22 @@ static int authenticate_client(struct MHD_Connection *connection,
 	char *querystr = query_str;
 	const char *custom;
 
+	client->window_counter = 0;
+	client->rate_exceeded = 0;
+	client->initial_loop = 0;
+	client->upload_limiting = 0;
+	client->download_limiting = 0;
+	client->upload_rate = 0;
+	client->download_rate = 0;
+	client->uprate = 0;
+	client->downrate = 0;
+	client->upload_quota = 0;
+	client->download_quota = 0;
+	client->download_bucket_size = 0;
+	client->upload_bucket_size = 0;
+	client->inc_packet_limit = 0;
+	client->out_packet_limit = 0;
+
 	client->session_start = now;
 
 	if (seconds > 0) {
@@ -1741,7 +1757,7 @@ static int send_error(struct MHD_Connection *connection, int error)
 	case 511:
 		get_client_ip(ip, connection);
 
-		page_511 = safe_calloc(SMALL_BUF * 2);
+		page_511 = safe_calloc(HTMLMAXSIZE);
 
 		if (!page_511) {
 			ret = send_error(connection, 503);
@@ -1764,7 +1780,7 @@ static int send_error(struct MHD_Connection *connection, int error)
 
 		free(cmd);
 
-		response = MHD_create_response_from_buffer(strlen(page_511), (char *)page_511, MHD_RESPMEM_MUST_FREE);
+		response = MHD_create_response_from_buffer(HTMLMAXSIZE, (char *)page_511, MHD_RESPMEM_MUST_FREE);
 
 		if (response) {
 			MHD_add_response_header(response, "Content-Type", mimetype);

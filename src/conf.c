@@ -366,6 +366,7 @@ config_parse_opcode(const char *cp, const char *filename, int linenum)
 
 	for (i = 0; keywords[i].name; i++) {
 		if (strcasecmp(cp, keywords[i].name) == 0) {
+			debug(LOG_NOTICE, "%s: line %d: Found configuration option: %s", filename, linenum, cp);
 			return keywords[i].opcode;
 		}
 	}
@@ -1999,7 +2000,7 @@ int set_debuglevel(const char opt[])
 void
 config_validate(void)
 {
-	config_notnull(config.gw_interface, "GatewayInterface");
+	config_notnull(config.gw_interface, "gatewayinterface");
 
 	if (missing_parms) {
 		debug(LOG_ERR, "Configuration is not complete, exiting...");

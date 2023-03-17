@@ -204,6 +204,7 @@ nftables_do_command(const char *format, ...)
 	for (i = 0; i < 5; i++) {
 
 		rc = execute("nft %s", fmt_cmd);
+		debug(LOG_DEBUG,"nftables command [ %s ], iteration [ %d ]return code [ %d ]", fmt_cmd, i, rc);
 
 		if (rc == 4) {
 			/* nftables error code 4 indicates a resource problem that might
@@ -214,7 +215,6 @@ nftables_do_command(const char *format, ...)
 		}
 	}
 
-	debug(LOG_DEBUG,"nftables command [ %s ], iteration [ %d ]return code [ %d ]", fmt_cmd, i, rc);
 	free(fmt_cmd);
 
 	return rc;
@@ -584,14 +584,14 @@ iptables_fw_init(void)
 	rc |= nftables_do_command("add rule ip nds_filter %s mark and 0x%x == 0x%x counter drop", CHAIN_TO_ROUTER, FW_MARK_MASK, FW_MARK_BLOCKED);
 
 	// CHAIN_TO_ROUTER, invalid packets DROP
-	rc |= nftables_do_command("nft add rule ip nds_filter %s ct state invalid counter drop", CHAIN_TO_ROUTER);
+	rc |= nftables_do_command("add rule ip nds_filter %s ct state invalid counter drop", CHAIN_TO_ROUTER);
 
 	// CHAIN_TO_ROUTER, packets to HTTP listening on gw_port on router ACCEPT
-	rc |= nftables_do_command("nft add rule ip nds_filter %s tcp dport %d counter accept", CHAIN_TO_ROUTER, gw_port);
+	rc |= nftables_do_command("add rule ip nds_filter %s tcp dport %d counter accept", CHAIN_TO_ROUTER, gw_port);
 
 	// CHAIN_TO_ROUTER, packets to HTTP listening on fas_port on router ACCEPT
 	if (fas_port != gw_port && strcmp(fas_remoteip, gw_ip) == 0) {
-		rc |= nftables_do_command("nft add rule ip nds_filter %s tcp dport %d counter accept", CHAIN_TO_ROUTER, fas_port);
+		rc |= nftables_do_command("add rule ip nds_filter %s tcp dport %d counter accept", CHAIN_TO_ROUTER, fas_port);
 	}
 
 	// CHAIN_TO_ROUTER, packets marked TRUSTED:
@@ -602,7 +602,7 @@ iptables_fw_init(void)
 	 *    jump to CHAIN_TRUSTED_TO_ROUTER, and load and use users-to-router ruleset
 	 */
 	if (is_empty_ruleset("trusted-users-to-router")) {
-		rc |= iptables_do_command("-t nds_filter -A " CHAIN_TO_ROUTER " -m mark --mark 0x%x%s -j %s", FW_MARK_TRUSTED, markmask, get_empty_ruleset_policy("trusted-users-to-router")		);
+		rc |= nftables_do_command("add rule ip nds_filter %s mark and 0x%x == 0x%x counter accept", CHAIN_TO_ROUTER, FW_MARK_MASK, FW_MARK_TRUSTED);
 	} else {
 		rc |= iptables_do_command("-t nds_filter -A " CHAIN_TO_ROUTER " -m mark --mark 0x%x%s -j " CHAIN_TRUSTED_TO_ROUTER, FW_MARK_TRUSTED, markmask);
 		// CHAIN_TRUSTED_TO_ROUTER, related and established packets ACCEPT
@@ -621,7 +621,14 @@ iptables_fw_init(void)
 	 *    load and use users-to-router ruleset
 	 */
 	if (is_empty_ruleset("users-to-router")) {
-		rc |= iptables_do_command("-t nds_filter -A " CHAIN_TO_ROUTER " -j %s", get_empty_ruleset_policy("users-to-router"));
+		rc |= nftables_do_command("add rule ip nds_filter ndsRTR tcp dport 53 counter accept");
+		rc |= nftables_do_command("add rule ip nds_filter ndsRTR udp dport 53 counter accept");
+		rc |= nftables_do_command("add rule ip nds_filter ndsRTR udp dport 67 counter accept");
+		rc |= nftables_do_command("add rule ip nds_filter ndsRTR tcp dport 22 counter accept");
+		rc |= nftables_do_command("add rule ip nds_filter ndsRTR tcp dport 443 counter accept");
+		rc |= nftables_do_command("add rule ip nds_filter ndsRTR counter reject");
+
+
 	} else {
 		// CHAIN_TO_ROUTER, append the "users-to-router" ruleset
 		rc |= _iptables_append_ruleset("nds_filter", "users-to-router", CHAIN_TO_ROUTER);
@@ -635,7 +642,7 @@ iptables_fw_init(void)
 		// rc |= iptables_do_command("-t nds_filter -A " CHAIN_TO_ROUTER " -m mark --mark 0x%x%s -j RETURN", FW_MARK_AUTHENTICATED, markmask);
 
 		// everything else, REJECT
-		rc |= iptables_do_command("-t nds_filter -A " CHAIN_TO_ROUTER " -j REJECT --reject-with %s-port-unreachable", ICMP_TYPE);
+		rc |= nftables_do_command("add rule ip nds_filter ndsRTR counter reject");
 
 	}
 
@@ -644,11 +651,15 @@ iptables_fw_init(void)
 	 */
 
 	// packets coming in on gw_interface jump to CHAIN_TO_INTERNET
-	rc |= iptables_do_command("-t nds_filter -I " CHAIN_FORWARD " -i %s -s %s -j " CHAIN_TO_INTERNET, gw_interface, gw_iprange);
+	rc |= nftables_do_command("insert rule ip nds_filter %s iifname \"%s\" counter jump %s", CHAIN_FORWARD, gw_interface, CHAIN_TO_INTERNET);
+
 	// CHAIN_TO_INTERNET packets marked BLOCKED DROP
-	rc |= iptables_do_command("-t nds_filter -A " CHAIN_TO_INTERNET " -m mark --mark 0x%x%s -j DROP", FW_MARK_BLOCKED, markmask);
+	rc |= nftables_do_command("add rule ip nds_filter %s mark and 0x%x == 0x%x counter drop", CHAIN_TO_INTERNET, FW_MARK_MASK, FW_MARK_BLOCKED);
+
 	// CHAIN_TO_INTERNET, invalid packets DROP
-	rc |= iptables_do_command("-t nds_filter -A " CHAIN_TO_INTERNET " -m conntrack --ctstate INVALID -j DROP");
+	rc |= nftables_do_command("add rule ip nds_filter %s ct state invalid counter drop", CHAIN_TO_INTERNET);
+
+
 	// CHAIN_TO_INTERNET, deal with MSS
 	if (set_mss) {
 		/* XXX this mangles, so 'should' be done in the mangle POSTROUTING chain.
@@ -657,7 +668,7 @@ iptables_fw_init(void)
 		if (mss_value > 0) { // set specific MSS value
 			rc |= iptables_do_command("-t nds_filter -A " CHAIN_TO_INTERNET " -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss %d", mss_value);
 		} else { // allow MSS as large as possible
-			rc |= iptables_do_command("-t nds_filter -A " CHAIN_TO_INTERNET " -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu");
+			rc |= nftables_do_command("add rule ip nds_filter %s tcp flags syn / syn,rst counter tcp option maxseg size set rt mtu", CHAIN_TO_INTERNET);
 		}
 	}
 
@@ -675,15 +686,9 @@ iptables_fw_init(void)
 	 *    jump to CHAIN_TRUSTED, and load and use trusted-users ruleset
 	 */
 	if (is_empty_ruleset("trusted-users")) {
-		rc |= iptables_do_command("-t nds_filter -A " CHAIN_TO_INTERNET " -m mark --mark 0x%x%s -j %s",
-			FW_MARK_TRUSTED, markmask,
-			get_empty_ruleset_policy("trusted-users")
-		);
+		rc |= nftables_do_command("add rule ip nds_filter %s mark and 0x%x == 0x%x counter accept", CHAIN_TO_INTERNET, FW_MARK_MASK, FW_MARK_TRUSTED);
 	} else {
-		rc |= iptables_do_command("-t nds_filter -A " CHAIN_TO_INTERNET " -m mark --mark 0x%x%s -j " CHAIN_TRUSTED,
-			FW_MARK_TRUSTED,
-			markmask
-		);
+		rc |= iptables_do_command("-t nds_filter -A " CHAIN_TO_INTERNET " -m mark --mark 0x%x%s -j " CHAIN_TRUSTED, FW_MARK_TRUSTED, markmask);
 
 		// CHAIN_TRUSTED, related and established packets ACCEPT
 		rc |= iptables_do_command("-t nds_filter -A " CHAIN_TRUSTED " -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT");
@@ -694,7 +699,7 @@ iptables_fw_init(void)
 	}
 
 	// Add basic rule to CHAIN_UPLOAD_RATE for upload rate limiting
-	rc |= iptables_do_command("-t nds_filter -I " CHAIN_UPLOAD_RATE " -j RETURN");
+	rc |= nftables_do_command("insert rule ip nds_filter %s counter return", CHAIN_UPLOAD_RATE);
 
 	// CHAIN_TO_INTERNET, packets marked AUTHENTICATED:
 
@@ -704,26 +709,23 @@ iptables_fw_init(void)
 	 *    jump to CHAIN_AUTHENTICATED, and load and use authenticated-users ruleset
 	 */
 
-	rc |= iptables_do_command("-t nds_filter -A " CHAIN_TO_INTERNET " -m mark --mark 0x%x%s -g " CHAIN_AUTHENTICATED,
-		FW_MARK_AUTHENTICATED,
-		markmask
-	);
+	rc |= nftables_do_command("add rule ip nds_filter %s mark and 0x%x == 0x%x counter goto %s", CHAIN_TO_INTERNET, FW_MARK_MASK, FW_MARK_AUTHENTICATED, CHAIN_AUTHENTICATED);
 
 	// CHAIN_AUTHENTICATED, jump to CHAIN_UPLOAD_RATE to handle upload rate limiting
-	rc |= iptables_do_command("-t nds_filter -A " CHAIN_AUTHENTICATED " -j "CHAIN_UPLOAD_RATE);
+	rc |= nftables_do_command("add rule ip nds_filter %s counter jump %s", CHAIN_AUTHENTICATED, CHAIN_UPLOAD_RATE);
 
 	// CHAIN_AUTHENTICATED, related and established packets ACCEPT
-	rc |= iptables_do_command("-t nds_filter -A " CHAIN_AUTHENTICATED " -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT");
+	rc |= nftables_do_command("add rule ip nds_filter %s ct state related,established counter accept", CHAIN_AUTHENTICATED);
 
 	// CHAIN_AUTHENTICATED, append the "authenticated-users" ruleset
 	if (is_empty_ruleset("authenticated-users")) {
-		rc |= iptables_do_command("-t nds_filter -A " CHAIN_AUTHENTICATED " -d 0.0.0.0/0 -p all -j RETURN");
+		rc |= nftables_do_command("add rule ip nds_filter %s counter return", CHAIN_AUTHENTICATED);
 	} else {
 		rc |= _iptables_append_ruleset("nds_filter", "authenticated-users", CHAIN_AUTHENTICATED);
 	}
 
 	// CHAIN_AUTHENTICATED, any packets not matching that ruleset REJECT
-	rc |= iptables_do_command("-t nds_filter -A " CHAIN_AUTHENTICATED " -j REJECT --reject-with %s-port-unreachable", ICMP_TYPE);
+	rc |= nftables_do_command("add rule ip nds_filter %s counter reject", CHAIN_AUTHENTICATED);
 
 	// CHAIN_TO_INTERNET, other packets:
 
@@ -734,13 +736,13 @@ iptables_fw_init(void)
 	 */
 
 	if (is_empty_ruleset("preauthenticated-users")) {
-		rc |= iptables_do_command("-t nds_filter -A " CHAIN_TO_INTERNET " -j %s ", get_empty_ruleset_policy("preauthenticated-users"));
+		rc |= nftables_do_command("add rule ip nds_filter %s counter reject", CHAIN_TO_INTERNET);
 	} else {
 		rc |= _iptables_append_ruleset("nds_filter", "preauthenticated-users", CHAIN_TO_INTERNET);
 	}
 
 	// CHAIN_TO_INTERNET, all other packets REJECT
-	rc |= iptables_do_command("-t nds_filter -A " CHAIN_TO_INTERNET " -j REJECT --reject-with %s-port-unreachable", ICMP_TYPE);
+	rc |= nftables_do_command("add rule ip nds_filter %s counter reject", CHAIN_TO_INTERNET);
 
 	// For Walled Garden - Check we have nftset support and if we do, set it up
 	if (config->walledgarden_fqdn_list) {
@@ -897,7 +899,11 @@ iptables_fw_destroy_mention(
 	return (retval);
 }
 
-// Enable/Disable Download Rate Limiting for client
+/* Enable/Disable Download Rate Limiting for client
+	"enable" can be 0, 1
+	0 = disable
+	1 = enable
+*/
 int
 iptables_download_ratelimit_enable(t_client *client, int enable)
 {
@@ -906,6 +912,7 @@ iptables_download_ratelimit_enable(t_client *client, int enable)
 	unsigned long long int packets;
 	unsigned long long int average_packet_size;
 	unsigned long long int bucket;
+	char *libcommand = NULL;
 	s_config *config;
 	config = config_get_config();
 
@@ -944,40 +951,52 @@ iptables_download_ratelimit_enable(t_client *client, int enable)
 		bucket = config->max_download_bucket_size;
 	}
 
-	if (enable == 1) {
-		debug(LOG_INFO, "Average Download Packet Size for [%s] is [%llu] bytes", client->ip, average_packet_size);
-		debug(LOG_INFO, "Download Rate Limiting of [%s %s] to [%llu] packets/min, bucket size [%llu]", client->ip, client->mac, packet_limit, bucket);
-		// Remove non-rate limiting rule set for this client
-		rc = execute("/usr/lib/opennds/libopennds.sh delete_client_rule nds_mangle \"%s\" \"%s\" \"%s\"", CHAIN_INCOMING, "accept", client->ip);
-
-		rc |= iptables_do_command("-t nds_mangle -A " CHAIN_INCOMING " -d %s -c %llu %llu -m limit --limit %llu/min --limit-burst %llu -j ACCEPT",
-			client->ip,
-			client->counters.inpackets,
-			client->counters.incoming,
-			packet_limit,
-			bucket
-		);
-
-		client->inc_packet_limit = packet_limit;
-		client->download_bucket_size = bucket;
-		rc |= iptables_do_command("-t nds_mangle -A " CHAIN_INCOMING " -d %s -j DROP", client->ip);
-	}
-
+	// Disable
 	if (enable == 0) {
 		debug(LOG_DEBUG, "client->inc_packet_limit %llu client->download_bucket_size %llu", client->inc_packet_limit, client->download_bucket_size);
-
-		// Remove rate limiting download rule set for this client
-		rc = execute("/usr/lib/opennds/libopennds.sh delete_client_rule nds_mangle \"%s\" \"%s\" \"%s\"", CHAIN_INCOMING, "accept", client->ip);
-		rc = execute("/usr/lib/opennds/libopennds.sh delete_client_rule nds_mangle \"%s\" \"%s\" \"%s\"", CHAIN_INCOMING, "drop", client->ip);
 
 		client->inc_packet_limit = 0;
 		client->download_bucket_size = 0;
 
-		rc |= iptables_do_command("-t nds_mangle -A " CHAIN_INCOMING " -d %s -c %llu %llu -j ACCEPT",
+		libcommand = safe_calloc(SMALL_BUF);
+
+		safe_asprintf(&libcommand, "/usr/lib/opennds/libopennds.sh replace_client_rule nds_mangle %s accept %s \"ip daddr %s counter packets %llu bytes %llu accept\"",
+			CHAIN_INCOMING,
+			client->ip,
 			client->ip,
 			client->counters.inpackets,
 			client->counters.incoming
 		);
+
+		rc = execute(libcommand);
+		free(libcommand);
+
+	}
+
+	// Enable
+	if (enable == 1) {
+
+		debug(LOG_INFO, "Average Download Packet Size for [%s] is [%llu] bytes", client->ip, average_packet_size);
+		debug(LOG_INFO, "Download Rate Limiting of [%s %s] to [%llu] packets/min, bucket size [%llu]", client->ip, client->mac, packet_limit, bucket);
+		// Update limiting rule set for this client
+
+		libcommand = safe_calloc(SMALL_BUF);
+
+		safe_asprintf(&libcommand, "/usr/lib/opennds/libopennds.sh replace_client_rule nds_mangle %s accept %s \"ip daddr %s limit rate %llu/minute burst %llu packets counter packets %llu bytes %llu accept\"",
+			CHAIN_INCOMING,
+			client->ip,
+			client->ip,
+			packet_limit,
+			bucket,
+			client->counters.inpackets,
+			client->counters.incoming
+		);
+
+		rc = execute(libcommand);
+		free(libcommand);
+
+		client->inc_packet_limit = packet_limit;
+		client->download_bucket_size = bucket;
 	}
 
 	return rc;
@@ -992,6 +1011,7 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 	unsigned long long int packets;
 	unsigned long long int average_packet_size;
 	unsigned long long int bucket;
+	char *libcommand = NULL;
 	s_config *config;
 	config = config_get_config();
 
@@ -1026,42 +1046,51 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 		bucket = config->max_upload_bucket_size;
 	}
 
+	// Disable
+	if (enable == 0) {
+
+		client->out_packet_limit = 0;
+		client->upload_bucket_size = 0;
+
+		libcommand = safe_calloc(SMALL_BUF);
+
+		safe_asprintf(&libcommand, "/usr/lib/opennds/libopennds.sh replace_client_rule nds_filter %s return %s \"ip daddr %s counter packets %llu bytes %llu return\"",
+			CHAIN_UPLOAD_RATE,
+			client->ip,
+			client->ip,
+			client->counters.outpackets,
+			client->counters.outgoing
+		);
+
+		rc = execute(libcommand);
+		free(libcommand);
+	}
+
+	// Enable
 	if (enable == 1) {
 		debug(LOG_INFO, "Average Upload Packet Size for [%s] is [%llu] bytes", client->ip, average_packet_size);
 		debug(LOG_INFO, "Upload Rate Limiting of [%s %s] to [%llu] packets/min, bucket size [%llu]", client->ip, client->mac, packet_limit, bucket);
 
-		// Remove non rate limiting rule set for this client
-		rc = execute("/usr/lib/opennds/libopennds.sh delete_client_rule nds_filter \"%s\" \"%s\" \"%s\"", CHAIN_UPLOAD_RATE, "return", client->ip);
+		// Update limiting rule set for this client
+		libcommand = safe_calloc(SMALL_BUF);
 
-		// Add rate limiting upload rule set for this client
-		rc |= iptables_do_command("-t nds_filter -I " CHAIN_UPLOAD_RATE " -s %s -j DROP", client->ip);
-		rc |= iptables_do_command("-t nds_filter -I " CHAIN_UPLOAD_RATE " -s %s -c %llu %llu -m limit --limit %llu/min --limit-burst %llu -j RETURN",
+		safe_asprintf(&libcommand, "/usr/lib/opennds/libopennds.sh replace_client_rule nds_filter %s return %s \"ip daddr %s limit rate %llu/minute burst %llu packets counter packets %llu bytes %llu return\"",
+			CHAIN_UPLOAD_RATE,
 			client->ip,
-			client->counters.outpackets,
-			client->counters.outgoing,
+			client->ip,
 			packet_limit,
-			bucket
+			bucket,
+			client->counters.outpackets,
+			client->counters.outgoing
 		);
+
+		rc = execute(libcommand);
+		free(libcommand);
 
 		client->out_packet_limit = packet_limit;
 		client->upload_bucket_size = bucket;
 	}
 
-	if (enable == 0) {
-		// Remove rate limiting upload rule set for this client
-		rc = execute("/usr/lib/opennds/libopennds.sh delete_client_rule nds_filter \"%s\" \"%s\" \"%s\"", CHAIN_UPLOAD_RATE, "return", client->ip);
-		rc = execute("/usr/lib/opennds/libopennds.sh delete_client_rule nds_filter \"%s\" \"%s\" \"%s\"", CHAIN_UPLOAD_RATE, "drop", client->ip);
-
-		client->out_packet_limit = 0;
-		client->upload_bucket_size = 0;
-
-		// Add non rate limiting rule set for this client
-		rc |= iptables_do_command("-t nds_filter -I " CHAIN_UPLOAD_RATE " -s %s -c %llu %llu -j RETURN",
-			client->ip,
-			client->counters.outpackets,
-			client->counters.outgoing
-		);
-	}
 	return rc;
 }
 
@@ -1073,20 +1102,15 @@ iptables_fw_authenticate(t_client *client)
 
 	debug(LOG_NOTICE, "Authenticating %s %s", client->ip, client->mac);
 
-	// This rule is for marking upload (outgoing) packets, and for upload byte counting
-	rc |= iptables_do_command("-t nds_mangle -A " CHAIN_OUTGOING " -s %s -m mac --mac-source %s -j MARK %s 0x%x",
-		client->ip,
-		client->mac,
-		markop,
-		FW_MARK_AUTHENTICATED
-	);
+	// This rule is for marking upload (outgoing) packets, and for upload byte accounting. Drop all bucket overflow packets
+	rc |= nftables_do_command("add rule ip nds_mangle %s ip saddr %s ether saddr %s counter meta mark set mark or 0x%x", CHAIN_OUTGOING, client->ip, client->mac, FW_MARK_AUTHENTICATED);
+	rc |= nftables_do_command("insert rule ip nds_filter %s ip daddr %s counter drop", CHAIN_UPLOAD_RATE, client->ip);
+	rc |= nftables_do_command("insert rule ip nds_filter %s ip saddr %s counter return", CHAIN_UPLOAD_RATE, client->ip);
 
-	rc |= iptables_do_command("-t nds_filter -I " CHAIN_UPLOAD_RATE " -s %s -j RETURN", client->ip);
-
-	// This rule is just for download (incoming) byte counting, see iptables_fw_counters_update()
-	rc |= iptables_do_command("-t nds_mangle -A " CHAIN_INCOMING " -d %s -j MARK %s 0x%x", client->ip, markop, FW_MARK_AUTHENTICATED);
-
-	rc |= iptables_do_command("-t nds_mangle -A " CHAIN_INCOMING " -d %s -j ACCEPT", client->ip);
+	// This rule is just for download (incoming) byte accounting. Drop all bucket overflow packets
+	rc |= nftables_do_command("add rule ip nds_mangle %s ip daddr %s counter meta mark set mark or 0x%x", CHAIN_INCOMING, client->ip, FW_MARK_AUTHENTICATED);
+	rc |= nftables_do_command("add rule ip nds_mangle %s ip daddr %s counter accept", CHAIN_INCOMING, client->ip);
+	rc |= nftables_do_command("add rule ip nds_mangle %s ip daddr %s counter drop", CHAIN_INCOMING, client->ip);
 
 	client->counters.incoming = 0;
 	client->counters.incoming_previous = 0;
@@ -1202,6 +1226,9 @@ iptables_fw_counters_update(void)
 	char *script;
 	char ip[INET6_ADDRSTRLEN];
 	char target[MAX_BUF];
+	char *mark_auth;
+	char *lib_cmd;
+	char *msg;
 	int rc;
 	int af;
 	s_config *config;
@@ -1213,8 +1240,18 @@ iptables_fw_counters_update(void)
 	config = config_get_config();
 	af = config->ip6 ? AF_INET6 : AF_INET;
 
+	safe_asprintf(&lib_cmd, "/usr/lib/opennds/libopennds.sh \"pad_string\" \"left\" \"00000000\" \"%x\"", FW_MARK_AUTHENTICATED);
+	msg = safe_calloc(SMALL_BUF);
+
+	execute_ret_url_encoded(msg, SMALL_BUF - 1, lib_cmd);
+
+	safe_asprintf(&mark_auth, "0x%s", msg);
+	debug(LOG_DEBUG, "Authentication mark: %s", mark_auth);
+	free(msg);
+	free(lib_cmd);
+
 	// Look for outgoing (upload) traffic of authenticated clients.
-	safe_asprintf(&script, "nft list chain ip nds_filter %s", CHAIN_UPLOAD_RATE);
+	safe_asprintf(&script, "nft list chain ip nds_mangle %s", CHAIN_OUTGOING);
 	output = popen(script, "r");
 	free(script);
 
@@ -1228,11 +1265,12 @@ iptables_fw_counters_update(void)
 	while (('\n' != fgetc(output)) && !feof(output)) {}
 
 	while (!feof(output)) {
-		rc = fscanf(output, " %*s %*s %15[0-9.] %*s %*s %llu %*s %llu %s", ip, &packets, &counter, target);
+		rc = fscanf(output, " %*s %*s %15[0-9.] %*s %*s %*s %*s %*s %llu %*s %llu  %*s %*s %*s %*s %*s %*s %s", ip, &packets, &counter, target);
 
 		// eat rest of line
 		while (('\n' != fgetc(output)) && !feof(output)) {}
-		if (4 == rc && !strcmp(target, "return")) {
+
+		if (4 == rc && !strcmp(target, mark_auth)) {
 			// Sanity
 			if (!inet_pton(af, ip, &tempaddr)) {
 				debug(LOG_WARNING, "I was supposed to read an IP address but instead got [%s] - ignoring it", ip);
@@ -1283,13 +1321,13 @@ iptables_fw_counters_update(void)
 	while (('\n' != fgetc(output)) && !feof(output)) {}
 
 	while (!feof(output)) {
-		rc = fscanf(output, " %*s %*s %15[0-9.] %*s %*s %llu %*s %llu %s", ip, &packets, &counter, target);
+		rc = fscanf(output, " %*s %*s %15[0-9.] %*s %*s %llu %*s %llu  %*s %*s %*s %*s %*s %*s %s", ip, &packets, &counter, target);
 
 		// eat rest of line
 		while (('\n' != fgetc(output)) && !feof(output)) {}
 
 		// Sanity check
-		if (4 == rc && !strcmp(target, "accept")) {
+		if (4 == rc && !strcmp(target, mark_auth)) {
 
 			if (!inet_pton(af, ip, &tempaddr)) {
 				debug(LOG_WARNING, "I was supposed to read an IP address but instead got [%s] - ignoring it", ip);
@@ -1321,6 +1359,7 @@ iptables_fw_counters_update(void)
 		}
 	}
 	pclose(output);
+	free(mark_auth);
 
 	return 0;
 }

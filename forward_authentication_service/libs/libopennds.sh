@@ -1254,6 +1254,10 @@ ipt_to_nft () {
 	nftstr=$($cmd $cmdstr)
 	retval=$($nftstr)
 	ret=$?
+nds_date=$(date)
+
+echo "$nds_date: $cmdstr | $nftstr [ $ret ]" >> "/tmp/translate"
+
 }
 
 delete_client_rule () {
@@ -1266,6 +1270,19 @@ delete_client_rule () {
 
 	for rulehandle in $handles; do
 		nft delete rule ip $nds_table "$nds_chain" handle "$rulehandle" 2> /dev/null
+	done
+}
+
+replace_client_rule () {
+
+	if [ "$nds_verdict" = "all" ]; then
+		local handles=$(nft -a list chain ip "$nds_table" "$nds_chain" | grep -w "$client_ip" | awk -F"handle " '{printf "%s ", $2}')
+	else
+		local handles=$(nft -a list chain ip "$nds_table" "$nds_chain" | grep -w "$client_ip" | grep -w "$nds_verdict" | awk -F"handle " '{printf "%s ", $2}')
+	fi
+
+	for rulehandle in $handles; do
+		nft replace rule ip $nds_table "$nds_chain" handle "$rulehandle" "$new_rule" 2> /dev/null
 	done
 }
 
@@ -1348,6 +1365,13 @@ nft_set () {
 	fi
 }
 
+pad_str () {
+	if [ "$hand" = "right" ]; then
+		padded=$(printf "%s%s" "$m" "${p:${#m}}")
+	elif [ "$hand" = "left" ]; then
+		padded=$(printf "%s%s" "${p:${#m}}" "$m")
+	fi
+}
 #### end of functions ####
 
 
@@ -1921,6 +1945,32 @@ elif [ "$1" = "delete_client_rule" ]; then
 	# bad verdict
 	exit 1
 
+elif [ "$1" = "replace_client_rule" ]; then
+	# Deletes a client rule
+	# $2 is the table
+	# $3 is the chain
+	# $4 is the verdict - accept, drop, queue, continue, return, jump, goto or all
+	# $5 is the client ip address
+
+	nds_table="$2"
+	nds_chain="$3"
+	nds_verdict="$4"
+	client_ip="$5"
+	new_rule="$6"
+
+	verdicts="accept drop queue continue return jump goto all"
+
+	for verdict in $verdicts; do
+
+		if [ "$verdict" = "$nds_verdict" ]; then
+			replace_client_rule
+			exit 0
+		fi
+	done
+
+	# bad verdict
+	exit 1
+
 elif [ "$1" = "ipt_to_nft" ]; then
 	# Translates ipt to nft and executes
 	# $2 is the command name
@@ -1960,6 +2010,24 @@ elif [ "$1" = "nftset" ]; then
 	nft_set
 
 	exit $ret
+
+elif [ "$1" = "pad_string" ]; then
+	# Pads a string to a length given by the length of the pad string, with extra characters from the pad string
+	# $2 is the hand, ie "left" or "right"
+	# $3 is the pad string eg "1234567890"
+	# $4 is the string to pad
+
+	if [ "$2" = "right" ] || [ "$2" = "left" ]; then
+		hand="$2"
+		p="$3"
+		m="$4"
+		pad_str
+	else
+		exit 1
+	fi
+
+	printf "%s" "$padded"
+	exit 0
 
 else
 	#Display a splash page sequence using a Themespec

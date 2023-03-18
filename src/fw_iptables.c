@@ -53,6 +53,7 @@
 #define MIN_IPTABLES_VERSION (1 * 10000 + 8 * 100 + 7)
 
 static char *_iptables_compile(const char[], const char[], t_firewall_rule *);
+static char *_nftables_compile(const char[], const char[], t_firewall_rule *);
 static int _iptables_append_ruleset(const char[], const char[], const char[]);
 static int _iptables_init_marks(void);
 
@@ -303,6 +304,84 @@ _iptables_compile(const char table[], const char chain[], t_firewall_rule *rule)
 
 /**
  * @internal
+ * Compiles a struct definition of a firewall rule into a valid nftables
+ * command.
+ * @arg table Table containing the chain.
+ * @arg chain Chain that the command will be (-A)ppended to.
+ * @arg rule Definition of a rule into a struct, from conf.c.
+ */
+static char *
+_nftables_compile(const char table[], const char chain[], t_firewall_rule *rule)
+{
+	char command[MAX_BUF];
+	char *mode;
+
+	mode = NULL;
+	memset(command, 0, MAX_BUF);
+
+	switch (rule->target) {
+	case TARGET_DROP:
+		mode = "drop";
+		break;
+	case TARGET_REJECT:
+		mode = "reject";
+		break;
+	case TARGET_ACCEPT:
+		mode = "accept";
+		break;
+	case TARGET_RETURN:
+		mode = "return";
+		break;
+	case TARGET_LOG:
+		mode = "log";
+		break;
+	case TARGET_ULOG:
+		mode = "ulog";
+		break;
+	default:
+		mode = "return";
+		break;
+	}
+
+	debug(LOG_DEBUG, "nftables compile: table [%s ], chain [ %s ], mode [ %s ]", table, chain, mode);
+	//snprintf(command, sizeof(command),  "-t %s -A %s ", table, chain);
+	snprintf(command, sizeof(command),  "add rule ip %s %s ", table, chain);
+
+	if (rule->mask != NULL) {
+		snprintf((command + strlen(command)),
+			 (sizeof(command) - strlen(command)),
+			 "ip daddr %s ", rule->mask
+		);
+	}
+
+	if (rule->protocol != NULL) {
+		snprintf((command + strlen(command)),
+			 (sizeof(command) - strlen(command)),
+			 "%s ", rule->protocol)
+		;
+	}
+
+	if (rule->port != NULL) {
+		snprintf((command + strlen(command)),
+			 (sizeof(command) - strlen(command)),
+			 "dport %s ", rule->port
+		);
+	}
+
+	snprintf((command + strlen(command)),
+		 (sizeof(command) - strlen(command)),
+		 "counter %s", mode
+	);
+
+	debug(LOG_DEBUG, "Compiled Command for nftables: [ %s ]", command);
+
+	/* XXX The buffer command, an automatic variable, will get cleaned
+	 * off of the stack when we return, so we strdup() it. */
+	return(safe_strdup(command));
+}
+
+/**
+ * @internal
  * append all the rules in a rule set.
  * @arg ruleset Name of the ruleset
  * @arg table Table containing the chain.
@@ -318,9 +397,9 @@ _iptables_append_ruleset(const char table[], const char ruleset[], const char ch
 	debug(LOG_DEBUG, "Loading ruleset %s into table %s, chain %s", ruleset, table, chain);
 
 	for (rule = get_ruleset_list(ruleset); rule != NULL; rule = rule->next) {
-		cmd = _iptables_compile(table, chain, rule);
+		cmd = _nftables_compile(table, chain, rule);
 		debug(LOG_DEBUG, "Loading rule \"%s\" into table %s, chain %s", cmd, table, chain);
-		ret |= iptables_do_command(cmd);
+		ret |= nftables_do_command(cmd);
 		free(cmd);
 	}
 
@@ -541,8 +620,7 @@ iptables_fw_init(void)
 
 		// Allow access to remote FAS - CHAIN_OUTGOING and CHAIN_TO_INTERNET packets for remote FAS, ACCEPT
 		if (fas_port && strcmp(fas_remoteip, gw_ip)) {
-			rc |= iptables_do_command("-t nds_nat -A " CHAIN_OUTGOING " -p tcp --destination %s --dport %d -j ACCEPT", fas_remoteip, fas_port);
-
+			rc |= nftables_do_command("add rule ip nds_nat %s ip daddr %s tcp dport %d counter accept", CHAIN_OUTGOING, fas_remoteip, fas_port);
 		}
 
 		// CHAIN_OUTGOING, packets for tcp port 80, redirect to gw_port on primary address for the iface
@@ -636,14 +714,12 @@ iptables_fw_init(void)
 		/* CHAIN_TO_ROUTER packets marked AUTHENTICATED RETURN
 		This allows clients full access to the router
 		Commented out to block all access not specifically allowed in the ruleset
-		TODO: Should this be an option?
+		TODO: Should this be an option? The commented out legacy iptables command follows:
 		*/
-
 		// rc |= iptables_do_command("-t nds_filter -A " CHAIN_TO_ROUTER " -m mark --mark 0x%x%s -j RETURN", FW_MARK_AUTHENTICATED, markmask);
 
 		// everything else, REJECT
 		rc |= nftables_do_command("add rule ip nds_filter ndsRTR counter reject");
-
 	}
 
 	/*
@@ -675,7 +751,7 @@ iptables_fw_init(void)
 
 	// Allow access to remote FAS - CHAIN_TO_INTERNET packets for remote FAS, ACCEPT
 	if (fas_port && strcmp(fas_remoteip, gw_ip)) {
-		rc |= iptables_do_command("-t nds_filter -A " CHAIN_TO_INTERNET " -p tcp --destination %s --dport %d -j ACCEPT", fas_remoteip, fas_port);
+		rc |= nftables_do_command("add rule ip nds_filter %s ip daddr %s tcp dport %d counter accept", CHAIN_TO_INTERNET, fas_remoteip, fas_port);
 	}
 
 	// CHAIN_TO_INTERNET, packets marked TRUSTED:

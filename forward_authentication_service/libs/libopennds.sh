@@ -1287,10 +1287,46 @@ replace_client_rule () {
 }
 
 nft_set () {
-	# Define the dnsmask config file location for generic Linux
-	# Edit this if your system uses a non standard locations:
-	conflocation="/etc/dnsmasq.conf"
+	# Check for dnsmasq compiled options
+	dnsmasq --version | grep ' nftset ' &>/dev/null
+	optnftset=$?
 
+	if [ $optnftset -eq 1 ]; then
+		debugtype="warn"
+		syslogmessage="Warning: dnsmasq nftset complile option not available - Upgrade to dnsmasq-full version. Trying ipset option...."
+		write_to_syslog
+	fi
+
+	dnsmasq --version | grep ' ipset ' &>/dev/null
+	optipset=$?
+
+	if [ $optipset -eq 1 ]; then
+		debugtype="warn"
+		syslogmessage="Warning: dnsmasq ipset complile option not available -- Upgrade to dnsmasq-full version. Unable to configure walled garden...."
+		write_to_syslog
+		exit 0
+	fi
+
+	if [ $optnftset -eq 1 ] && [ $optipset -eq 0 ]; then
+		# we have ipset option only, so check for ipset utility
+		type ipset &>/dev/null
+		have_ipset=$?
+
+		if [ $have_ipset -eq 1 ]; then
+			debugtype="warn"
+			syslogmessage="Warning: ipset utility not not available -- Install ipset utility. Unable to configure walled garden...."
+			write_to_syslog
+			exit 0
+		else
+			debugtype="warn"
+			syslogmessage="Warning: using deprecated legacy ipset utility -- Upgrade dnsmasq to version supporting nftsets. Configuring walled garden...."
+			write_to_syslog
+		fi
+	fi
+
+	# Define the dnsmask config file location for generic Linux
+	# Edit this if your non-uci system uses a non standard location:
+	conflocation="/etc/dnsmasq.conf"
 
 	uciconfig=$(uci show dhcp 2>/dev/null)
 
@@ -1303,14 +1339,20 @@ nft_set () {
 			sed "$linnum""d" "/tmp/etc/dnsmasq.conf"
 		else
 			uci -q delete dhcp.nds_nftset
+			uci -q delete dhcp.@dnsmasq[0].ipset
 		fi
-		# Todo: Do we need to delete the rule?
+
+		ipset destroy walledgarden &>/dev/null
 	else
 
 		if [ "$nftsetmode" = "add" ] || [ "$nftsetmode" = "insert" ]; then
 			# Add the set, add/insert the rule and the Dnsmasq config
 			nft add set ip nds_filter walledgarden { type ipv4_addr\; size 128\; }
 			#ports=$(uci -q get opennds.@opennds[0].walledgarden_port_list | tr -d "'")
+
+			if [ $have_ipset ]; then
+				ipset create walledgarden hash:ip &>/dev/null
+			fi
 
 			option="walledgarden_port_list"
 			get_option_from_config
@@ -1356,7 +1398,13 @@ nft_set () {
 				for domain in $domains; do
 					ucicmd="add_list dhcp.nds_nftset.domain='$domain'"
 					echo $ucicmd | uci -q batch
+					ipset="$ipset/$domain"
 				done
+
+				ipset="$ipset/walledgarden"
+				ucicmd="set dhcp.@dnsmasq[0].ipset='$ipset'"
+				echo $ucicmd | uci -q batch
+
 			fi
 		else
 			# invalid nftsetmode

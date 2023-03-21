@@ -40,6 +40,7 @@
 #include "safe.h"
 #include "debug.h"
 #include "conf.h"
+#include "common.h"
 #include "client_list.h"
 #include "http_microhttpd.h"
 #include "fw_iptables.h"
@@ -199,6 +200,7 @@ t_client *
 client_list_add_client(const char mac[], const char ip[])
 {
 	t_client *client;
+
 	int rc = -1;
 	char *libcmd;
 	char *msg;
@@ -220,6 +222,7 @@ client_list_add_client(const char mac[], const char ip[])
 	msg = safe_calloc(64);
 	rc = execute_ret_url_encoded(msg, 64 - 1, libcmd);
 	free(libcmd);
+	free(msg);
 
 	if (rc > 0) {
 		// IP address is not in the dhcp database
@@ -230,6 +233,7 @@ client_list_add_client(const char mac[], const char ip[])
 	client = client_list_find(mac, ip);
 
 	if (!client) {
+		// add the client
 		client = _client_list_append(mac, ip);
 	} else {
 		debug(LOG_INFO, "Client %s %s token %s already on client list", ip, mac, client->token);

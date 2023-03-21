@@ -823,28 +823,18 @@ iptables_fw_init(void)
 	// For Walled Garden - Check we have nftset support and if we do, set it up
 	if (config->walledgarden_fqdn_list) {
 
-		// Check we have dnsmasq nftset compile option
+		// If Walled Garden nftset exists, destroy it.
+		msg = safe_calloc(SMALL_BUF);
+		execute_ret_url_encoded(msg, SMALL_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset delete walledgarden");
+		free(msg);
+
+		// Set up the Walled Garden
 		msg = safe_calloc(SMALL_BUF);
 
-		if (execute_ret_url_encoded(msg, SMALL_BUF - 1, "dnsmasq --version | grep ' nftset '") == 0) {
-			debug(LOG_NOTICE, "dnsmasq nftset support is available");
-			free(msg);
-			// If Walled Garden nftset exists, destroy it.
-			msg = safe_calloc(SMALL_BUF);
-			execute_ret_url_encoded(msg, SMALL_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset delete walledgarden");
-			free(msg);
-
-			// Set up the Walled Garden
-			msg = safe_calloc(SMALL_BUF);
-
-			if (execute_ret_url_encoded(msg, STATUS_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset insert walledgarden ") == 0) {
-				debug(LOG_INFO, "Walled Garden Setup Request sent");
-			}
-			free(msg);
-		} else {
-			debug(LOG_ERR, "Please install dnsmasq full version with nftset compile option");
-			free(msg);
+		if (execute_ret_url_encoded(msg, STATUS_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset insert walledgarden ") == 0) {
+			debug(LOG_INFO, "Walled Garden Setup Request sent");
 		}
+		free(msg);
 	}
 
 	/*

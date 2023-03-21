@@ -194,6 +194,11 @@ termination_handler(int s)
 	free(dnscmd);
 	free(msg);
 
+	// If Walled Garden nftset exists, destroy it.
+	msg = safe_calloc(SMALL_BUF);
+	execute_ret_url_encoded(msg, SMALL_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset delete walledgarden");
+	free(msg);
+
 	// Restart dnsmasq
 	safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" &");
 	debug(LOG_DEBUG, "restart command [ %s ]", dnscmd);

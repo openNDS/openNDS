@@ -39,6 +39,7 @@
 
 #include "safe.h"
 #include "conf.h"
+#include "common.h"
 #include "debug.h"
 #include "auth.h"
 #include "fw_iptables.h"
@@ -269,11 +270,20 @@ fw_refresh_client_list(void)
 	unsigned long long int uprate;
 	unsigned long long int downrate;
 	int action;
+	char *dnscmd;
+
 
 	// Check if router is online
 	int watchdog = 1;
 	int routercheck;
 	routercheck = check_routing(watchdog);
+
+	// If Walled Garden ipset exists, copy it to the nftset.
+	safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" &");
+	safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"ipset_to_nftset\" \"walledgarden\" %d &", config->checkinterval);
+	debug(LOG_DEBUG, "ipset_to_nftset [ %s ]", dnscmd);
+	system(dnscmd);
+	free(dnscmd);
 
 	if (routercheck > 0) {
 		/* If the refresh interval has expired, refresh the downloaded remote files.

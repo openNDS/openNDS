@@ -100,6 +100,7 @@
 #define DEFAULT_SYSLOG_FACILITY LOG_DAEMON
 #define DEFAULT_NDSCTL_SOCK "ndsctl.sock"
 #define DEFAULT_FW_MARK_AUTHENTICATED 0x30000
+#define DEFAULT_AUTHENTICATION_MARK "0x00030000"
 #define DEFAULT_FW_MARK_TRUSTED 0x20000
 #define DEFAULT_FW_MARK_BLOCKED 0x10000
 /* N.B.: default policies here must be ACCEPT, REJECT, or RETURN
@@ -189,8 +190,8 @@ typedef struct {
 	char *ndsctl_sock;					//@brief ndsctl path to socket
 	char *internal_sock;					//@brief internal path to socket
 	int daemon;						//@brief if daemon > 0, use daemon mode
-	int debuglevel;					//@brief Debug information verbosity
-	int maxclients;					//@brief Maximum number of clients allowed
+	int debuglevel;						//@brief Debug information verbosity
+	int maxclients;						//@brief Maximum number of clients allowed
 	int online_status;					//@brief Online status of the router, 1=online, 0=offline
 	char *gw_name;						//@brief Name of the gateway; e.g. its SSID or a unique identifier for use in a remote FAS
 	int enable_serial_number_suffix;			//@brief Enable/disable serial number suffix to gateway name
@@ -208,13 +209,13 @@ typedef struct {
 	unsigned int gw_port;					//@brief Port the webserver will run on
 	unsigned int fas_port;					//@brief Port the fas server will run on
 	int login_option_enabled;				//@brief Use default PreAuth Login script
-	unsigned long long int max_log_entries;		//@brief set the maximum number of log entries
+	unsigned long long int max_log_entries;			//@brief set the maximum number of log entries
 	int use_outdated_mhd;					//@brief Use outdated libmicrohttpd
 	unsigned long long int max_page_size;			//@brief Max page size to be served by libmicrohttpd
 	int allow_preemptive_authentication;			//@brief Allow Preemptive Authentication using the ndsctl utility
 	int unescape_callback_enabled;				//@brief Enable external MHD unescape callback script
-	int fas_secure_enabled;				//@brief Enable Secure FAS
-	char *fas_path;					//@brief Path to forward authentication page of FAS
+	int fas_secure_enabled;					//@brief Enable Secure FAS
+	char *fas_path;						//@brief Path to forward authentication page of FAS
 	char *fas_key;						//@brief AES key for FAS
 	char *fas_remoteip;					//@brief IP addess of a remote FAS
 	char *fas_remotefqdn;					//@brief FQDN of a remote FAS
@@ -247,7 +248,7 @@ typedef struct {
 	unsigned long long int upload_quota;			//@brief Upload quota, kB
 	int download_unrestricted_bursting;			//@brief Enable/disable unrestriced bursting
 	int upload_unrestricted_bursting;			//@brief Enable/disable unrestriced bursting
-	int log_syslog;					//@brief boolean, whether to log to syslog
+	int log_syslog;						//@brief boolean, whether to log to syslog
 	int syslog_facility;					//@brief facility to use when using syslog for logging
 	int macmechanism; 					//@brief mechanism wrt MAC addrs
 	t_firewall_ruleset *rulesets;				//@brief firewall rules
@@ -256,7 +257,7 @@ typedef struct {
 	t_MAC *allowedmaclist;					//@brief list of allowed macs
 	t_WGP *walledgarden_port_list;				//@brief list of Walled Garden Ports
 	t_WGFQDN *walledgarden_fqdn_list;			//@brief list of Walled Garden FQDNs
-	t_FASPARAM *fas_custom_parameters_list;		//@brief list of Custom FAS parameters
+	t_FASPARAM *fas_custom_parameters_list;			//@brief list of Custom FAS parameters
 	t_FASVAR *fas_custom_variables_list;			//@brief list of Custom FAS variables
 	t_FASIMG *fas_custom_images_list;			//@brief list of Custom FAS images
 	t_FASFILE *fas_custom_files_list;			//@brief list of Custom FAS files
@@ -265,6 +266,7 @@ typedef struct {
 	char *custom_images;					//@brief FAS custom image string
 	char *custom_files;					//@brief FAS custom file string
 	unsigned int fw_mark_authenticated;			//@brief iptables mark for authenticated packets
+	char *authentication_mark;				//@brief Padded authentication mark
 	unsigned int fw_mark_blocked;				//@brief iptables mark for blocked packets
 	unsigned int fw_mark_trusted;				//@brief iptables mark for trusted packets
 	int ip6;						//@brief enable IPv6

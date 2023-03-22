@@ -1292,9 +1292,6 @@ iptables_fw_counters_update(void)
 	char *script;
 	char ip[INET6_ADDRSTRLEN];
 	char target[MAX_BUF];
-	char *mark_auth;
-	char *lib_cmd;
-	char *msg;
 	int rc;
 	int af;
 	s_config *config;
@@ -1305,16 +1302,6 @@ iptables_fw_counters_update(void)
 
 	config = config_get_config();
 	af = config->ip6 ? AF_INET6 : AF_INET;
-
-	safe_asprintf(&lib_cmd, "/usr/lib/opennds/libopennds.sh \"pad_string\" \"left\" \"00000000\" \"%x\"", FW_MARK_AUTHENTICATED);
-	msg = safe_calloc(SMALL_BUF);
-
-	execute_ret_url_encoded(msg, SMALL_BUF - 1, lib_cmd);
-
-	safe_asprintf(&mark_auth, "0x%s", msg);
-	debug(LOG_DEBUG, "Authentication mark: %s", mark_auth);
-	free(msg);
-	free(lib_cmd);
 
 	// Look for outgoing (upload) traffic of authenticated clients.
 	safe_asprintf(&script, "nft list chain ip nds_mangle %s", CHAIN_OUTGOING);
@@ -1336,7 +1323,7 @@ iptables_fw_counters_update(void)
 		// eat rest of line
 		while (('\n' != fgetc(output)) && !feof(output)) {}
 
-		if (4 == rc && !strcmp(target, mark_auth)) {
+		if (4 == rc && !strcmp(target, config->authentication_mark)) {
 			// Sanity
 			if (!inet_pton(af, ip, &tempaddr)) {
 				debug(LOG_WARNING, "I was supposed to read an IP address but instead got [%s] - ignoring it", ip);
@@ -1393,7 +1380,7 @@ iptables_fw_counters_update(void)
 		while (('\n' != fgetc(output)) && !feof(output)) {}
 
 		// Sanity check
-		if (4 == rc && !strcmp(target, mark_auth)) {
+		if (4 == rc && !strcmp(target, config->authentication_mark)) {
 
 			if (!inet_pton(af, ip, &tempaddr)) {
 				debug(LOG_WARNING, "I was supposed to read an IP address but instead got [%s] - ignoring it", ip);
@@ -1425,7 +1412,6 @@ iptables_fw_counters_update(void)
 		}
 	}
 	pclose(output);
-	free(mark_auth);
 
 	return 0;
 }

@@ -317,6 +317,7 @@ config_init(void)
 	config.allowedmaclist = NULL;
 	config.macmechanism = DEFAULT_MACMECHANISM;
 	config.fw_mark_authenticated = DEFAULT_FW_MARK_AUTHENTICATED;
+	config.authentication_mark = safe_strdup(DEFAULT_AUTHENTICATION_MARK);
 	config.fw_mark_trusted = DEFAULT_FW_MARK_TRUSTED;
 	config.fw_mark_blocked = DEFAULT_FW_MARK_BLOCKED;
 	config.ip6 = DEFAULT_IP6;

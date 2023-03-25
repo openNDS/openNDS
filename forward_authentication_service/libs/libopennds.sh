@@ -990,7 +990,8 @@ get_option_from_config() {
 		param=$(uci -q get opennds.@opennds[0].$option | awk '{printf("%s", $0)}' | tr -d "'")
 
 	elif [ -e "/etc/opennds/opennds.conf" ]; then
-		param=$(cat "/etc/opennds/opennds.conf" | awk -F"$option " '{printf("%s", $2)}')
+		param=$(cat /etc/opennds/opennds.conf | grep -i -w "$option" | awk -F"#" '{print $1}' | awk 'NF==2 {printf $2}')
+
 	fi
 
 	urlencode "$param"
@@ -1253,6 +1254,9 @@ ipt_to_nft () {
 	nftstr=$($cmd $cmdstr)
 	retval=$($nftstr)
 	ret=$?
+	nds_date=$(date)
+	configure_log_location
+	echo "$nds_date: $cmdstr | $nftstr [ $ret ]" >> "$mountpoint/translate"
 }
 
 delete_client_rule () {
@@ -1268,11 +1272,61 @@ delete_client_rule () {
 	done
 }
 
-nft_set () {
-	# Define the dnsmask config file location for generic Linux
-	# Edit this if your system uses a non standard locations:
-	conflocation="/etc/dnsmasq.conf"
+replace_client_rule () {
 
+	if [ "$nds_verdict" = "all" ]; then
+		local handles=$(nft -a list chain ip "$nds_table" "$nds_chain" | grep -w "$client_ip" | awk -F"handle " '{printf "%s ", $2}')
+	else
+		local handles=$(nft -a list chain ip "$nds_table" "$nds_chain" | grep -w "$client_ip" | grep -w "$nds_verdict" | awk -F"handle " '{printf "%s ", $2}')
+	fi
+
+	for rulehandle in $handles; do
+		nft replace rule ip $nds_table "$nds_chain" handle "$rulehandle" "$new_rule" 2> /dev/null
+	done
+}
+
+nft_set () {
+	# Check for dnsmasq compiled options
+	dnsmasq --version | grep ' nftset ' &>/dev/null
+	optnftset=$?
+
+	dnsmasq --version | grep ' ipset ' &>/dev/null
+	optipset=$?
+
+
+	if [ $optnftset -eq 1 ]; then
+		debugtype="warn"
+		syslogmessage="Warning: dnsmasq nftset complile option not available - Upgrade to dnsmasq-full version. Trying ipset option...."
+		write_to_syslog
+
+		if [ $optipset -eq 1 ]; then
+			debugtype="warn"
+			syslogmessage="Warning: dnsmasq ipset complile option not available -- Upgrade to dnsmasq-full version. Unable to configure walled garden...."
+			write_to_syslog
+			exit 0
+		fi
+
+		if [ $optnftset -eq 1 ] && [ $optipset -eq 0 ]; then
+			# we have ipset option only, so check for ipset utility
+			type ipset &>/dev/null
+			have_ipset=$?
+
+			if [ $have_ipset -eq 1 ]; then
+				debugtype="warn"
+				syslogmessage="Warning: ipset utility not not available -- Install ipset utility. Unable to configure walled garden...."
+				write_to_syslog
+				exit 0
+			else
+				debugtype="warn"
+				syslogmessage="Warning: using deprecated legacy ipset utility -- Upgrade dnsmasq to version supporting nftsets. Configuring walled garden...."
+				write_to_syslog
+			fi
+		fi
+	fi
+
+	# Define the dnsmask config file location for generic Linux
+	# Edit this if your non-uci system uses a non standard location:
+	conflocation="/etc/dnsmasq.conf"
 
 	uciconfig=$(uci show dhcp 2>/dev/null)
 
@@ -1285,14 +1339,20 @@ nft_set () {
 			sed "$linnum""d" "/tmp/etc/dnsmasq.conf"
 		else
 			uci -q delete dhcp.nds_nftset
+			uci -q delete dhcp.@dnsmasq[0].ipset
 		fi
-		# Todo: Do we need to delete the rule?
+
+		ipset destroy walledgarden &>/dev/null
 	else
 
 		if [ "$nftsetmode" = "add" ] || [ "$nftsetmode" = "insert" ]; then
 			# Add the set, add/insert the rule and the Dnsmasq config
 			nft add set ip nds_filter walledgarden { type ipv4_addr\; size 128\; }
 			#ports=$(uci -q get opennds.@opennds[0].walledgarden_port_list | tr -d "'")
+
+			if [ $have_ipset ]; then
+				ipset create walledgarden hash:ip &>/dev/null
+			fi
 
 			option="walledgarden_port_list"
 			get_option_from_config
@@ -1338,7 +1398,13 @@ nft_set () {
 				for domain in $domains; do
 					ucicmd="add_list dhcp.nds_nftset.domain='$domain'"
 					echo $ucicmd | uci -q batch
+					ipset="$ipset/$domain"
 				done
+
+				ipset="$ipset/walledgarden"
+				ucicmd="set dhcp.@dnsmasq[0].ipset='$ipset'"
+				echo $ucicmd | uci -q batch
+
 			fi
 		else
 			# invalid nftsetmode
@@ -1347,6 +1413,13 @@ nft_set () {
 	fi
 }
 
+pad_str () {
+	if [ "$hand" = "right" ]; then
+		padded=$(printf "%s%s" "$m" "${p:${#m}}")
+	elif [ "$hand" = "left" ]; then
+		padded=$(printf "%s%s" "${p:${#m}}" "$m")
+	fi
+}
 #### end of functions ####
 
 
@@ -1920,10 +1993,39 @@ elif [ "$1" = "delete_client_rule" ]; then
 	# bad verdict
 	exit 1
 
+elif [ "$1" = "replace_client_rule" ]; then
+	# Deletes a client rule
+	# $2 is the table
+	# $3 is the chain
+	# $4 is the verdict - accept, drop, queue, continue, return, jump, goto or all
+	# $5 is the client ip address
+
+	nds_table="$2"
+	nds_chain="$3"
+	nds_verdict="$4"
+	client_ip="$5"
+	new_rule="$6"
+
+	verdicts="accept drop queue continue return jump goto all"
+
+	for verdict in $verdicts; do
+
+		if [ "$verdict" = "$nds_verdict" ]; then
+			replace_client_rule
+			exit 0
+		fi
+	done
+
+	# bad verdict
+	exit 1
+
 elif [ "$1" = "ipt_to_nft" ]; then
 	# Translates ipt to nft and executes
 	# $2 is the command name
 	# $3 is the ipt command string
+	#  Note: The generated nft command recorded in /[log_mountpoint]/translate and is executed
+	#	This funcion is intended only for development work and requires iptables-nft to be installed.
+	#
 
 	if [ -z "$2" ]; then
 		exit 4
@@ -1959,6 +2061,24 @@ elif [ "$1" = "nftset" ]; then
 	nft_set
 
 	exit $ret
+
+elif [ "$1" = "pad_string" ]; then
+	# Pads a string to a length given by the length of the pad string, with extra characters from the pad string
+	# $2 is the hand, ie "left" or "right"
+	# $3 is the pad string eg "1234567890"
+	# $4 is the string to pad
+
+	if [ "$2" = "right" ] || [ "$2" = "left" ]; then
+		hand="$2"
+		p="$3"
+		m="$4"
+		pad_str
+	else
+		exit 1
+	fi
+
+	printf "%s" "$padded"
+	exit 0
 
 else
 	#Display a splash page sequence using a Themespec

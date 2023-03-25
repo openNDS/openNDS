@@ -194,6 +194,11 @@ termination_handler(int s)
 	free(dnscmd);
 	free(msg);
 
+	// If Walled Garden nftset exists, destroy it.
+	msg = safe_calloc(SMALL_BUF);
+	execute_ret_url_encoded(msg, SMALL_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset delete walledgarden");
+	free(msg);
+
 	// Restart dnsmasq
 	safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" &");
 	debug(LOG_DEBUG, "restart command [ %s ]", dnscmd);
@@ -276,6 +281,8 @@ setup_from_config(void)
 	char protocol[8] = {0};
 	char port[8] = {0};
 	char *msg;
+	char *mark_auth;
+	char *lib_cmd;
 	char gwhash[256] = {0};
 	char authmonpid[16] = {0};
 	char *socket;
@@ -292,15 +299,25 @@ setup_from_config(void)
 	struct stat sb;
 	time_t sysuptime;
 	time_t now = time(NULL);
-	t_WGFQDN *allowed_wgfqdn;
-	char wgfqdns[1024] = {0};
 	char *dnscmd;
 	char *setupcmd;
-	int rc = 0;
 
 	s_config *config;
 
 	config = config_get_config();
+
+
+	safe_asprintf(&lib_cmd, "/usr/lib/opennds/libopennds.sh \"pad_string\" \"left\" \"00000000\" \"%x\"", config->fw_mark_authenticated);
+	msg = safe_calloc(SMALL_BUF);
+
+	execute_ret_url_encoded(msg, SMALL_BUF - 1, lib_cmd);
+
+	safe_asprintf(&mark_auth, "0x%s", msg);
+	config->authentication_mark = safe_strdup(mark_auth);
+	debug(LOG_DEBUG, "Authentication mark: %s", config->authentication_mark);
+	free(msg);
+	free(lib_cmd);
+
 
 	// Revert any uncommitted uci configs
 	safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"revert\"");

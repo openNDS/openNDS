@@ -99,7 +99,7 @@ generate_uci_config() {
 	max_download_bucket_size max_upload_bucket_size upload_unrestricted_bursting download_unrestricted_bursting \
 	syslogfacility ndsctlsocket \
 	dhcp_default_url_enable enable_serial_number_suffix \
-	fw_mark_authenticated fw_mark_blocked fw_mark_trusted
+	fw_mark_authenticated fw_mark_trusted
   do
 
     config_get val "$cfg" "$option"

@@ -121,11 +121,8 @@ typedef enum {
 	oEmptyRuleSetPolicy,
 	oMACmechanism,
 	oTrustedMACList,
-	oBlockedMACList,
-	oAllowedMACList,
 	oFWMarkAuthenticated,
 	oFWMarkTrusted,
-	oFWMarkBlocked,
 	oBinAuth,
 	oPreAuth,
 	oWalledGardenFqdnList,
@@ -199,12 +196,8 @@ static const struct {
 	{ "firewallrule", oFirewallRule },
 	{ "emptyrulesetpolicy", oEmptyRuleSetPolicy },
 	{ "trustedmaclist", oTrustedMACList },
-	{ "blockedmaclist", oBlockedMACList },
-	{ "allowedmaclist", oAllowedMACList },
-	{ "MACmechanism", oMACmechanism },
 	{ "fw_mark_authenticated", oFWMarkAuthenticated },
 	{ "fw_mark_trusted", oFWMarkTrusted },
-	{ "fw_mark_blocked", oFWMarkBlocked },
 	{ "binauth", oBinAuth },
 	{ "preauth", oPreAuth },
 	{ "walledgarden_fqdn_list", oWalledGardenFqdnList },
@@ -313,12 +306,9 @@ config_init(void)
 	config.ndsctl_sock = safe_strdup(DEFAULT_NDSCTL_SOCK);
 	config.rulesets = NULL;
 	config.trustedmaclist = NULL;
-	config.blockedmaclist = NULL;
-	config.allowedmaclist = NULL;
-	config.macmechanism = DEFAULT_MACMECHANISM;
 	config.fw_mark_authenticated = DEFAULT_FW_MARK_AUTHENTICATED;
+	config.authentication_mark = safe_strdup(DEFAULT_AUTHENTICATION_MARK);
 	config.fw_mark_trusted = DEFAULT_FW_MARK_TRUSTED;
-	config.fw_mark_blocked = DEFAULT_FW_MARK_BLOCKED;
 	config.ip6 = DEFAULT_IP6;
 	config.binauth = NULL;
 	config.preauth = NULL;
@@ -366,6 +356,7 @@ config_parse_opcode(const char *cp, const char *filename, int linenum)
 
 	for (i = 0; keywords[i].name; i++) {
 		if (strcasecmp(cp, keywords[i].name) == 0) {
+			debug(LOG_NOTICE, "%s: line %d: Found configuration option: %s", filename, linenum, cp);
 			return keywords[i].opcode;
 		}
 	}
@@ -455,17 +446,17 @@ parse_empty_ruleset_policy(char *ptr, const char *filename, int lineno)
 	*ptr = '\0';
 
 	/* make sure policy is one of the possible ones:
-	 "passthrough" means iptables RETURN
-	 "allow" means iptables ACCEPT
-	 "block" means iptables REJECT
+	 "passthrough" means nftables RETURN
+	 "allow" means nftables ACCEPT
+	 "block" means nftables REJECT
 	*/
 	if (ruleset->emptyrulesetpolicy != NULL) free(ruleset->emptyrulesetpolicy);
 	if (!strcasecmp(policy,"passthrough")) {
-		ruleset->emptyrulesetpolicy =  safe_strdup("RETURN");
+		ruleset->emptyrulesetpolicy =  safe_strdup("return");
 	} else if (!strcasecmp(policy,"allow")) {
-		ruleset->emptyrulesetpolicy =  safe_strdup("ACCEPT");
+		ruleset->emptyrulesetpolicy =  safe_strdup("accept");
 	} else if (!strcasecmp(policy,"block")) {
-		ruleset->emptyrulesetpolicy =  safe_strdup("REJECT");
+		ruleset->emptyrulesetpolicy =  safe_strdup("reject");
 	} else {
 		debug(LOG_ERR, "Unknown EmptyRuleSetPolicy directive: %s at line %d in %s", policy, lineno, filename);
 		debug(LOG_ERR, "Exiting...");
@@ -1001,12 +992,6 @@ config_read(const char *filename)
 		case oTrustedMACList:
 			parse_trusted_mac_list(p1);
 			break;
-		case oBlockedMACList:
-			parse_blocked_mac_list(p1);
-			break;
-		case oAllowedMACList:
-			parse_allowed_mac_list(p1);
-			break;
 		case oWalledGardenFqdnList:
 			parse_walledgarden_fqdn_list(p1);
 			break;
@@ -1024,17 +1009,6 @@ config_read(const char *filename)
 			break;
 		case oFasCustomFilesList:
 			parse_fas_custom_files_list(p1);
-			break;
-		case oMACmechanism:
-			if (!strcasecmp("allow", p1)) {
-				config.macmechanism = MAC_ALLOW;
-			} else if (!strcasecmp("block", p1)) {
-				config.macmechanism = MAC_BLOCK;
-			} else {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
 			break;
 		case oWebRoot:
 			// remove any trailing slashes from webroot path
@@ -1162,18 +1136,7 @@ config_read(const char *filename)
 		case oFWMarkAuthenticated:
 			if (sscanf(p1, "%x", &config.fw_mark_authenticated) < 1 ||
 					config.fw_mark_authenticated == 0 ||
-					config.fw_mark_authenticated == config.fw_mark_blocked ||
 					config.fw_mark_authenticated == config.fw_mark_trusted) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
-		case oFWMarkBlocked:
-			if (sscanf(p1, "%x", &config.fw_mark_blocked) < 1 ||
-					config.fw_mark_blocked == 0 ||
-					config.fw_mark_blocked == config.fw_mark_authenticated ||
-					config.fw_mark_blocked == config.fw_mark_trusted) {
 				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
 				debug(LOG_ERR, "Exiting...");
 				exit(1);
@@ -1182,8 +1145,7 @@ config_read(const char *filename)
 		case oFWMarkTrusted:
 			if (sscanf(p1, "%x", &config.fw_mark_trusted) < 1 ||
 					config.fw_mark_trusted == 0 ||
-					config.fw_mark_trusted == config.fw_mark_authenticated ||
-					config.fw_mark_trusted == config.fw_mark_blocked) {
+					config.fw_mark_trusted == config.fw_mark_authenticated) {
 				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
 				debug(LOG_ERR, "Exiting...");
 				exit(1);
@@ -1457,42 +1419,6 @@ void parse_trusted_mac_list(const char ptr[])
 	free(ptrcopyptr);
 }
 
-int is_blocked_mac(const char *mac)
-{
-	s_config *config;
-	t_MAC *block_mac;
-
-	config = config_get_config();
-
-	if (MAC_ALLOW != config->macmechanism) {
-		for (block_mac = config->blockedmaclist; block_mac != NULL; block_mac = block_mac->next) {
-			if (!strcmp(block_mac->mac, mac)) {
-				return 1;
-			}
-		}
-	}
-
-	return 0;
-}
-
-int is_allowed_mac(const char *mac)
-{
-	s_config *config;
-	t_MAC *allow_mac;
-
-	config = config_get_config();
-
-	if (MAC_BLOCK != config->macmechanism) {
-		for (allow_mac = config->allowedmaclist; allow_mac != NULL; allow_mac = allow_mac->next) {
-			if (!strcmp(allow_mac->mac, mac)) {
-				return 1;
-			}
-		}
-	}
-
-	return 0;
-}
-
 int is_trusted_mac(const char *mac)
 {
 	s_config *config;
@@ -1508,228 +1434,6 @@ int is_trusted_mac(const char *mac)
 	}
 
 	return 0;
-}
-
-/* Add given MAC address to the config's blocked mac list.
- * Return 0 on success, nonzero on failure
- */
-int add_to_blocked_mac_list(const char possiblemac[])
-{
-	char mac[18];
-	t_MAC *p = NULL;
-
-	// check for valid format
-	if (!check_mac_format(possiblemac)) {
-		debug(LOG_ERR, "[%s] not a valid MAC address to block", possiblemac);
-		return -1;
-	}
-
-	// abort if not using BLOCK mechanism
-	if (MAC_BLOCK != config.macmechanism) {
-		debug(LOG_ERR, "Attempt to access blocked MAC list but control mechanism != block");
-		return -1;
-	}
-
-	sscanf(possiblemac, "%17[A-Fa-f0-9:]", mac);
-
-	// See if MAC is already on the list; don't add duplicates
-	for (p = config.blockedmaclist; p != NULL; p = p->next) {
-		if (!strcasecmp(p->mac,mac)) {
-			debug(LOG_INFO, "MAC address [%s] already on blocked list", mac);
-			return 1;
-		}
-	}
-
-	// Add MAC to head of list
-	p = safe_calloc(sizeof(t_MAC));
-	p->mac = safe_strdup(mac);
-	p->next = config.blockedmaclist;
-	config.blockedmaclist = p;
-	debug(LOG_INFO, "Added MAC address [%s] to blocked list", mac);
-	return 0;
-}
-
-
-/* Remove given MAC address from the config's blocked mac list.
- * Return 0 on success, nonzero on failure
- */
-int remove_from_blocked_mac_list(const char possiblemac[])
-{
-	char mac[18];
-	t_MAC **p = NULL;
-	t_MAC *del = NULL;
-
-	// check for valid format
-	if (!check_mac_format(possiblemac)) {
-		debug(LOG_ERR, "[%s] not a valid MAC address", possiblemac);
-		return -1;
-	}
-
-	// abort if not using BLOCK mechanism
-	if (MAC_BLOCK != config.macmechanism) {
-		debug(LOG_ERR, "Attempt to access blocked MAC list but control mechanism != block");
-		return -1;
-	}
-
-	sscanf(possiblemac, "%17[A-Fa-f0-9:]", mac);
-
-	// If empty list, nothing to do
-	if (config.blockedmaclist == NULL) {
-		debug(LOG_INFO, "MAC address [%s] not on empty blocked list", mac);
-		return -1;
-	}
-
-	// Find MAC on the list, remove it
-	for (p = &config.blockedmaclist; *p != NULL; p = &((*p)->next)) {
-		if (!strcasecmp((*p)->mac,mac)) {
-			// found it
-			del = *p;
-			*p = del->next;
-			debug(LOG_INFO, "Removed MAC address [%s] from blocked list", mac);
-			free(del);
-			return 0;
-		}
-	}
-
-	// MAC was not on list
-	debug(LOG_INFO, "MAC address [%s] not on  blocked list", mac);
-	return -1;
-}
-
-
-/* Given a pointer to a comma or whitespace delimited sequence of
- * MAC addresses, add each MAC address to config.blockedmaclist
- */
-void parse_blocked_mac_list(const char ptr[])
-{
-	char *ptrcopy = NULL, *ptrcopyptr;
-	char *possiblemac = NULL;
-
-	debug(LOG_DEBUG, "Parsing string [%s] for MAC addresses to block", ptr);
-
-	// strsep modifies original, so let's make a copy
-	ptrcopyptr = ptrcopy = safe_strdup(ptr);
-
-	while ((possiblemac = strsep(&ptrcopy, ", \t"))) {
-		if (strlen(possiblemac) > 0) {
-			if (add_to_blocked_mac_list(possiblemac) < 0) {
-				exit(1);
-			}
-		}
-	}
-
-	free(ptrcopyptr);
-}
-
-/* Add given MAC address to the config's allowed mac list.
- * Return 0 on success, nonzero on failure
- */
-int add_to_allowed_mac_list(const char possiblemac[])
-{
-	char mac[18];
-	t_MAC *p = NULL;
-
-	// check for valid format
-	if (!check_mac_format(possiblemac)) {
-		debug(LOG_ERR, "[%s] not a valid MAC address to allow", possiblemac);
-		return -1;
-	}
-
-	// abort if not using ALLOW mechanism
-	if (MAC_ALLOW != config.macmechanism) {
-		debug(LOG_ERR, "Attempt to access allowed MAC list but control mechanism != allow");
-		return -1;
-	}
-
-	sscanf(possiblemac, "%17[A-Fa-f0-9:]", mac);
-
-	// See if MAC is already on the list; don't add duplicates
-	for (p = config.allowedmaclist; p != NULL; p = p->next) {
-		if (!strcasecmp(p->mac, mac)) {
-			debug(LOG_INFO, "MAC address [%s] already on allowed list", mac);
-			return 1;
-		}
-	}
-
-	// Add MAC to head of list
-	p = safe_calloc(sizeof(t_MAC));
-	p->mac = safe_strdup(mac);
-	p->next = config.allowedmaclist;
-	config.allowedmaclist = p;
-	debug(LOG_INFO, "Added MAC address [%s] to allowed list", mac);
-	return 0;
-}
-
-
-/* Remove given MAC address from the config's allowed mac list.
- * Return 0 on success, nonzero on failure
- */
-int remove_from_allowed_mac_list(const char possiblemac[])
-{
-	char mac[18];
-	t_MAC **p = NULL;
-	t_MAC *del = NULL;
-
-	// check for valid format
-	if (!check_mac_format(possiblemac)) {
-		debug(LOG_ERR, "[%s] not a valid MAC address", possiblemac);
-		return -1;
-	}
-
-	// abort if not using ALLOW mechanism
-	if (MAC_ALLOW != config.macmechanism) {
-		debug(LOG_ERR, "Attempt to access allowed MAC list but control mechanism != allow");
-		return -1;
-	}
-
-	sscanf(possiblemac, "%17[A-Fa-f0-9:]", mac);
-
-	// If empty list, nothing to do
-	if (config.allowedmaclist == NULL) {
-		debug(LOG_INFO, "MAC address [%s] not on empty allowed list", mac);
-		return -1;
-	}
-
-	// Find MAC on the list, remove it
-	for (p = &(config.allowedmaclist); *p != NULL; p = &((*p)->next)) {
-		if (!strcasecmp((*p)->mac, mac)) {
-			// found it
-			del = *p;
-			*p = del->next;
-			debug(LOG_INFO, "Removed MAC address [%s] from allowed list", mac);
-			free(del);
-			return 0;
-		}
-	}
-
-	// MAC was not on list
-	debug(LOG_INFO, "MAC address [%s] not on  allowed list", mac);
-	return -1;
-}
-
-/* Given a pointer to a comma or whitespace delimited sequence of
- * MAC addresses, add each MAC address to config.allowedmaclist
- */
-void parse_allowed_mac_list(const char ptr[])
-{
-	char *ptrcopy = NULL;
-	char *ptrcopyptr;
-	char *possiblemac = NULL;
-
-	debug(LOG_DEBUG, "Parsing string [%s] for MAC addresses to allow", ptr);
-
-	// strsep modifies original, so let's make a copy
-	ptrcopyptr = ptrcopy = safe_strdup(ptr);
-
-	while ((possiblemac = strsep(&ptrcopy, ", \t"))) {
-		if (strlen(possiblemac) > 0) {
-			if (add_to_allowed_mac_list(possiblemac) < 0) {
-				exit(1);
-			}
-		}
-	}
-
-	free(ptrcopyptr);
 }
 
 /* Given a pointer to a comma or whitespace delimited sequence of
@@ -1999,7 +1703,7 @@ int set_debuglevel(const char opt[])
 void
 config_validate(void)
 {
-	config_notnull(config.gw_interface, "GatewayInterface");
+	config_notnull(config.gw_interface, "gatewayinterface");
 
 	if (missing_parms) {
 		debug(LOG_ERR, "Configuration is not complete, exiting...");

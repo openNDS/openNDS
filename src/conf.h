@@ -40,8 +40,6 @@
 
 // How long we should wait per try to detect the interface with the default route if it isn't up yet (interval in seconds)
 #define EXT_INTERFACE_DETECT_RETRY_INTERVAL 1
-#define MAC_ALLOW 0 // macmechanism to block MAC's unless allowed
-#define MAC_BLOCK 1 // macmechanism to allow MAC's unless blocked
 
 // Defaults configuration values
 #ifndef SYSCONFDIR
@@ -81,7 +79,6 @@
 #define DEFAULT_AUTHDIR "opennds_auth"
 #define DEFAULT_DENYDIR "opennds_deny"
 #define DEFAULT_PREAUTHDIR "opennds_preauth"
-#define DEFAULT_MACMECHANISM MAC_BLOCK
 #define DEFAULT_SET_MSS 1 //allow setting the TCP Maximum Segment Size
 #define DEFAULT_MSS_VALUE 0 // value to set the MSS. 0 means use max possible ie clamp-mss-to-pmtu
 #define DEFAULT_RATE_CHECK_WINDOW 2 // The data rate check moving average window size multiply this by CHECKINTERVAL to give window size (or burst interval) in seconds
@@ -102,16 +99,15 @@
 #define DEFAULT_FW_MARK_AUTHENTICATED 0x30000
 #define DEFAULT_AUTHENTICATION_MARK "0x00030000"
 #define DEFAULT_FW_MARK_TRUSTED 0x20000
-#define DEFAULT_FW_MARK_BLOCKED 0x10000
 /* N.B.: default policies here must be ACCEPT, REJECT, or RETURN
  * In the .conf file, they must be allow, block, or passthrough
  * Mapping between these enforced by parse_empty_ruleset_policy()
  */
-#define DEFAULT_EMPTY_TRUSTED_USERS_POLICY "ACCEPT"
-#define DEFAULT_EMPTY_TRUSTED_USERS_TO_ROUTER_POLICY "ACCEPT"
-#define DEFAULT_EMPTY_USERS_TO_ROUTER_POLICY "REJECT"
-#define DEFAULT_EMPTY_AUTHENTICATED_USERS_POLICY "RETURN"
-#define DEFAULT_EMPTY_PREAUTHENTICATED_USERS_POLICY "REJECT"
+#define DEFAULT_EMPTY_TRUSTED_USERS_POLICY "accept"
+#define DEFAULT_EMPTY_TRUSTED_USERS_TO_ROUTER_POLICY "accept"
+#define DEFAULT_EMPTY_USERS_TO_ROUTER_POLICY "reject"
+#define DEFAULT_EMPTY_AUTHENTICATED_USERS_POLICY "return"
+#define DEFAULT_EMPTY_PREAUTHENTICATED_USERS_POLICY "reject"
 #define DEFAULT_IP6 0
 
 // Firewall targets
@@ -253,8 +249,6 @@ typedef struct {
 	int macmechanism; 					//@brief mechanism wrt MAC addrs
 	t_firewall_ruleset *rulesets;				//@brief firewall rules
 	t_MAC *trustedmaclist;					//@brief list of trusted macs
-	t_MAC *blockedmaclist;					//@brief list of blocked macs
-	t_MAC *allowedmaclist;					//@brief list of allowed macs
 	t_WGP *walledgarden_port_list;				//@brief list of Walled Garden Ports
 	t_WGFQDN *walledgarden_fqdn_list;			//@brief list of Walled Garden FQDNs
 	t_FASPARAM *fas_custom_parameters_list;			//@brief list of Custom FAS parameters
@@ -267,7 +261,6 @@ typedef struct {
 	char *custom_files;					//@brief FAS custom file string
 	unsigned int fw_mark_authenticated;			//@brief nftables mark for authenticated packets
 	char *authentication_mark;				//@brief Padded authentication mark
-	unsigned int fw_mark_blocked;				//@brief nftables mark for blocked packets
 	unsigned int fw_mark_trusted;				//@brief nftables mark for trusted packets
 	int ip6;						//@brief enable IPv6
 	char *binauth;						//@brief external authentication program
@@ -306,8 +299,6 @@ int is_empty_ruleset(const char[]);
 char * get_empty_ruleset_policy(const char[]);
 
 void parse_trusted_mac_list(const char[]);
-void parse_blocked_mac_list(const char[]);
-void parse_allowed_mac_list(const char[]);
 void parse_walledgarden_fqdn_list(const char[]);
 void parse_walledgarden_port_list(const char[]);
 void parse_fas_custom_parameters_list(const char[]);
@@ -315,15 +306,7 @@ void parse_fas_custom_variables_list(const char[]);
 void parse_fas_custom_images_list(const char[]);
 void parse_fas_custom_files_list(const char[]);
 
-int is_blocked_mac(const char *mac);
-int is_allowed_mac(const char *mac);
 int is_trusted_mac(const char *mac);
-
-int add_to_blocked_mac_list(const char possiblemac[]);
-int remove_from_blocked_mac_list(const char possiblemac[]);
-
-int add_to_allowed_mac_list(const char possiblemac[]);
-int remove_from_allowed_mac_list(const char possiblemac[]);
 
 int remove_from_trusted_mac_list(const char possiblemac[]);
 int add_to_trusted_mac_list(const char possiblemac[]);

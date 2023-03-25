@@ -62,10 +62,6 @@ extern pthread_mutex_t client_list_mutex;
 extern pthread_mutex_t config_mutex;
 
 static int ndsctl_handler(int fd);
-static void ndsctl_block(FILE *fp, char *arg);
-static void ndsctl_unblock(FILE *fp, char *arg);
-static void ndsctl_allow(FILE *fp, char *arg);
-static void ndsctl_unallow(FILE *fp, char *arg);
 static void ndsctl_trust(FILE *fp, char *arg);
 static void ndsctl_untrust(FILE *fp, char *arg);
 static void ndsctl_auth(FILE *fp, char *arg);
@@ -257,14 +253,6 @@ ndsctl_handler(int fd)
 	} else if (strncmp(request, "stop", 4) == 0) {
 		// tell the caller to stop the thread
 		ret = 1;
-	} else if (strncmp(request, "block", 5) == 0) {
-		ndsctl_block(fp, (request + 6));
-	} else if (strncmp(request, "unblock", 7) == 0) {
-		ndsctl_unblock(fp, (request + 8));
-	} else if (strncmp(request, "allow", 5) == 0) {
-		ndsctl_allow(fp, (request + 6));
-	} else if (strncmp(request, "unallow", 7) == 0) {
-		ndsctl_unallow(fp, (request + 8));
 	} else if (strncmp(request, "trust", 5) == 0) {
 		ndsctl_trust(fp, (request + 6));
 	} else if (strncmp(request, "untrust", 7) == 0) {
@@ -518,74 +506,6 @@ ndsctl_deauth(FILE *fp, char *arg)
 	}
 
 	debug(LOG_DEBUG, "Exiting ndsctl_deauth...");
-}
-
-static void
-ndsctl_block(FILE *fp, char *arg)
-{
-	int rc;
-
-	debug(LOG_DEBUG, "Entering ndsctl_block [%s]", arg);
-
-	rc = auth_client_block(arg);
-	if (rc == 0) {
-		fprintf(fp, "Yes");
-	} else {
-		fprintf(fp, "No");
-	}
-
-	debug(LOG_DEBUG, "Exiting ndsctl_block.");
-}
-
-static void
-ndsctl_unblock(FILE *fp, char *arg)
-{
-	int rc;
-
-	debug(LOG_DEBUG, "Entering ndsctl_unblock [%s]", arg);
-
-	rc = auth_client_unblock(arg);
-	if (rc == 0) {
-		fprintf(fp, "Yes");
-	} else {
-		fprintf(fp, "No");
-	}
-
-	debug(LOG_DEBUG, "Exiting ndsctl_unblock.");
-}
-
-static void
-ndsctl_allow(FILE *fp, char *arg)
-{
-	int rc;
-
-	debug(LOG_DEBUG, "Entering ndsctl_allow [%s]", arg);
-
-	rc = auth_client_allow(arg);
-	if (rc == 0) {
-		fprintf(fp, "Yes");
-	} else {
-		fprintf(fp, "No");
-	}
-
-	debug(LOG_DEBUG, "Exiting ndsctl_allow.");
-}
-
-static void
-ndsctl_unallow(FILE *fp, char *arg)
-{
-	int rc;
-
-	debug(LOG_DEBUG, "Entering ndsctl_unallow [%s]", arg);
-
-	rc = auth_client_unallow(arg);
-	if (rc == 0) {
-		fprintf(fp, "Yes");
-	} else {
-		fprintf(fp, "No");
-	}
-
-	debug(LOG_DEBUG, "Exiting ndsctl_unallow.");
 }
 
 static void

@@ -197,14 +197,6 @@ usage(void)
 		"\n"
 		"  deauth mac|ip|token\n"
 		"	Deauthenticate user with specified mac, ip or token\n\n"
-		"  block mac\n"
-		"	Block the given MAC address\n\n"
-		"  unblock mac\n"
-		"	Unblock the given MAC address\n\n"
-		"  allow mac\n"
-		"	Allow the given MAC address\n\n"
-		"  unallow mac\n"
-		"	Unallow the given MAC address\n\n"
 		"  trust mac\n"
 		"	Trust the given MAC address\n\n"
 		"  untrust mac\n"
@@ -226,10 +218,6 @@ static struct argument arguments[] = {
 	{"debuglevel", "Debug level set to %s.\n", "Failed to set debug level to %s.\n"},
 	{"deauth", "Client %s deauthenticated.\n", "Client %s not found.\n"},
 	{"auth", "Client %s authenticated.\n", "Failed to authenticate client %s.\n"},
-	{"block", "MAC %s blocked.\n", "Failed to block MAC %s.\n"},
-	{"unblock", "MAC %s unblocked.\n", "Failed to unblock MAC %s.\n"},
-	{"allow", "MAC %s allowed.\n", "Failed to allow MAC %s.\n"},
-	{"unallow", "MAC %s unallowed.\n", "Failed to unallow MAC %s.\n"},
 	{"trust", "MAC %s trusted.\n", "Failed to trust MAC %s.\n"},
 	{"untrust", "MAC %s untrusted.\n", "Failed to untrust MAC %s.\n"},
 	{"b64decode", NULL, NULL},

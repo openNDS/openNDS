@@ -1254,10 +1254,9 @@ ipt_to_nft () {
 	nftstr=$($cmd $cmdstr)
 	retval=$($nftstr)
 	ret=$?
-nds_date=$(date)
-
-echo "$nds_date: $cmdstr | $nftstr [ $ret ]" >> "/tmp/translate"
-
+	nds_date=$(date)
+	configure_log_location
+	echo "$nds_date: $cmdstr | $nftstr [ $ret ]" >> "$mountpoint/translate"
 }
 
 delete_client_rule () {
@@ -1291,36 +1290,37 @@ nft_set () {
 	dnsmasq --version | grep ' nftset ' &>/dev/null
 	optnftset=$?
 
+	dnsmasq --version | grep ' ipset ' &>/dev/null
+	optipset=$?
+
+
 	if [ $optnftset -eq 1 ]; then
 		debugtype="warn"
 		syslogmessage="Warning: dnsmasq nftset complile option not available - Upgrade to dnsmasq-full version. Trying ipset option...."
 		write_to_syslog
-	fi
 
-	dnsmasq --version | grep ' ipset ' &>/dev/null
-	optipset=$?
-
-	if [ $optipset -eq 1 ]; then
-		debugtype="warn"
-		syslogmessage="Warning: dnsmasq ipset complile option not available -- Upgrade to dnsmasq-full version. Unable to configure walled garden...."
-		write_to_syslog
-		exit 0
-	fi
-
-	if [ $optnftset -eq 1 ] && [ $optipset -eq 0 ]; then
-		# we have ipset option only, so check for ipset utility
-		type ipset &>/dev/null
-		have_ipset=$?
-
-		if [ $have_ipset -eq 1 ]; then
+		if [ $optipset -eq 1 ]; then
 			debugtype="warn"
-			syslogmessage="Warning: ipset utility not not available -- Install ipset utility. Unable to configure walled garden...."
+			syslogmessage="Warning: dnsmasq ipset complile option not available -- Upgrade to dnsmasq-full version. Unable to configure walled garden...."
 			write_to_syslog
 			exit 0
-		else
-			debugtype="warn"
-			syslogmessage="Warning: using deprecated legacy ipset utility -- Upgrade dnsmasq to version supporting nftsets. Configuring walled garden...."
-			write_to_syslog
+		fi
+
+		if [ $optnftset -eq 1 ] && [ $optipset -eq 0 ]; then
+			# we have ipset option only, so check for ipset utility
+			type ipset &>/dev/null
+			have_ipset=$?
+
+			if [ $have_ipset -eq 1 ]; then
+				debugtype="warn"
+				syslogmessage="Warning: ipset utility not not available -- Install ipset utility. Unable to configure walled garden...."
+				write_to_syslog
+				exit 0
+			else
+				debugtype="warn"
+				syslogmessage="Warning: using deprecated legacy ipset utility -- Upgrade dnsmasq to version supporting nftsets. Configuring walled garden...."
+				write_to_syslog
+			fi
 		fi
 	fi
 
@@ -2023,6 +2023,9 @@ elif [ "$1" = "ipt_to_nft" ]; then
 	# Translates ipt to nft and executes
 	# $2 is the command name
 	# $3 is the ipt command string
+	#  Note: The generated nft command recorded in /[log_mountpoint]/translate and is executed
+	#	This funcion is intended only for development work and requires iptables-nft to be installed.
+	#
 
 	if [ -z "$2" ]; then
 		exit 4

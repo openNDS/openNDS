@@ -203,8 +203,6 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 			}
 
 			binauth_action(client, reason, customdata);
-		} else if (new_state == FW_MARK_BLOCKED) {
-			return -1;
 		} else if (new_state == FW_MARK_TRUSTED) {
 			return -1;
 		} else {
@@ -216,18 +214,6 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 			binauth_action(client, reason, customdata);
 			client_reset(client);
 			client_list_delete(client);
-		} else if (new_state == FW_MARK_BLOCKED) {
-			return -1;
-		} else if (new_state == FW_MARK_TRUSTED) {
-			return -1;
-		} else {
-			return -1;
-		}
-	} else if (state == FW_MARK_BLOCKED) {
-		if (new_state == FW_MARK_PREAUTHENTICATED) {
-			return -1;
-		} else if (new_state == FW_MARK_AUTHENTICATED) {
-			return -1;
 		} else if (new_state == FW_MARK_TRUSTED) {
 			return -1;
 		} else {
@@ -237,8 +223,6 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 		if (new_state == FW_MARK_PREAUTHENTICATED) {
 			return -1;
 		} else if (new_state == FW_MARK_AUTHENTICATED) {
-			return -1;
-		} else if (new_state == FW_MARK_BLOCKED) {
 			return -1;
 		} else {
 			return -1;
@@ -775,70 +759,6 @@ auth_client_untrust(const char *mac)
 	}
 
 	UNLOCK_CONFIG();
-	return rc;
-}
-
-int
-auth_client_allow(const char *mac)
-{
-	int rc = -1;
-
-	LOCK_CONFIG();
-
-	if (!add_to_allowed_mac_list(mac) && !iptables_allow_mac(mac)) {
-		rc = 0;
-	}
-
-	UNLOCK_CONFIG();
-
-	return rc;
-}
-
-int
-auth_client_unallow(const char *mac)
-{
-	int rc = -1;
-
-	LOCK_CONFIG();
-
-	if (!remove_from_allowed_mac_list(mac) && !iptables_unallow_mac(mac)) {
-		rc = 0;
-	}
-
-	UNLOCK_CONFIG();
-
-	return rc;
-}
-
-int
-auth_client_block(const char *mac)
-{
-	int rc = -1;
-
-	LOCK_CONFIG();
-
-	if (!add_to_blocked_mac_list(mac) && !iptables_block_mac(mac)) {
-		rc = 0;
-	}
-
-	UNLOCK_CONFIG();
-
-	return rc;
-}
-
-int
-auth_client_unblock(const char *mac)
-{
-	int rc = -1;
-
-	LOCK_CONFIG();
-
-	if (!remove_from_blocked_mac_list(mac) && !iptables_unblock_mac(mac)) {
-		rc = 0;
-	}
-
-	UNLOCK_CONFIG();
-
 	return rc;
 }
 

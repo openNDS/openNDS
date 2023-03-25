@@ -762,7 +762,7 @@ static int authenticated(struct MHD_Connection *connection,
 	}
 
 	/* check if this is a late request, meaning the user tries to get the internet, but ended up here,
-	 * because the iptables rule came too late
+	 * because the nftables rule came too late
 	 */
 	if (is_foreign_hosts(connection, host)) {
 		// might happen if the firewall rule isn't yet installed

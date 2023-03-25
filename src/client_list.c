@@ -120,10 +120,8 @@ _client_list_append(const char mac[], const char ip[])
 	// Reset volatile fields and create new token
 	client_reset(client);
 
-	// Blocked or Trusted client do not trigger the splash page.
-	if (is_blocked_mac(mac)) {
-		client->fw_connection_state = FW_MARK_BLOCKED;
-	} else if(is_allowed_mac(mac) || is_trusted_mac(mac)) {
+	// Trusted client does not trigger the splash page.
+	if (is_trusted_mac(mac)) {
 		client->fw_connection_state = FW_MARK_TRUSTED;
 	} else {
 		client->fw_connection_state = FW_MARK_PREAUTHENTICATED;

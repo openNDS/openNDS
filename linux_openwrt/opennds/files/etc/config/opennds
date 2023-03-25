@@ -859,7 +859,7 @@ config opennds
 	#option dhcp_default_url_enable '1'
 	###########################################################################################
 
-	# openNDS uses specific HEXADECIMAL values to mark packets used by iptables/nftables as a bitwise mask.
+	# openNDS uses specific HEXADECIMAL values to mark packets used by nftables as a bitwise mask.
 	# This mask can conflict with the requirements of other packages.
 	#
 	# However the defaults are fully compatible with the defaults used in mwan3 and sqm
@@ -872,12 +872,8 @@ config opennds
 	# Option: fw_mark_trusted
 	# Default: 20000 (0010|0000|0000|0000|0000 binary)
 	#
-	# Option: fw_mark_blocked
-	# Default: 10000 (0001|0000|0000|0000|0000 binary)
-	#
 	#option fw_mark_authenticated '30000'
 	#option fw_mark_trusted '20000'
-	#option fw_mark_blocked '10000'
 	###########################################################################################
 
 

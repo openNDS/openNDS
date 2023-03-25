@@ -19,7 +19,7 @@
 \********************************************************************/
 
 /** @file fw_iptables.h
-    @brief Firewall iptables functions
+    @brief Firewall nftables functions
     @author Copyright (C) 2004 Philippe April <papril777@yahoo.com>
     @author Copyright (C) 2007 Paul Kube <nodogsplash@kokoro.ucsd.edu>
     @author Copyright (C) 2015-2023 Modifications and additions by BlueWave Projects and Services <opennds@blue-wave.net>
@@ -57,7 +57,7 @@ extern unsigned int  FW_MARK_PREAUTHENTICATED; /**< @brief 0: Actually not used 
 extern unsigned int  FW_MARK_AUTHENTICATED;    /**< @brief The client is authenticated */
 extern unsigned int  FW_MARK_BLOCKED;          /**< @brief The client is blocked */
 extern unsigned int  FW_MARK_TRUSTED;          /**< @brief The client is trusted */
-extern unsigned int  FW_MARK_MASK;             /**< @brief Iptables mask: bitwise or of the others */
+extern unsigned int  FW_MARK_MASK;             /**< @brief nftables mask: bitwise or of the others */
 
 
 /** @brief Initialize the firewall */

@@ -457,17 +457,17 @@ parse_empty_ruleset_policy(char *ptr, const char *filename, int lineno)
 	*ptr = '\0';
 
 	/* make sure policy is one of the possible ones:
-	 "passthrough" means iptables RETURN
-	 "allow" means iptables ACCEPT
-	 "block" means iptables REJECT
+	 "passthrough" means nftables RETURN
+	 "allow" means nftables ACCEPT
+	 "block" means nftables REJECT
 	*/
 	if (ruleset->emptyrulesetpolicy != NULL) free(ruleset->emptyrulesetpolicy);
 	if (!strcasecmp(policy,"passthrough")) {
-		ruleset->emptyrulesetpolicy =  safe_strdup("RETURN");
+		ruleset->emptyrulesetpolicy =  safe_strdup("return");
 	} else if (!strcasecmp(policy,"allow")) {
-		ruleset->emptyrulesetpolicy =  safe_strdup("ACCEPT");
+		ruleset->emptyrulesetpolicy =  safe_strdup("accept");
 	} else if (!strcasecmp(policy,"block")) {
-		ruleset->emptyrulesetpolicy =  safe_strdup("REJECT");
+		ruleset->emptyrulesetpolicy =  safe_strdup("reject");
 	} else {
 		debug(LOG_ERR, "Unknown EmptyRuleSetPolicy directive: %s at line %d in %s", policy, lineno, filename);
 		debug(LOG_ERR, "Exiting...");

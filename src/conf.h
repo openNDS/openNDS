@@ -265,10 +265,10 @@ typedef struct {
 	char *custom_vars;					//@brief FAS custom variable string
 	char *custom_images;					//@brief FAS custom image string
 	char *custom_files;					//@brief FAS custom file string
-	unsigned int fw_mark_authenticated;			//@brief iptables mark for authenticated packets
+	unsigned int fw_mark_authenticated;			//@brief nftables mark for authenticated packets
 	char *authentication_mark;				//@brief Padded authentication mark
-	unsigned int fw_mark_blocked;				//@brief iptables mark for blocked packets
-	unsigned int fw_mark_trusted;				//@brief iptables mark for trusted packets
+	unsigned int fw_mark_blocked;				//@brief nftables mark for blocked packets
+	unsigned int fw_mark_trusted;				//@brief nftables mark for trusted packets
 	int ip6;						//@brief enable IPv6
 	char *binauth;						//@brief external authentication program
 	char *preauth;						//@brief external preauthentication program

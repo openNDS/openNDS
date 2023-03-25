@@ -434,13 +434,13 @@ iptables_unallow_mac(const char mac[])
 int
 iptables_trust_mac(const char mac[])
 {
-	return iptables_do_command("-t nds_mangle -A " CHAIN_TRUSTED " -m mac --mac-source %s -j MARK %s 0x%x", mac, markop, FW_MARK_TRUSTED);
+	return nftables_do_command("add rule ip nds_mangle %s ether saddr %s counter meta mark set mark or 0x%x", CHAIN_TRUSTED, mac, FW_MARK_TRUSTED);
 }
 
 int
 iptables_untrust_mac(const char mac[])
 {
-	return iptables_do_command("-t nds_mangle -D " CHAIN_TRUSTED " -m mac --mac-source %s -j MARK %s 0x%x", mac, markop, FW_MARK_TRUSTED);
+	return execute("/usr/lib/opennds/libopennds.sh delete_client_rule nds_mangle \"%s\" all \"%s\"", CHAIN_TRUSTED, mac);
 }
 
 int get_iptables_version()

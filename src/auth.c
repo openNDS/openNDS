@@ -263,7 +263,6 @@ fw_refresh_client_list(void)
 	routercheck = check_routing(watchdog);
 
 	// If Walled Garden ipset exists, copy it to the nftset.
-	safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" &");
 	safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"ipset_to_nftset\" \"walledgarden\" %d &", config->checkinterval);
 	debug(LOG_DEBUG, "ipset_to_nftset [ %s ]", dnscmd);
 	system(dnscmd);

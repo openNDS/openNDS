@@ -292,12 +292,8 @@ iptables_fw_init(void)
 	int gw_port = 0;
 	char *fas_remoteip = NULL;
 	int fas_port = 0;
-	int set_mss, mss_value;
 	t_MAC *pt;
-	t_MAC *pb;
-	t_MAC *pa;
 	int rc = 0;
-	int macmechanism;
 	char *msg;
 	char *dnscmd;
 
@@ -308,14 +304,11 @@ iptables_fw_init(void)
 	gw_interface = safe_strdup(config->gw_interface); // must free
 	
 	// ip4 vs ip6 differences
-	const char *ICMP_TYPE;
 	if (config->ip6) {
 		// ip6 addresses must be in square brackets like [ffcc:e08::1]
 		safe_asprintf(&gw_ip, "[%s]", config->gw_ip); // must free
-		ICMP_TYPE = "icmp6";
 	} else {
 		gw_ip = safe_strdup(config->gw_ip);    // must free
-		ICMP_TYPE = "icmp";
 	}
 	
 	if (config->fas_port) {
@@ -327,8 +320,6 @@ iptables_fw_init(void)
 	gw_iprange = safe_strdup(config->gw_iprange);    // must free
 	gw_port = config->gw_port;
 	pt = config->trustedmaclist;
-	set_mss = config->set_mss;
-	mss_value = config->mss_value;
 	FW_MARK_TRUSTED = config->fw_mark_trusted;
 	FW_MARK_AUTHENTICATED = config->fw_mark_authenticated;
 	UNLOCK_CONFIG();
@@ -478,21 +469,6 @@ iptables_fw_init(void)
 	// CHAIN_TO_INTERNET, invalid packets DROP
 	rc |= nftables_do_command("add rule ip nds_filter %s ct state invalid counter drop", CHAIN_TO_INTERNET);
 
-
-	// CHAIN_TO_INTERNET, deal with MSS
-	if (set_mss) {
-		/* XXX this mangles, so 'should' be done in the mangle POSTROUTING chain.
-		 * However OpenWRT standard S35firewall does it in filter FORWARD,
-		 * and since we are pre-empting that chain here, we put it in */
-		if (mss_value > 0) { // set specific MSS value
-			rc |= nftables_do_command("add rule ip nds_filter %s tcp flags syn / syn,rst counter tcp option maxseg size set %d", CHAIN_TO_INTERNET, mss_value);
-
-		} else { // allow MSS as large as possible
-			rc |= nftables_do_command("add rule ip nds_filter %s tcp flags syn / syn,rst counter tcp option maxseg size set rt mtu", CHAIN_TO_INTERNET);
-		}
-	}
-
-
 	// Allow access to remote FAS - CHAIN_TO_INTERNET packets for remote FAS, ACCEPT
 	if (fas_port && strcmp(fas_remoteip, gw_ip)) {
 		rc |= nftables_do_command("add rule ip nds_filter %s ip daddr %s tcp dport %d counter accept", CHAIN_TO_INTERNET, fas_remoteip, fas_port);
@@ -595,11 +571,6 @@ iptables_fw_destroy(void)
 	char *delchainscmd;
 	char *msg;
 	fw_quiet = 1;
-	s_config *config;
-
-	LOCK_CONFIG();
-	config = config_get_config();
-	UNLOCK_CONFIG();
 
 	debug(LOG_DEBUG, "Destroying our nftables entries");
 
@@ -912,9 +883,6 @@ iptables_fw_total_download()
 	output = popen(script, "r");
 	free (script);
 
-	output = popen(script, "r");
-
-
 	if (!output) {
 		debug(LOG_ERR, "popen(): %s", strerror(errno));
 		return 0;
@@ -933,7 +901,7 @@ iptables_fw_total_download()
 	}
 
 	pclose(output);
-	debug(LOG_INFO, "Can't find target %s in mangle table", CHAIN_INCOMING);
+	debug(LOG_INFO, "Can't find target %s in nds_mangle table", CHAIN_INCOMING);
 	return 0;
 }
 

@@ -84,8 +84,8 @@
 #define DEFAULT_RATE_CHECK_WINDOW 2 // The data rate check moving average window size multiply this by CHECKINTERVAL to give window size (or burst interval) in seconds
 #define DEFAULT_UPLOAD_RATE 0 // 0 means no limit
 #define DEFAULT_DOWNLOAD_RATE 0 // 0 means no limit
-#define DEFAULT_UPLOAD_BUCKET_RATIO 10 // Allows control of upload rate limit threshold overrun per client
-#define DEFAULT_DOWNLOAD_BUCKET_RATIO 10 // Allows control of download rate limit threshold overrun per client
+#define DEFAULT_UPLOAD_BUCKET_RATIO 1 // Allows control of upload rate limit threshold overrun per client
+#define DEFAULT_DOWNLOAD_BUCKET_RATIO 1 // Allows control of download rate limit threshold overrun per client
 #define DEFAULT_MAX_UPLOAD_BUCKET_SIZE 250 // Allows control over upload rate limiting packet loss at the expense of increased latency
 #define DEFAULT_MAX_DOWNLOAD_BUCKET_SIZE 250 // Allows control over download rate limiting packet loss at the expense of increased latency
 #define DEFAULT_UPLOAD_QUOTA 0 // 0 means no limit

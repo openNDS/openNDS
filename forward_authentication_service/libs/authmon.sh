@@ -102,7 +102,7 @@ get_option_from_config
 loop_interval=$option_value
 
 if [ "$loop_interval" = "" ] || [ "$loop_interval" -le 0 ] || [ "$loop_interval" -ge 60 ]; then
-	loop_interval=10
+	loop_interval=5
 fi
 
 postrequest="/usr/lib/opennds/post-request.php"

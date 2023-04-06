@@ -339,12 +339,14 @@ iptables_fw_init(void)
 	// Create new chains in the mangle table
 	rc |= nftables_do_command("add chain ip nds_mangle " CHAIN_TRUSTED); // for marking trusted packets
 	rc |= nftables_do_command("add chain ip nds_mangle " CHAIN_INCOMING); // for counting incoming packets
+	rc |= nftables_do_command("add chain ip nds_mangle " CHAIN_DOWNLOAD_RATE); // for controlling download rate per client
 	rc |= nftables_do_command("add chain ip nds_mangle " CHAIN_OUTGOING); // for marking authenticated packets, and for counting outgoing packets
 
 	// Assign jumps to these new chains
 	rc |= nftables_do_command("insert rule ip nds_mangle %s iifname \"%s\" counter jump %s", CHAIN_PREROUTING, gw_interface, CHAIN_OUTGOING);
 	rc |= nftables_do_command("insert rule ip nds_mangle %s iifname \"%s\" counter jump %s", CHAIN_PREROUTING, gw_interface, CHAIN_TRUSTED);
 	rc |= nftables_do_command("insert rule ip nds_mangle %s oifname \"%s\" counter jump %s", CHAIN_POSTROUTING, gw_interface, CHAIN_INCOMING);
+	rc |= nftables_do_command("insert rule ip nds_mangle %s oifname \"%s\" counter jump %s", CHAIN_INCOMING, gw_interface, CHAIN_DOWNLOAD_RATE);
 
 	// Rules to mark as trusted MAC address packets in mangle PREROUTING
 	for (; pt != NULL; pt = pt->next) {
@@ -651,7 +653,7 @@ iptables_download_ratelimit_enable(t_client *client, int enable)
 		libcommand = safe_calloc(SMALL_BUF);
 
 		safe_asprintf(&libcommand, "/usr/lib/opennds/libopennds.sh replace_client_rule nds_mangle %s accept %s \"ip daddr %s counter packets %llu bytes %llu accept\"",
-			CHAIN_INCOMING,
+			CHAIN_DOWNLOAD_RATE,
 			client->ip,
 			client->ip,
 			client->counters.inpackets,
@@ -673,7 +675,7 @@ iptables_download_ratelimit_enable(t_client *client, int enable)
 		libcommand = safe_calloc(SMALL_BUF);
 
 		safe_asprintf(&libcommand, "/usr/lib/opennds/libopennds.sh replace_client_rule nds_mangle %s accept %s \"ip daddr %s limit rate %llu/minute burst %llu packets counter packets %llu bytes %llu accept\"",
-			CHAIN_INCOMING,
+			CHAIN_DOWNLOAD_RATE,
 			client->ip,
 			client->ip,
 			packet_limit,
@@ -798,9 +800,9 @@ iptables_fw_authenticate(t_client *client)
 	rc |= nftables_do_command("insert rule ip nds_filter %s ip saddr %s counter return", CHAIN_UPLOAD_RATE, client->ip);
 
 	// This rule is just for download (incoming) byte accounting. Drop all bucket overflow packets
-	rc |= nftables_do_command("add rule ip nds_mangle %s ip daddr %s counter meta mark set mark or 0x%x", CHAIN_INCOMING, client->ip, FW_MARK_AUTHENTICATED);
-	rc |= nftables_do_command("add rule ip nds_mangle %s ip daddr %s counter accept", CHAIN_INCOMING, client->ip);
-	rc |= nftables_do_command("add rule ip nds_mangle %s ip daddr %s counter drop", CHAIN_INCOMING, client->ip);
+	rc |= nftables_do_command("insert rule ip nds_mangle %s ip daddr %s counter meta mark set mark or 0x%x", CHAIN_INCOMING, client->ip, FW_MARK_AUTHENTICATED);
+	rc |= nftables_do_command("add rule ip nds_mangle %s ip daddr %s counter accept", CHAIN_DOWNLOAD_RATE, client->ip);
+	rc |= nftables_do_command("add rule ip nds_mangle %s ip daddr %s counter drop", CHAIN_DOWNLOAD_RATE, client->ip);
 
 	client->counters.incoming = 0;
 	client->counters.incoming_previous = 0;
@@ -825,6 +827,7 @@ iptables_fw_deauthenticate(t_client *client)
 	rc = execute("/usr/lib/opennds/libopennds.sh delete_client_rule nds_mangle \"%s\" all \"%s\"", CHAIN_OUTGOING, client->ip);
 	rc = execute("/usr/lib/opennds/libopennds.sh delete_client_rule nds_filter \"%s\" all \"%s\"", CHAIN_UPLOAD_RATE, client->ip);
 	rc = execute("/usr/lib/opennds/libopennds.sh delete_client_rule nds_mangle \"%s\" all \"%s\"", CHAIN_INCOMING, client->ip);
+	rc = execute("/usr/lib/opennds/libopennds.sh delete_client_rule nds_mangle \"%s\" all \"%s\"", CHAIN_DOWNLOAD_RATE, client->ip);
 
 	return rc;
 }

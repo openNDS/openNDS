@@ -86,34 +86,38 @@ void start_mhd(void)
 	if (config->unescape_callback_enabled == 0) {
 		debug(LOG_INFO, "MHD Unescape Callback is Disabled");
 
-		if ((webserver = MHD_start_daemon(MHD_USE_AUTO_INTERNAL_THREAD | MHD_USE_TCP_FASTOPEN,
+		if ((webserver = MHD_start_daemon(
+			MHD_USE_INTERNAL_POLLING_THREAD | MHD_USE_THREAD_PER_CONNECTION | MHD_USE_TCP_FASTOPEN,
 			config->gw_port,
-			NULL, NULL,
-			libmicrohttpd_cb, NULL,
+			NULL,
+			NULL,
+			libmicrohttpd_cb,
+			NULL,
 			MHD_OPTION_CONNECTION_LIMIT, (unsigned int) 100,
 			MHD_OPTION_CONNECTION_TIMEOUT, (unsigned int) 120,
-			MHD_OPTION_LISTENING_ADDRESS_REUSE, 1,
-			MHD_OPTION_LISTEN_BACKLOG_SIZE, (unsigned int) 128,
-			MHD_OPTION_END))
-				== NULL) {
+			MHD_OPTION_PER_IP_CONNECTION_LIMIT, (unsigned int) 2,
+			MHD_OPTION_END)) == NULL)
+		{
 			debug(LOG_ERR, "Could not create web server: %s", strerror(errno));
 			exit(1);
 		}
-
 	} else {
 		debug(LOG_NOTICE, "MHD Unescape Callback is Enabled");
 
-		if ((webserver = MHD_start_daemon(MHD_USE_AUTO_INTERNAL_THREAD | MHD_USE_TCP_FASTOPEN,
+		if ((webserver = MHD_start_daemon(
+			MHD_USE_INTERNAL_POLLING_THREAD | MHD_USE_THREAD_PER_CONNECTION | MHD_USE_TCP_FASTOPEN,
 			config->gw_port,
-			NULL, NULL,
-			libmicrohttpd_cb, NULL,
+			NULL,
+			NULL,
+			libmicrohttpd_cb,
+			NULL,
 			MHD_OPTION_CONNECTION_LIMIT, (unsigned int) 100,
 			MHD_OPTION_CONNECTION_TIMEOUT, (unsigned int) 120,
-			MHD_OPTION_LISTENING_ADDRESS_REUSE, 1,
-			MHD_OPTION_LISTEN_BACKLOG_SIZE, (unsigned int) 128,
+			MHD_OPTION_PER_IP_CONNECTION_LIMIT, (unsigned int) 2,
 			MHD_OPTION_UNESCAPE_CALLBACK, unescape, NULL,
-			MHD_OPTION_END))
-				== NULL) {
+			MHD_OPTION_END)
+			) == NULL)
+		{
 			debug(LOG_ERR, "Could not create web server: %s", strerror(errno));
 			exit(1);
 		}
@@ -719,7 +723,7 @@ static int authenticated(struct MHD_Connection *connection,
 
 	if (ret < 1) {
 		debug(LOG_ERR, "authenticated: Error getting host");
-		return ret;
+		return MHD_NO;
 	} else {
 		debug(LOG_DEBUG, "An authenticated client is requesting: host [%s] url [%s]", host, url);
 	}
@@ -734,7 +738,7 @@ static int authenticated(struct MHD_Connection *connection,
 
 	if (ret < 1) {
 		debug(LOG_ERR, "authenticated: Error getting Accept header");
-		return ret;
+		return MHD_NO;
 	}
 
 	if (accept && strcmp(accept, "application/captive+json") == 0) {
@@ -1050,7 +1054,7 @@ static int preauthenticated(struct MHD_Connection *connection, const char *url, 
 
 	if (ret < 1) {
 		debug(LOG_ERR, "preauthenticated: Error getting host");
-		return ret;
+		return MHD_NO;
 	}
 
 	debug(LOG_DEBUG, "preauthenticated: host [%s] url [%s]", host, url);
@@ -1065,7 +1069,7 @@ static int preauthenticated(struct MHD_Connection *connection, const char *url, 
 
 	if (ret < 1) {
 		debug(LOG_ERR, "preauthenticated: Error getting Accept header");
-		return ret;
+		return MHD_NO;
 	}
 
 	if (accept && strcmp(accept, "application/captive+json") == 0) {
@@ -1628,13 +1632,13 @@ static int get_query(struct MHD_Connection *connection, char **query, const char
 	debug(LOG_DEBUG, " Getting query, separator is [%s].", separator);
 
 	element_counter = MHD_get_connection_values(connection, MHD_GET_ARGUMENT_KIND, counter_iterator, NULL);
-	if (element_counter == 0) {
+	if (element_counter < 0) {
 		*query = safe_strdup("");
-		return 0;
+		return MHD_NO;
 	}
 	elements = calloc(element_counter, sizeof(char *));
 	if (elements == NULL) {
-		return 0;
+		return MHD_NO;
 	}
 	collect_query.i = 0;
 	collect_query.elements = elements;

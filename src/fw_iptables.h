@@ -44,6 +44,7 @@
 #define CHAIN_OUTGOING  "ndsOUT"
 #define CHAIN_INCOMING  "ndsINC"
 #define CHAIN_UPLOAD_RATE  "ndsULR"
+#define CHAIN_DOWNLOAD_RATE  "ndsDLR"
 #define CHAIN_AUTHENTICATED     "ndsAUT"
 #define CHAIN_TRUSTED    "ndsTRU"
 /*@}*/

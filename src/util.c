@@ -416,7 +416,7 @@ int write_client_info(char* msg, int msg_len, const char *mode, const char *cid,
 {
 	char *cmd = NULL;
 	s_config *config = config_get_config();
-
+	cmd = safe_calloc(MID_BUF);
 	debug(LOG_DEBUG, "Client Info: %s", info);
 	safe_asprintf(&cmd, "/usr/lib/opennds/libopennds.sh '%s' '%s' '%s' '%s'", mode, cid, config->tmpfsmountpoint, info);
 		debug(LOG_DEBUG, "WriteClientInfo command: %s", cmd);

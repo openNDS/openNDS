@@ -94,8 +94,8 @@ void start_mhd(void)
 			libmicrohttpd_cb,
 			NULL,
 			MHD_OPTION_CONNECTION_LIMIT, (unsigned int) 100,
-			MHD_OPTION_CONNECTION_TIMEOUT, (unsigned int) 120,
-			MHD_OPTION_PER_IP_CONNECTION_LIMIT, (unsigned int) 2,
+			MHD_OPTION_CONNECTION_TIMEOUT, (unsigned int) 10,
+			MHD_OPTION_PER_IP_CONNECTION_LIMIT, (unsigned int) 10,
 			MHD_OPTION_END)) == NULL)
 		{
 			debug(LOG_ERR, "Could not create web server: %s", strerror(errno));
@@ -112,8 +112,8 @@ void start_mhd(void)
 			libmicrohttpd_cb,
 			NULL,
 			MHD_OPTION_CONNECTION_LIMIT, (unsigned int) 100,
-			MHD_OPTION_CONNECTION_TIMEOUT, (unsigned int) 120,
-			MHD_OPTION_PER_IP_CONNECTION_LIMIT, (unsigned int) 2,
+			MHD_OPTION_CONNECTION_TIMEOUT, (unsigned int) 10,
+			MHD_OPTION_PER_IP_CONNECTION_LIMIT, (unsigned int) 10,
 			MHD_OPTION_UNESCAPE_CALLBACK, unescape, NULL,
 			MHD_OPTION_END)
 			) == NULL)

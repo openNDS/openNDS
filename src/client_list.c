@@ -396,15 +396,18 @@ static void
 _client_list_free_node(t_client *client)
 {
 
-	char msg[16] = {0};
+	char *msg;
+	//char msg[16] = {0};
 	char *cidinfo;
 
 	if (client->cid) {
 
 		// Remove any existing cidfile:
 		if (strlen(client->cid) > 0) {
-			safe_asprintf(&cidinfo, "cid=\"%s\"\0", client->cid);
-			write_client_info(msg, sizeof(msg), "rmcid", client->cid, cidinfo);
+			msg = safe_calloc(SMALL_BUF);
+			cidinfo = safe_calloc(MID_BUF);
+			safe_asprintf(&cidinfo, "cid=\"%s\"", client->cid);
+			write_client_info(msg, SMALL_BUF, "rmcid", client->cid, cidinfo);
 			free(cidinfo);
 		}
 		free(client->cid);

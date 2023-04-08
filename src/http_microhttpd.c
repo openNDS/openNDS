@@ -1386,6 +1386,7 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 
 						// Write the new cidfile:
 						msg = safe_calloc(STATUS_BUF);
+						cidinfo = safe_calloc(SMALL_BUF);
 						debug(LOG_DEBUG, "writing cid file [%s]", cid);
 
 						safe_asprintf(&cidinfo, "hid=\"%s\"\0", client->hid);

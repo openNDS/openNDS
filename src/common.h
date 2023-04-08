@@ -37,7 +37,7 @@
 #define SMALL_BUF 1024
 
 /** @brief exec return status buffer size */
-#define STATUS_BUF 16
+#define STATUS_BUF 256
 
 /* Max length of a query string in bytes */
 #define QUERYMAXLEN 8192

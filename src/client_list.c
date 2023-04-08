@@ -152,7 +152,7 @@ _client_list_append(const char mac[], const char ip[])
 void client_reset(t_client *client)
 {
 	char hash[128] = {0};
-	char msg[16] = {0};
+	char *msg;
 	char *cidinfo;
 
 	debug(LOG_DEBUG, "Resetting client [%s]", client->mac);
@@ -179,10 +179,13 @@ void client_reset(t_client *client)
 	if (client->cid) {
 
 		if (strlen(client->cid) > 0) {
-			safe_asprintf(&cidinfo, "cid=\"%s\"\0", client->cid);
-			write_client_info(msg, sizeof(msg), "rmcid", client->cid, cidinfo);
+			msg = safe_calloc(SMALL_BUF);
+			cidinfo = safe_calloc(MID_BUF);
+			safe_asprintf(&cidinfo, "cid=\"%s\"", client->cid);
+			write_client_info(msg, SMALL_BUF, "rmcid", client->cid, cidinfo);
 			free(cidinfo);
 		}
+
 		client->cid = safe_strdup("\0");
 	}
 
@@ -397,7 +400,6 @@ _client_list_free_node(t_client *client)
 {
 
 	char *msg;
-	//char msg[16] = {0};
 	char *cidinfo;
 
 	if (client->cid) {

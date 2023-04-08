@@ -591,9 +591,17 @@ _parse_firewall_rule(t_firewall_ruleset *ruleset, char *leftover)
 	// Get the optional protocol
 	if (strncmp(leftover, "tcp", 3) == 0
 			|| strncmp(leftover, "udp", 3) == 0
-			|| strncmp(leftover, "all", 3) == 0
 			|| strncmp(leftover, "icmp", 4) == 0) {
+
 		protocol = leftover;
+
+		TO_NEXT_WORD(leftover, finished);
+	}
+
+	if (strncmp(leftover, "all", 3) == 0) {
+		// Skip "all" as no protocol needs to be specified in nftables rule
+		protocol = NULL;
+
 		TO_NEXT_WORD(leftover, finished);
 	}
 

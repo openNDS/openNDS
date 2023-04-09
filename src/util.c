@@ -438,8 +438,8 @@ int write_client_info(char* msg, int msg_len, const char *mode, const char *cid,
 
 int get_client_interface(char* clientif, int clientif_len, const char *climac)
 {
-	char *clifcmd = NULL;
-
+	char *clifcmd;
+	clifcmd = safe_calloc(SMALL_BUF);
 	safe_asprintf(&clifcmd, "/usr/lib/opennds/get_client_interface.sh %s", climac);
 
 	if (execute_ret_url_encoded(clientif, clientif_len - 1, clifcmd) == 0) {
@@ -463,7 +463,7 @@ int get_client_interface(char* clientif, int clientif_len, const char *climac)
 int hash_str(char* hash, int hash_len, const char *src)
 {
 	char *hashcmd = NULL;
-
+	hashcmd = safe_calloc(SMALL_BUF);
 	s_config *config = config_get_config();
 
 	safe_asprintf(&hashcmd, "printf '%s' | %s | awk -F' ' '{printf $1}'", src, config->fas_hid);

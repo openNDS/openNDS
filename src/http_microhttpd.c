@@ -1557,16 +1557,16 @@ int send_redirect_temp(struct MHD_Connection *connection, t_client *client, cons
 	// Warning - *client will be undefined if not authenticated
 	struct MHD_Response *response;
 	int ret;
-	char *redirect = NULL;
+	char *redirect;
 
-	const char *redirect_body = "<html><head></head><body><a href='%s'>Click here to continue to<br>%s</a></body></html>";
+	redirect = safe_calloc(SMALL_BUF);
 
-	safe_asprintf(&redirect, redirect_body, url, url);
+	safe_asprintf(&redirect, "<html><head></head><body><a href='%s'>Click here to continue to<br>%s</a></body></html", url, url);
 
 	debug(LOG_DEBUG, "send_redirect_temp: MHD_create_response_from_buffer. url [%s]", url);
-	debug(LOG_DEBUG, "send_redirect_temp: Redirect body [%s]", redirect_body);
+	debug(LOG_DEBUG, "send_redirect_temp: Redirect to [%s]", redirect);
 
-	response = MHD_create_response_from_buffer(strlen(redirect), redirect, MHD_RESPMEM_MUST_FREE);
+	response = MHD_create_response_from_buffer(SMALL_BUF, redirect, MHD_RESPMEM_MUST_FREE);
 
 	if (!response) {
 		debug(LOG_DEBUG, "send_redirect_temp: Failed to create response....");

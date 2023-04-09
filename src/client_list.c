@@ -183,6 +183,7 @@ void client_reset(t_client *client)
 			cidinfo = safe_calloc(MID_BUF);
 			safe_asprintf(&cidinfo, "cid=\"%s\"", client->cid);
 			write_client_info(msg, SMALL_BUF, "rmcid", client->cid, cidinfo);
+			free(msg);
 			free(cidinfo);
 		}
 
@@ -410,6 +411,7 @@ _client_list_free_node(t_client *client)
 			cidinfo = safe_calloc(MID_BUF);
 			safe_asprintf(&cidinfo, "cid=\"%s\"", client->cid);
 			write_client_info(msg, SMALL_BUF, "rmcid", client->cid, cidinfo);
+			free(msg);
 			free(cidinfo);
 		}
 		free(client->cid);

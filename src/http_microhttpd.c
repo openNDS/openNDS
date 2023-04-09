@@ -184,6 +184,7 @@ static int do_binauth(
 	uh_urlencode(enc_user_agent, sizeof(enc_user_agent), user_agent, strlen(user_agent));
 
 	// Note: username, password and user_agent may contain spaces so argument should be quoted
+	argv = safe_calloc(MID_BUF);
 	safe_asprintf(&argv,"%s auth_client '%s' '%s' '%s' '%s' '%s' '%s'",
 		binauth,
 		client->mac,
@@ -201,11 +202,12 @@ static int do_binauth(
 		// execute the script
 		rc = execute_ret_url_encoded(msg, sizeof(msg) - 1, argv);
 		debug(LOG_DEBUG, "BinAuth returned arguments: %s", msg);
-		free(argv);
 
 		// unlock ndsctl
 		ndsctl_unlock();
 	}
+
+	free(argv);
 
 	if (rc != 0) {
 		debug(LOG_DEBUG, "BinAuth script failed to execute");
@@ -398,7 +400,7 @@ enum MHD_Result libmicrohttpd_cb(
 	const char *dds = "../";
 	const char *mhdstatus = "/mhdstatus";
 	int rc = 0;
-	char msg[128] = {0};
+	char *msg;
 	char *testcmd;
 	s_config *config;
 
@@ -439,9 +441,10 @@ enum MHD_Result libmicrohttpd_cb(
 
 
 	// check if client ip is on our subnet
+	testcmd = safe_calloc(SMALL_BUF);
 	safe_asprintf(&testcmd, "/usr/lib/opennds/libopennds.sh get_interface_by_ip \"%s\"", ip);
-
-	rc = execute_ret_url_encoded(msg, sizeof(msg) - 1, testcmd);
+	msg = safe_calloc(SMALL_BUF);
+	rc = execute_ret_url_encoded(msg, SMALL_BUF, testcmd);
 	free(testcmd);
 
 	if (rc == 0) {
@@ -457,6 +460,8 @@ enum MHD_Result libmicrohttpd_cb(
 	} else {
 		debug(LOG_DEBUG, "ip subnet test failed: Continuing...");
 	}
+
+	free (msg);
 
 	rc = get_client_mac(mac, ip);
 	if (rc != 0) {
@@ -527,6 +532,7 @@ static int try_to_authenticate(struct MHD_Connection *connection, t_client *clie
 		//Check if token (tok) or hash_id (hid) mode
 		if (strlen(tok) > 8) {
 			// hid mode
+			rhidraw = safe_calloc(SMALL_BUF);
 			safe_asprintf(&rhidraw, "%s%s", client->hid, config->fas_key);
 			hash_str(rhid, sizeof(rhid), rhidraw);
 			free (rhidraw);
@@ -745,6 +751,9 @@ static int authenticated(struct MHD_Connection *connection,
 		debug(LOG_NOTICE, "authenticated: Accept header [%s]", accept);
 		debug(LOG_NOTICE, "authenticated: RFC 8908 captive+json request received");
 
+		originurl_raw = safe_calloc(SMALL_BUF);
+		captive_json = safe_calloc(SMALL_BUF);
+
 		if (strcmp(config->gw_fqdn, "disable") == 0 || strcmp(config->gw_fqdn, "disabled") == 0) {
 			safe_asprintf(&originurl_raw, "http://%s", config->gw_ip);
 		} else {
@@ -777,6 +786,7 @@ static int authenticated(struct MHD_Connection *connection,
 		debug(LOG_NOTICE, "Deauthentication request - client  [%s]", client->mac);
 		auth_client_deauth(client->id, "client_deauth");
 		debug(LOG_DEBUG, "Post deauth redirection [%s]", config->gw_address);
+
 		redirect_to_us = safe_calloc(QUERYMAXLEN);
 
 		if (!redirect_to_us) {
@@ -787,7 +797,9 @@ static int authenticated(struct MHD_Connection *connection,
 
 		safe_asprintf(&redirect_to_us, "http://%s/", config->gw_address);
 
-		return send_redirect_temp(connection, client, redirect_to_us);
+		ret = send_redirect_temp(connection, client, redirect_to_us);
+		free (redirect_to_us);
+		return ret;
 	}
 
 	if (check_authdir_match(url, config->authdir)) {
@@ -811,6 +823,7 @@ static int authenticated(struct MHD_Connection *connection,
 			}
 
 			get_query(connection, &query, HTMLQUERYSEPARATOR);
+			fasurl = safe_calloc(QUERYMAXLEN);
 			safe_asprintf(&fasurl, "%s%s%sstatus=authenticated",
 				config->fas_url,
 				query,
@@ -823,6 +836,7 @@ static int authenticated(struct MHD_Connection *connection,
 			free(fasurl);
 			return ret;
 		} else if (config->fas_port && config->preauth) {
+			fasurl = safe_calloc(QUERYMAXLEN);
 			safe_asprintf(&fasurl, "?clientip=%s%sgatewayname=%s%sgatewayaddress=%s%sclientif=%s%sstatus=authenticated",
 				client->ip,
 				QUERYSEPARATOR,
@@ -945,6 +959,7 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 	int ret;
 	struct MHD_Response *response;
 
+	preauthpath = safe_calloc(SMALL_BUF);
 	safe_asprintf(&preauthpath, "/%s/", config->preauthdir);
 
 	if (strcmp(preauthpath, config->fas_path) == 0) {
@@ -965,6 +980,7 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 			return ret;
 		}
 
+		cmd = safe_calloc(QUERYMAXLEN);
 		safe_asprintf(&cmd, "%s '%s' '%s' '%d' '%s'", config->preauth, enc_query, enc_user_agent, config->login_option_enabled, config->themespec_path);
 		rc = execute_ret_url_encoded(msg, HTMLMAXSIZE - 1, cmd);
 		free(cmd);
@@ -1077,6 +1093,8 @@ static int preauthenticated(struct MHD_Connection *connection, const char *url, 
 		debug(LOG_NOTICE, "preauthenticated: RFC 8908 captive+json request received from client at [%s] [%s]", client->ip, client->mac);
 
 		client->client_type = "cpi_api";
+
+		originurl_raw = safe_calloc(SMALL_BUF);
 
 		if (strcmp(config->gw_fqdn, "disable") == 0 || strcmp(config->gw_fqdn, "disabled") == 0) {
 			safe_asprintf(&originurl_raw, "http://%s", config->gw_ip);
@@ -1209,6 +1227,7 @@ static int encode_and_redirect_to_splashpage(struct MHD_Connection *connection, 
 	int ret;
 
 	config = config_get_config();
+	splashpageurl = safe_calloc(QUERYMAXLEN);
 
 	if (config->fas_port) {
 		// Generate secure query string or authaction url
@@ -1242,7 +1261,7 @@ static int encode_and_redirect_to_splashpage(struct MHD_Connection *connection, 
  */
 static int redirect_to_splashpage(struct MHD_Connection *connection, t_client *client, const char *host, const char *url)
 {
-	char *originurl_raw = NULL;
+	char *originurl_raw;
 	char originurl[QUERYMAXLEN] = {0};
 	char *query;
 	int ret = 0;
@@ -1275,6 +1294,7 @@ static int redirect_to_splashpage(struct MHD_Connection *connection, t_client *c
 	}
 
 	debug(LOG_DEBUG, "Query string is [ %s ]", query);
+	originurl_raw = safe_calloc(SMALL_BUF);
 	safe_asprintf(&originurl_raw, "http://%s%s%s", host, url, query);
 	uh_urlencode(originurl, sizeof(originurl), originurl_raw, strlen(originurl_raw));
 	debug(LOG_DEBUG, "originurl: %s", originurl);
@@ -1301,14 +1321,14 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 	char *msg;
 	char *cidinfo;
 	char *cidfile;
-	char *gw_url_raw = NULL;
+	char *gw_url_raw;
 	char gw_url[SMALL_BUF] = {0};
 	char *phpcmd = NULL;
 	int cidgood = 0;
 
 	s_config *config = config_get_config();
 
-
+	gw_url_raw = safe_calloc(SMALL_BUF);
 	if (strcmp(config->gw_fqdn, "disable") == 0 || strcmp(config->gw_fqdn, "disabled") == 0) {
 		safe_asprintf(&gw_url_raw, "http://%s", config->gw_ip);
 	} else {
@@ -1317,6 +1337,7 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 
 	uh_urlencode(gw_url, sizeof(gw_url), gw_url_raw, strlen(gw_url_raw));
 	debug(LOG_DEBUG, "gw_url: %s", gw_url);
+	free (gw_url_raw);
 
 
 	if (!client->client_type || strlen(client->client_type) == 0) {
@@ -1370,6 +1391,7 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 				if (config->login_option_enabled >=1) {
 					if (client->cid) {
 						cidgood = 1;
+						cidfile = safe_calloc(SMALL_BUF);
 						safe_asprintf(&cidfile, "%s/ndscids/%s", config->tmpfsmountpoint, client->cid);
 
 						// Check if cidfile exists
@@ -1487,6 +1509,7 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 			config->custom_files
 		);
 
+		phpcmd = safe_calloc(QUERYMAXLEN);
 		safe_asprintf(&phpcmd,
 			"echo '<?php \n"
 			"$key=\"%s\";\n"
@@ -1557,16 +1580,16 @@ int send_redirect_temp(struct MHD_Connection *connection, t_client *client, cons
 	// Warning - *client will be undefined if not authenticated
 	struct MHD_Response *response;
 	int ret;
-	char *redirect = NULL;
+	char *redirect;
 
-	const char *redirect_body = "<html><head></head><body><a href='%s'>Click here to continue to<br>%s</a></body></html>";
+	redirect = safe_calloc(SMALL_BUF);
 
-	safe_asprintf(&redirect, redirect_body, url, url);
+	safe_asprintf(&redirect, "<html><head></head><body><a href='%s'>Click here to continue to<br>%s</a></body></html", url, url);
 
 	debug(LOG_DEBUG, "send_redirect_temp: MHD_create_response_from_buffer. url [%s]", url);
-	debug(LOG_DEBUG, "send_redirect_temp: Redirect body [%s]", redirect_body);
+	debug(LOG_DEBUG, "send_redirect_temp: Redirect to [%s]", redirect);
 
-	response = MHD_create_response_from_buffer(strlen(redirect), redirect, MHD_RESPMEM_MUST_FREE);
+	response = MHD_create_response_from_buffer(SMALL_BUF, redirect, MHD_RESPMEM_MUST_FREE);
 
 	if (!response) {
 		debug(LOG_DEBUG, "send_redirect_temp: Failed to create response....");
@@ -1710,7 +1733,7 @@ static int send_error(struct MHD_Connection *connection, int error)
 	const char *page_503 = "<html><head><title>Error 503</title></head><body><h1>Error 503 - Service Unavailable. This may be a temporary condition."
 		"</h1></body></html>";
 	char *page_511;
-	char *cmd = NULL;
+	char *cmd;
 	const char *mimetype = lookup_mimetype("foo.html");
 	char ip[INET6_ADDRSTRLEN+1];
 
@@ -1770,6 +1793,7 @@ static int send_error(struct MHD_Connection *connection, int error)
 			break;
 		}
 
+		cmd = safe_calloc(SMALL_BUF);
 		safe_asprintf(&cmd, "%s err511 '%s'", config->status_path, ip);
 
 		if (execute_ret_url_encoded(page_511, HTMLMAXSIZE - 1, cmd) == 0) {
@@ -1781,7 +1805,6 @@ static int send_error(struct MHD_Connection *connection, int error)
 			free(page_511);
 			return ret;
 		}
-
 
 		free(cmd);
 

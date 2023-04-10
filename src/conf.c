@@ -626,9 +626,10 @@ _parse_firewall_rule(t_firewall_ruleset *ruleset, char *leftover)
 	}
 
 	if (strncmp(leftover, "ipset", 5) == 0) {
+		// ipset option no longer supported - use walledgarden instead
 		TO_NEXT_WORD(leftover, finished);
 		// Get ipset now
-		ipset = leftover;
+		ipset = NULL;
 		TO_NEXT_WORD(leftover, finished);
 
 		// TODO check if ipset exists

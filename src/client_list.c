@@ -415,26 +415,7 @@ _client_list_free_node(t_client *client)
 			free(msg);
 			free(cidinfo);
 		}
-		//free(client->cid);
 	}
-
-	/*if (client->mac)
-		free(client->mac);
-
-	if (client->ip)
-		free(client->ip);
-
-	if (client->token)
-		free(client->token);
-
-	if (client->hid)
-		free(client->hid);
-
-	if (client->client_type)
-		free(client->client_type);
-
-	if (client->custom)
-		free(client->custom);*/
 
 	free(client);
 }

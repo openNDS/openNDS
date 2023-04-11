@@ -11,12 +11,12 @@ pid=$(pgrep -f "/bin/sh /usr/lib/opennds/get_client_interface.sh")
 # This script requires the iw and ip packages (usually available by default)
 
 if [ -z $(command -v ip) ]; then
-	echo "ip utility not available" | logger -p "daemon.warn" -s -t "NDS-Library[$pid]"
+	/usr/lib/opennds/libopennds.sh write_to_syslog "ip utility not available - critical error" "err"
 	exit 1
 fi
 
 if [ -z $(command -v iw) ]; then
-	echo "iw utility not available" | logger -p "daemon.warn" -s -t "NDS-Library[$pid]"
+	/usr/lib/opennds/libopennds.sh write_to_syslog "unable to detect wireless interface - iw utility not available" "debug"
 	iwstatus=false
 else
 	iwstatus=true

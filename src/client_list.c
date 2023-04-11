@@ -151,7 +151,7 @@ _client_list_append(const char mac[], const char ip[])
  */
 void client_reset(t_client *client)
 {
-	char hash[128] = {0};
+	char hash[STATUS_BUF] = {0};
 	char *msg;
 	char *cidinfo;
 
@@ -166,14 +166,14 @@ void client_reset(t_client *client)
 	client->session_end = 0;
 
 	// Reset token and hid
-	free(client->token);
+	client->token = safe_calloc(STATUS_BUF);
 	safe_asprintf(&client->token, "%04hx%04hx", rand16(), rand16());
 	hash_str(hash, sizeof(hash), client->token);
 	client->hid = safe_strdup(hash);
 
 	// Reset custom and client_type
-	client->custom = safe_strdup("\0");
-	client->client_type = safe_strdup("\0");
+	client->custom = safe_calloc(MID_BUF);
+	client->client_type = safe_calloc(STATUS_BUF);
 
 	//Reset cid and remove cidfile using rmcid
 	if (client->cid) {
@@ -187,7 +187,7 @@ void client_reset(t_client *client)
 			free(cidinfo);
 		}
 
-		client->cid = safe_strdup("\0");
+		client->cid = safe_calloc(SMALL_BUF);
 	}
 
 }
@@ -220,9 +220,10 @@ client_list_add_client(const char mac[], const char ip[])
 	}
 
 	// check if client ip was allocated by dhcp
+	libcmd = safe_calloc(SMALL_BUF);
 	safe_asprintf(&libcmd, "/usr/lib/opennds/libopennds.sh dhcpcheck \"%s\"", ip);
-	msg = safe_calloc(64);
-	rc = execute_ret_url_encoded(msg, 64 - 1, libcmd);
+	msg = safe_calloc(SMALL_BUF);
+	rc = execute_ret_url_encoded(msg, SMALL_BUF, libcmd);
 	free(libcmd);
 	free(msg);
 
@@ -414,10 +415,10 @@ _client_list_free_node(t_client *client)
 			free(msg);
 			free(cidinfo);
 		}
-		free(client->cid);
+		//free(client->cid);
 	}
 
-	if (client->mac)
+	/*if (client->mac)
 		free(client->mac);
 
 	if (client->ip)
@@ -433,7 +434,7 @@ _client_list_free_node(t_client *client)
 		free(client->client_type);
 
 	if (client->custom)
-		free(client->custom);
+		free(client->custom);*/
 
 	free(client);
 }

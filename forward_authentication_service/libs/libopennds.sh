@@ -1420,6 +1420,43 @@ pad_str () {
 		padded=$(printf "%s%s" "${p:${#m}}" "$m")
 	fi
 }
+
+check_heartbeat () {
+	option="checkinterval"
+	get_option_from_config
+
+	if [ -z "$checkinterval" ]; then
+		checkinterval=15
+	fi
+	configure_log_location
+	heartbeatpath="$mountpoint/ndscids/heartbeat"
+
+	if [ -f "$heartbeatpath" ]; then
+
+		local timeout=5
+
+		for tic in $(seq $timeout); do
+			lastbeat=$(cat "$heartbeatpath")
+			timenow=$(date +%s)
+
+			elapsed_time=$(($timenow - $lastbeat))
+
+			if [ $elapsed_time -le $checkinterval ]; then
+				dead=0
+				break
+			else
+				dead=1
+				sleep 1
+			fi
+		done
+
+		exitmessage="Time since last heatbeat is $elapsed_time second(s)"
+	else
+		exitmessage="No heartbeat found"
+		dead=1
+	fi
+}
+
 #### end of functions ####
 
 
@@ -2094,6 +2131,14 @@ elif [ "$1" = "write_to_syslog" ]; then
 	fi
 
 	exit 0
+
+elif [ "$1" = "check_heartbeat" ]; then
+	# Check the openNDS heartbeat
+	# Returns the heartbeat status string
+	# and exit code 0 if alive, 1 if dead
+	check_heartbeat
+	echo "$exitmessage"
+	exit $dead
 
 else
 	#Display a splash page sequence using a Themespec

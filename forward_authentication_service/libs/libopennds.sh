@@ -2080,6 +2080,21 @@ elif [ "$1" = "pad_string" ]; then
 	printf "%s" "$padded"
 	exit 0
 
+elif [ "$1" = "write_to_syslog" ]; then
+	# Write debug message to syslog
+	# $2 contains the string to log
+	# $3 contains the debug level string: debug, info, warn, notice, err, emerg.
+
+	if [ -z "$2" ]; then
+		exit 1
+	else
+		syslogmessage="$2"
+		debugtype="$3"
+		write_to_syslog
+	fi
+
+	exit 0
+
 else
 	#Display a splash page sequence using a Themespec
 

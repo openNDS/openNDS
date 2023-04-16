@@ -294,6 +294,12 @@ if [ "$action" = "auth_client" ] || [ "$action" = "auth" ]; then
 	b64mac=$(echo "$b64mac" | tr -d "=")
 	log_entry="$b64mac=$session_end"
 	logtype="raw"
+	logfile="$logdir""$logname"
+
+	if [ -f "$logdir""$logname" ]; then
+		sed -i "/\b$b64mac\b/d" "$logfile"
+	fi
+
 	write_log
 fi
 

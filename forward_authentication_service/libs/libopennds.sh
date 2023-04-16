@@ -1095,7 +1095,7 @@ send_post_data () {
 	option="fas_secure_enabled"
 	get_option_from_config
 
-	if [ "$fas_secure_enabled" -eq 3 ]; then
+	if [ "$fas_secure_enabled" -eq 3 ] && [ -f "$mountpoint/ndscids/authmonargs" ]; then
 		configure_log_location
 		. $mountpoint/ndscids/ndsinfo
 		. $mountpoint/ndscids/authmonargs
@@ -1455,6 +1455,67 @@ check_heartbeat () {
 		exitmessage="No heartbeat found"
 		dead=1
 	fi
+}
+
+auth_restore () {
+	configure_log_location
+
+	authlog="$logdir""authlog.log"
+	binauthlog="$logdir""binauthlog.log"
+
+	# Get default quotas
+	option="uploadquota"
+	get_option_from_config
+
+	option="downloadquota"
+	get_option_from_config
+
+	option="uploadrate"
+	get_option_from_config
+
+	option="downloadrate"
+	get_option_from_config
+
+	while read -r client; do
+		b64mac="$(echo "$client" | awk -F"=" '{printf("%s", $1)}')""=="
+		client_mac=$(ndsctl b64decode "$b64mac")
+
+		if [ -z "$client_mac" ]; then
+			continue
+		fi
+
+		now=$(date +%s)
+		session_end="$(echo "$client" | awk -F"=" '{printf("%s", $2)}')"
+
+		session_left=$(($session_end - $now))
+		sessiontimeout=$(($session_left / 60))
+
+		if [ $session_left -lt 0 ]; then
+			sessiontimeout=""
+		fi
+
+		was_authed=$(grep "$client_mac" "$binauthlog" | tail -1 | awk -F"method=" '{print $2}' | awk -F", " '{print $1}' | grep "deauth")
+
+		if [ -z "$was_authed" ]; then
+			reauth=1
+		else
+			was_shutdown_deauthed=$(grep "$client_mac" "$binauthlog" | tail -1 | awk -F"method=" '{print $2}' | awk -F", " '{print $1}' | grep "shutdown_deauth")
+
+			if [ ! -z "$was_shutdown_deauthed" ]; then
+				reauth=1
+			fi
+		fi
+
+		if [ $reauth -eq 1 ]; then
+			ndsctlcmd="auth $client_mac $sessiontimeout"
+			do_ndsctl
+			syslogmessage=$ndsctlout
+			# $syslogmessage contains the response from do_ndsctl
+			debugtype="notice"
+			write_to_syslog
+		fi
+
+	done < $authlog
 }
 
 #### end of functions ####
@@ -2139,6 +2200,13 @@ elif [ "$1" = "check_heartbeat" ]; then
 	check_heartbeat
 	echo "$exitmessage"
 	exit $dead
+
+elif [ "$1" = "auth_restore" ]; then
+	# Restore the authentication of clients after a restart
+	# Reads the authenticated client database if created by Binauth
+	auth_restore
+
+	exit 0
 
 else
 	#Display a splash page sequence using a Themespec

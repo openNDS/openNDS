@@ -310,7 +310,7 @@ config_init(void)
 	config.authentication_mark = safe_strdup(DEFAULT_AUTHENTICATION_MARK);
 	config.fw_mark_trusted = DEFAULT_FW_MARK_TRUSTED;
 	config.ip6 = DEFAULT_IP6;
-	config.binauth = NULL;
+	config.binauth = safe_strdup(DEFAULT_BINAUTH);
 	config.preauth = NULL;
 	config.walledgarden_fqdn_list = NULL;
 	config.walledgarden_port_list = NULL;

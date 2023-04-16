@@ -287,7 +287,7 @@ get_data_file() {
 
 # Function to send commands to openNDS:
 do_ndsctl () {
-	local timeout=4
+	local timeout=8
 
 	for tic in $(seq $timeout); do
 		ndsstatus="ready"

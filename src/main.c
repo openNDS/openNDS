@@ -871,8 +871,6 @@ setup_from_config(void)
 	if (sizeof(time_t) == 4) {
 		debug(LOG_WARNING, "WARNING - Year 2038 bug detected in system (32 bit time). Continuing.....");
 	}
-
-	debug(LOG_NOTICE, "openNDS is now running.\n");
 }
 
 /**@internal
@@ -882,6 +880,7 @@ static void
 main_loop(void)
 {
 	int result = 0;
+	char *cmd;
 	pthread_t tid;
 	s_config *config;
 
@@ -906,6 +905,12 @@ main_loop(void)
 		debug(LOG_ERR, "FATAL: Failed to create thread_ndsctl - exiting");
 		termination_handler(1);
 	}
+
+	debug(LOG_NOTICE, "openNDS is now running.\n");
+	safe_asprintf(&cmd, "/usr/lib/opennds/libopennds.sh \"auth_restore\" &");
+	system(cmd);
+	free(cmd);
+
 
 	result = pthread_join(tid, NULL);
 	if (result) {

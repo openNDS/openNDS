@@ -67,7 +67,8 @@ configure_log_location() {
 	# set default values
 	mountpoint="/tmp"
 	logdir="/tmp/ndslog/"
-	logname="binauthlog.log"
+	fulllog="binauthlog.log"
+	authlog="authlog.log"
 
 	for var in $tempdir; do
 		_mountpoint=$(df | awk -F ' ' '$1=="tmpfs" && $6=="'$var'" {print $6}')
@@ -104,10 +105,15 @@ write_log () {
 
 		logfile="$logdir""$logname"
 		awkcmd="awk ""'\$6==""\"$log_mountpoint\"""{print \$4}'"
-		datetime=$(date)
+
+		if [ -z "$logtype" ]; then
+			datetime="$(date), "
+		else
+			datetime=""
+		fi
 
 		if [ ! -f "$logfile" ]; then
-			echo "$datetime, New log file created" > $logfile
+			echo "# $datetime New log file created" > $logfile
 		fi
 
 		if [ ! -z "$mountcheck" ]; then
@@ -129,10 +135,10 @@ write_log () {
 				# then check the logfile is not too big
 				min_freespace_to_log_ratio=10
 				filesize=$(ls -s -1 $logfile | awk -F' ' '{print $1}')
-				sizeratio=$(($available/$filesize))
+				sizeratio=$(($available/($filesize+1)))
 
 				if [ $sizeratio -ge $min_freespace_to_log_ratio ]; then
-					echo "$datetime, $log_entry" >> $logfile
+					echo "$datetime""$log_entry" >> $logfile
 				else
 					echo "Log file too big, please archive contents and reduce max_log_entries" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 				fi
@@ -141,7 +147,7 @@ write_log () {
 				# so just check for free space and let the log file grow
 
 				if [ "$available" > 10 ];then
-					echo "$datetime, $log_entry" >> $logfile
+					echo "$datetime""$log_entry" >> $logfile
 				else
 					echo "Log file too big, please archive contents and reduce max_log_entries" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 				fi
@@ -170,8 +176,8 @@ configure_log_location
 # Get the action method from NDS ie the first command line argument.
 #
 # Possible values are:
-# "auth_client" - NDS requests validation of the client (legacy - deprecated)
-# "client_auth" - NDS has authorised the client (legacy - deprecated)
+# "auth_client" - NDS requests validation of the client
+# "client_auth" - NDS has authorised the client
 # "client_deauth" - NDS has deauthenticated the client on request (logout)
 # "idle_deauth" - NDS has deauthenticated the client because the idle timeout duration has been exceeded
 # "timeout_deauth" - NDS has deauthenticated the client because the session length duration has been exceeded
@@ -275,7 +281,27 @@ get_client_zone
 log_entry="$log_entry, client_zone=$client_zone"
 
 # Append to the log.
+logname="$fulllog"
+logtype=""
 write_log
+
+# Append to the authenticated clients list
+session_end=$6
+
+if [ "$action" = "auth_client" ] || [ "$action" = "auth" ]; then
+	logname="$authlog"
+	b64mac=$(ndsctl b64encode "$clientmac")
+	b64mac=$(echo "$b64mac" | tr -d "=")
+	log_entry="$b64mac=$session_end"
+	logtype="raw"
+	logfile="$logdir""$logname"
+
+	if [ -f "$logdir""$logname" ]; then
+		sed -i "/\b$b64mac\b/d" "$logfile"
+	fi
+
+	write_log
+fi
 
 #Quotas and session length set elsewhere can be overridden here if action=auth_client, otherwise will be ignored.
 # Set length of session in seconds (eg 24 hours is 86400 seconds - if set to 0 then defaults to global or FAS sessiontimeout value):

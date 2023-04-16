@@ -287,7 +287,7 @@ get_data_file() {
 
 # Function to send commands to openNDS:
 do_ndsctl () {
-	local timeout=4
+	local timeout=8
 
 	for tic in $(seq $timeout); do
 		ndsstatus="ready"
@@ -1095,7 +1095,7 @@ send_post_data () {
 	option="fas_secure_enabled"
 	get_option_from_config
 
-	if [ "$fas_secure_enabled" -eq 3 ]; then
+	if [ "$fas_secure_enabled" -eq 3 ] && [ -f "$mountpoint/ndscids/authmonargs" ]; then
 		configure_log_location
 		. $mountpoint/ndscids/ndsinfo
 		. $mountpoint/ndscids/authmonargs
@@ -1420,6 +1420,104 @@ pad_str () {
 		padded=$(printf "%s%s" "${p:${#m}}" "$m")
 	fi
 }
+
+check_heartbeat () {
+	option="checkinterval"
+	get_option_from_config
+
+	if [ -z "$checkinterval" ]; then
+		checkinterval=15
+	fi
+	configure_log_location
+	heartbeatpath="$mountpoint/ndscids/heartbeat"
+
+	if [ -f "$heartbeatpath" ]; then
+
+		local timeout=5
+
+		for tic in $(seq $timeout); do
+			lastbeat=$(cat "$heartbeatpath")
+			timenow=$(date +%s)
+
+			elapsed_time=$(($timenow - $lastbeat))
+
+			if [ $elapsed_time -le $checkinterval ]; then
+				dead=0
+				break
+			else
+				dead=1
+				sleep 1
+			fi
+		done
+
+		exitmessage="Time since last heatbeat is $elapsed_time second(s)"
+	else
+		exitmessage="No heartbeat found"
+		dead=1
+	fi
+}
+
+auth_restore () {
+	configure_log_location
+
+	authlog="$logdir""authlog.log"
+	binauthlog="$logdir""binauthlog.log"
+
+	# Get default quotas
+	option="uploadquota"
+	get_option_from_config
+
+	option="downloadquota"
+	get_option_from_config
+
+	option="uploadrate"
+	get_option_from_config
+
+	option="downloadrate"
+	get_option_from_config
+
+	while read -r client; do
+		b64mac="$(echo "$client" | awk -F"=" '{printf("%s", $1)}')""=="
+		client_mac=$(ndsctl b64decode "$b64mac")
+
+		if [ -z "$client_mac" ]; then
+			continue
+		fi
+
+		now=$(date +%s)
+		session_end="$(echo "$client" | awk -F"=" '{printf("%s", $2)}')"
+
+		session_left=$(($session_end - $now))
+		sessiontimeout=$(($session_left / 60))
+
+		if [ $session_left -lt 0 ]; then
+			sessiontimeout=""
+		fi
+
+		was_authed=$(grep "$client_mac" "$binauthlog" | tail -1 | awk -F"method=" '{print $2}' | awk -F", " '{print $1}' | grep "deauth")
+
+		if [ -z "$was_authed" ]; then
+			reauth=1
+		else
+			was_shutdown_deauthed=$(grep "$client_mac" "$binauthlog" | tail -1 | awk -F"method=" '{print $2}' | awk -F", " '{print $1}' | grep "shutdown_deauth")
+
+			if [ ! -z "$was_shutdown_deauthed" ]; then
+				reauth=1
+			fi
+		fi
+
+		if [ $reauth -eq 1 ]; then
+			ndsctlcmd="auth $client_mac $sessiontimeout"
+			do_ndsctl
+			syslogmessage=$ndsctlout
+			# $syslogmessage contains the response from do_ndsctl
+			debugtype="notice"
+			write_to_syslog
+		fi
+
+	done < $authlog
+}
+
 #### end of functions ####
 
 
@@ -2092,6 +2190,21 @@ elif [ "$1" = "write_to_syslog" ]; then
 		debugtype="$3"
 		write_to_syslog
 	fi
+
+	exit 0
+
+elif [ "$1" = "check_heartbeat" ]; then
+	# Check the openNDS heartbeat
+	# Returns the heartbeat status string
+	# and exit code 0 if alive, 1 if dead
+	check_heartbeat
+	echo "$exitmessage"
+	exit $dead
+
+elif [ "$1" = "auth_restore" ]; then
+	# Restore the authentication of clients after a restart
+	# Reads the authenticated client database if created by Binauth
+	auth_restore
 
 	exit 0
 

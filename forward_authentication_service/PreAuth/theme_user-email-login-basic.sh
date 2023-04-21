@@ -118,7 +118,7 @@ thankyou_page () {
 
 	echo "
 		<big-red>
-			Thankyou for using this service
+			Thankyou for using this service.<br>Please click Continue for access.
 		</big-red>
 		<br>
 		<b>Welcome $username</b>
@@ -168,6 +168,9 @@ landing_page() {
 	originurl=$(printf "${originurl//%/\\x}")
 	gatewayurl=$(printf "${gatewayurl//%/\\x}")
 
+	configure_log_location
+	. $mountpoint/ndscids/ndsinfo
+
 	# Add the user credentials to $userinfo for the log
 	userinfo="$userinfo, user=$username, email=$emailaddress"
 
@@ -203,7 +206,7 @@ landing_page() {
 			</big-red>
 			<hr>
 		</p>
-		<hr>
+
 		<p>
 			<italic-black>
 				Your login attempt probably timed out.
@@ -214,7 +217,7 @@ landing_page() {
 			Click or tap Continue to try again.
 		</p>
 		<form>
-			<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='$originurl'\" >
+			<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='http://$gatewayfqdn'\" >
 		</form>
 		<hr>
 	"

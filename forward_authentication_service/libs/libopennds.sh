@@ -2274,6 +2274,8 @@ else
 	# Set the Logfile location, using the tmpfs "temporary" directory to prevent flash wear.
 	# or override to a custom location in the ThemeSpec file (eg USB stick)
 	configure_log_location
+	. $mountpoint/ndscids/ndsinfo
+
 
 	############################################################################
 	### We are now ready to generate the html for the Portal "Splash" pages: ###

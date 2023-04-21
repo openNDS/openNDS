@@ -1262,7 +1262,7 @@ static int encode_and_redirect_to_splashpage(struct MHD_Connection *connection, 
 static int redirect_to_splashpage(struct MHD_Connection *connection, t_client *client, const char *host, const char *url)
 {
 	char *originurl_raw;
-	char originurl[QUERYMAXLEN] = {0};
+	char *originurl;
 	char *query;
 	int ret = 0;
 	const char *separator = "&";
@@ -1284,6 +1284,22 @@ static int redirect_to_splashpage(struct MHD_Connection *connection, t_client *c
 		return ret;
 	}
 
+	originurl_raw = safe_calloc(MID_BUF);
+
+	if (!originurl_raw) {
+		ret = send_error(connection, 503);
+		free(originurl_raw);
+		return ret;
+	}
+
+	originurl = safe_calloc(MAX_BUF);
+
+	if (!originurl) {
+		ret = send_error(connection, 503);
+		free(originurl);
+		return ret;
+	}
+
 	get_query(connection, &query, separator);
 
 	if (!query) {
@@ -1294,7 +1310,7 @@ static int redirect_to_splashpage(struct MHD_Connection *connection, t_client *c
 	}
 
 	debug(LOG_DEBUG, "Query string is [ %s ]", query);
-	originurl_raw = safe_calloc(SMALL_BUF);
+
 	safe_asprintf(&originurl_raw, "http://%s%s%s", host, url, query);
 	uh_urlencode(originurl, sizeof(originurl), originurl_raw, strlen(originurl_raw));
 	debug(LOG_DEBUG, "originurl: %s", originurl);
@@ -1302,6 +1318,7 @@ static int redirect_to_splashpage(struct MHD_Connection *connection, t_client *c
 	querystr=construct_querystring(connection, client, originurl, querystr);
 	ret = encode_and_redirect_to_splashpage(connection, client, originurl, querystr);
 	free(originurl_raw);
+	free(originurl);
 	free(query);
 	free(querystr);
 	return ret;

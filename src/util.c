@@ -500,12 +500,12 @@ static int _execute_ret(char* msg, int msg_len, const char *cmd)
 
 	fp = popen(cmd, "r");
 	if (fp == NULL) {
-		debug(LOG_ERR, "popen(): [%s] Retrying..", strerror(errno));
+		debug(LOG_INFO, "popen(): [%s] Retrying..", strerror(errno));
 		sleep(1);
 		fp = popen(cmd, "r");
 
 		if (fp == NULL) {
-			debug(LOG_ERR, "popen(): [%s] Giving up..", strerror(errno));
+			debug(LOG_INFO, "popen(): [%s] Giving up..", strerror(errno));
 			rc = -1;
 			goto abort;
 		}

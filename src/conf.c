@@ -1226,6 +1226,9 @@ int add_to_walledgarden_fqdn_list(const char possiblefqdn[])
 	t_WGFQDN *p = NULL;
 	char possiblefqdn_urlencoded[256] = {0};
 
+	memset(fqdn, 0, sizeof(fqdn));
+	memset(possiblefqdn_urlencoded, 0, sizeof(possiblefqdn_urlencoded));
+
 	// Sanitise FQDN
 	uh_urlencode(possiblefqdn_urlencoded, sizeof(possiblefqdn_urlencoded), possiblefqdn, strlen(possiblefqdn));
 	debug(LOG_DEBUG, "[%s] is the urlencoded FQDN", possiblefqdn_urlencoded);

@@ -591,9 +591,11 @@ int execute_ret_url_encoded(char* msg, int msg_len, const char *cmd)
 char *
 get_iface_ip(const char ifname[], int ip6)
 {
-	char addrbuf[INET6_ADDRSTRLEN] = {0};
-	char cmd[256] = {0};
-	char iptype[8] = {0};
+	char addrbuf[STATUS_BUF] = {0};
+	char *cmd;
+	char *iptype;
+
+	iptype = safe_calloc(STATUS_BUF);
 
 	if (ip6) {
 		snprintf(iptype, sizeof(iptype), "inet6");
@@ -601,16 +603,24 @@ get_iface_ip(const char ifname[], int ip6)
 		snprintf(iptype, sizeof(iptype), "inet");
  	}
 
-	snprintf(cmd, sizeof(cmd), "/usr/lib/opennds/libopennds.sh gatewayip \"%s\" \"%s\"",
+	cmd = safe_calloc(STATUS_BUF);
+
+	snprintf(cmd, STATUS_BUF, "/usr/lib/opennds/libopennds.sh gatewayip \"%s\" \"%s\"",
 		ifname,
 		iptype
 	);
 
+	free(iptype);
+
 	debug(LOG_NOTICE, "Attempting to Bind to interface: %s", ifname);
 
-	if (execute_ret(addrbuf, sizeof(addrbuf), cmd) == 0) {
+	memset(addrbuf, 0, STATUS_BUF);
+
+	if (execute_ret(addrbuf, STATUS_BUF, cmd) == 0) {
+		free(cmd);
 		return safe_strdup(addrbuf);
 	} else {
+		free(cmd);
 		return "error";
 	}
 }
@@ -618,23 +628,30 @@ get_iface_ip(const char ifname[], int ip6)
 char *
 get_iface_mac(const char ifname[])
 {
-	char addrbuf[20] = {0};
-	char cmd[128] = {0};
+	char addrbuf[STATUS_BUF] = {0};
+	char *cmd;
 	s_config *config;
 
 	config = config_get_config();
+
+	debug(LOG_NOTICE, "Attempting to get mac of interface: %s", ifname);
 
 	if (config->gw_mac == NULL) {
 		config->gw_mac = safe_strdup("00:00:00:00:00:00");
 	}
 
-	snprintf(cmd, sizeof(cmd), "/usr/lib/opennds/libopennds.sh \"gatewaymac\" \"%s\" \"%s\"",
+	cmd = safe_calloc(STATUS_BUF);
+
+	snprintf(cmd, STATUS_BUF, "/usr/lib/opennds/libopennds.sh \"gatewaymac\" \"%s\" \"%s\"",
 		ifname,
 		config->gw_mac
 	);
 
 
-	execute_ret(addrbuf, sizeof(addrbuf), cmd);
+	memset(addrbuf, 0, STATUS_BUF);
+
+	execute_ret(addrbuf, STATUS_BUF, cmd);
+	free(cmd);
 	return safe_strdup(addrbuf);
 }
 
@@ -1024,11 +1041,13 @@ ndsctl_json_client(FILE *fp, const t_client *client, time_t now, char *indent)
 {
 	unsigned long int durationsecs;
 	unsigned long long int download_bytes, upload_bytes;
-	char clientif[64] = {0};
+	char *clientif;
 	s_config *config;
 
 	config = config_get_config();
-	get_client_interface(clientif, sizeof(clientif), client->mac);
+
+	clientif = safe_calloc(STATUS_BUF);
+	get_client_interface(clientif, STATUS_BUF, client->mac);
 
 	fprintf(fp, "  %s\"gatewayname\":\"%s\",\n", indent, config->url_encoded_gw_name);
 	fprintf(fp, "  %s\"gatewayaddress\":\"%s\",\n", indent, config->gw_address);
@@ -1045,6 +1064,8 @@ ndsctl_json_client(FILE *fp, const t_client *client, time_t now, char *indent)
 	fprintf(fp, "  %s\"ip\":\"%s\",\n", indent, client->ip);
 	fprintf(fp, "  %s\"clientif\":\"%s\",\n", indent, clientif);
 	fprintf(fp, "  %s\"session_start\":\"%lld\",\n", indent, (long long) client->session_start);
+
+	free(clientif);
 
 	if (client->session_end == 0) {
 		fprintf(fp, "  %s\"session_end\":\"null\",\n", indent);
@@ -1232,10 +1253,12 @@ void
 ndsctl_json(FILE *fp, const char *arg)
 {
 	char indent[5] = {0};
-	//if (arg && strlen(arg)) {
+
+	memset(indent, 0, 5);
+
 	debug(LOG_DEBUG, "arg [%s %d]", arg, strlen(arg));
+
 	if (strlen(arg) > 6) {
-		//snprintf(indent, sizeof(indent), "%s", "");
 		ndsctl_json_one(fp, arg, indent);
 	} else {
 		snprintf(indent, sizeof(indent), "%s", "    ");

@@ -68,7 +68,7 @@ static void binauth_action(t_client *client, const char *reason, const char *cus
 	char *deauth = "deauth";
 	char *client_auth = "client_auth";
 	char *ndsctl_auth = "ndsctl_auth";
-	char customdata_enc[384] = {0};
+	char *customdata_enc;
 	int ret = 1;
 
 	if (config->binauth) {
@@ -80,7 +80,8 @@ static void binauth_action(t_client *client, const char *reason, const char *cus
 			customdata=client->custom;
 		}
 
-		uh_urlencode(customdata_enc, sizeof(customdata_enc), customdata, strlen(customdata));
+		customdata_enc = safe_calloc(CUSTOM_ENC);
+		uh_urlencode(customdata_enc, CUSTOM_ENC, customdata, strlen(customdata));
 		debug(LOG_DEBUG, "binauth_action: customdata_enc [%s]", customdata_enc);
 
 		// get client's current session start and end
@@ -122,6 +123,8 @@ static void binauth_action(t_client *client, const char *reason, const char *cus
 			client->token,
 			customdata_enc
 		);
+
+		free(customdata_enc);
 
 		if (strstr(reason, deauth) == NULL && strstr(reason, ndsctl_auth) == NULL) {
 			// unlock ndsctl
@@ -610,6 +613,7 @@ thread_client_timeout_check(void *arg)
 	s_config *config = config_get_config();
 
 	// Build command to check MHD
+	testcmd = safe_calloc(STATUS_BUF);
 	safe_asprintf(&testcmd,
 		"/usr/lib/opennds/libopennds.sh mhdcheck \"%s\"",
 		config->gw_address

@@ -150,13 +150,13 @@ static int do_binauth(
 	)
 {
 
-	char custom_enc[384] = {0};
-	char redirect_url_enc_buf[QUERYMAXLEN] = {0};
+	char *redirect_url_enc_buf;
 	const char *custom;
-	char msg[256] = {0};
+	char *custom_enc;
+	char *msg;
 	char *argv = NULL;
-	const char *user_agent = NULL;
-	char enc_user_agent[256] = {0};
+	const char *user_agent;
+	char *enc_user_agent;
 	int seconds;
 	unsigned long long int upload_rate;
 	unsigned long long int download_rate;
@@ -165,26 +165,36 @@ static int do_binauth(
 	int rc =1;
 
 	// Get the client user agent
+	user_agent = safe_calloc(USER_AGENT);
 	MHD_get_connection_values(connection, MHD_HEADER_KIND, get_user_agent_callback, &user_agent);
 
 	debug(LOG_DEBUG, "BinAuth: User Agent is [ %s ]", user_agent);
 
 	// Get custom data string as passed in the query string
+	custom = safe_calloc(CUSTOM);
 	custom = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "custom");
 
 	if (!custom || strlen(custom) == 0) {
 		custom="bmE=";
 	}
 
-	uh_urlencode(custom_enc, sizeof(custom_enc), custom, strlen(custom));
+	custom_enc = safe_calloc(CUSTOM_ENC);
+	uh_urlencode(custom_enc, CUSTOM_ENC, custom, strlen(custom));
 
 	debug(LOG_DEBUG, "BinAuth: custom data [ %s ]", custom_enc);
 
-	uh_urlencode(redirect_url_enc_buf, sizeof(redirect_url_enc_buf), redirect_url, strlen(redirect_url));
-	uh_urlencode(enc_user_agent, sizeof(enc_user_agent), user_agent, strlen(user_agent));
+	redirect_url_enc_buf = safe_calloc(REDIRECT_URL_ENC_BUF);
+	uh_urlencode(redirect_url_enc_buf, REDIRECT_URL_ENC_BUF, redirect_url, strlen(redirect_url));
+
+	debug(LOG_DEBUG, "BinAuth: Redirect URL is [ %s ]", redirect_url_enc_buf);
+
+	enc_user_agent = safe_calloc(ENC_USER_AGENT);
+	uh_urlencode(enc_user_agent, ENC_USER_AGENT, user_agent, strlen(user_agent));
+
+	debug(LOG_DEBUG, "BinAuth: User Agent is [ %s ]", enc_user_agent);
 
 	// Note: username, password and user_agent may contain spaces so argument should be quoted
-	argv = safe_calloc(MID_BUF);
+	argv = safe_calloc(REDIRECT_URL_ENC_BUF + CUSTOM_ENC);
 	safe_asprintf(&argv,"%s auth_client '%s' '%s' '%s' '%s' '%s' '%s'",
 		binauth,
 		client->mac,
@@ -198,24 +208,32 @@ static int do_binauth(
 	debug(LOG_DEBUG, "BinAuth argv: %s", argv);
 
 	// ndsctl will deadlock if run within the BinAuth script so lock it
+	msg = safe_calloc(SMALL_BUF);
+
 	if(ndsctl_lock() == 0) {
 		// execute the script
-		rc = execute_ret_url_encoded(msg, sizeof(msg) - 1, argv);
+		rc = execute_ret_url_encoded(msg, SMALL_BUF, argv);
 		debug(LOG_DEBUG, "BinAuth returned arguments: %s", msg);
 
 		// unlock ndsctl
 		ndsctl_unlock();
 	}
 
+	free(custom_enc);
+	free(redirect_url_enc_buf);
+	free(enc_user_agent);
 	free(argv);
+
 
 	if (rc != 0) {
 		debug(LOG_DEBUG, "BinAuth script failed to execute");
+		free(msg);
 		return 0;
 	}
 
 	rc = sscanf(msg, "%d %llu %llu %llu %llu", &seconds, &upload_rate, &download_rate, &upload_quota, &download_quota);
 	debug(LOG_DEBUG, "BinAuth returned session length: %d", seconds);
+	free(msg);
 
 	// store assigned parameters
 	switch (rc) {
@@ -519,8 +537,8 @@ static int try_to_authenticate(struct MHD_Connection *connection, t_client *clie
 {
 	s_config *config;
 	const char *tok;
-	char rhid[128] = {0};
-	char *rhidraw = NULL;
+	char *rhid;
+	char *rhidraw;
 
 	config = config_get_config();
 
@@ -534,12 +552,15 @@ static int try_to_authenticate(struct MHD_Connection *connection, t_client *clie
 			// hid mode
 			rhidraw = safe_calloc(SMALL_BUF);
 			safe_asprintf(&rhidraw, "%s%s", client->hid, config->fas_key);
-			hash_str(rhid, sizeof(rhid), rhidraw);
+			rhid = safe_calloc(STATUS_BUF);
+			hash_str(rhid, STATUS_BUF, rhidraw);
 			free (rhidraw);
 			if (tok && !strcmp(rhid, tok)) {
 				// rhid is valid
+				free(rhid);
 				return 1;
 			}
+			free(rhid);
 		} else {
 			// tok mode
 			if (tok && !strcmp(client->token, tok)) {
@@ -582,9 +603,8 @@ static int authenticate_client(struct MHD_Connection *connection,
 	unsigned long long int downloadquota = 0;
 	int rc;
 	int ret;
-	char query_str[QUERYMAXLEN] = {0};
-	char redirect_url_enc[QUERYMAXLEN] = {0};
-	char *querystr = query_str;
+	char *redirect_url_enc;
+	char *querystr;
 	const char *custom;
 
 	client->window_counter = 0;
@@ -636,13 +656,17 @@ static int authenticate_client(struct MHD_Connection *connection,
 				FAS should account for this if used with BinAuth.
 			*/
 
-			uh_urlencode(redirect_url_enc, sizeof(redirect_url_enc), redirect_url, strlen(redirect_url));
+			redirect_url_enc = safe_calloc(REDIRECT_URL_ENC_BUF);
+			uh_urlencode(redirect_url_enc, REDIRECT_URL_ENC_BUF, redirect_url, strlen(redirect_url));
 
 			debug(LOG_DEBUG, "redirect_url after binauth deny: %s", redirect_url);
 			debug(LOG_DEBUG, "redirect_url_enc after binauth deny: %s", redirect_url_enc);
 
+			querystr = safe_calloc(QUERYMAXLEN);
 			querystr=construct_querystring(connection, client, redirect_url_enc, querystr);
 			ret = encode_and_redirect_to_splashpage(connection, client, redirect_url_enc, querystr);
+			free(querystr);
+			free(redirect_url_enc);
 			return ret;
 		}
 		rc = auth_client_auth(client->id, "client_auth", custom);
@@ -713,10 +737,10 @@ static int authenticated(struct MHD_Connection *connection,
 	s_config *config = config_get_config();
 	const char *host = config->gw_address;
 	char *redirect_to_us = NULL;
-	char *fasurl = NULL;
+	char *fasurl;
 	char *query;
 	char *msg;
-	char clientif[64] = {0};
+	char *clientif;
 	const char *accept;
 	char *originurl_raw = NULL;
 	char *captive_json = NULL;
@@ -740,6 +764,8 @@ static int authenticated(struct MHD_Connection *connection,
 	}
 
 	// Is it an RFC8908 type request? - check Accept: header
+
+	accept = safe_calloc(SMALL_BUF);
 	ret = MHD_get_connection_values(connection, MHD_HEADER_KIND, get_accept_callback, &accept);
 
 	if (ret < 1) {
@@ -803,7 +829,8 @@ static int authenticated(struct MHD_Connection *connection,
 	}
 
 	if (check_authdir_match(url, config->authdir)) {
-		get_client_interface(clientif, sizeof(clientif), client->mac);
+		clientif = safe_calloc(STATUS_BUF);
+		get_client_interface(clientif, STATUS_BUF, client->mac);
 
 		if (config->fas_port && !config->preauth) {
 			query = safe_calloc(QUERYMAXLEN);
@@ -823,7 +850,7 @@ static int authenticated(struct MHD_Connection *connection,
 			}
 
 			get_query(connection, &query, HTMLQUERYSEPARATOR);
-			fasurl = safe_calloc(QUERYMAXLEN);
+
 			safe_asprintf(&fasurl, "%s%s%sstatus=authenticated",
 				config->fas_url,
 				query,
@@ -832,6 +859,7 @@ static int authenticated(struct MHD_Connection *connection,
 			debug(LOG_DEBUG, "fasurl [%s]", fasurl);
 			debug(LOG_DEBUG, "query [%s]", query);
 			ret = send_redirect_temp(connection, client, fasurl);
+			free(clientif);
 			free(query);
 			free(fasurl);
 			return ret;
@@ -850,14 +878,17 @@ static int authenticated(struct MHD_Connection *connection,
 			debug(LOG_DEBUG, "fasurl %s", fasurl);
 			ret = show_preauthpage(connection, fasurl);
 			free(fasurl);
+			free(clientif);
 			return ret;	
 		}
+		free(clientif);
 	}
 
 	if (check_authdir_match(url, config->preauthdir)) {
 
 		if (config->fas_port) {
 			query = safe_calloc(QUERYMAXLEN);
+			fasurl = safe_calloc(QUERYMAXLEN);
 
 			if (!query) {
 				ret = send_error(connection, 503);
@@ -947,13 +978,11 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 	s_config *config = config_get_config();
 
 	char *msg;
-	const char *user_agent = NULL;
-	char enc_user_agent[256] = {0};
-	char *preauthpath = NULL;
-	char *cmd = NULL;
-
-	// Encoded querystring could be bigger than the unencoded version
-	char enc_query[QUERYMAXLEN + QUERYMAXLEN/2] = {0};
+	const char *user_agent;
+	char *enc_user_agent;
+	char *preauthpath;
+	char *cmd;
+	char *enc_query;
 
 	int rc;
 	int ret;
@@ -965,11 +994,16 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 	if (strcmp(preauthpath, config->fas_path) == 0) {
 		free (preauthpath);
 
+		user_agent = safe_calloc(USER_AGENT);
+		enc_user_agent = safe_calloc(ENC_USER_AGENT);
+
 		MHD_get_connection_values(connection, MHD_HEADER_KIND, get_user_agent_callback, &user_agent);
-		uh_urlencode(enc_user_agent, sizeof(enc_user_agent), user_agent, strlen(user_agent));
+
+		uh_urlencode(enc_user_agent, ENC_USER_AGENT, user_agent, strlen(user_agent));
 		debug(LOG_DEBUG, "PreAuth: Encoded User Agent is [ %s ]", enc_user_agent);
 
-		uh_urlencode(enc_query, sizeof(enc_query), query, strlen(query));
+		enc_query = safe_calloc(ENC_QUERYSTR);
+		uh_urlencode(enc_query, ENC_QUERYSTR, query, strlen(query));
 		debug(LOG_DEBUG, "PreAuth: Encoded query: %s", enc_query);
 
 		msg = safe_calloc(HTMLMAXSIZE);
@@ -977,6 +1011,8 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 		if (!msg) {
 			ret = send_error(connection, 503);
 			free(msg);
+			free(enc_user_agent);
+			free(enc_query);
 			return ret;
 		}
 
@@ -988,6 +1024,9 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 		if (rc != 0) {
 			debug(LOG_WARNING, "Preauth script - failed to execute: %s, Query[%s]", config->preauth, query);
 			free(msg);
+			free(enc_user_agent);
+			free(enc_query);
+
 			return send_error(connection, 511);
 		}
 
@@ -1001,9 +1040,15 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 		MHD_add_response_header(response, "Content-Type", "text/html; charset=utf-8");
 		ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
 		MHD_destroy_response(response);
+
+		free(enc_user_agent);
+		free(enc_query);
 		return ret;
 	} else {
 		free (preauthpath);
+		free(enc_user_agent);
+		free(enc_query);
+
 		return send_error(connection, 404);
 	}
 }
@@ -1060,7 +1105,7 @@ static int preauthenticated(struct MHD_Connection *connection, const char *url, 
 	const char *redirect_url;
 	char *query;
 	char *querystr;
-	char originurl[QUERYMAXLEN] = {0};
+	char *originurl;
 	char *originurl_raw = NULL;
 	char *captive_json = NULL;
 
@@ -1094,7 +1139,7 @@ static int preauthenticated(struct MHD_Connection *connection, const char *url, 
 
 		client->client_type = "cpi_api";
 
-		originurl_raw = safe_calloc(SMALL_BUF);
+		originurl_raw = safe_calloc(REDIRECT_URL);
 
 		if (strcmp(config->gw_fqdn, "disable") == 0 || strcmp(config->gw_fqdn, "disabled") == 0) {
 			safe_asprintf(&originurl_raw, "http://%s", config->gw_ip);
@@ -1102,13 +1147,16 @@ static int preauthenticated(struct MHD_Connection *connection, const char *url, 
 			safe_asprintf(&originurl_raw, "http://%s", config->gw_fqdn);
 		}
 
-		uh_urlencode(originurl, sizeof(originurl), originurl_raw, strlen(originurl_raw));
+		originurl = safe_calloc(REDIRECT_URL_ENC_BUF);
+		uh_urlencode(originurl, REDIRECT_URL_ENC_BUF, originurl_raw, strlen(originurl_raw));
 		debug(LOG_DEBUG, "originurl: %s", originurl);
 
 		querystr = safe_calloc(QUERYMAXLEN);
 
 		if (!querystr) {
 			ret = send_error(connection, 503);
+			free(originurl);
+			free(originurl_raw);
 			free(querystr);
 			return ret;
 		}
@@ -1121,6 +1169,9 @@ static int preauthenticated(struct MHD_Connection *connection, const char *url, 
 
 		if (!captive_json) {
 			ret = send_error(connection, 503);
+			free(originurl);
+			free(originurl_raw);
+			free(querystr);
 			free(captive_json);
 			return ret;
 		}
@@ -1130,9 +1181,10 @@ static int preauthenticated(struct MHD_Connection *connection, const char *url, 
 		debug(LOG_DEBUG, "captive_json [%s]", captive_json);
 		ret = send_json(connection, captive_json);
 
+		free(originurl);
 		free(originurl_raw);
-		free(captive_json);
 		free(querystr);
+		free(captive_json);
 		return ret;
 	}
 
@@ -1186,15 +1238,20 @@ static int preauthenticated(struct MHD_Connection *connection, const char *url, 
 	// request is directed to us, check if client wants to be authenticated
 	if (check_authdir_match(url, config->authdir)) {
 		debug(LOG_DEBUG, "authdir url detected: %s", url);
+
+		redirect_url = safe_calloc(REDIRECT_URL);
 		redirect_url = get_redirect_url(connection);
 
 		if (!try_to_authenticate(connection, client, host, url)) {
 			// user used an invalid token, redirect to splashpage but hold query "redir" intact
-			uh_urlencode(originurl, sizeof(originurl), redirect_url, strlen(redirect_url));
+			originurl = safe_calloc(REDIRECT_URL_ENC_BUF);
+			uh_urlencode(originurl, REDIRECT_URL_ENC_BUF, redirect_url, strlen(redirect_url));
+
 			querystr = safe_calloc(QUERYMAXLEN);
 
 			if (!querystr) {
 				ret = send_error(connection, 503);
+				free(originurl);
 				free(querystr);
 				return ret;
 			}
@@ -1202,11 +1259,13 @@ static int preauthenticated(struct MHD_Connection *connection, const char *url, 
 			querystr = construct_querystring(connection, client, originurl, querystr);
 
 			ret = encode_and_redirect_to_splashpage(connection, client, originurl, querystr);
+			free(originurl);
 			free(querystr);
 			return ret;
 		}
 
-		return authenticate_client(connection, redirect_url, client);
+		ret = authenticate_client(connection, redirect_url, client);
+		return ret;
 	}
 
 	// no special handling left - try to serve static content to the user
@@ -1292,7 +1351,7 @@ static int redirect_to_splashpage(struct MHD_Connection *connection, t_client *c
 		return ret;
 	}
 
-	originurl = safe_calloc(MAX_BUF);
+	originurl = safe_calloc(CUSTOM_ENC);
 
 	if (!originurl) {
 		ret = send_error(connection, 503);
@@ -1312,7 +1371,8 @@ static int redirect_to_splashpage(struct MHD_Connection *connection, t_client *c
 	debug(LOG_DEBUG, "Query string is [ %s ]", query);
 
 	safe_asprintf(&originurl_raw, "http://%s%s%s", host, url, query);
-	uh_urlencode(originurl, sizeof(originurl), originurl_raw, strlen(originurl_raw));
+	uh_urlencode(originurl, CUSTOM_ENC, originurl_raw, strlen(originurl_raw));
+	debug(LOG_DEBUG, "originurl_raw: %s", originurl_raw);
 	debug(LOG_DEBUG, "originurl: %s", originurl);
 
 	querystr=construct_querystring(connection, client, originurl, querystr);
@@ -1332,30 +1392,33 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 
 	char cid[87] = {0};
 	char *clienttype;
-	char clientif[64] = {0};
-	char query_str[QUERYMAXLEN] = {0};
-	char query_str_b64[QUERYMAXLEN] = {0};
+	char *clientif;
+	char *query_str;
+	char *query_str_b64;
 	char *msg;
 	char *cidinfo;
 	char *cidfile;
 	char *gw_url_raw;
-	char gw_url[SMALL_BUF] = {0};
-	char *phpcmd = NULL;
+	char *gw_url;
+	char *phpcmd;
 	int cidgood = 0;
 
 	s_config *config = config_get_config();
 
-	gw_url_raw = safe_calloc(SMALL_BUF);
+	gw_url_raw = safe_calloc(REDIRECT_URL);
+
 	if (strcmp(config->gw_fqdn, "disable") == 0 || strcmp(config->gw_fqdn, "disabled") == 0) {
 		safe_asprintf(&gw_url_raw, "http://%s", config->gw_ip);
 	} else {
 		safe_asprintf(&gw_url_raw, "http://%s", config->gw_fqdn);
 	}
 
-	uh_urlencode(gw_url, sizeof(gw_url), gw_url_raw, strlen(gw_url_raw));
+	gw_url = safe_calloc(REDIRECT_URL_ENC_BUF);
+	uh_urlencode(gw_url, REDIRECT_URL_ENC_BUF, gw_url_raw, strlen(gw_url_raw));
 	debug(LOG_DEBUG, "gw_url: %s", gw_url);
 	free (gw_url_raw);
 
+	clienttype = safe_calloc(STATUS_BUF);
 
 	if (!client->client_type || strlen(client->client_type) == 0) {
 		clienttype = safe_strdup("cpd_can");
@@ -1376,8 +1439,12 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 			if (config->fas_hid) {
 				debug(LOG_DEBUG, "hid=%s", client->hid);
 
-				get_client_interface(clientif, sizeof(clientif), client->mac);
+				clientif = safe_calloc(STATUS_BUF);
+
+				get_client_interface(clientif, STATUS_BUF, client->mac);
 				debug(LOG_DEBUG, "clientif: [%s] url_encoded_gw_name: [%s]", clientif, config->url_encoded_gw_name);
+
+				query_str = safe_calloc(QUERYMAXLEN);
 
 				snprintf(query_str, QUERYMAXLEN,
 					"hid=%s%sclientip=%s%sclientmac=%s%sclient_type=%s%sgatewayname=%s%sgatewayurl=%s%sversion=%s%sgatewayaddress=%s%sgatewaymac=%s%soriginurl=%s%sclientif=%s%sthemespec=%s%s%s%s%s%s",
@@ -1399,8 +1466,11 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 					config->custom_files
 				);
 
-				b64_encode(query_str_b64, sizeof(query_str_b64), query_str, strlen(query_str));
-				snprintf(querystr, QUERYMAXLEN*4/3,
+				query_str_b64 = safe_calloc(ENC_QUERYSTR);
+
+				b64_encode(query_str_b64, ENC_QUERYSTR, query_str, strlen(query_str));
+
+				snprintf(querystr, ENC_QUERYSTR,
 					"?fas=%s",
 					query_str_b64
 				);
@@ -1490,6 +1560,11 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 						free(cidinfo);
 					}
 				}
+
+				free(query_str);
+				free(query_str_b64);
+				free(clientif);
+
 			} else {
 				snprintf(querystr, QUERYMAXLEN,
 					"?clientip=%s&gatewayname=%s&redir=%s",
@@ -1503,6 +1578,7 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 
 		debug(LOG_DEBUG, "hid=%s", client->hid);
 
+		clientif = safe_calloc(STATUS_BUF);
 		get_client_interface(clientif, sizeof(clientif), client->mac);
 		debug(LOG_DEBUG, "clientif: [%s]", clientif);
 		snprintf(querystr, QUERYMAXLEN,
@@ -1564,12 +1640,15 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 			free(msg);
 			free(phpcmd);
 		}
+		free(clientif);
 
 	} else {
 		snprintf(querystr, QUERYMAXLEN, "?clientip=%s&gatewayname=%s", client->ip, config->url_encoded_gw_name);
 	}
 
 	debug(LOG_DEBUG, "Constructed Query String [%s]", querystr);
+	free(clienttype);
+	free(gw_url);
 	return querystr;
 }
 
@@ -1664,7 +1743,7 @@ static int get_query(struct MHD_Connection *connection, char **query, const char
 {
 	int element_counter;
 	char **elements;
-	char query_str[QUERYMAXLEN] = {0};
+	char *query_str;
 	struct collect_query collect_query;
 	int i;
 	int j;
@@ -1705,10 +1784,15 @@ static int get_query(struct MHD_Connection *connection, char **query, const char
 		return 0;
 	}
 
+	query_str = safe_calloc(QUERYMAXLEN);
+
 	for (i = 0, j = 0; i < element_counter; i++) {
 		if (!elements[i]) {
 			continue;
 		}
+
+		debug(LOG_DEBUG, " element [%d] is [%s]", i, elements[i]);
+
 		strncpy(*query + j, elements[i], length - j);
 		if (i == 0) {
 			// query_str is empty when i = 0 so safe to copy a single char into it
@@ -1729,7 +1813,9 @@ static int get_query(struct MHD_Connection *connection, char **query, const char
 		free(elements[i]);
 	}
 
+	debug(LOG_DEBUG, " query is [%s]", query_str);
 	strncpy(*query, query_str, QUERYMAXLEN);
+	free(query_str);
 	free(elements);
 	return 0;
 }
@@ -2043,10 +2129,14 @@ static int serve_file(struct MHD_Connection *connection, t_client *client, const
 
 size_t unescape(void * cls, struct MHD_Connection *c, char *src)
 {
-	char unescapecmd[QUERYMAXLEN] = {0};
-	char msg[QUERYMAXLEN] = {0};
+	char *unescapecmd;
+	char *msg;
 
 	debug(LOG_DEBUG, "Escaped string=%s\n", src);
+
+	unescapecmd = safe_calloc(QUERYMAXLEN);
+	msg = safe_calloc(QUERYMAXLEN);
+
 	snprintf(unescapecmd, QUERYMAXLEN, "/usr/lib/opennds/unescape.sh -url \"%s\"", src);
 	debug(LOG_DEBUG, "unescapecmd=%s\n", unescapecmd);
 
@@ -2054,6 +2144,9 @@ size_t unescape(void * cls, struct MHD_Connection *c, char *src)
 		debug(LOG_DEBUG, "Unescaped string=%s\n", msg);
 		strcpy(src, msg);
 	}
+
+	free(unescapecmd);
+	free(msg);
 
 	return strlen(src);
 }

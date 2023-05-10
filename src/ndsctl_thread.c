@@ -292,7 +292,7 @@ ndsctl_auth(FILE *fp, char *arg)
 	unsigned long long int downloadquota = config->download_quota;
 	char *libcmd;
 	char *msg;
-	char customdata[256] = {0};
+	char *customdata;
 	char *argcopy;
 	const char *arg2;
 	const char *arg3;
@@ -307,6 +307,8 @@ ndsctl_auth(FILE *fp, char *arg)
 	time_t now = time(NULL);
 
 	debug(LOG_DEBUG, "Entering ndsctl_auth [%s]", arg);
+
+	argcopy = safe_calloc(SMALL_BUF);
 
 	argcopy=strdup(arg);
 
@@ -362,8 +364,10 @@ ndsctl_auth(FILE *fp, char *arg)
 	arg8 = strsep(&argcopy, ",");
 	debug(LOG_DEBUG, "arg8 [%s]", arg8);
 
+	customdata = safe_calloc(CUSTOM_ENC);
+
 	if (arg8 != NULL) {
-	snprintf(customdata, sizeof(customdata), "%s", arg8);
+	snprintf(customdata, CUSTOM_ENC, "%s", arg8);
 	debug(LOG_DEBUG, "customdata [%s]", customdata);
 	}
 
@@ -378,6 +382,7 @@ ndsctl_auth(FILE *fp, char *arg)
 		// If Preemptive authentication is enabled we should try to auth by mac
 		debug(LOG_DEBUG, "Client is not in client list.");
 		// Build command to get client mac and ip
+		libcmd = safe_calloc(SMALL_BUF);
 		safe_asprintf(&libcmd, "/usr/lib/opennds/libopennds.sh clientaddress \"%s\"", arg2 );
 
 		msg = safe_calloc(64);
@@ -433,6 +438,8 @@ ndsctl_auth(FILE *fp, char *arg)
 					debug(LOG_DEBUG, "ip subnet test failed: Continuing...");
 				}
 			}
+		free(msg);
+
 		} else {
 			debug(LOG_DEBUG, "Client connection not found: Continuing...");
 			rc = -1;
@@ -460,6 +467,9 @@ ndsctl_auth(FILE *fp, char *arg)
 
 			rc = auth_client_auth_nolock(id, "ndsctl_auth", customdata);
 		}
+
+	free(argcopy);
+
 	} else {
 		// Client is neither preauthenticated nor authenticated
 		// If Preemptive authentication is enabled we should have tried to auth by mac
@@ -475,6 +485,7 @@ ndsctl_auth(FILE *fp, char *arg)
 		fprintf(fp, "No");
 	}
 
+	free(customdata);
 	debug(LOG_DEBUG, "Exiting ndsctl_auth...");
 }
 

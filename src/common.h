@@ -39,8 +39,29 @@
 /** @brief exec return status buffer size */
 #define STATUS_BUF 256
 
+/** @brief exec return user_agent buffer size */
+#define USER_AGENT (SMALL_BUF * 2)
+
+/** @brief exec return enc_user_agent buffer size */
+#define ENC_USER_AGENT (SMALL_BUF * 2)
+
+/** @brief exec return custom string buffer size */
+#define CUSTOM (MID_BUF)
+
+/** @brief exec return custom_enc string buffer size */
+#define CUSTOM_ENC (MID_BUF + SMALL_BUF)
+
+/** @brief exec return redirect_url string buffer size */
+#define REDIRECT_URL (MID_BUF)
+
+/** @brief exec return redirect_url_enc_buf string buffer size */
+#define REDIRECT_URL_ENC_BUF (REDIRECT_URL * 1.333)
+
 /* Max length of a query string in bytes */
 #define QUERYMAXLEN 8192
+
+/* Max length of a query string in bytes */
+#define ENC_QUERYSTR (QUERYMAXLEN * 1.333)
 
 /* Separator for Preauth and Encrypted query string */
 #define QUERYSEPARATOR ", "

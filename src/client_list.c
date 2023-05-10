@@ -151,7 +151,7 @@ _client_list_append(const char mac[], const char ip[])
  */
 void client_reset(t_client *client)
 {
-	char hash[STATUS_BUF] = {0};
+	char *hash;
 	char *msg;
 	char *cidinfo;
 
@@ -166,10 +166,12 @@ void client_reset(t_client *client)
 	client->session_end = 0;
 
 	// Reset token and hid
+	hash = safe_calloc(STATUS_BUF);
 	client->token = safe_calloc(STATUS_BUF);
 	safe_asprintf(&client->token, "%04hx%04hx", rand16(), rand16());
-	hash_str(hash, sizeof(hash), client->token);
+	hash_str(hash, STATUS_BUF, client->token);
 	client->hid = safe_strdup(hash);
+	free(hash);
 
 	// Reset custom and client_type
 	client->custom = safe_calloc(MID_BUF);
@@ -361,22 +363,31 @@ client_list_find_by_token(const char token[])
 	t_client *ptr;
 	s_config *config;
 	config = config_get_config();
-	char rhid[128] = {0};
+	char *rhid;
 	char *rhidraw = NULL;
 
 	ptr = firstclient;
+
 	while (ptr) {
 		//Check if token (tok) or hash_id (hid) mode
 		if (strlen(token) > 8) {
 			// hid mode
+			rhidraw = safe_calloc(SMALL_BUF);
 			safe_asprintf(&rhidraw, "%s%s", ptr->hid, config->fas_key);
-			hash_str(rhid, sizeof(rhid), rhidraw);
-			free (rhidraw);
+
+			rhid = safe_calloc(SMALL_BUF);
+			hash_str(rhid, SMALL_BUF, rhidraw);
+
+			free(rhidraw);
 
 			if (token && !strcmp(rhid, token)) {
 				// rhid is valid
+				free (rhid);
 				return ptr;
 			}
+
+			free(rhid);
+
 		} else {
 			// tok mode
 			if (token && !strcmp(ptr->token, token)) {

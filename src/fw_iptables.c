@@ -479,9 +479,6 @@ iptables_fw_init(void)
 	// CHAIN_TO_INTERNET, packets marked TRUSTED:
 	rc |= nftables_do_command("add rule ip nds_filter %s mark and 0x%x == 0x%x counter accept", CHAIN_TO_INTERNET, FW_MARK_MASK, FW_MARK_TRUSTED);
 
-	// Add basic rule to CHAIN_UPLOAD_RATE for upload rate limiting
-	rc |= nftables_do_command("insert rule ip nds_filter %s counter return", CHAIN_UPLOAD_RATE);
-
 	// CHAIN_TO_INTERNET, packets marked AUTHENTICATED:
 
 	/* if authenticated-users ruleset is empty:
@@ -494,9 +491,6 @@ iptables_fw_init(void)
 
 	// CHAIN_AUTHENTICATED, jump to CHAIN_UPLOAD_RATE to handle upload rate limiting
 	rc |= nftables_do_command("add rule ip nds_filter %s counter jump %s", CHAIN_AUTHENTICATED, CHAIN_UPLOAD_RATE);
-
-	// CHAIN_AUTHENTICATED, related and established packets ACCEPT
-	rc |= nftables_do_command("add rule ip nds_filter %s ct state related,established counter accept", CHAIN_AUTHENTICATED);
 
 	// CHAIN_AUTHENTICATED, append the "authenticated-users" ruleset
 	if (is_empty_ruleset("authenticated-users")) {
@@ -746,7 +740,7 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 
 		libcommand = safe_calloc(SMALL_BUF);
 
-		safe_asprintf(&libcommand, "/usr/lib/opennds/libopennds.sh replace_client_rule nds_filter %s return %s \"ip daddr %s counter packets %llu bytes %llu return\"",
+		safe_asprintf(&libcommand, "/usr/lib/opennds/libopennds.sh replace_client_rule nds_filter %s return %s \"ip saddr %s counter packets %llu bytes %llu return\"",
 			CHAIN_UPLOAD_RATE,
 			client->ip,
 			client->ip,
@@ -766,7 +760,7 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 		// Update limiting rule set for this client
 		libcommand = safe_calloc(SMALL_BUF);
 
-		safe_asprintf(&libcommand, "/usr/lib/opennds/libopennds.sh replace_client_rule nds_filter %s return %s \"ip daddr %s limit rate %llu/minute burst %llu packets counter packets %llu bytes %llu return\"",
+		safe_asprintf(&libcommand, "/usr/lib/opennds/libopennds.sh replace_client_rule nds_filter %s return %s \"ip saddr %s limit rate %llu/minute burst %llu packets counter packets %llu bytes %llu return\"",
 			CHAIN_UPLOAD_RATE,
 			client->ip,
 			client->ip,
@@ -795,9 +789,9 @@ iptables_fw_authenticate(t_client *client)
 	debug(LOG_NOTICE, "Authenticating %s %s", client->ip, client->mac);
 
 	// This rule is for marking upload (outgoing) packets, and for upload byte accounting. Drop all bucket overflow packets
-	rc |= nftables_do_command("add rule ip nds_mangle %s ip saddr %s ether saddr %s counter meta mark set mark or 0x%x", CHAIN_OUTGOING, client->ip, client->mac, FW_MARK_AUTHENTICATED);
-	rc |= nftables_do_command("insert rule ip nds_filter %s ip daddr %s counter drop", CHAIN_UPLOAD_RATE, client->ip);
-	rc |= nftables_do_command("insert rule ip nds_filter %s ip saddr %s counter return", CHAIN_UPLOAD_RATE, client->ip);
+	rc |= nftables_do_command("insert rule ip nds_mangle %s ip saddr %s ether saddr %s counter meta mark set mark or 0x%x", CHAIN_OUTGOING, client->ip, client->mac, FW_MARK_AUTHENTICATED);
+	rc |= nftables_do_command("add rule ip nds_filter %s ip saddr %s counter return", CHAIN_UPLOAD_RATE, client->ip);
+	rc |= nftables_do_command("add rule ip nds_filter %s ip saddr %s counter drop", CHAIN_UPLOAD_RATE, client->ip);
 
 	// This rule is just for download (incoming) byte accounting. Drop all bucket overflow packets
 	rc |= nftables_do_command("insert rule ip nds_mangle %s ip daddr %s counter meta mark set mark or 0x%x", CHAIN_INCOMING, client->ip, FW_MARK_AUTHENTICATED);

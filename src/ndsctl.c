@@ -252,7 +252,7 @@ connect_to_server(const char sock_name[])
 	strncpy(sa_un.sun_path, sock_name, (sizeof(sa_un.sun_path) - 1));
 
 	if (connect(sock, (struct sockaddr *)&sa_un, strlen(sa_un.sun_path) + sizeof(sa_un.sun_family))) {
-		fprintf(stderr, "ndsctl: opennds probably not started (Error: %s)\n", strerror(errno));
+		fprintf(stderr, "ndsctl: opennds probably not yet started (Error: %s)\n", strerror(errno));
 		remove(lockfile);
 		return -1;
 	}

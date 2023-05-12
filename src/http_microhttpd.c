@@ -1579,7 +1579,7 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 		debug(LOG_DEBUG, "hid=%s", client->hid);
 
 		clientif = safe_calloc(STATUS_BUF);
-		get_client_interface(clientif, sizeof(clientif), client->mac);
+		get_client_interface(clientif, STATUS_BUF, client->mac);
 		debug(LOG_DEBUG, "clientif: [%s]", clientif);
 		snprintf(querystr, QUERYMAXLEN,
 			"hid=%s%sclientip=%s%sclientmac=%s%sclient_type=%s%sgatewayname=%s%sgatewayurl=%s%sversion=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s%sthemespec=%s%s%s%s%s%s",

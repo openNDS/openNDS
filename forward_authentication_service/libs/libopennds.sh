@@ -715,10 +715,16 @@ write_log () {
 
 		logfile="$logdir""$logname"
 		awkcmd="awk ""'\$6==""\"$log_mountpoint\"""{print \$4}'"
-		datetime=$(date)
 
-		if [ ! -f "$logfile" ]; then
-			echo "$datetime, New log file created" > $logfile
+		if [ -z "$date_inhibit" ];then
+			datetime=$(date)
+			datetime="$datetime, "
+
+			if [ ! -f "$logfile" ]; then
+				echo "$datetime""New log file created" > $logfile
+			fi
+		else
+			touch $logfile
 		fi
 
 		if [ ! -z "$mountcheck" ]; then
@@ -751,13 +757,13 @@ write_log () {
 				sizeratio=$(($available/$filesize))
 
 				if [ $sizeratio -ge $min_freespace_to_log_ratio ]; then
-					echo "$datetime, $loginfo" >> $logfile
+					echo "$datetime""$loginfo" >> $logfile
 				else
 					echo "Log file too big, please archive contents and reduce max_log_entries" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 				fi
 			else
 				if [ "$available" > 10 ];then
-					echo "$datetime, $loginfo" >> $logfile
+					echo "$datetime""$loginfo" >> $logfile
 				else
 					echo "Log file too big, please archive contents and reduce max_log_entries" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 				fi
@@ -1476,6 +1482,20 @@ auth_restore () {
 	option="downloadrate"
 	get_option_from_config
 
+	# Check if openNDS is running
+	local timeout=8
+
+	for tic in $(seq $timeout); do
+		ndsctl status > /dev/null
+		ndsstatus=$?
+
+		if [ $ndsstatus -eq 0 ]; then
+			break
+		fi
+
+		sleep 1
+	done
+
 	while read -r client; do
 		b64mac="$(echo "$client" | awk -F"=" '{printf("%s", $1)}')""=="
 		client_mac=$(ndsctl b64decode "$b64mac")
@@ -1509,9 +1529,16 @@ auth_restore () {
 		if [ $reauth -eq 1 ]; then
 			ndsctlcmd="auth $client_mac $sessiontimeout"
 			do_ndsctl
+
 			syslogmessage=$ndsctlout
 			# $syslogmessage contains the response from do_ndsctl
-			debugtype="notice"
+
+			if [ "$ndsstatus" = "authenticated" ]; then
+				debugtype="notice"
+			else
+				debugtype="debug"
+			fi
+
 			write_to_syslog
 		fi
 
@@ -1870,13 +1897,25 @@ elif [ "$1" = "get_interface_by_ip" ]; then
 
 elif [ "$1" = "write_log" ]; then
 	# $2 contains the string to log
+	# $3 contains the log filename (defaulting to ndslog.log if not set)
+	# $4 contains the date inhibit flag. If set to anything, the leading date field will be inhibited from the log entry
 	if [ -z "$2" ]; then
 		exit 1
 	else
-		loginfo="$2"
 		configure_log_location
+		loginfo="$2"
+
+		if [ ! -z "$3" ]; then
+			logname="$3"
+		fi
+
+		if [ ! -z "$4" ]; then
+			date_inhibit="$4"
+		fi
+
 		write_log
 		printf "%s" "done"
+		exit 0
 	fi
 
 elif [ "$1" = "dhcpcheck" ]; then

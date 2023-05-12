@@ -95,67 +95,7 @@ configure_log_location() {
 }
 
 write_log () {
-	mountcheck=$(df | grep "$log_mountpoint")
-
-	if [ ! -z "$logname" ]; then
-
-		if [ ! -d "$logdir" ]; then
-			mkdir -p "$logdir"
-		fi
-
-		logfile="$logdir""$logname"
-		awkcmd="awk ""'\$6==""\"$log_mountpoint\"""{print \$4}'"
-
-		if [ -z "$logtype" ]; then
-			datetime="$(date), "
-		else
-			datetime=""
-		fi
-
-		if [ ! -f "$logfile" ]; then
-			echo "# $datetime New log file created" > $logfile
-		fi
-
-		if [ ! -z "$mountcheck" ]; then
-			# Truncate the log file if max_log_entries is set
-			max_log_entries=""
-			option="max_log_entries"
-			get_option_from_config
-
-			if [ ! -z "$max_log_entries" ]; then
-				mv "$logfile" "$logfile.cut"
-				tail -n "$max_log_entries" "$logfile.cut" >> "$logfile"
-				rm "$logfile.cut"
-			fi
-
-			available=$(df | grep "$log_mountpoint" | eval "$awkcmd")
-
-			if [ "$log_mountpoint" = "$mountpoint" ]; then
-				# Logging to tmpfs, so dynamically adjust max log size
-				# then check the logfile is not too big
-				min_freespace_to_log_ratio=10
-				filesize=$(ls -s -1 $logfile | awk -F' ' '{print $1}')
-				sizeratio=$(($available/($filesize+1)))
-
-				if [ $sizeratio -ge $min_freespace_to_log_ratio ]; then
-					echo "$datetime""$log_entry" >> $logfile
-				else
-					echo "Log file too big, please archive contents and reduce max_log_entries" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
-				fi
-			else
-				# Logging to dedicated storage eg usb drive
-				# so just check for free space and let the log file grow
-
-				if [ "$available" > 10 ];then
-					echo "$datetime""$log_entry" >> $logfile
-				else
-					echo "Log file too big, please archive contents and reduce max_log_entries" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
-				fi
-			fi
-		else
-			echo "Log location is NOT a mountpoint - logging disabled" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
-		fi
-	fi
+	/usr/lib/opennds/libopennds.sh "write_log" "$loginfo" "$logname" "$date_inhibit"
 }
 
 #### end of functions ####
@@ -205,7 +145,7 @@ if [ $action = "auth_client" ]; then
 	# For example, to decode customdata use:
 	# customdata=$(ndsctl b64decode "$customdata")
 
-	log_entry="method=$1, clientmac=$2, clientip=$5, useragent=$4, token=$6, custom=$7"
+	loginfo="method=$1, clientmac=$2, clientip=$5, useragent=$4, token=$6, custom=$7"
 
 else
 	# All other methods
@@ -222,13 +162,13 @@ else
 	customdata=$8
 
 	# Build the log entry:
-	log_entry="method=$1, clientmac=$2, bytes_incoming=$3, bytes_outgoing=$4, session_start=$5, session_end=$6, token=$7, custom=$customdata"
+	loginfo="method=$1, clientmac=$2, bytes_incoming=$3, bytes_outgoing=$4, session_start=$5, session_end=$6, token=$7, custom=$customdata"
 
 	action=$(echo "$1" | awk -F"_" '{printf("%s", $2)}')
 
 	# Send the deauth log to FAS if fas_secure_enabled = 3, if not =3 library call does nothing
 	if [ "$action" = "deauth" ]; then
-		returned=$(/usr/lib/opennds/libopennds.sh "send_to_fas_deauthed" "$log_entry")
+		returned=$(/usr/lib/opennds/libopennds.sh "send_to_fas_deauthed" "$loginfo")
 	fi
 
 fi
@@ -268,7 +208,7 @@ if [ ! -z "$cidfile" ]; then
 	. $mountpoint/ndscids/$cidfile
 
 	# Add a selection of client data variables to the log entry
-	log_entry="$log_entry, client_type=$client_type, gatewayname=$gatewayname, ndsversion=$version, originurl=$originurl"
+	loginfo="$loginfo, client_type=$client_type, gatewayname=$gatewayname, ndsversion=$version, originurl=$originurl"
 else
 	clientmac=$2
 fi
@@ -278,11 +218,13 @@ fi
 get_client_zone
 
 # Add client_zone to the log entry
-log_entry="$log_entry, client_zone=$client_zone"
+loginfo="$loginfo, client_zone=$client_zone"
 
 # Append to the log.
 logname="$fulllog"
 logtype=""
+date_inhibit=""
+
 write_log
 
 # Append to the authenticated clients list
@@ -292,13 +234,15 @@ if [ "$action" = "auth_client" ] || [ "$action" = "auth" ]; then
 	logname="$authlog"
 	b64mac=$(ndsctl b64encode "$clientmac")
 	b64mac=$(echo "$b64mac" | tr -d "=")
-	log_entry="$b64mac=$session_end"
+	loginfo="$b64mac=$session_end"
 	logtype="raw"
 	logfile="$logdir""$logname"
 
 	if [ -f "$logdir""$logname" ]; then
 		sed -i "/\b$b64mac\b/d" "$logfile"
 	fi
+
+	date_inhibit="date_inhibit"
 
 	write_log
 fi

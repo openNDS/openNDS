@@ -634,7 +634,7 @@ get_iface_mac(const char ifname[])
 
 	config = config_get_config();
 
-	debug(LOG_NOTICE, "Attempting to get mac of interface: %s", ifname);
+	debug(LOG_DEBUG, "Attempting to get mac of interface: %s", ifname);
 
 	if (config->gw_mac == NULL) {
 		config->gw_mac = safe_strdup("00:00:00:00:00:00");

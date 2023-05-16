@@ -376,6 +376,9 @@ int ndsctl_lock(char *mountpoint, int *lockfd)
 		// This is a normal operating state, no need to report to syslog
 		// It is the responsibility of the caller to check return code and retry if required
 		close(*lockfd);
+
+		printf("ndsctl thread is busy, please try later.\n");
+
 		return 4;
 	}
 }

@@ -532,7 +532,10 @@ configure_log_location() {
 	# set default values
 	mountpoint="/tmp"
 	logdir="/tmp/ndslog/"
-	logname="ndslog.log"
+
+	if [ -z "$logname"]; then
+		logname="ndslog.log"
+	fi
 
 	for var in $tempdir; do
 		_mountpoint=$(df | awk -F ' ' '$1=="tmpfs" && $6=="'$var'" {print $6}')
@@ -544,15 +547,15 @@ configure_log_location() {
 	done
 
 	# Check if config overrides mountpoint for logdir
-	log_mountpoint=""
 	option="log_mountpoint"
+
 	get_option_from_config
 
-	if [ ! -z "$log_mountpoint" ]; then
-		logdir="$log_mountpoint/ndslog/"
-	else
+	if [ -z "$log_mountpoint" ]; then
 		log_mountpoint="$mountpoint"
 	fi
+
+	logdir="$log_mountpoint/ndslog/"
 
 	# Get PID For syslog
 	ndspid=$(pgrep '/usr/bin/opennds')
@@ -704,6 +707,7 @@ auth_log () {
 }
 
 write_log () {
+	configure_log_location
 	mountcheck=$(df | grep -w  "$log_mountpoint")
 
 	if [ ! -z "$logname" ]; then
@@ -714,6 +718,7 @@ write_log () {
 
 
 		logfile="$logdir""$logname"
+
 		awkcmd="awk ""'\$6==""\"$log_mountpoint\"""{print \$4}'"
 
 		if [ -z "$date_inhibit" ];then
@@ -989,21 +994,45 @@ mhd_get_status() {
 	fi
 }
 
+
 get_option_from_config() {
-	param=""
 
-	if [ -e "/etc/config/opennds" ]; then
-		param=$(uci -q get opennds.@opennds[0].$option | awk '{printf("%s", $0)}' | tr -d "'")
+	type uci &> /dev/null
+	uci_status=$?
 
-	elif [ -e "/etc/opennds/opennds.conf" ]; then
-		param=$(cat /etc/opennds/opennds.conf | grep -i -w "$option" | awk -F"#" '{print $1}' | awk 'NF==2 {printf $2}')
-
+	if [ $uci_status -eq 0 ]; then
+		param=$(uci export opennds | grep "option" | grep "$option" | awk -F"'" 'NF > 1 {printf "%s ", $2}')
+	else
+		param=$(cat /etc/config/opennds | grep "option" | grep "$option" | awk -F"#" '{printf "%s\n", $1}' | awk -F"'" 'NF > 1 {printf "%s ", $2}')
 	fi
 
+	# remove trailing space character
+	param=$(echo "$param" | sed 's/.$//')
+
+	# urlencode
 	urlencode "$param"
 	param=$urlencoded
 	eval $option="$param" &>/dev/null
 }
+
+
+get_list_from_config() {
+
+	type uci &> /dev/null
+	uci_status=$?
+
+	if [ $uci_status -eq 0 ]; then
+		param=$(uci export opennds | grep "list" | grep "$list" | awk -F"'" 'NF > 1 {printf "%s ", $2}')
+	else
+		param=$(cat /etc/config/opennds | grep "list" | grep "$list" | awk -F"#" '{printf "%s\n", $1}' | awk -F"'" 'NF > 1 {printf "%s ", $2}')
+	fi
+
+	# remove trailing space character
+	param=$(echo "$param" | sed 's/.$//')
+
+	eval $list="$param" &>/dev/null
+}
+
 
 get_key_from_config() {
 	option="faskey"
@@ -1486,7 +1515,7 @@ auth_restore () {
 	local timeout=8
 
 	for tic in $(seq $timeout); do
-		ndsctl status > /dev/null
+		ndsctl status &> /dev/null
 		ndsstatus=$?
 
 		if [ $ndsstatus -eq 0 ]; then
@@ -1515,6 +1544,8 @@ auth_restore () {
 		fi
 
 		was_authed=$(grep "$client_mac" "$binauthlog" | tail -1 | awk -F"method=" '{print $2}' | awk -F", " '{print $1}' | grep "deauth")
+
+		reauth=0
 
 		if [ -z "$was_authed" ]; then
 			reauth=1
@@ -1792,7 +1823,15 @@ elif [ "$1" = "get_option_from_config" ]; then
 	# $2 contains the option to get
 	option=$2
 	get_option_from_config
-	printf "%s" $param
+	echo -n "$param"
+	exit 0
+
+elif [ "$1" = "get_list_from_config" ]; then
+	# Get the config list value(s)
+	# $2 contains the list to get
+	list=$2
+	get_list_from_config
+	echo -n "$param"
 	exit 0
 
 elif [ "$1" = "debuglevel" ]; then
@@ -1902,7 +1941,6 @@ elif [ "$1" = "write_log" ]; then
 	if [ -z "$2" ]; then
 		exit 1
 	else
-		configure_log_location
 		loginfo="$2"
 
 		if [ ! -z "$3" ]; then
@@ -2244,6 +2282,14 @@ elif [ "$1" = "auth_restore" ]; then
 	# Restore the authentication of clients after a restart
 	# Reads the authenticated client database if created by Binauth
 	auth_restore
+
+	exit 0
+
+elif [ "$1" = "configure_log_location" ]; then
+	# Configure the log location
+	# Returns the directory into which log files should be stored
+	configure_log_location
+	echo -n "$logdir"
 
 	exit 0
 

@@ -47,59 +47,56 @@
 #else
 #define DEFAULT_CONFIGFILE SYSCONFDIR"/opennds/opennds.conf"
 #endif
-#define DEFAULT_DAEMON 1
-#define DEFAULT_DEBUGLEVEL 1
-#define DEFAULT_MAXCLIENTS 250
-#define DEFAULT_ONLINE_STATUS 0
+#define DEFAULT_DAEMON "1"
+#define DEFAULT_DEBUGLEVEL "1"
+#define DEFAULT_MAXCLIENTS "250"
+#define DEFAULT_ONLINE_STATUS "0"
 #define DEFAULT_GATEWAYINTERFACE "br-lan"
 #define DEFAULT_GATEWAY_IPRANGE "0.0.0.0/0"
 #define DEFAULT_GATEWAYNAME "openNDS"
-#define DEFAULT_ENABLE_SERIAL_NUMBER_SUFFIX 1
-#define DEFAULT_GATEWAYPORT 2050
+#define DEFAULT_ENABLE_SERIAL_NUMBER_SUFFIX "1"
+#define DEFAULT_GATEWAYPORT "2050"
 #define DEFAULT_GATEWAYFQDN "status.client"
-#define DEFAULT_DHCP_DEFAULT_URL_ENABLE 1
+#define DEFAULT_DHCP_DEFAULT_URL_ENABLE "1"
 #define DEFAULT_STATUSPATH "/usr/lib/opennds/client_params.sh"
 #define DEFAULT_LOG_MOUNTPOINT "/tmp"
-#define DEFAULT_MAX_PAGE_SIZE 10240
-#define DEFAULT_FASPORT 0
-#define DEFAULT_LOGIN_OPTION_ENABLED 0
-#define DEFAULT_MAX_LOG_ENTRIES 100
-#define DEFAULT_USE_OUTDATED_MHD 0
-#define DEFAULT_ALLOW_PREEMPTIVE_AUTHENTICATION 1
-#define DEFAULT_UNESCAPE_CALLBACK_ENABLED 0
-#define DEFAULT_FAS_SECURE_ENABLED 1
+#define DEFAULT_MAX_PAGE_SIZE "10240"
+#define DEFAULT_FASPORT "0"
+#define DEFAULT_LOGIN_OPTION_ENABLED "0"
+#define DEFAULT_MAX_LOG_ENTRIES "100"
+#define DEFAULT_USE_OUTDATED_MHD "0"
+#define DEFAULT_ALLOW_PREEMPTIVE_AUTHENTICATION "1"
+#define DEFAULT_UNESCAPE_CALLBACK_ENABLED "0"
+#define DEFAULT_FAS_SECURE_ENABLED "1"
 #define DEFAULT_FASPATH "/"
 #define DEFAULT_FASKEY "1234567890"
 #define DEFAULT_BINAUTH "/usr/lib/opennds/binauth_log.sh"
-#define DEFAULT_CHECKINTERVAL 15
-#define DEFAULT_SESSION_TIMEOUT 1440
-#define DEFAULT_PREAUTH_IDLE_TIMEOUT 30
-#define DEFAULT_AUTH_IDLE_TIMEOUT 120
-#define DEFAULT_REMOTES_REFRESH_INTERVAL 0
+#define DEFAULT_CHECKINTERVAL "15"
+#define DEFAULT_SESSION_TIMEOUT "1440"
+#define DEFAULT_PREAUTH_IDLE_TIMEOUT "30"
+#define DEFAULT_AUTH_IDLE_TIMEOUT "120"
+#define DEFAULT_REMOTES_REFRESH_INTERVAL "0"
 #define DEFAULT_WEBROOT "/etc/opennds/htdocs"
 #define DEFAULT_AUTHDIR "opennds_auth"
 #define DEFAULT_DENYDIR "opennds_deny"
 #define DEFAULT_PREAUTHDIR "opennds_preauth"
-#define DEFAULT_SET_MSS 1 //allow setting the TCP Maximum Segment Size
-#define DEFAULT_MSS_VALUE 0 // value to set the MSS. 0 means use max possible ie clamp-mss-to-pmtu
-#define DEFAULT_RATE_CHECK_WINDOW 2 // The data rate check moving average window size multiply this by CHECKINTERVAL to give window size (or burst interval) in seconds
-#define DEFAULT_UPLOAD_RATE 0 // 0 means no limit
-#define DEFAULT_DOWNLOAD_RATE 0 // 0 means no limit
-#define DEFAULT_UPLOAD_BUCKET_RATIO 1 // Allows control of upload rate limit threshold overrun per client
-#define DEFAULT_DOWNLOAD_BUCKET_RATIO 1 // Allows control of download rate limit threshold overrun per client
-#define DEFAULT_MAX_UPLOAD_BUCKET_SIZE 250 // Allows control over upload rate limiting packet loss at the expense of increased latency
-#define DEFAULT_MAX_DOWNLOAD_BUCKET_SIZE 250 // Allows control over download rate limiting packet loss at the expense of increased latency
-#define DEFAULT_UPLOAD_QUOTA 0 // 0 means no limit
-#define DEFAULT_DOWNLOAD_QUOTA 0 // 0 means no limit
-#define DEFAULT_UPLOAD_UNRESTRICTED_BURSTING 0 // 0 means disabled, 1 means enabled
-#define DEFAULT_DOWNLOAD_UNRESTRICTED_BURSTING 0 // 0 means disabled, 1 means enabled
-#define DEFAULT_LOG_SYSLOG 0
-#define DEFAULT_LOG_SYSLOG 0
-#define DEFAULT_SYSLOG_FACILITY LOG_DAEMON
+#define DEFAULT_SET_MSS "1" //allow setting the TCP Maximum Segment Size
+#define DEFAULT_MSS_VALUE "0" // value to set the MSS. 0 means use max possible ie clamp-mss-to-pmtu
+#define DEFAULT_RATE_CHECK_WINDOW "2" // The data rate check moving average window size multiply this by CHECKINTERVAL to give window size (or burst interval) in seconds
+#define DEFAULT_UPLOAD_RATE "0" // 0 means no limit
+#define DEFAULT_DOWNLOAD_RATE "0" // 0 means no limit
+#define DEFAULT_UPLOAD_BUCKET_RATIO "1" // Allows control of upload rate limit threshold overrun per client
+#define DEFAULT_DOWNLOAD_BUCKET_RATIO "1" // Allows control of download rate limit threshold overrun per client
+#define DEFAULT_MAX_UPLOAD_BUCKET_SIZE "250" // Allows control over upload rate limiting packet loss at the expense of increased latency
+#define DEFAULT_MAX_DOWNLOAD_BUCKET_SIZE "250" // Allows control over download rate limiting packet loss at the expense of increased latency
+#define DEFAULT_UPLOAD_QUOTA "0" // 0 means no limit
+#define DEFAULT_DOWNLOAD_QUOTA "0" // 0 means no limit
+#define DEFAULT_UPLOAD_UNRESTRICTED_BURSTING "0" // 0 means disabled, 1 means enabled
+#define DEFAULT_DOWNLOAD_UNRESTRICTED_BURSTING "0" // 0 means disabled, 1 means enabled
 #define DEFAULT_NDSCTL_SOCK "ndsctl.sock"
-#define DEFAULT_FW_MARK_AUTHENTICATED 0x30000
+#define DEFAULT_FW_MARK_AUTHENTICATED "0x30000"
 #define DEFAULT_AUTHENTICATION_MARK "0x00030000"
-#define DEFAULT_FW_MARK_TRUSTED 0x20000
+#define DEFAULT_FW_MARK_TRUSTED "0x20000"
 /* N.B.: default policies here must be ACCEPT, REJECT, or RETURN
  * In the .conf file, they must be allow, block, or passthrough
  * Mapping between these enforced by parse_empty_ruleset_policy()
@@ -274,9 +271,6 @@ s_config *config_get_config(void);
 
 // @brief Initialise the conf system
 void config_init(void);
-
-// @brief Initialize the variables we override with the command line
-void config_init_override(void);
 
 // @brief Reads the configuration file
 void config_read(const char filename[]);

@@ -911,11 +911,12 @@ main_loop(void)
 	system(cmd);
 	free(cmd);
 
-
 	result = pthread_join(tid, NULL);
+
 	if (result) {
 		debug(LOG_INFO, "Failed to wait for opennds thread.");
 	}
+
 	//MHD_stop_daemon(webserver);
 	stop_mhd();
 
@@ -928,13 +929,11 @@ main_loop(void)
 int main(int argc, char **argv)
 {
 	s_config *config = config_get_config();
-	config_init();
-
-	parse_commandline(argc, argv);
 
 	// Initialize the config
-	debug(LOG_NOTICE, "openNDS Version %s is in startup\n", VERSION);
-	debug(LOG_INFO, "Reading and validating configuration file %s", config->configfile);
+	config_init();
+	parse_commandline(argc, argv);
+
 	config_read(config->configfile);
 	config_validate();
 

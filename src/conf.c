@@ -101,8 +101,6 @@ typedef enum {
 	oAuthIdleTimeout,
 	oRemotesRefreshInterval,
 	oCheckInterval,
-	oSetMSS,
-	oMSSValue,
 	oRateCheckWindow,
 	oDownloadRate,
 	oUploadRate,
@@ -177,8 +175,6 @@ static const struct {
 	{ "authidletimeout", oAuthIdleTimeout },
 	{ "remotes_refresh_interval", oRemotesRefreshInterval },
 	{ "checkinterval", oCheckInterval },
-	{ "setmss", oSetMSS },
-	{ "mssvalue", oMSSValue },
 	{ "ratecheckwindow", oRateCheckWindow },
 	{ "downloadrate", oDownloadRate },
 	{ "uploadrate", oUploadRate },
@@ -233,42 +229,152 @@ config_get_config(void)
 	return &config;
 }
 
+char *set_option_str(char *option, const char *default_option, char *debug_level)
+{
+	char msg[SMALL_BUF];
+	char debuglevel[STATUS_BUF];
+
+	memset(msg, 0, SMALL_BUF);
+	memset(debuglevel, 0, STATUS_BUF);
+
+	get_option_from_config(msg, SMALL_BUF, option);
+
+	if (strcmp(msg, "") == 0) {
+
+		if (strcmp(debug_level, "3") == 0) {
+			openlog ("opennds", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_DAEMON);
+			syslog (LOG_NOTICE, "option %s is %s", option, default_option);
+			closelog ();
+		}
+
+		return strdup(default_option);
+	} else {
+
+		if (strcmp(debug_level, "3") == 0) {
+			openlog ("opennds", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_DAEMON);
+			syslog (LOG_NOTICE, "option %s is %s", option, msg);
+			closelog ();
+		}
+
+		return safe_strdup(msg);
+	}
+}
+
 // Sets the default config parameters and initialises the configuration system
 void
 config_init(void)
 {
+	const char *gatewayname;
+	char *gatewayname_raw;
+	char *libcmd;
+	char debug_level[STATUS_BUF];
+	char *msg;
+	int ret;
+
 	t_firewall_ruleset *rs;
 
-	debug(LOG_DEBUG, "Setting default config parameters");
 	strncpy(config.configfile, DEFAULT_CONFIGFILE, sizeof(config.configfile)-1);
-	config.session_timeout = DEFAULT_SESSION_TIMEOUT;
-	config.debuglevel = DEFAULT_DEBUGLEVEL;
-	config.maxclients = DEFAULT_MAXCLIENTS;
-	config.online_status = DEFAULT_ONLINE_STATUS;
-	config.gw_name = safe_strdup(DEFAULT_GATEWAYNAME);
-	config.enable_serial_number_suffix = DEFAULT_ENABLE_SERIAL_NUMBER_SUFFIX;
-	config.http_encoded_gw_name = NULL;
-	config.url_encoded_gw_name = NULL;
-	config.gw_fqdn = safe_strdup(DEFAULT_GATEWAYFQDN);
-	config.status_path = safe_strdup(DEFAULT_STATUSPATH);
-	config.dhcp_default_url_enable = DEFAULT_DHCP_DEFAULT_URL_ENABLE;
-	config.gw_interface = safe_strdup(DEFAULT_GATEWAYINTERFACE);;
-	config.gw_iprange = safe_strdup(DEFAULT_GATEWAY_IPRANGE);
+
+	openlog ("opennds", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_DAEMON);
+	syslog (LOG_NOTICE, "openNDS Version %s is in startup\n", VERSION);
+	closelog ();
+
+	memset(debug_level, 0, STATUS_BUF);
+	get_option_from_config(debug_level, STATUS_BUF, "debuglevel");
+
+	// Special handling for gatewayname as library call returns a url-encoded response
+	gatewayname_raw = safe_calloc(SMALL_BUF);
+	gatewayname = safe_calloc(SMALL_BUF);
+	gatewayname = safe_strdup(set_option_str("gatewayname", DEFAULT_GATEWAYNAME, debug_level));
+	uh_urldecode(gatewayname_raw, SMALL_BUF, gatewayname, SMALL_BUF);
+	config.gw_name = safe_strdup(gatewayname_raw);
+
+	openlog ("opennds", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_DAEMON);
+	syslog (LOG_NOTICE, "The name of this gateway is %s", gatewayname_raw);
+	closelog ();
+
+	free(gatewayname_raw);
+	//
+
+	// String config parameters
+
+	config.gw_fqdn = safe_strdup(set_option_str("gatewayfqdn", DEFAULT_GATEWAYFQDN, debug_level));
+	config.status_path = safe_strdup(set_option_str("statuspath", DEFAULT_STATUSPATH, debug_level));
+	config.gw_interface = safe_strdup(set_option_str("gatewayinterface", DEFAULT_GATEWAYINTERFACE, debug_level));
+	config.gw_iprange = safe_strdup(set_option_str("gateway_iprange", DEFAULT_GATEWAY_IPRANGE, debug_level));
+	config.fas_key = safe_strdup(set_option_str("faskey", DEFAULT_FASKEY, debug_level));
+	config.log_mountpoint = safe_strdup(set_option_str("log_mountpoint", DEFAULT_LOG_MOUNTPOINT, debug_level));
+	config.webroot = safe_strdup(set_option_str("webroot", DEFAULT_WEBROOT, debug_level));
+	config.authdir = safe_strdup(set_option_str("authdir", DEFAULT_AUTHDIR, debug_level));
+	config.denydir = safe_strdup(set_option_str("denydir", DEFAULT_DENYDIR, debug_level));
+	config.preauthdir = safe_strdup(set_option_str("preauthdir", DEFAULT_PREAUTHDIR, debug_level));
+	config.ndsctl_sock = safe_strdup(set_option_str("ndsctl_sock", DEFAULT_NDSCTL_SOCK, debug_level));
+	config.authentication_mark = safe_strdup(set_option_str("authentication_mark", DEFAULT_AUTHENTICATION_MARK, debug_level));
+	config.binauth = safe_strdup(set_option_str("binauth", DEFAULT_BINAUTH, debug_level));
+	config.fas_path = safe_strdup(set_option_str("faspath", DEFAULT_FASPATH, debug_level));
+
+	// Integer config parameters
+
+	// Special handling of debuglevel - check valid level and inform externals
+	sscanf(set_option_str("debuglevel", DEFAULT_DEBUGLEVEL, debug_level), "%u", &config.debuglevel);
+
+	if (config.debuglevel > DEBUGLEVEL_MAX) {
+		config.debuglevel = DEBUGLEVEL_MAX;
+	}
+
+	libcmd = safe_calloc(STATUS_BUF);
+	msg = safe_calloc(STATUS_BUF);
+
+	safe_asprintf(&libcmd, "/usr/lib/opennds/libopennds.sh \"debuglevel\" \"%u\"", config.debuglevel);
+
+	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, libcmd) == 0) {
+		debug(LOG_DEBUG, "debuglevel [%u] signaled to externals - [%s] acknowledged", config.debuglevel, msg);
+	} else {
+		debug(LOG_ERR, "debuglevel [%u] signaled to externals - unable to set", config.debuglevel);
+	}
+
+	free(libcmd);		
+	free(msg);
+	//
+
+	sscanf(set_option_str("sessiontimeout", DEFAULT_SESSION_TIMEOUT, debug_level), "%u", &config.session_timeout);
+	sscanf(set_option_str("preauth_idle_timeout", DEFAULT_PREAUTH_IDLE_TIMEOUT, debug_level), "%u", &config.preauth_idle_timeout);
+	sscanf(set_option_str("auth_idle_timeout", DEFAULT_AUTH_IDLE_TIMEOUT, debug_level), "%u", &config.auth_idle_timeout);
+	sscanf(set_option_str("maxclients", DEFAULT_MAXCLIENTS, debug_level), "%u", &config.maxclients);
+	sscanf(set_option_str("enable_serial_number_suffix", DEFAULT_ENABLE_SERIAL_NUMBER_SUFFIX, debug_level), "%u", &config.enable_serial_number_suffix);
+	sscanf(set_option_str("dhcp_default_url_enable", DEFAULT_DHCP_DEFAULT_URL_ENABLE, debug_level), "%u", &config.dhcp_default_url_enable);
+	sscanf(set_option_str("gatewayport", DEFAULT_GATEWAYPORT, debug_level), "%u", &config.gw_port);
+	sscanf(set_option_str("fasport", DEFAULT_FASPORT, debug_level), "%u", &config.fas_port);
+	sscanf(set_option_str("login_option_enabled", DEFAULT_LOGIN_OPTION_ENABLED, debug_level), "%u", &config.login_option_enabled);
+	sscanf(set_option_str("use_outdated_mhd", DEFAULT_USE_OUTDATED_MHD, debug_level), "%u", &config.use_outdated_mhd);
+	sscanf(set_option_str("max_page_size", DEFAULT_MAX_PAGE_SIZE, debug_level), "%llu", &config.max_page_size);
+	sscanf(set_option_str("max_log_entries", DEFAULT_MAX_LOG_ENTRIES, debug_level), "%llu", &config.max_log_entries);
+	sscanf(set_option_str("allow_preemptive_authentication", DEFAULT_ALLOW_PREEMPTIVE_AUTHENTICATION, debug_level), "%u", &config.allow_preemptive_authentication);
+	sscanf(set_option_str("unescape_callback_enabled", DEFAULT_UNESCAPE_CALLBACK_ENABLED, debug_level), "%u", &config.unescape_callback_enabled);
+	sscanf(set_option_str("fas_secure_enabled", DEFAULT_FAS_SECURE_ENABLED, debug_level), "%u", &config.fas_secure_enabled);
+	sscanf(set_option_str("remotes_refresh_interval", DEFAULT_REMOTES_REFRESH_INTERVAL, debug_level), "%u", &config.remotes_refresh_interval);
+	sscanf(set_option_str("checkinterval", DEFAULT_CHECKINTERVAL, debug_level), "%u", &config.checkinterval);
+	sscanf(set_option_str("rate_check_window", DEFAULT_RATE_CHECK_WINDOW, debug_level), "%u", &config.rate_check_window);
+	sscanf(set_option_str("uploadrate", DEFAULT_UPLOAD_RATE, debug_level), "%llu", &config.upload_rate);
+	sscanf(set_option_str("downloadrate", DEFAULT_DOWNLOAD_RATE, debug_level), "%llu", &config.download_rate);
+	sscanf(set_option_str("download_bucket_ratio", DEFAULT_DOWNLOAD_BUCKET_RATIO, debug_level), "%llu", &config.download_bucket_ratio);
+	sscanf(set_option_str("max_download_bucket_size", DEFAULT_MAX_DOWNLOAD_BUCKET_SIZE, debug_level), "%llu", &config.max_download_bucket_size);
+	sscanf(set_option_str("download_unrestricted_bursting", DEFAULT_DOWNLOAD_UNRESTRICTED_BURSTING, debug_level), "%u", &config.download_unrestricted_bursting);
+	sscanf(set_option_str("upload_bucket_ratio", DEFAULT_UPLOAD_BUCKET_RATIO, debug_level), "%llu", &config.upload_bucket_ratio);
+	sscanf(set_option_str("max_upload_bucket_size", DEFAULT_MAX_UPLOAD_BUCKET_SIZE, debug_level), "%llu", &config.max_upload_bucket_size);
+	sscanf(set_option_str("upload_unrestricted_bursting", DEFAULT_UPLOAD_UNRESTRICTED_BURSTING, debug_level), "%u", &config.upload_unrestricted_bursting);
+	sscanf(set_option_str("upload_quota", DEFAULT_UPLOAD_QUOTA, debug_level), "%llu", &config.upload_quota);
+	sscanf(set_option_str("download_quota", DEFAULT_DOWNLOAD_QUOTA, debug_level), "%llu", &config.download_quota);
+	sscanf(set_option_str("fw_mark_authenticated", DEFAULT_FW_MARK_AUTHENTICATED, debug_level), "%x", &config.fw_mark_authenticated);
+	sscanf(set_option_str("fw_mark_trusted", DEFAULT_FW_MARK_TRUSTED, debug_level), "%x", &config.fw_mark_trusted);
+/*
+	config.ip6 = DEFAULT_IP6;
+*/
+	// Parameters kept in config but have no default or config value
 	config.gw_address = NULL;
 	config.gw_ip = NULL;
-	config.gw_port = DEFAULT_GATEWAYPORT;
-	config.fas_port = DEFAULT_FASPORT;
-	config.fas_key = safe_strdup(DEFAULT_FASKEY);
-	config.login_option_enabled = DEFAULT_LOGIN_OPTION_ENABLED;
-	config.themespec_path = NULL;
-	config.use_outdated_mhd = DEFAULT_USE_OUTDATED_MHD;
-	config.max_page_size = DEFAULT_MAX_PAGE_SIZE;
-	config.max_log_entries = DEFAULT_MAX_LOG_ENTRIES;
-	config.allow_preemptive_authentication = DEFAULT_ALLOW_PREEMPTIVE_AUTHENTICATION;
-	config.unescape_callback_enabled = DEFAULT_UNESCAPE_CALLBACK_ENABLED;
-	config.fas_secure_enabled = DEFAULT_FAS_SECURE_ENABLED;
-	config.fas_remoteip = NULL;
-	config.fas_remotefqdn = NULL;
+	config.http_encoded_gw_name = NULL;
+	config.url_encoded_gw_name = NULL;
 	config.fas_url = NULL;
 	config.fas_ssl = NULL;
 	config.fas_hid = NULL;
@@ -277,46 +383,24 @@ config_init(void)
 	config.custom_images = NULL;
 	config.custom_files = NULL;
 	config.tmpfsmountpoint = NULL;
-	config.log_mountpoint = safe_strdup(DEFAULT_LOG_MOUNTPOINT);
-	config.fas_path = DEFAULT_FASPATH;
-	config.webroot = safe_strdup(DEFAULT_WEBROOT);
-	config.authdir = safe_strdup(DEFAULT_AUTHDIR);
-	config.denydir = safe_strdup(DEFAULT_DENYDIR);
-	config.preauthdir = safe_strdup(DEFAULT_PREAUTHDIR);
-	config.preauth_idle_timeout = DEFAULT_PREAUTH_IDLE_TIMEOUT,
-	config.auth_idle_timeout = DEFAULT_AUTH_IDLE_TIMEOUT,
-	config.remotes_refresh_interval = DEFAULT_REMOTES_REFRESH_INTERVAL,
-	config.checkinterval = DEFAULT_CHECKINTERVAL;
-	config.daemon = -1;
-	config.set_mss = DEFAULT_SET_MSS;
-	config.mss_value = DEFAULT_MSS_VALUE;
-	config.rate_check_window = DEFAULT_RATE_CHECK_WINDOW;
-	config.upload_rate =  DEFAULT_UPLOAD_RATE;
-	config.download_rate = DEFAULT_DOWNLOAD_RATE;
-	config.download_bucket_ratio = DEFAULT_DOWNLOAD_BUCKET_RATIO;
-	config.max_download_bucket_size = DEFAULT_MAX_DOWNLOAD_BUCKET_SIZE;
-	config.download_unrestricted_bursting = DEFAULT_DOWNLOAD_UNRESTRICTED_BURSTING;
-	config.upload_bucket_ratio =  DEFAULT_UPLOAD_BUCKET_RATIO;
-	config.max_upload_bucket_size = DEFAULT_MAX_UPLOAD_BUCKET_SIZE;
-	config.upload_unrestricted_bursting = DEFAULT_UPLOAD_UNRESTRICTED_BURSTING;
-	config.upload_quota =  DEFAULT_UPLOAD_QUOTA;
-	config.download_quota = DEFAULT_DOWNLOAD_QUOTA;
-	config.syslog_facility = DEFAULT_SYSLOG_FACILITY;
-	config.log_syslog = DEFAULT_LOG_SYSLOG;
-	config.ndsctl_sock = safe_strdup(DEFAULT_NDSCTL_SOCK);
 	config.rulesets = NULL;
-	config.trustedmaclist = NULL;
-	config.fw_mark_authenticated = DEFAULT_FW_MARK_AUTHENTICATED;
-	config.authentication_mark = safe_strdup(DEFAULT_AUTHENTICATION_MARK);
-	config.fw_mark_trusted = DEFAULT_FW_MARK_TRUSTED;
-	config.ip6 = DEFAULT_IP6;
-	config.binauth = safe_strdup(DEFAULT_BINAUTH);
+
 	config.preauth = NULL;
+	config.lockfd = 0;
+	config.online_status = 0;
+	config.daemon = -1;
+
+	// Parameters that have no default but can have a config value
+	config.themespec_path = NULL;
+	config.fas_remoteip = NULL;
+	config.fas_remotefqdn = NULL;
+
+	// Lists
+	config.trustedmaclist = NULL;
 	config.walledgarden_fqdn_list = NULL;
 	config.walledgarden_port_list = NULL;
 	config.fas_custom_parameters_list = NULL;
-	config.lockfd = 0;
-	config.online_status = 0;
+
 
 	// Set up default FirewallRuleSets, and their empty ruleset policies
 	rs = add_ruleset("trusted-users");
@@ -333,17 +417,6 @@ config_init(void)
 
 	rs = add_ruleset("preauthenticated-users");
 	rs->emptyrulesetpolicy = safe_strdup(DEFAULT_EMPTY_PREAUTHENTICATED_USERS_POLICY);
-}
-
-/**
- * If the command-line didn't specify a config, use the default.
- */
-void
-config_init_override(void)
-{
-	if (config.daemon == -1) {
-		config.daemon = DEFAULT_DAEMON;
-	}
 }
 
 /** @internal
@@ -820,96 +893,96 @@ config_read(const char *filename)
 		opcode = config_parse_opcode(s, filename, linenum);
 
 		switch(opcode) {
-		case oSessionTimeout:
-			if (sscanf(p1, "%d", &config.session_timeout) < 1 || config.session_timeout < 0) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
+		//case oSessionTimeout:
+		//	if (sscanf(p1, "%d", &config.session_timeout) < 1 || config.session_timeout < 0) {
+		//		debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+		//		debug(LOG_ERR, "Exiting...");
+		//		exit(1);
+		//	}
+		//	break;
 		case oDaemon:
 			if (config.daemon == -1 && ((value = parse_boolean(p1)) != -1)) {
 				config.daemon = value;
 			}
 			break;
-		case oDebugLevel:
-			if (sscanf(p1, "%d", &config.debuglevel) < 1 || config.debuglevel < DEBUGLEVEL_MIN) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s. Valid levels are %d...%d.",
-					p1, s, linenum, filename, DEBUGLEVEL_MIN, DEBUGLEVEL_MAX);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			} else if (config.debuglevel > DEBUGLEVEL_MAX) {
-				config.debuglevel = DEBUGLEVEL_MAX;
-				debug(LOG_WARNING, "Invalid debug level. Set to maximum.");
-			}
-			break;
-		case oMaxClients:
-			if (sscanf(p1, "%d", &config.maxclients) < 1 || config.maxclients < 1) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
-		case oGatewayName:
-			config.gw_name = safe_strdup(p1);
-			break;
-		case oEnableSerialNumberSuffix:
-			if (sscanf(p1, "%d", &config.enable_serial_number_suffix) < 1) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
-		case oGatewayFQDN:
-			config.gw_fqdn = safe_strdup(p1);
-			break;
-		case oStatusPath:
-			if (!((stat(p1, &sb) == 0) && S_ISREG(sb.st_mode) && (sb.st_mode & S_IXUSR))) {
-				debug(LOG_ERR, "StatusPath does not exist or is not executable: %s", p1);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			config.status_path = safe_strdup(p1);
-			break;
-		case oDhcpDefaultUrlEnable:
-			if (sscanf(p1, "%d", &config.dhcp_default_url_enable) < 1) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
-		case oGatewayInterface:
-			config.gw_interface = safe_strdup(p1);
-			break;
-		case oGatewayIPRange:
-			config.gw_iprange = safe_strdup(p1);
-			break;
+		//case oDebugLevel:
+		//	if (sscanf(p1, "%d", &config.debuglevel) < 1 || config.debuglevel < DEBUGLEVEL_MIN) {
+		//		debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s. Valid levels are %d...%d.",
+		//			p1, s, linenum, filename, DEBUGLEVEL_MIN, DEBUGLEVEL_MAX);
+		//		debug(LOG_ERR, "Exiting...");
+		//		exit(1);
+		//	} else if (config.debuglevel > DEBUGLEVEL_MAX) {
+		//		config.debuglevel = DEBUGLEVEL_MAX;
+		//		debug(LOG_WARNING, "Invalid debug level. Set to maximum.");
+		//	}
+		//	break;
+		//case oMaxClients:
+		//	if (sscanf(p1, "%d", &config.maxclients) < 1 || config.maxclients < 1) {
+		//		debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+		//		debug(LOG_ERR, "Exiting...");
+		//		exit(1);
+		//	}
+		//	break;
+		//case oGatewayName:
+		//	config.gw_name = safe_strdup(p1);
+		//	break;
+		//case oEnableSerialNumberSuffix:
+		//	if (sscanf(p1, "%d", &config.enable_serial_number_suffix) < 1) {
+		//		debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+		//		debug(LOG_ERR, "Exiting...");
+		//		exit(1);
+		//	}
+		//	break;
+		//case oGatewayFQDN:
+		//	config.gw_fqdn = safe_strdup(p1);
+		//	break;
+		//case oStatusPath:
+		//	if (!((stat(p1, &sb) == 0) && S_ISREG(sb.st_mode) && (sb.st_mode & S_IXUSR))) {
+		//		debug(LOG_ERR, "StatusPath does not exist or is not executable: %s", p1);
+		//		debug(LOG_ERR, "Exiting...");
+		//		exit(1);
+		//	}
+		//	config.status_path = safe_strdup(p1);
+		//	break;
+		//case oDhcpDefaultUrlEnable:
+		//	if (sscanf(p1, "%d", &config.dhcp_default_url_enable) < 1) {
+		//		debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+		//		debug(LOG_ERR, "Exiting...");
+		//		exit(1);
+		//	}
+		//	break;
+		//case oGatewayInterface:
+		//	config.gw_interface = safe_strdup(p1);
+		//	break;
+		//case oGatewayIPRange:
+		//	config.gw_iprange = safe_strdup(p1);
+		//	break;
 		// TODO: deprecate oGatewayAddress option
-		case oGatewayAddress:
-		case oGatewayIP:
-			config.gw_ip = safe_strdup(p1);
-			break;
-		case oGatewayPort:
-			if (sscanf(p1, "%u", &config.gw_port) < 1) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
-		case oFasPort:
-			if (sscanf(p1, "%u", &config.fas_port) < 1) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
-		case oLoginOptionEnabled:
-			if (sscanf(p1, "%d", &config.login_option_enabled) < 1) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
+		//case oGatewayAddress:
+		//case oGatewayIP:
+		//	config.gw_ip = safe_strdup(p1);
+		//	break;
+		//case oGatewayPort:
+		//	if (sscanf(p1, "%u", &config.gw_port) < 1) {
+		//		debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+		//		debug(LOG_ERR, "Exiting...");
+		//		exit(1);
+		//	}
+		//	break;
+		//case oFasPort:
+		//	if (sscanf(p1, "%u", &config.fas_port) < 1) {
+		//		debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+		//		debug(LOG_ERR, "Exiting...");
+		//		exit(1);
+		//	}
+		//	break;
+		//case oLoginOptionEnabled:
+		//	if (sscanf(p1, "%d", &config.login_option_enabled) < 1) {
+		//		debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+		//		debug(LOG_ERR, "Exiting...");
+		//		exit(1);
+		//	}
+		//	break;
 		case oThemeSpecPath:
 			config.themespec_path = safe_strdup(p1);
 			if (!((stat(p1, &sb) == 0) && S_ISREG(sb.st_mode) && (sb.st_mode & S_IXUSR))) {
@@ -919,71 +992,71 @@ config_read(const char *filename)
 			}
 			debug(LOG_INFO, "Added ThemeSpec [%s]", p1);
 			break;
-		case oUseOutdatedMHD:
-			if (sscanf(p1, "%d", &config.use_outdated_mhd) < 1) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
-		case oMaxPageSize:
-			if (sscanf(p1, "%llu", &config.max_page_size) < 1) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
-		case oMaxLogEntries:
-			if (sscanf(p1, "%llu", &config.max_log_entries) < 1) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
-		case oLogMountpoint:
-			config.log_mountpoint = safe_strdup(p1);
-			break;
-		case oAllowPreemptiveAuthentication:
-			if (sscanf(p1, "%d", &config.allow_preemptive_authentication) < 1) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
-		case oUnescapeCallbackEnabled:
-			if (sscanf(p1, "%d", &config.unescape_callback_enabled) < 1) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
-		case oFasSecureEnabled:
-			if (sscanf(p1, "%d", &config.fas_secure_enabled) < 1) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
-		case oFasPath:
-			config.fas_path = safe_strdup(p1);
-			break;
-		case oFasKey:
-			config.fas_key = safe_strdup(p1);
-			break;
+		//case oUseOutdatedMHD:
+		//	if (sscanf(p1, "%d", &config.use_outdated_mhd) < 1) {
+		//		debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+		//		debug(LOG_ERR, "Exiting...");
+		//		exit(1);
+		//	}
+		//	break;
+		//case oMaxPageSize:
+		//	if (sscanf(p1, "%llu", &config.max_page_size) < 1) {
+		//		debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+		//		debug(LOG_ERR, "Exiting...");
+		//		exit(1);
+		//	}
+		//	break;
+		//case oMaxLogEntries:
+		//	if (sscanf(p1, "%llu", &config.max_log_entries) < 1) {
+		//		debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+		//		debug(LOG_ERR, "Exiting...");
+		//		exit(1);
+		//	}
+		//	break;
+		//case oLogMountpoint:
+		//	config.log_mountpoint = safe_strdup(p1);
+		//	break;
+		//case oAllowPreemptiveAuthentication:
+		//	if (sscanf(p1, "%d", &config.allow_preemptive_authentication) < 1) {
+		//		debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+		//		debug(LOG_ERR, "Exiting...");
+		//		exit(1);
+		//	}
+		//	break;
+		//case oUnescapeCallbackEnabled:
+		//	if (sscanf(p1, "%d", &config.unescape_callback_enabled) < 1) {
+		//		debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+		//		debug(LOG_ERR, "Exiting...");
+		//		exit(1);
+		//	}
+		//	break;
+		//case oFasSecureEnabled:
+		//	if (sscanf(p1, "%d", &config.fas_secure_enabled) < 1) {
+		//		debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+		//		debug(LOG_ERR, "Exiting...");
+		//		exit(1);
+		//	}
+		//	break;
+		//case oFasPath:
+		//	config.fas_path = safe_strdup(p1);
+		//	break;
+		//case oFasKey:
+		//	config.fas_key = safe_strdup(p1);
+		//	break;
 		case oFasRemoteIP:
 			config.fas_remoteip = safe_strdup(p1);
 			break;
 		case oFasRemoteFQDN:
 			config.fas_remotefqdn = safe_strdup(p1);
 			break;
-		case oBinAuth:
-			config.binauth = safe_strdup(p1);
-			if (!((stat(p1, &sb) == 0) && S_ISREG(sb.st_mode) && (sb.st_mode & S_IXUSR))) {
-				debug(LOG_ERR, "binauth program does not exist or is not executable: %s", p1);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
+		//case oBinAuth:
+		//	config.binauth = safe_strdup(p1);
+		//	if (!((stat(p1, &sb) == 0) && S_ISREG(sb.st_mode) && (sb.st_mode & S_IXUSR))) {
+		//		debug(LOG_ERR, "binauth program does not exist or is not executable: %s", p1);
+		//		debug(LOG_ERR, "Exiting...");
+		//		exit(1);
+		//	}
+		//	break;
 		case oPreAuth:
 			config.preauth = safe_strdup(p1);
 			if (!((stat(p1, &sb) == 0) && S_ISREG(sb.st_mode) && (sb.st_mode & S_IXUSR))) {
@@ -1019,161 +1092,161 @@ config_read(const char *filename)
 		case oFasCustomFilesList:
 			parse_fas_custom_files_list(p1);
 			break;
-		case oWebRoot:
+		//case oWebRoot:
 			// remove any trailing slashes from webroot path
-			while((p2 = strrchr(p1,'/')) == (p1 + strlen(p1) - 1)) *p2 = '\0';
-			config.webroot = safe_strdup(p1);
-			break;
-		case oAuthIdleTimeout:
-			if (sscanf(p1, "%d", &config.auth_idle_timeout) < 1 || config.auth_idle_timeout < 0) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
-		case oPreauthIdleTimeout:
-			if (sscanf(p1, "%d", &config.preauth_idle_timeout) < 1 || config.preauth_idle_timeout < 0) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
-		case oRemotesRefreshInterval:
-			if (sscanf(p1, "%d", &config.remotes_refresh_interval) < 1 || config.remotes_refresh_interval < 0) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
-		case oNdsctlSocket:
-			free(config.ndsctl_sock);
-			config.ndsctl_sock = safe_strdup(p1);
-			break;
-		case oSetMSS:
-			if ((value = parse_boolean(p1)) != -1) {
-				config.set_mss = value;
-			} else {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
-		case oMSSValue:
-			if (sscanf(p1, "%d", &config.mss_value) < 1) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
-		case oRateCheckWindow:
-			if (sscanf(p1, "%d", &config.rate_check_window) < 1 || config.rate_check_window < 0) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
-		case oDownloadRate:
-			if (sscanf(p1, "%llu", &config.download_rate) < 1 || config.download_rate < 0) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
-		case oUploadRate:
-			if (sscanf(p1, "%llu", &config.upload_rate) < 1 || config.upload_rate < 0) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
-		case oDownloadBucketRatio:
-			if (sscanf(p1, "%llu", &config.download_bucket_ratio) < 1 || config.download_bucket_ratio < 0) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
-		case oUploadBucketRatio:
-			if (sscanf(p1, "%llu", &config.upload_bucket_ratio) < 1 || config.upload_bucket_ratio < 0) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
-		case oMaxDownloadBucketSize:
-			if (sscanf(p1, "%llu", &config.max_download_bucket_size) < 1 || config.max_download_bucket_size < 0) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
-		case oMaxUploadBucketSize:
-			if (sscanf(p1, "%llu", &config.max_upload_bucket_size) < 1 || config.max_upload_bucket_size < 0) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
-		case oDownloadUnrestrictedBursting:
-			if (sscanf(p1, "%d", &config.download_unrestricted_bursting) < 1) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
-		case oUploadUnrestrictedBursting:
-			if (sscanf(p1, "%d", &config.upload_unrestricted_bursting) < 1) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
-		case oDownloadQuota:
-			if (sscanf(p1, "%llu", &config.download_quota) < 1 || config.download_quota < 0) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
-		case oUploadQuota:
-			if (sscanf(p1, "%llu", &config.upload_quota) < 1 || config.upload_quota < 0) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
-		case oFWMarkAuthenticated:
-			if (sscanf(p1, "%x", &config.fw_mark_authenticated) < 1 ||
-					config.fw_mark_authenticated == 0 ||
-					config.fw_mark_authenticated == config.fw_mark_trusted) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
-		case oFWMarkTrusted:
-			if (sscanf(p1, "%x", &config.fw_mark_trusted) < 1 ||
-					config.fw_mark_trusted == 0 ||
-					config.fw_mark_trusted == config.fw_mark_authenticated) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
-		case oCheckInterval:
-			if (sscanf(p1, "%i", &config.checkinterval) < 1 || config.checkinterval < 1) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
-		case oSyslogFacility:
-			if (sscanf(p1, "%d", &config.syslog_facility) < 1) {
-				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			break;
+		//	while((p2 = strrchr(p1,'/')) == (p1 + strlen(p1) - 1)) *p2 = '\0';
+		//	config.webroot = safe_strdup(p1);
+		//	break;
+		//case oAuthIdleTimeout:
+		//	if (sscanf(p1, "%d", &config.auth_idle_timeout) < 1 || config.auth_idle_timeout < 0) {
+		//		debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+		//		debug(LOG_ERR, "Exiting...");
+		//		exit(1);
+		//	}
+		//	break;
+		//case oPreauthIdleTimeout:
+		//	if (sscanf(p1, "%d", &config.preauth_idle_timeout) < 1 || config.preauth_idle_timeout < 0) {
+		//		debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+		//		debug(LOG_ERR, "Exiting...");
+		//		exit(1);
+		//	}
+		//	break;
+		//case oRemotesRefreshInterval:
+		//	if (sscanf(p1, "%d", &config.remotes_refresh_interval) < 1 || config.remotes_refresh_interval < 0) {
+		//		debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+		//		debug(LOG_ERR, "Exiting...");
+		//		exit(1);
+		//	}
+		//	break;
+		//case oNdsctlSocket:
+		//	free(config.ndsctl_sock);
+		//	config.ndsctl_sock = safe_strdup(p1);
+		//	break;
+		//case oSetMSS:
+		//	if ((value = parse_boolean(p1)) != -1) {
+		//		config.set_mss = value;
+		//	} else {
+		//		debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+		//		debug(LOG_ERR, "Exiting...");
+		//		exit(1);
+		//	}
+		//	break;
+		//case oMSSValue:
+		//	if (sscanf(p1, "%d", &config.mss_value) < 1) {
+		//		debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+		//		debug(LOG_ERR, "Exiting...");
+		//		exit(1);
+		//	}
+		//	break;
+		//case oRateCheckWindow:
+		//	if (sscanf(p1, "%d", &config.rate_check_window) < 1 || config.rate_check_window < 0) {
+		//		debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+		//		debug(LOG_ERR, "Exiting...");
+		//		exit(1);
+		//	}
+		//	break;
+		//case oDownloadRate:
+		//	if (sscanf(p1, "%llu", &config.download_rate) < 1 || config.download_rate < 0) {
+		//		debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+		//		debug(LOG_ERR, "Exiting...");
+		//		exit(1);
+		//	}
+		//	break;
+		//case oUploadRate:
+		//	if (sscanf(p1, "%llu", &config.upload_rate) < 1 || config.upload_rate < 0) {
+		//		debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+		//		debug(LOG_ERR, "Exiting...");
+		//		exit(1);
+		//	}
+		//	break;
+		//case oDownloadBucketRatio:
+		//	if (sscanf(p1, "%llu", &config.download_bucket_ratio) < 1 || config.download_bucket_ratio < 0) {
+		//		debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+		//		debug(LOG_ERR, "Exiting...");
+		//		exit(1);
+		//	}
+		//	break;
+		//case oUploadBucketRatio:
+		//	if (sscanf(p1, "%llu", &config.upload_bucket_ratio) < 1 || config.upload_bucket_ratio < 0) {
+		//		debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+		//		debug(LOG_ERR, "Exiting...");
+		//		exit(1);
+		//	}
+		//	break;
+		//case oMaxDownloadBucketSize:
+		//	if (sscanf(p1, "%llu", &config.max_download_bucket_size) < 1 || config.max_download_bucket_size < 0) {
+		//		debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+		//		debug(LOG_ERR, "Exiting...");
+		//		exit(1);
+		//	}
+		//	break;
+		//case oMaxUploadBucketSize:
+		//	if (sscanf(p1, "%llu", &config.max_upload_bucket_size) < 1 || config.max_upload_bucket_size < 0) {
+		//		debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+		//		debug(LOG_ERR, "Exiting...");
+		//		exit(1);
+		//	}
+		//	break;
+		//case oDownloadUnrestrictedBursting:
+		//	if (sscanf(p1, "%d", &config.download_unrestricted_bursting) < 1) {
+		//		debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+		//		debug(LOG_ERR, "Exiting...");
+		//		exit(1);
+		//	}
+		//	break;
+		//case oUploadUnrestrictedBursting:
+		//	if (sscanf(p1, "%d", &config.upload_unrestricted_bursting) < 1) {
+		//		debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+		//		debug(LOG_ERR, "Exiting...");
+		//		exit(1);
+		//	}
+		//	break;
+		//case oDownloadQuota:
+		//	if (sscanf(p1, "%llu", &config.download_quota) < 1 || config.download_quota < 0) {
+		//		debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+		//		debug(LOG_ERR, "Exiting...");
+		//		exit(1);
+		//	}
+		//	break;
+		//case oUploadQuota:
+		//	if (sscanf(p1, "%llu", &config.upload_quota) < 1 || config.upload_quota < 0) {
+		//		debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+		//		debug(LOG_ERR, "Exiting...");
+		//		exit(1);
+		//	}
+		//	break;
+		//case oFWMarkAuthenticated:
+		//	if (sscanf(p1, "%x", &config.fw_mark_authenticated) < 1 ||
+		//			config.fw_mark_authenticated == 0 ||
+		//			config.fw_mark_authenticated == config.fw_mark_trusted) {
+		//		debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+		//		debug(LOG_ERR, "Exiting...");
+		//		exit(1);
+		//	}
+		//	break;
+		//case oFWMarkTrusted:
+		//	if (sscanf(p1, "%x", &config.fw_mark_trusted) < 1 ||
+		//			config.fw_mark_trusted == 0 ||
+		//			config.fw_mark_trusted == config.fw_mark_authenticated) {
+		//		debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+		//		debug(LOG_ERR, "Exiting...");
+		//		exit(1);
+		//	}
+		//	break;
+		//case oCheckInterval:
+		//	if (sscanf(p1, "%i", &config.checkinterval) < 1 || config.checkinterval < 1) {
+		//		debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+		//		debug(LOG_ERR, "Exiting...");
+		//		exit(1);
+		//	}
+		//	break;
+		//case oSyslogFacility:
+		//	if (sscanf(p1, "%d", &config.syslog_facility) < 1) {
+		//		debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+		//		debug(LOG_ERR, "Exiting...");
+		//		exit(1);
+		//	}
+		//	break;
 		case oBadOption:
 			debug(LOG_ERR, "Bad option %s on line %d in %s", s, linenum, filename);
 			debug(LOG_ERR, "Exiting...");
@@ -1679,34 +1752,37 @@ void parse_fas_custom_files_list(const char ptr[])
  */
 int set_debuglevel(const char opt[])
 {
-	char *end;
 	char *libcmd;
-	char msg[4] = {0};
+	char *msg;
 
 	if (opt == NULL || strlen(opt) == 0) {
 		return 1;
 	}
 
 	// parse number
-	int level = strtol(opt, &end, 10);
-	if (end != (opt + strlen(opt))) {
-		return 1;
-	}
+	int level = strtol(opt, NULL, 10);
 
-	if (level >= DEBUGLEVEL_MIN && level <= DEBUGLEVEL_MAX) {
-		config.debuglevel = level;
-		safe_asprintf(&libcmd, "/usr/lib/opennds/libopennds.sh \"debuglevel\" \"%d\"", level);
-		debug(LOG_DEBUG, "Library command: [%s]", libcmd);
 
-		if (execute_ret_url_encoded(msg, sizeof(msg) - 1, libcmd) == 0) {
+	if (level >= (int) DEBUGLEVEL_MIN && level <= (int) DEBUGLEVEL_MAX) {
+		libcmd = safe_calloc(STATUS_BUF);
+		msg = safe_calloc(STATUS_BUF);
+
+		sscanf(opt, "%u", &config.debuglevel);
+
+		safe_asprintf(&libcmd, "/usr/lib/opennds/libopennds.sh \"debuglevel\" \"%s\"", opt);
+
+		if (execute_ret_url_encoded(msg, STATUS_BUF - 1, libcmd) == 0) {
 			debug(LOG_DEBUG, "debuglevel [%d] signaled to externals - [%s] acknowledged", level, msg);
 		} else {
 			debug(LOG_ERR, "debuglevel [%d] signaled to externals - unable to set", level);
 		}
 
-		free(libcmd);
+		free(libcmd);		
+		free(msg);
 		return 0;
 	} else {
+		free(libcmd);		
+		free(msg);
 		return 1;
 	}
 }

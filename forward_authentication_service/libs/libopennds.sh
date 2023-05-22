@@ -1854,7 +1854,6 @@ elif [ "$1" = "syslog" ]; then
 	# Write a debug message to syslog
 	# $2 contains the string to to write to syslog if enabled by debuglevel
 	# $3 contains debug type: debug, info, warn, notice, err, emerg.
-	# debugtype contains the debug level string: debug, info, warn, notice, err, emerg.
 
 	if [ -z "$2" ]; then
 		exit 1

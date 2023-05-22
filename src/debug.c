@@ -95,7 +95,7 @@ _debug(const char filename[], int line, int level, const char *format, ...)
 		fflush(out);
 
 		if (config->log_syslog) {
-			openlog("opennds", LOG_PID, config->syslog_facility);
+			openlog("opennds", LOG_PID, LOG_DAEMON);
 			va_start(vlist, format);
 			vsyslog(level, format, vlist);
 			va_end(vlist);

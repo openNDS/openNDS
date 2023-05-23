@@ -6,14 +6,7 @@
 
 # Get configured option
 get_option_from_config() {
-	option_value=""
-
-	if [ -e "/etc/config/opennds" ]; then
-		option_value=$(uci -q get opennds.@opennds[0].$option | awk '{printf("%s", $0)}')
-
-	elif [ -e "/etc/opennds/opennds.conf" ]; then
-		option_value=$(cat "/etc/opennds/opennds.conf" | awk -F"$option " '{printf("%s", $2)}')
-	fi
+	option_value=$(/usr/lib/opennds/libopennds.sh get_option_from_config $option)
 }
 
 # Function to send commands to openNDS:

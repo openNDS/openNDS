@@ -1022,13 +1022,18 @@ get_list_from_config() {
 	uci_status=$?
 
 	if [ $uci_status -eq 0 ]; then
-		param=$(uci export opennds | grep "list" | grep "$list" | awk -F"'" 'NF > 1 {printf "%s ", $2}')
+		param=$(uci export opennds | grep "list" | grep $list | awk -F"'" 'NF > 1 {print $2}' | sed "s/\s/%20/g" | awk '{printf "%s ", $0}')
 	else
-		param=$(cat /etc/config/opennds | grep "list" | grep "$list" | awk -F"#" '{printf "%s\n", $1}' | awk -F"'" 'NF > 1 {printf "%s ", $2}')
+		param=$(cat /etc/config/opennds | grep "list" | grep "$list" | awk -F"#" '{printf "%s\n", $1}' | awk -F"'" 'NF > 1 {print $2}' | sed "s/\s/%20/g" | awk '{printf "%s ", $0}')
 	fi
 
 	# remove trailing space character
 	param=$(echo "$param" | sed 's/.$//')
+
+	if [ "$list" != "users_to_router" ] && [ "$list" != "preauthenticated_users" ] && [ "$list" != "authenticated_users" ]; then
+		urldecode "$param"
+		param=$urldecoded
+	fi
 
 	eval $list="$param" &>/dev/null
 }

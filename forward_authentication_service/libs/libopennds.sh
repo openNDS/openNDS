@@ -533,7 +533,7 @@ configure_log_location() {
 	mountpoint="/tmp"
 	logdir="/tmp/ndslog/"
 
-	if [ -z "$logname"]; then
+	if [ -z "$logname" ]; then
 		logname="ndslog.log"
 	fi
 
@@ -707,7 +707,9 @@ auth_log () {
 }
 
 write_log () {
+
 	configure_log_location
+
 	mountcheck=$(df | grep -w  "$log_mountpoint")
 
 	if [ ! -z "$logname" ]; then
@@ -777,6 +779,7 @@ write_log () {
 			echo "Log location is NOT a mountpoint - logs would fill storage space - logging disabled" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 		fi
 	fi
+
 }
 
 default_header() {
@@ -1021,10 +1024,12 @@ get_list_from_config() {
 	type uci &> /dev/null
 	uci_status=$?
 
+	# get list with urlencoded spaces
+
 	if [ $uci_status -eq 0 ]; then
-		param=$(uci export opennds | grep "list" | grep $list | awk -F"'" 'NF > 1 {print $2}' | sed "s/\s/%20/g" | awk '{printf "%s ", $0}')
+		param=$(uci export opennds | grep -w "list" | grep -w $list | awk -F"'" 'NF > 1 {print $2}' | sed "s/\s/%20/g" | awk '{printf "%s ", $0}')
 	else
-		param=$(cat /etc/config/opennds | grep "list" | grep "$list" | awk -F"#" '{printf "%s\n", $1}' | awk -F"'" 'NF > 1 {print $2}' | sed "s/\s/%20/g" | awk '{printf "%s ", $0}')
+		param=$(cat /etc/config/opennds | -w grep "list" | grep -w "$list" | awk -F"#" '{printf "%s\n", $1}' | awk -F"'" 'NF > 1 {print $2}' | sed "s/\s/%20/g" | awk '{printf "%s ", $0}')
 	fi
 
 	# remove trailing space character
@@ -1581,6 +1586,100 @@ auth_restore () {
 	done < $authlog
 }
 
+create_client_ruleset () {
+
+	for rule in $ruleset; do
+		urldecode $rule
+		rule=$urldecoded
+		count=0
+		proto=""
+		port=""
+		portnum=""
+		to_from=""
+		ipaddr=""
+
+		for param in $rule; do
+
+			case $count in
+				0)
+					case $param in
+						"allow") verdict="accept";;
+						"passthrough") verdict="accept";;
+						"block") verdict="block";;
+						*) verdict="block";;
+					esac
+					;;
+				1) proto=$param;;
+				2) port=$param;;
+				3) portnum=$param;;
+				4) to_from=$param;;
+				5) ipaddr=$param;;
+				*) ;;
+			esac
+
+			count=$((++count))
+		done
+
+		case $ruleset_name in
+			"authenticated_users") chain="ndsAUT";;
+			"preauthenticated_users") chain="ndsNET";;
+			"users_to_router") chain="ndsRTR";;
+		esac
+
+		if [ "$proto" = "all" ]; then
+			sdport=""
+			port=""
+			portnum=""
+			to_from=""
+			ipaddr=""
+		else
+			sdport="dport"
+		fi
+
+		if [ -z "$proto" ] || [ "$port" != "port" ]; then
+			proto=""
+			port=""
+			portnum=""
+			to_from=""
+			ipaddr=""
+		fi
+
+		if [ -z "$portnum" ]; then
+			dport=""
+		else
+			dport="dport"
+		fi
+
+		if [ -z "$ipaddr" ]; then
+			ipstr=""
+		else
+			ipstr="ip daddr $ipaddr"
+		fi
+
+		if [ "$ruleset_name" = "authenticated_users" ]; then
+			nft insert rule ip nds_filter $chain index 1 "$ipstr" "$proto" "$dport" "$portnum" counter "$verdict"
+			status=$?
+		fi
+
+		if [ "$ruleset_name" = "preauthenticated_users" ]; then
+			nft insert rule ip nds_filter $chain index 2 "$ipstr" "$proto" "$dport" "$portnum" counter "$verdict"
+			status=$?
+		fi
+
+		if [ "$ruleset_name" = "users_to_router" ]; then
+			nft add rule ip nds_filter "$chain" "$proto" "$dport" "$portnum" counter "$verdict"
+			status=$?
+		fi
+
+		## Debugging
+		echo "status=$status! chain=$chain! ruleset_name=$ruleset_name! verdict=$verdict! proto=$proto! sdport=$sdport! port=$port! portnum=$portnum! to_from=$to_from! ipaddr=$ipaddr!" >> /tmp/acr
+	done
+
+	if [ "$ruleset_name" = "users_to_router" ]; then
+		nft add rule ip nds_filter $chain counter reject
+	fi
+}
+
 #### end of functions ####
 
 
@@ -1593,7 +1692,168 @@ auth_restore () {
 #					#
 #########################################
 
-if [ "$1" = "clean" ]; then
+querystr=$1
+query_type=${querystr:0:9}
+
+if [ "$query_type" = "%3ffas%3d" ]; then
+	#Display a splash page sequence using a Themespec
+
+	#################################
+	# Any parameters set here	#
+	# will be overridden if set	#
+	# in the themespec file	#
+	#################################
+
+	#  setup required parameters:	#
+
+	# Client Custom String
+	custom=""
+	# You can choose to define a custom string. This will be b64 encoded and sent to openNDS.
+	# There it will be made available to be displayed in the output of ndsctl json as well as being sent
+	#	to the BinAuth post authentication processing script if enabled.
+	# Set the variable $binauth_custom to the desired value.
+	# Values set here can be overridden by the themespec file
+
+	#binauth_custom="This is sample text sent from \"$title\" to \"BinAuth\" for post authentication processing."
+
+	# Encode and activate the custom string
+	#encode_custom
+
+	# Preshared key
+	#########################################
+	# Default value is 1234567890 when faskey is not set in config
+	get_key_from_config
+
+	# Quotas and Data Rates
+	#########################################
+	# Set length of session in minutes (eg 24 hours is 1440 minutes - if set to 0 then defaults to global sessiontimeout value):
+	# eg for 100 mins:
+	# session_length="100"
+	#
+	# eg for 20 hours:
+	# session_length=$((20*60))
+	#
+	# eg for 20 hours and 30 minutes:
+	# session_length=$((20*60+30))
+	session_length="0"
+
+	# Set Rate and Quota values for the client
+	# The session length, rate and quota values could be determined by this script, on a per client basis.
+	# rates are in kb/s, quotas are in kB. - if set to 0 then defaults to global value).
+	upload_rate="0"
+	download_rate="0"
+	upload_quota="0"
+	download_quota="0"
+
+	quotas="$session_length $upload_rate $download_rate $upload_quota $download_quota"
+	#########################################
+
+	# The list of Parameters sent from openNDS:
+	# Note you can add custom parameters to the config file and to read them you must also add them here.
+	# Custom parameters are "Portal" information and are the same for all clients eg "admin_email" and "location"
+	ndsparamlist="hid clientip clientmac client_type gatewayname gatewayurl version gatewayaddress gatewaymac originurl clientif"
+
+	# The list of FAS Variables used in the Login Dialogue generated by this script.
+	# These FAS variables received from the login form presented to the client.
+	# The following are the defaults for all themes. Theme specific variables are appended by the ThemeSpec script.
+	fasvarlist="terms landing status continue custom"
+
+	# Set the Logfile location, using the tmpfs "temporary" directory to prevent flash wear.
+	# or override to a custom location in the ThemeSpec file (eg USB stick)
+	configure_log_location
+	. $mountpoint/ndscids/ndsinfo
+
+
+	############################################################################
+	### We are now ready to generate the html for the Portal "Splash" pages: ###
+	############################################################################
+
+	# Get the arguments sent from openNDS and parse/decode them, setting portal ThemeSpec as required
+	get_theme_environment $1 $2 $3 $4
+
+	refresh="3"
+	type download_image_files &>/dev/null && download_image_files
+	type download_data_files &>/dev/null && download_data_files
+
+	# Note: $mountpoint is now set to point to a safe storage area, so we have loaded custom images there
+
+	config_input_fields "input"
+
+	# Add inputnames to fasvarlist
+	fasvarlist="$fasvarlist $inputnames"
+
+	get_arguments
+
+	config_input_fields "hidden"
+
+	# Set the default image to be displayed
+	if [ -z "$imagepath" ]; then
+		imagepath="http://$gatewayaddress/images/splash.jpg"
+	fi
+
+	# Output the page common header
+	type header &>/dev/null && header || default_header
+
+	# Check if Terms of Service is requested
+	if [ "$terms" = "yes" ]; then
+		display_terms
+	fi
+
+	# Check if landing page is requested
+	if [ "$landing" = "yes" ]; then
+		landing_page
+	fi
+
+	# Check if the client is already logged in (have probably tapped "back" on their browser)
+	# Make this a friendly message explaining they are good to go
+	check_authenticated
+
+	# Generate the dynamic portal splash page sequence
+	type generate_splash_sequence &>/dev/null && generate_splash_sequence || serve_error_message "Invalid ThemeSpec"
+
+	# Customisation of the sequence of portal pages will normally be done in a corresponding themespec file.
+	# This script imports a themespec file for defining the dynamically generated portal sequence presented to the client
+	# The themespec file to be imported is defined in the openNDS config file
+	# Hints:
+	# The output of this script will be served by openNDS built in web server (MHD) and
+	# ultimately displayed on the client device screen via the CPD process on that device.
+	#
+	# It should be noted when designing a custom splash page that for security reasons
+	# most client device CPD implementations MAY do one or all of the following:
+	#
+	#	1.Immediately close the browser when the client has authenticated.
+	#	2.Prohibit the use of href links.
+	#	3.Prohibit downloading of external files (including .css and .js, even if they are allowed in NDS firewall settings).
+	#	4.Prohibit the execution of javascript.
+	#
+	exit 0
+
+elif [ "$1" = "get_option_from_config" ]; then
+	# Get the config option value
+	# $2 contains the option to get
+	option=$2
+	get_option_from_config
+	echo -n "$param"
+	exit 0
+
+elif [ "$1" = "get_list_from_config" ]; then
+	# Get the config list value(s)
+	# $2 contains the list to get
+	list=$2
+	get_list_from_config
+	echo -n "$param"
+	exit 0
+
+elif [ "$1" = "create_client_ruleset" ]; then
+	# Create the nftables client ruleset
+	# $2 is the client ruleset name
+	# $3 is the ruleset
+	ruleset_name=$2
+	ruleset=$3
+	create_client_ruleset
+	exit 0
+
+elif [ "$1" = "clean" ]; then
 	# Do a cleanup if asked and reply with tmpfs mountpoint
 	configure_log_location
 
@@ -1821,22 +2081,6 @@ elif [ "$1" = "download" ]; then
 
 	printf "%s" "done"
 
-	exit 0
-
-elif [ "$1" = "get_option_from_config" ]; then
-	# Get the config option value
-	# $2 contains the option to get
-	option=$2
-	get_option_from_config
-	echo -n "$param"
-	exit 0
-
-elif [ "$1" = "get_list_from_config" ]; then
-	# Get the config list value(s)
-	# $2 contains the list to get
-	list=$2
-	get_list_from_config
-	echo -n "$param"
 	exit 0
 
 elif [ "$1" = "debuglevel" ]; then
@@ -2297,137 +2541,6 @@ elif [ "$1" = "configure_log_location" ]; then
 
 	exit 0
 
-else
-	#Display a splash page sequence using a Themespec
-
-	#################################
-	# Any parameters set here	#
-	# will be overridden if set	#
-	# in the themespec file	#
-	#################################
-
-	#  setup required parameters:	#
-
-	# Client Custom String
-	custom=""
-	# You can choose to define a custom string. This will be b64 encoded and sent to openNDS.
-	# There it will be made available to be displayed in the output of ndsctl json as well as being sent
-	#	to the BinAuth post authentication processing script if enabled.
-	# Set the variable $binauth_custom to the desired value.
-	# Values set here can be overridden by the themespec file
-
-	#binauth_custom="This is sample text sent from \"$title\" to \"BinAuth\" for post authentication processing."
-
-	# Encode and activate the custom string
-	#encode_custom
-
-	# Preshared key
-	#########################################
-	# Default value is 1234567890 when faskey is not set in config
-	get_key_from_config
-
-	# Quotas and Data Rates
-	#########################################
-	# Set length of session in minutes (eg 24 hours is 1440 minutes - if set to 0 then defaults to global sessiontimeout value):
-	# eg for 100 mins:
-	# session_length="100"
-	#
-	# eg for 20 hours:
-	# session_length=$((20*60))
-	#
-	# eg for 20 hours and 30 minutes:
-	# session_length=$((20*60+30))
-	session_length="0"
-
-	# Set Rate and Quota values for the client
-	# The session length, rate and quota values could be determined by this script, on a per client basis.
-	# rates are in kb/s, quotas are in kB. - if set to 0 then defaults to global value).
-	upload_rate="0"
-	download_rate="0"
-	upload_quota="0"
-	download_quota="0"
-
-	quotas="$session_length $upload_rate $download_rate $upload_quota $download_quota"
-	#########################################
-
-	# The list of Parameters sent from openNDS:
-	# Note you can add custom parameters to the config file and to read them you must also add them here.
-	# Custom parameters are "Portal" information and are the same for all clients eg "admin_email" and "location"
-	ndsparamlist="hid clientip clientmac client_type gatewayname gatewayurl version gatewayaddress gatewaymac originurl clientif"
-
-	# The list of FAS Variables used in the Login Dialogue generated by this script.
-	# These FAS variables received from the login form presented to the client.
-	# The following are the defaults for all themes. Theme specific variables are appended by the ThemeSpec script.
-	fasvarlist="terms landing status continue custom"
-
-	# Set the Logfile location, using the tmpfs "temporary" directory to prevent flash wear.
-	# or override to a custom location in the ThemeSpec file (eg USB stick)
-	configure_log_location
-	. $mountpoint/ndscids/ndsinfo
-
-
-	############################################################################
-	### We are now ready to generate the html for the Portal "Splash" pages: ###
-	############################################################################
-
-	# Get the arguments sent from openNDS and parse/decode them, setting portal ThemeSpec as required
-	get_theme_environment $1 $2 $3 $4
-
-	refresh="3"
-	type download_image_files &>/dev/null && download_image_files
-	type download_data_files &>/dev/null && download_data_files
-
-	# Note: $mountpoint is now set to point to a safe storage area, so we have loaded custom images there
-
-	config_input_fields "input"
-
-	# Add inputnames to fasvarlist
-	fasvarlist="$fasvarlist $inputnames"
-
-	get_arguments
-
-	config_input_fields "hidden"
-
-	# Set the default image to be displayed
-	if [ -z "$imagepath" ]; then
-		imagepath="http://$gatewayaddress/images/splash.jpg"
-	fi
-
-	# Output the page common header
-	type header &>/dev/null && header || default_header
-
-	# Check if Terms of Service is requested
-	if [ "$terms" = "yes" ]; then
-		display_terms
-	fi
-
-	# Check if landing page is requested
-	if [ "$landing" = "yes" ]; then
-		landing_page
-	fi
-
-	# Check if the client is already logged in (have probably tapped "back" on their browser)
-	# Make this a friendly message explaining they are good to go
-	check_authenticated
-
-	# Generate the dynamic portal splash page sequence
-	type generate_splash_sequence &>/dev/null && generate_splash_sequence || serve_error_message "Invalid ThemeSpec"
-
-	# Customisation of the sequence of portal pages will normally be done in a corresponding themespec file.
-	# This script imports a themespec file for defining the dynamically generated portal sequence presented to the client
-	# The themespec file to be imported is defined in the openNDS config file
-	# Hints:
-	# The output of this script will be served by openNDS built in web server (MHD) and
-	# ultimately displayed on the client device screen via the CPD process on that device.
-	#
-	# It should be noted when designing a custom splash page that for security reasons
-	# most client device CPD implementations MAY do one or all of the following:
-	#
-	#	1.Immediately close the browser when the client has authenticated.
-	#	2.Prohibit the use of href links.
-	#	3.Prohibit downloading of external files (including .css and .js, even if they are allowed in NDS firewall settings).
-	#	4.Prohibit the execution of javascript.
-	#
 fi
 
 ########################################################################

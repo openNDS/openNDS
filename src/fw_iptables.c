@@ -241,33 +241,6 @@ _nftables_compile(const char table[], const char chain[], t_firewall_rule *rule)
 	return(safe_strdup(command));
 }
 
-/**
- * @internal
- * append all the rules in a rule set.
- * @arg ruleset Name of the ruleset
- * @arg table Table containing the chain.
- * @arg chain IPTables chain the rules go into
- */
-static int
-_iptables_append_ruleset(const char table[], const char ruleset[], const char chain[])
-{
-	t_firewall_rule *rule;
-	char *cmd;
-	int ret = 0;
-
-	debug(LOG_DEBUG, "Loading ruleset %s into table %s, chain %s", ruleset, table, chain);
-
-	for (rule = get_ruleset_list(ruleset); rule != NULL; rule = rule->next) {
-		cmd = _nftables_compile(table, chain, rule);
-		debug(LOG_DEBUG, "Loading rule \"%s\" into table %s, chain %s", cmd, table, chain);
-		ret |= nftables_do_command(cmd);
-		free(cmd);
-	}
-
-	debug(LOG_DEBUG, "Ruleset %s loaded into table %s, chain %s", ruleset, table, chain);
-	return ret;
-}
-
 int
 iptables_trust_mac(const char mac[])
 {
@@ -278,6 +251,11 @@ int
 iptables_untrust_mac(const char mac[])
 {
 	return execute("/usr/lib/opennds/libopennds.sh delete_client_rule nds_mangle \"%s\" all \"%s\"", CHAIN_TRUSTED, mac);
+}
+
+int create_client_ruleset(char rulesetname[], char ruleset[])
+{
+	return execute("/usr/lib/opennds/libopennds.sh create_client_ruleset \"%s\" \"%s\"", rulesetname, ruleset);
 }
 
 // Initialize the firewall rules.
@@ -301,9 +279,13 @@ iptables_fw_init(void)
 
 	LOCK_CONFIG();
 	config = config_get_config();
+
+	gw_interface = safe_calloc(STATUS_BUF);
 	gw_interface = safe_strdup(config->gw_interface); // must free
 	
 	// ip4 vs ip6 differences
+	gw_ip = safe_calloc(STATUS_BUF);
+
 	if (config->ip6) {
 		// ip6 addresses must be in square brackets like [ffcc:e08::1]
 		safe_asprintf(&gw_ip, "[%s]", config->gw_ip); // must free
@@ -311,13 +293,19 @@ iptables_fw_init(void)
 		gw_ip = safe_strdup(config->gw_ip);    // must free
 	}
 	
+	fas_remoteip = safe_calloc(STATUS_BUF);
+
 	if (config->fas_port) {
 		fas_remoteip = safe_strdup(config->fas_remoteip);    // must free
 		fas_port = config->fas_port;
 	}
 
+	gw_address = safe_calloc(STATUS_BUF);
 	gw_address = safe_strdup(config->gw_address);    // must free
+
+	gw_iprange = safe_calloc(STATUS_BUF);
 	gw_iprange = safe_strdup(config->gw_iprange);    // must free
+
 	gw_port = config->gw_port;
 	pt = config->trustedmaclist;
 	FW_MARK_TRUSTED = config->fw_mark_trusted;
@@ -430,37 +418,6 @@ iptables_fw_init(void)
 		rc |= nftables_do_command("add rule ip nds_filter %s tcp dport %d counter accept", CHAIN_TO_ROUTER, fas_port);
 	}
 
-	// CHAIN_TO_ROUTER, other packets:
-
-	/* if users-to-router ruleset is empty:
-	 *    use empty ruleset policy
-	 * else:
-	 *    load and use users-to-router ruleset
-	 */
-	if (is_empty_ruleset("users-to-router")) {
-		rc |= nftables_do_command("add rule ip nds_filter ndsRTR tcp dport 53 counter accept");
-		rc |= nftables_do_command("add rule ip nds_filter ndsRTR udp dport 53 counter accept");
-		rc |= nftables_do_command("add rule ip nds_filter ndsRTR udp dport 67 counter accept");
-		rc |= nftables_do_command("add rule ip nds_filter ndsRTR tcp dport 22 counter accept");
-		rc |= nftables_do_command("add rule ip nds_filter ndsRTR tcp dport 443 counter accept");
-		rc |= nftables_do_command("add rule ip nds_filter ndsRTR counter reject");
-
-
-	} else {
-		// CHAIN_TO_ROUTER, append the "users-to-router" ruleset
-		rc |= _iptables_append_ruleset("nds_filter", "users-to-router", CHAIN_TO_ROUTER);
-
-		/* CHAIN_TO_ROUTER packets marked AUTHENTICATED RETURN
-		This allows clients full access to the router
-		Commented out to block all access not specifically allowed in the ruleset
-		TODO: Should this be an option? The commented out legacy iptables command follows:
-		*/
-		// rc |= iptables_do_command("-t nds_filter -A " CHAIN_TO_ROUTER " -m mark --mark 0x%x%s -j RETURN", FW_MARK_AUTHENTICATED, markmask);
-
-		// everything else, REJECT
-		rc |= nftables_do_command("add rule ip nds_filter ndsRTR counter reject");
-	}
-
 	/*
 	 * filter CHAIN_FORWARD chain
 	 */
@@ -492,29 +449,8 @@ iptables_fw_init(void)
 	// CHAIN_AUTHENTICATED, jump to CHAIN_UPLOAD_RATE to handle upload rate limiting
 	rc |= nftables_do_command("add rule ip nds_filter %s counter jump %s", CHAIN_AUTHENTICATED, CHAIN_UPLOAD_RATE);
 
-	// CHAIN_AUTHENTICATED, append the "authenticated-users" ruleset
-	if (is_empty_ruleset("authenticated-users")) {
-		rc |= nftables_do_command("add rule ip nds_filter %s counter return", CHAIN_AUTHENTICATED);
-	} else {
-		rc |= _iptables_append_ruleset("nds_filter", "authenticated-users", CHAIN_AUTHENTICATED);
-	}
-
 	// CHAIN_AUTHENTICATED, any packets not matching that ruleset REJECT
 	rc |= nftables_do_command("add rule ip nds_filter %s counter reject", CHAIN_AUTHENTICATED);
-
-	// CHAIN_TO_INTERNET, other packets:
-
-	/* if preauthenticated-users ruleset is empty:
-	 *    use empty ruleset policy
-	 * else:
-	 *    load and use authenticated-users ruleset
-	 */
-
-	if (is_empty_ruleset("preauthenticated-users")) {
-		rc |= nftables_do_command("add rule ip nds_filter %s counter reject", CHAIN_TO_INTERNET);
-	} else {
-		rc |= _iptables_append_ruleset("nds_filter", "preauthenticated-users", CHAIN_TO_INTERNET);
-	}
 
 	// CHAIN_TO_INTERNET, all other packets REJECT
 	rc |= nftables_do_command("add rule ip nds_filter %s counter reject", CHAIN_TO_INTERNET);
@@ -542,6 +478,7 @@ iptables_fw_init(void)
 	 */
 
 	// Restart dnsmasq
+	dnscmd = safe_calloc(STATUS_BUF);
 	safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" &");
 	debug(LOG_DEBUG, "restart command [ %s ]", dnscmd);
 	system(dnscmd);

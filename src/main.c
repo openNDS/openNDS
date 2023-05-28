@@ -300,7 +300,6 @@ setup_from_config(void)
 	time_t sysuptime;
 	time_t now = time(NULL);
 	char *dnscmd;
-	char *setupcmd;
 
 	s_config *config;
 
@@ -336,18 +335,6 @@ setup_from_config(void)
 	}
 
 	debug(LOG_INFO, "tmpfs mountpoint is [%s]", config->tmpfsmountpoint);
-	// Before we do anything else, reset the firewall (cleans it, in case we are restarting after opennds crash)
-	iptables_fw_destroy();
-
-	// Call pre setup library function
-	safe_asprintf(&setupcmd, "/usr/lib/opennds/libopennds.sh \"pre_setup\"");
-	msg = safe_calloc(STATUS_BUF);
-
-	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, setupcmd) == 0) {
-		debug(LOG_INFO, "Pre-Setup request sent");
-	}
-	free(setupcmd);
-	free(msg);
 
 	// Check for libmicrohttp version at runtime, ie actual installed version
 	int major = 0;
@@ -383,31 +370,6 @@ setup_from_config(void)
 		}
 	}
 
-	// If we don't have the Gateway IP address, get it. Exit on failure.
-	if (!config->gw_ip) {
-		debug(LOG_DEBUG, "Finding IP address of %s", config->gw_interface);
-		config->gw_ip = get_iface_ip(config->gw_interface, config->ip6);
-		if (is_addr(config->gw_ip) != 1) {
-			debug(LOG_ERR, "Could not get IP address information of %s, exiting...", config->gw_interface);
-			exit(1);
-		} else {
-			debug(LOG_NOTICE, "Interface %s is up", config->gw_interface);
-		}
-	}
-
-	// format gw_address accordingly depending on if gw_ip is v4 or v6
-	const char *ipfmt = config->ip6 ? "[%s]:%d" : "%s:%d";
-	safe_asprintf(&config->gw_address, ipfmt, config->gw_ip, config->gw_port);
-
-	config->gw_mac = get_iface_mac(config->gw_interface);
-
-	if (strcmp(config->gw_mac, "00:00:00:00:00:00") == 0 || config->gw_mac == NULL) {
-		debug(LOG_ERR, "Could not get MAC address information of %s, exiting...", config->gw_interface);
-		exit(1);
-	}
-
-	debug(LOG_NOTICE, "Interface %s is at %s (%s)", config->gw_interface, config->gw_ip, config->gw_mac);
-
 	// Check routing configuration
 	int watchdog = 0;
 	int routercheck;
@@ -419,11 +381,6 @@ setup_from_config(void)
 	// Warn if Preemptive Authentication is enabled
 	if (config->allow_preemptive_authentication == 1) {
 		debug(LOG_NOTICE, "Preemptive authentication is enabled");
-	}
-
-	// Make sure fas_remoteip is set. Note: This does not enable FAS.
-	if (!config->fas_remoteip) {
-		config->fas_remoteip = safe_strdup(config->gw_ip);
 	}
 
 	// Setup custom FAS parameters if configured
@@ -829,14 +786,6 @@ setup_from_config(void)
 		debug(LOG_INFO, "Binauth Script is %s\n", config->binauth);
 	}
 
-	// Now initialize the firewall
-	if (iptables_fw_init() != 0) {
-		debug(LOG_ERR, "Error initializing firewall rules! Cleaning up");
-		iptables_fw_destroy();
-		debug(LOG_ERR, "Exiting because of error initializing firewall rules");
-		exit(1);
-	}
-
 	// Preload remote files defined in themespec
 	if (routercheck > 0) {
 		download_remotes(1);
@@ -864,6 +813,7 @@ setup_from_config(void)
 	}
 	free(debuglevel);
 
+	// Create the ndsinfo database
 	write_ndsinfo();
 
 	// Test for Y2.038K bug
@@ -933,9 +883,6 @@ int main(int argc, char **argv)
 	// Initialize the config
 	config_init();
 	parse_commandline(argc, argv);
-
-	config_read(config->configfile);
-	config_validate();
 
 	// Initializes the linked list of connected clients
 	client_list_init();

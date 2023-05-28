@@ -440,24 +440,19 @@ int get_option_from_config(char* msg, int msg_len, const char *option)
 {
 	char *cmd;
 	s_config *config = config_get_config();
+
 	cmd = safe_calloc(STATUS_BUF);
-	debug(LOG_DEBUG, "Getting option: %s", option);
 	safe_asprintf(&cmd, "/usr/lib/opennds/libopennds.sh get_option_from_config '%s'", option);
 
-	if (execute_ret_url_encoded(msg, msg_len - 1, cmd) == 0) {
-		debug(LOG_DEBUG, "Option %s is %s", option, msg);
-	} else {
+	if (execute_ret_url_encoded(msg, msg_len - 1, cmd) != 0) {
 		debug(LOG_INFO, "Failed to get option [%s] - retrying", option);
 		sleep(1);
 
-		if (execute_ret_url_encoded(msg, msg_len - 1, cmd) == 0) {
-			debug(LOG_DEBUG, "Option %s is %s", option, msg);
-		} else {
+		if (execute_ret_url_encoded(msg, msg_len - 1, cmd) != 0) {
 			debug(LOG_INFO, "Failed to get option [%s] - giving up", option);
 		}
 	}
 
-	debug(LOG_DEBUG, "Option %s is %s", option, msg);
 	free (cmd);
 	return 0;
 }
@@ -467,19 +462,15 @@ int get_list_from_config(char* msg, int msg_len, const char *list)
 {
 	char *cmd;
 	s_config *config = config_get_config();
+
 	cmd = safe_calloc(MID_BUF);
-	debug(LOG_DEBUG, "Getting option: %s", list);
 	safe_asprintf(&cmd, "/usr/lib/opennds/libopennds.sh get_list_from_config '%s'", list);
 
-	if (execute_ret_url_encoded(msg, msg_len - 1, cmd) == 0) {
-		debug(LOG_DEBUG, "List %s is %s", list, msg);
-	} else {
+	if (execute_ret_url_encoded(msg, msg_len - 1, cmd) != 0) {
 		debug(LOG_INFO, "Failed to get list [%s] - retrying", list);
 		sleep(1);
 
-		if (execute_ret_url_encoded(msg, msg_len - 1, cmd) == 0) {
-			debug(LOG_DEBUG, "List %s is %s", list, msg);
-		} else {
+		if (execute_ret_url_encoded(msg, msg_len - 1, cmd) != 0) {
 			debug(LOG_INFO, "Failed to get list [%s] - giving up", list);
 		}
 	}

@@ -77,6 +77,7 @@
 #define DEFAULT_AUTH_IDLE_TIMEOUT "120"
 #define DEFAULT_REMOTES_REFRESH_INTERVAL "0"
 #define DEFAULT_WEBROOT "/etc/opennds/htdocs"
+#define DEFAULT_TMPFSMOUNTPOINT "/tmp"
 #define DEFAULT_AUTHDIR "opennds_auth"
 #define DEFAULT_DENYDIR "opennds_deny"
 #define DEFAULT_PREAUTHDIR "opennds_preauth"
@@ -97,6 +98,10 @@
 #define DEFAULT_FW_MARK_AUTHENTICATED "0x30000"
 #define DEFAULT_AUTHENTICATION_MARK "0x00030000"
 #define DEFAULT_FW_MARK_TRUSTED "0x20000"
+#define DEFAULT_THEMESPEC_PATH ""
+#define DEFAULT_FAS_REMOTEFQDN ""
+#define DEFAULT_FAS_REMOTEIP ""
+
 /* N.B.: default policies here must be ACCEPT, REJECT, or RETURN
  * In the .conf file, they must be allow, block, or passthrough
  * Mapping between these enforced by parse_empty_ruleset_policy()
@@ -107,6 +112,15 @@
 #define DEFAULT_EMPTY_AUTHENTICATED_USERS_POLICY "return"
 #define DEFAULT_EMPTY_PREAUTHENTICATED_USERS_POLICY "reject"
 #define DEFAULT_IP6 0
+
+// Default lists
+#define DEFAULT_TRUSTEDMACLIST ""
+#define DEFAULT_WALLEDGARDEN_FQDN_LIST ""
+#define DEFAULT_WALLEDGARDEN_PORT_LIST ""
+#define DEFAULT_FAS_CUSTOM_PARAMETERS_LIST ""
+#define DEFAULT_USERS_TO_ROUTER "allow%20udp%20port%2053 allow%20udp%20port%2067 allow%20tcp%20port%2022 allow%20tcp%20port%20443"
+#define DEFAULT_AUTHENTICATED_USERS "allow%20all"
+#define DEFAULT_PREAUTHENTICATED_USERS ""
 
 // Firewall targets
 typedef enum {
@@ -271,28 +285,6 @@ s_config *config_get_config(void);
 
 // @brief Initialise the conf system
 void config_init(void);
-
-// @brief Reads the configuration file
-void config_read(const char filename[]);
-
-// @brief Check that the configuration is valid
-void config_validate(void);
-
-// @brief Fetch a firewall rule list, given name of the ruleset. */
-t_firewall_rule *get_ruleset_list(const char[]);
-
-// @brief Fetch a firewall ruleset, given its name.
-t_firewall_ruleset *get_ruleset(const char[]);
-
-// @brief Add a firewall ruleset with the given name, and return it.
-t_firewall_ruleset *add_ruleset(const char[]);
-
-// @brief Say if a named firewall ruleset is empty.
-int is_empty_ruleset(const char[]);
-
-// @brief Get a named empty firewall ruleset policy, given ruleset name.
-char * get_empty_ruleset_policy(const char[]);
-
 void parse_trusted_mac_list(const char[]);
 void parse_walledgarden_fqdn_list(const char[]);
 void parse_walledgarden_port_list(const char[]);

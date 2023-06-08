@@ -1605,8 +1605,8 @@ create_client_ruleset () {
 					case $param in
 						"allow") verdict="accept";;
 						"passthrough") verdict="accept";;
-						"block") verdict="block";;
-						*) verdict="block";;
+						"block") verdict="drop";;
+						*) verdict="drop";;
 					esac
 					;;
 				1) proto=$param;;

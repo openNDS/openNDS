@@ -38,8 +38,8 @@ install:
 	cp ndsctl $(DESTDIR)/usr/bin/
 	cp opennds $(DESTDIR)/usr/bin/
 	mkdir -p $(DESTDIR)/etc/opennds/htdocs/images
-	cp resources/opennds.conf $(DESTDIR)/etc/opennds/
-	cp linux_openwrt/opennds/files/etc/config/opennds $(DESTDIR)/etc/opennds/opennds.uci
+	mkdir -p $(DESTDIR)/etc/config
+	cp linux_openwrt/opennds/files/etc/config/opennds $(DESTDIR)/etc/config/
 	cp resources/splash.css $(DESTDIR)/etc/opennds/htdocs/
 	cp resources/splash.jpg $(DESTDIR)/etc/opennds/htdocs/images/
 	mkdir -p $(DESTDIR)/etc/systemd/system

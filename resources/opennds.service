@@ -4,8 +4,10 @@ After=network.target
 
 [Service]
 Type=forking
-ExecStart=/usr/bin/opennds $OPTIONS
+ExecStart=/usr/bin/opennds -b
 Restart=on-failure
+
+ExecStopPost=sleep 60
 
 [Install]
 WantedBy=multi-user.target

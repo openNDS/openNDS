@@ -49,8 +49,6 @@
 #include "debug.h"
 #include "util.h"
 
-static char *_nftables_compile(const char[], const char[], t_firewall_rule *);
-static int _iptables_append_ruleset(const char[], const char[], const char[]);
 static int _iptables_init_marks(void);
 
 // Used to mark packets, and characterize client state.  Unmarked packets are considered 'preauthenticated'
@@ -161,84 +159,6 @@ nftables_do_command(const char *format, ...)
 	free(fmt_cmd);
 
 	return rc;
-}
-
-/**
- * @internal
- * Compiles a struct definition of a firewall rule into a valid nftables
- * command.
- * @arg table Table containing the chain.
- * @arg chain Chain that the command will be (-A)ppended to.
- * @arg rule Definition of a rule into a struct, from conf.c.
- */
-static char *
-_nftables_compile(const char table[], const char chain[], t_firewall_rule *rule)
-{
-	char command[MAX_BUF];
-	char *mode;
-
-	mode = NULL;
-	memset(command, 0, MAX_BUF);
-
-	switch (rule->target) {
-	case TARGET_DROP:
-		mode = "drop";
-		break;
-	case TARGET_REJECT:
-		mode = "reject";
-		break;
-	case TARGET_ACCEPT:
-		mode = "accept";
-		break;
-	case TARGET_RETURN:
-		mode = "return";
-		break;
-	case TARGET_LOG:
-		mode = "log";
-		break;
-	case TARGET_ULOG:
-		mode = "ulog";
-		break;
-	default:
-		mode = "return";
-		break;
-	}
-
-	debug(LOG_DEBUG, "nftables compile: table [%s ], chain [ %s ], mode [ %s ]", table, chain, mode);
-	//snprintf(command, sizeof(command),  "-t %s -A %s ", table, chain);
-	snprintf(command, sizeof(command),  "add rule ip %s %s ", table, chain);
-
-	if (rule->mask != NULL) {
-		snprintf((command + strlen(command)),
-			 (sizeof(command) - strlen(command)),
-			 "ip daddr %s ", rule->mask
-		);
-	}
-
-	if (rule->protocol != NULL) {
-		snprintf((command + strlen(command)),
-			 (sizeof(command) - strlen(command)),
-			 "%s ", rule->protocol)
-		;
-	}
-
-	if (rule->port != NULL) {
-		snprintf((command + strlen(command)),
-			 (sizeof(command) - strlen(command)),
-			 "dport %s ", rule->port
-		);
-	}
-
-	snprintf((command + strlen(command)),
-		 (sizeof(command) - strlen(command)),
-		 "counter %s", mode
-	);
-
-	debug(LOG_DEBUG, "Compiled Command for nftables: [ %s ]", command);
-
-	/* XXX The buffer command, an automatic variable, will get cleaned
-	 * off of the stack when we return, so we strdup() it. */
-	return(safe_strdup(command));
 }
 
 int
@@ -775,7 +695,7 @@ iptables_fw_total_upload()
 	unsigned long long int counter;
 
 	// Look for outgoing traffic
-	safe_asprintf(&script, "nft list chain ip nds_mangle %s | grep -w %s ", CHAIN_PREROUTING, CHAIN_OUTGOING);
+	safe_asprintf(&script, "nft list chain ip nds_mangle %s 2>/dev/null | grep -w %s ", CHAIN_PREROUTING, CHAIN_OUTGOING);
 	output = popen(script, "r");
 	free (script);
 	
@@ -813,7 +733,7 @@ iptables_fw_total_download()
 	unsigned long long int counter;
 
 	// Look for incoming traffic
-	safe_asprintf(&script, "nft list chain ip nds_mangle %s | grep -w %s ", CHAIN_POSTROUTING, CHAIN_INCOMING);
+	safe_asprintf(&script, "nft list chain ip nds_mangle %s  2>/dev/null | grep -w %s ", CHAIN_POSTROUTING, CHAIN_INCOMING);
 	output = popen(script, "r");
 	free (script);
 
@@ -859,7 +779,7 @@ iptables_fw_counters_update(void)
 	af = config->ip6 ? AF_INET6 : AF_INET;
 
 	// Look for outgoing (upload) traffic of authenticated clients.
-	safe_asprintf(&script, "nft list chain ip nds_mangle %s", CHAIN_OUTGOING);
+	safe_asprintf(&script, "nft list chain ip nds_mangle %s 2>/dev/null", CHAIN_OUTGOING);
 	output = popen(script, "r");
 	free(script);
 
@@ -915,7 +835,7 @@ iptables_fw_counters_update(void)
 	pclose(output);
 
 	// Look for incoming (download) traffic
-	safe_asprintf(&script, "nft list chain ip nds_mangle %s", CHAIN_INCOMING);
+	safe_asprintf(&script, "nft list chain ip nds_mangle %s 2>/dev/null", CHAIN_INCOMING);
 	output = popen(script, "r");
 	free(script);
 

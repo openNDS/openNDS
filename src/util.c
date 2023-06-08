@@ -436,10 +436,27 @@ int write_client_info(char* msg, int msg_len, const char *mode, const char *cid,
 	return 0;
 }
 
+int check_heartbeat()
+{
+	char *cmd;
+	char *msg;
+	int ret;
+
+	cmd = safe_calloc(STATUS_BUF);
+	msg = safe_calloc(STATUS_BUF);
+
+	safe_asprintf(&cmd, "/usr/lib/opennds/libopennds.sh check_heartbeat");
+
+	ret = execute_ret_url_encoded(msg, STATUS_BUF - 1, cmd);
+
+	free (cmd);
+	free (msg);
+	return ret;
+}
+
 int get_option_from_config(char* msg, int msg_len, const char *option)
 {
 	char *cmd;
-	s_config *config = config_get_config();
 
 	cmd = safe_calloc(STATUS_BUF);
 	safe_asprintf(&cmd, "/usr/lib/opennds/libopennds.sh get_option_from_config '%s'", option);
@@ -461,7 +478,6 @@ int get_option_from_config(char* msg, int msg_len, const char *option)
 int get_list_from_config(char* msg, int msg_len, const char *list)
 {
 	char *cmd;
-	s_config *config = config_get_config();
 
 	cmd = safe_calloc(MID_BUF);
 	safe_asprintf(&cmd, "/usr/lib/opennds/libopennds.sh get_list_from_config '%s'", list);
@@ -640,9 +656,9 @@ get_iface_ip(const char ifname[], int ip6)
 	iptype = safe_calloc(STATUS_BUF);
 
 	if (ip6) {
-		snprintf(iptype, sizeof(iptype), "inet6");
+		snprintf(iptype, STATUS_BUF, "inet6");
 	} else {
-		snprintf(iptype, sizeof(iptype), "inet");
+		snprintf(iptype, STATUS_BUF, "inet");
  	}
 
 	cmd = safe_calloc(STATUS_BUF);

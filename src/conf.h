@@ -142,14 +142,6 @@ typedef struct _firewall_rule_t {
 	struct _firewall_rule_t *next;
 } t_firewall_rule;
 
-// Firewall rulesets
-typedef struct _firewall_ruleset_t {
-	char *name;
-	char *emptyrulesetpolicy;
-	t_firewall_rule *rules;
-	struct _firewall_ruleset_t *next;
-} t_firewall_ruleset;
-
 // MAC Addresses
 typedef struct _MAC_t {
 	char *mac;
@@ -256,10 +248,8 @@ typedef struct {
 	unsigned long long int upload_quota;			//@brief Upload quota, kB
 	int download_unrestricted_bursting;			//@brief Enable/disable unrestriced bursting
 	int upload_unrestricted_bursting;			//@brief Enable/disable unrestriced bursting
-	int log_syslog;						//@brief boolean, whether to log to syslog
 	int syslog_facility;					//@brief facility to use when using syslog for logging
 	int macmechanism; 					//@brief mechanism wrt MAC addrs
-	t_firewall_ruleset *rulesets;				//@brief firewall rules
 	t_MAC *trustedmaclist;					//@brief list of trusted macs
 	t_WGP *walledgarden_port_list;				//@brief list of Walled Garden Ports
 	t_WGFQDN *walledgarden_fqdn_list;			//@brief list of Walled Garden FQDNs
@@ -284,7 +274,7 @@ typedef struct {
 s_config *config_get_config(void);
 
 // @brief Initialise the conf system
-void config_init(void);
+void config_init(int argc, char **argv);
 void parse_trusted_mac_list(const char[]);
 void parse_walledgarden_fqdn_list(const char[]);
 void parse_walledgarden_port_list(const char[]);

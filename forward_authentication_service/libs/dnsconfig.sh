@@ -20,7 +20,7 @@ ipset_to_nftset () {
 	local timeout=$loopcount
 
 	for tic in $(seq $timeout); do
-		ipset list "$ipsetname" 2>/dev/null
+		ipset list "$ipsetname" &>/dev/null
 		ipsetstat=$?
 		elements=$(ipset list "$ipsetname" 2>/dev/null | awk -F"." 'NF==4 {printf ", %s", $0}')
 

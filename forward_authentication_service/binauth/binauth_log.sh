@@ -43,18 +43,46 @@ get_client_zone () {
 	fi
 }
 
+urlencode() {
+	entitylist="
+		s/%/%25/g
+		s/\s/%20/g
+		s/\"/%22/g
+		s/>/%3E/g
+		s/</%3C/g
+		s/'/%27/g
+		s/\`/%60/g
+	"
+	local buffer="$1"
+
+	for entity in $entitylist; do
+		urlencoded=$(echo "$buffer" | sed "$entity")
+		buffer=$urlencoded
+	done
+
+	urlencoded=$(echo "$buffer" | awk '{ gsub(/\$/, "\\%24"); print }')
+}
+
 get_option_from_config() {
-	local param=""
 
-	if [ -e "/etc/config/opennds" ]; then
-		param=$(uci -q get opennds.@opennds[0].$option | awk '{printf("%s", $0)}')
+	type uci &> /dev/null
+	uci_status=$?
 
-	elif [ -e "/etc/opennds/opennds.conf" ]; then
-		param=$(cat "/etc/opennds/opennds.conf" | awk -F"$option" '{printf("%s", $2)}')
+	if [ $uci_status -eq 0 ]; then
+		param=$(uci export opennds | grep "option" | grep "$option" | awk -F"'" 'NF > 1 {printf "%s ", $2}')
+	else
+		param=$(cat /etc/config/opennds | grep "option" | grep "$option" | awk -F"#" '{printf "%s\n", $1}' | awk -F"'" 'NF > 1 {printf "%s ", $2}')
 	fi
 
-	eval $option=$param
+	# remove trailing space character
+	param=$(echo "$param" | sed 's/.$//')
+
+	# urlencode
+	urlencode "$param"
+	param=$urlencoded
+	eval $option="$param" &>/dev/null
 }
+
 
 configure_log_location() {
 	# Generate the Logfile location; use the tmpfs "temporary" directory to prevent flash wear.
@@ -170,7 +198,6 @@ else
 	if [ "$action" = "deauth" ]; then
 		returned=$(/usr/lib/opennds/libopennds.sh "send_to_fas_deauthed" "$loginfo")
 	fi
-
 fi
 
 # In the case of ThemeSpec, get the client id information from the cid database
@@ -225,7 +252,7 @@ logname="$fulllog"
 logtype=""
 date_inhibit=""
 
-write_log
+write_log &> /dev/null
 
 # Append to the authenticated clients list
 session_end=$6
@@ -244,7 +271,7 @@ if [ "$action" = "auth_client" ] || [ "$action" = "auth" ]; then
 
 	date_inhibit="date_inhibit"
 
-	write_log
+	write_log &> /dev/null
 fi
 
 #Quotas and session length set elsewhere can be overridden here if action=auth_client, otherwise will be ignored.

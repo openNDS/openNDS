@@ -508,17 +508,17 @@ setup_from_config(void)
 
 	// Encode gatewayname
 	char idbuf[STATUS_BUF] = {0};
-	char cmd[256] = {0};
-	char gatewayid[256] = {0};
+	char cmd[STATUS_BUF] = {0};
+	char gatewayid[SMALL_BUF] = {0};
 
 	if (config->enable_serial_number_suffix == 1) {
 
-		snprintf(cmd, sizeof(cmd), "/usr/lib/opennds/libopennds.sh gatewayid \"%s\"",
+		snprintf(cmd, STATUS_BUF, "/usr/lib/opennds/libopennds.sh gatewayid \"%s\"",
 			config->gw_interface
 		);
 
-		if (execute_ret(idbuf, sizeof(idbuf), cmd) == 0) {
-			snprintf(gatewayid, sizeof(gatewayid), "%s Node:%s ",
+		if (execute_ret(idbuf, STATUS_BUF, cmd) == 0) {
+			snprintf(gatewayid, SMALL_BUF, "%s Node:%s ",
 				config->gw_name,
 				idbuf
 			);
@@ -581,7 +581,7 @@ setup_from_config(void)
 
 
 		if (!((stat(config->preauth, &sb) == 0) && S_ISREG(sb.st_mode) && (sb.st_mode & S_IXUSR))) {
-			debug(LOG_ERR, "Login script does not exist or is not executable: %s", config->preauth);
+			debug(LOG_ERR, "Preauth script does not exist or is not executable: %s", config->preauth);
 			debug(LOG_ERR, "Exiting...");
 			exit(1);
 		}
@@ -881,8 +881,7 @@ int main(int argc, char **argv)
 	s_config *config = config_get_config();
 
 	// Initialize the config
-	config_init();
-	parse_commandline(argc, argv);
+	config_init(argc, argv);
 
 	// Initializes the linked list of connected clients
 	client_list_init();

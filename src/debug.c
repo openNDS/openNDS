@@ -81,7 +81,7 @@ _debug(const char filename[], int line, int level, const char *format, ...)
 		sigaddset(&block_chld, SIGCHLD);
 		sigprocmask(SIG_BLOCK, &block_chld, NULL);
 
-		if (config->daemon) {
+		if (config->daemon != 0) {
 			out = stdout;
 		} else {
 			out = stderr;

@@ -82,7 +82,7 @@ debuglevel=$(echo "$ndsctlout" | grep "Debug Level" | awk '{printf $4}')
 version=$(echo "$ndsctlout" | grep "Version" | awk '{printf $2}')
 echo "debuglevel=$debuglevel"
 
-# Get PID For syslog
+# Get openNDS PID For syslog use
 ndspid=$(pgrep '/usr/bin/opennds')
 
 #get arguments and set variables
@@ -144,7 +144,6 @@ while true; do
 
 	if [ -e "$mountpoint/ndsdebuglevel" ]; then
 		debuglevel=$(cat $mountpoint/ndsdebuglevel)
-		echo "debuglevel=$debuglevel"
 	fi
 
 	# Get remote authlist from the FAS:

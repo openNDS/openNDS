@@ -47,6 +47,7 @@
 #include "util.h"
 #include "http_microhttpd_utils.h"
 #include "fw_iptables.h"
+#include "commandline.h"
 
 /** @internal
  * Holds the current configuration of the gateway */
@@ -57,13 +58,6 @@ static s_config config = {{0}};
  * functions. */
 pthread_mutex_t config_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-/** @internal
- * A flag.  If set to 1, there are missing or empty mandatory parameters in the config
- */
-static int missing_parms;
-
-static void config_notnull(const void *parm, const char *parmname);
-static int parse_boolean(const char *);
 
 /** Accessor for the current gateway configuration
 @return:  A pointer to the current config.  The pointer isn't opaque, but should be treated as READ-ONLY
@@ -139,7 +133,7 @@ char *set_option_str(char *option, const char *default_option, char *debug_level
 
 // Sets the default config parameters and initialises the configuration system
 void
-config_init(void)
+config_init(int argc, char **argv)
 {
 	const char *gatewayname;
 	char *gatewayname_raw;
@@ -147,18 +141,17 @@ config_init(void)
 	char *setupcmd;
 	char debug_level[STATUS_BUF];
 	char *msg;
-	int ret;
 	FILE *fd;
 	char *lockfile;
 
-
-	t_firewall_ruleset *rs;
-
+	parse_commandline(argc, argv);
 	strncpy(config.configfile, DEFAULT_CONFIGFILE, sizeof(config.configfile)-1);
 
 	openlog ("opennds", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_DAEMON);
 	syslog (LOG_NOTICE, "openNDS Version %s is in startup\n", VERSION);
 	closelog ();
+
+	printf ("openNDS Version %s is in startup - Please wait....\n", VERSION);
 
 	// get configured debuglevel
 	memset(debug_level, 0, STATUS_BUF);
@@ -274,11 +267,13 @@ config_init(void)
 	config.custom_images = NULL;
 	config.custom_files = NULL;
 	config.tmpfsmountpoint = NULL;
-	config.rulesets = NULL;
 	config.preauth = NULL;
 	config.lockfd = 0;
 	config.online_status = 0;
-	config.daemon = -1;
+
+	if (config.daemon != 0) {
+		config.daemon = -1;
+	}
 
 	// Lists
 	parse_trusted_mac_list(set_list_str("trustedmac", DEFAULT_TRUSTEDMACLIST, debug_level));
@@ -286,7 +281,7 @@ config_init(void)
 	parse_walledgarden_port_list(set_list_str("walledgarden_port_list", DEFAULT_WALLEDGARDEN_PORT_LIST, debug_level));
 	parse_fas_custom_parameters_list(set_list_str("fas_custom_parameters_list", DEFAULT_FAS_CUSTOM_PARAMETERS_LIST, debug_level));
 
-	// Before we do anything else, reset the firewall (cleans it, in case we are restarting after opennds crash)
+	// Before we do anything else, reset the firewall (cleans it, in case we are restarting or after an opennds crash)
 	iptables_fw_destroy();
 
 	// Call the pre setup library function to create the base nttables ruleset
@@ -867,8 +862,6 @@ int set_debuglevel(const char opt[])
 		free(msg);
 		return 0;
 	} else {
-		free(libcmd);		
-		free(msg);
 		return 1;
 	}
 }

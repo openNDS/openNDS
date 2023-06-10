@@ -1,10 +1,9 @@
 
-# The options available here are an adaptation of the settings used in the legacy opennds.conf.
-
 config opennds
 	# enabled
+	# Default: 1 (enabled)
 	# Set to 0 to disable opennds
-	option enabled 1
+	#option enabled 0
 	###########################################################################################
 
 	# debuglevel

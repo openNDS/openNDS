@@ -47,7 +47,8 @@
 #else
 #define DEFAULT_CONFIGFILE SYSCONFDIR"/opennds/opennds.conf"
 #endif
-#define DEFAULT_DAEMON "1"
+#define DEFAULT_DAEMON "0"
+#define DEFAULT_ENABLED "1"
 #define DEFAULT_DEBUGLEVEL "1"
 #define DEFAULT_MAXCLIENTS "250"
 #define DEFAULT_ONLINE_STATUS "0"
@@ -189,7 +190,8 @@ typedef struct {
 	char configfile[255];					//@brief name of the config file
 	char *ndsctl_sock;					//@brief ndsctl path to socket
 	char *internal_sock;					//@brief internal path to socket
-	int daemon;						//@brief if daemon > 0, use daemon mode
+	int enabled;						//@brief if openNDS is enabled
+	int daemon;						//@brief if daemon != 0, use daemon mode
 	int debuglevel;						//@brief Debug information verbosity
 	int maxclients;						//@brief Maximum number of clients allowed
 	int online_status;					//@brief Online status of the router, 1=online, 0=offline

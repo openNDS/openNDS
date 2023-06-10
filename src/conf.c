@@ -144,7 +144,20 @@ config_init(int argc, char **argv)
 	FILE *fd;
 	char *lockfile;
 
-	parse_commandline(argc, argv);
+	// get configured debuglevel
+	memset(debug_level, 0, STATUS_BUF);
+	get_option_from_config(debug_level, STATUS_BUF, "debuglevel");
+
+	// Are we enabled?
+	config.debuglevel = 1;
+	sscanf(set_option_str("enabled", DEFAULT_ENABLED, debug_level), "%u", &config.enabled);
+
+	if(config.enabled != 1) {
+		debug(LOG_NOTICE, "openNDS is disabled (see \"option enabled\" in config).\n");
+		exit(0);
+	}
+
+	//parse_commandline(argc, argv);
 	strncpy(config.configfile, DEFAULT_CONFIGFILE, sizeof(config.configfile)-1);
 
 	openlog ("opennds", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_DAEMON);
@@ -156,7 +169,6 @@ config_init(int argc, char **argv)
 	// get configured debuglevel
 	memset(debug_level, 0, STATUS_BUF);
 	get_option_from_config(debug_level, STATUS_BUF, "debuglevel");
-
 
 	/*
 	********** String config parameters **********
@@ -270,10 +282,6 @@ config_init(int argc, char **argv)
 	config.preauth = NULL;
 	config.lockfd = 0;
 	config.online_status = 0;
-
-	if (config.daemon != 0) {
-		config.daemon = -1;
-	}
 
 	// Lists
 	parse_trusted_mac_list(set_list_str("trustedmac", DEFAULT_TRUSTEDMACLIST, debug_level));

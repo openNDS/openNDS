@@ -46,7 +46,7 @@ write_to_syslog() {
 		esac
 
 		if [ "$debuglevel" -ge "$debugnum" ]; then
-			echo "libopennds - [$syslogmessage]" | logger -p "daemon.$debugtype" -s -t "opennds[$ndspid]"
+			echo -n "libopennds - [$syslogmessage]" | logger -p "daemon.$debugtype" -t "opennds[$ndspid]"
 		fi
 	fi
 }
@@ -101,6 +101,9 @@ get_image_file() {
 
 	fi
 
+	# remove any trailing space character
+	imageurl=$(echo "$imageurl" | sed 's/.$//')
+
 	syslogmessage="Download request for [$imageurl]"
 	debugtype="info"
 	write_to_syslog
@@ -135,7 +138,7 @@ get_image_file() {
 				checkcert=""
 				webget
 
-				retrieve=$($wret -q -O "$mountpoint/ndsremote/$filename" "$imageurl")
+				retrieve=$($wret -v -O "$mountpoint/ndsremote/$filename" "$imageurl")
 				retcode="$?"
 
 				if [ "$retcode" = 0 ];then
@@ -159,6 +162,7 @@ get_image_file() {
 					checkcert=""
 					webget
 					retrieve=$($wret -q -O "$mountpoint/ndsremote/$filename" "$imageurl")
+
 				else
 					spider="--spider"
 					checkcert="--no-check-certificate "
@@ -207,6 +211,9 @@ get_data_file() {
 		set +o posix
 		dataurl=$(echo "$setcontents" | grep "$dataname=" | awk -F"$dataname=" '{print $2}' | awk -F", " 'NR==1{print $1}')
 	fi
+
+	# remove any trailing space character
+	dataurl=$(echo "$dataurl" | sed 's/.$//')
 
 	setcontents=""
 
@@ -402,7 +409,6 @@ get_theme_environment() {
 	fi
 
 	if [ ! -f "$themespecpath" ]; then
-		imagepath="/images/splash.jpg"
 		type header &>/dev/null && header || default_header
 		echo "<b>Bad or Missing ThemeSpec for mode #:[$mode]</b>"
 		type footer &>/dev/null && footer || default_footer
@@ -558,7 +564,7 @@ configure_log_location() {
 	logdir="$log_mountpoint/ndslog/"
 
 	# Get PID For syslog
-	ndspid=$(pgrep '/usr/bin/opennds')
+	ndspid=$(pgrep -f '/usr/bin/opennds')
 }
 
 check_authenticated() {
@@ -1029,7 +1035,7 @@ get_list_from_config() {
 	if [ $uci_status -eq 0 ]; then
 		param=$(uci export opennds | grep -w "list" | grep -w $list | awk -F"'" 'NF > 1 {print $2}' | sed "s/\s/%20/g" | awk '{printf "%s ", $0}')
 	else
-		param=$(cat /etc/config/opennds | -w grep "list" | grep -w "$list" | awk -F"#" '{printf "%s\n", $1}' | awk -F"'" 'NF > 1 {print $2}' | sed "s/\s/%20/g" | awk '{printf "%s ", $0}')
+		param=$(cat /etc/config/opennds | grep -w "list" | grep -w "$list" | awk -F"#" '{printf "%s\n", $1}' | awk -F"'" 'NF > 1 {print $2}' | sed "s/\s/%20/g" | awk '{printf "%s ", $0}')
 	fi
 
 	# remove trailing space character
@@ -1098,11 +1104,13 @@ check_gw_ip() {
 dhcp_check() {
 	dhcpdblocations="/tmp/dhcp.leases /var/lib/misc/dnsmasq.leases /var/db/dnsmasq.leases"
 	dhcprecord=""
+	dbfile="no"
 
 	for dhcpdb in $dhcpdblocations; do
 
 		if [ -e "$dhcpdb" ]; then
 			dhcprecord=$(grep -w "$iptocheck" "$dhcpdb" | tail -1 | awk '{printf "%s", $2}')
+			dbfile="yes"
 			break
 		else
 			dbfile="no"
@@ -1140,7 +1148,7 @@ send_post_data () {
 	option="fas_secure_enabled"
 	get_option_from_config
 
-	if [ "$fas_secure_enabled" -eq 3 ] && [ -f "$mountpoint/ndscids/authmonargs" ]; then
+	if [ "$fas_secure_enabled" = "3" ] && [ -f "$mountpoint/ndscids/authmonargs" ]; then
 		configure_log_location
 		. $mountpoint/ndscids/ndsinfo
 		. $mountpoint/ndscids/authmonargs
@@ -1381,7 +1389,7 @@ nft_set () {
 		if [ -z "$uciconfig" ]; then
 			# Generic Linux
 			linnum=$(cat /etc/dnsmasq.conf | grep -n -w "walledgarden" | awk -F":" '{printf "%s", $1}')
-			sed "$linnum""d" "/tmp/etc/dnsmasq.conf"
+			sed "$linnum""d" "/etc/dnsmasq.conf"
 		else
 			uci -q delete dhcp.nds_nftset
 			uci -q delete dhcp.@dnsmasq[0].ipset
@@ -1418,38 +1426,47 @@ nft_set () {
 				nft $nftsetmode rule ip nds_filter ndsNET counter ip daddr @walledgarden tcp dport {$ports} accept
 			fi
 
-			if [ -z "$uciconfig" ]; then
-				# Generic Linux
-				nftsetconf="$nftset="
-				fqdns=$(cat /etc/opennds/opennds.conf | grep "walledgarden_fqdn_list" | awk -F"walledgarden_fqdn_list" '{printf $2}')
+			if [ $optnftset -eq 0 ]; then
+				# using nftset support in dnsmasq
 
-				for fqdn in $fqdns; do
-					nftsetconf="$nftsetconf/$fqdn"
-				done
+				if [ -z "$uciconfig" ]; then
+					# Generic Linux
+					nftsetconf="$nftset="
+					fqdns=$(cat /etc/config/opennds | grep "walledgarden_fqdn_list" | awk -F"walledgarden_fqdn_list" '{printf $2}')
 
-				nftsetconf="$nftsetconf/4#ip#nds_filter#walledgarden"
-				echo "$nftsetconf" >> "$conflocation"
+					for fqdn in $fqdns; do
+						nftsetconf="$nftsetconf/$fqdn"
+					done
 
-			else
-				# OpenWrt
-				uci -q set dhcp.nds_nftset='ipset'
-				ucicmd="add_list dhcp.nds_nftset.name='$nftsetname'"
-				echo $ucicmd | uci -q batch
-				uci -q set dhcp.nds_nftset.table='nds_filter'
-				uci -q set dhcp.nds_nftset.table_family='ip'
+					if [ ! -z "$nftsetconf" ]; then
+						nftsetconf="$nftsetconf/4#ip#nds_filter#walledgarden"
+						echo "$nftsetconf" >> "$conflocation"
+					fi
 
-				domains=$(uci -q get opennds.@opennds[0].walledgarden_fqdn_list | tr -d "'")
-
-				for domain in $domains; do
-					ucicmd="add_list dhcp.nds_nftset.domain='$domain'"
+				else
+					# OpenWrt
+					uci -q set dhcp.nds_nftset='ipset'
+					ucicmd="add_list dhcp.nds_nftset.name='$nftsetname'"
 					echo $ucicmd | uci -q batch
-					ipset="$ipset/$domain"
-				done
+					uci -q set dhcp.nds_nftset.table='nds_filter'
+					uci -q set dhcp.nds_nftset.table_family='ip'
 
-				ipset="$ipset/walledgarden"
-				ucicmd="set dhcp.@dnsmasq[0].ipset='$ipset'"
-				echo $ucicmd | uci -q batch
+					domains=$(uci -q get opennds.@opennds[0].walledgarden_fqdn_list | tr -d "'")
 
+					for domain in $domains; do
+						ucicmd="add_list dhcp.nds_nftset.domain='$domain'"
+						echo $ucicmd | uci -q batch
+						ipset="$ipset/$domain"
+					done
+
+					ipset="$ipset/walledgarden"
+					ucicmd="set dhcp.@dnsmasq[0].ipset='$ipset'"
+					echo $ucicmd | uci -q batch
+
+				fi
+			elif [ $optipset -eq 0 ] && [ $optnftset -eq 1 ]; then
+				# using ipset support in dnsmasq
+				echo "using ipset support in dnsmasq"
 			fi
 		else
 			# invalid nftsetmode
@@ -1506,7 +1523,18 @@ auth_restore () {
 	configure_log_location
 
 	authlog="$logdir""authlog.log"
+
+	if [ ! -e "$authlog" ]; then
+		mkdir -p "$logdir"
+		touch "$authlog"
+	fi
+	
 	binauthlog="$logdir""binauthlog.log"
+
+	if [ ! -e "$binauthlog" ]; then
+		mkdir -p "$logdir"
+		touch "$binauthlog"
+	fi
 
 	# Get default quotas
 	option="uploadquota"
@@ -1671,8 +1699,6 @@ create_client_ruleset () {
 			status=$?
 		fi
 
-		## Debugging
-		echo "status=$status! chain=$chain! ruleset_name=$ruleset_name! verdict=$verdict! proto=$proto! sdport=$sdport! port=$port! portnum=$portnum! to_from=$to_from! ipaddr=$ipaddr!" >> /tmp/acr
 	done
 
 	if [ "$ruleset_name" = "users_to_router" ]; then
@@ -1788,7 +1814,12 @@ if [ "$query_type" = "%3ffas%3d" ]; then
 
 	# Set the default image to be displayed
 	if [ -z "$imagepath" ]; then
-		imagepath="http://$gatewayaddress/images/splash.jpg"
+
+		if [ -e "/etc/opennds/htdocs/ndsremote/logo.png" ]; then
+			imagepath="/ndsremote/logo.png"
+		else
+			imagepath="/images/splash.jpg"
+		fi
 	fi
 
 	# Output the page common header
@@ -2541,7 +2572,34 @@ elif [ "$1" = "configure_log_location" ]; then
 
 	exit 0
 
+elif [ "$1" = "shutdown" ]; then
+	# Shutdown a running openNDS daemon
+	sercontrol=$(type -p service)
+
+	if [ $? -gt 0 ]; then
+		sercontrol=$(type -p systemctl)
+
+		if [ $? -gt 0 ]; then
+			echo "Unable to shutdown openNDS"
+			exit 1
+		fi
+
+		echo "openNDS shutdown command sent"
+		$sercontrol stop opennds
+
+		sleep 2
+		exit 0
+
+	fi
+
+	echo "openNDS shutdown command sent"
+	$sercontrol opennds stop
+
+	sleep 2
+	exit 0
+
 fi
+
 
 ########################################################################
 # WARNING - DO NOT edit this file unless you know what you are doing!	#

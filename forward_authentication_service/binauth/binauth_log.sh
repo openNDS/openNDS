@@ -119,7 +119,7 @@ configure_log_location() {
 	fi
 
 	# Get PID For syslog
-	ndspid=$(pgrep '/usr/bin/opennds')
+	ndspid=$(pgrep -f '/usr/bin/opennds')
 }
 
 write_log () {

@@ -57,7 +57,7 @@ usage(void)
 	);
 }
 
-/** Uses getopt() to parse the command line and set configuration values
+/** Parse the command line and set configuration values
  */
 void parse_commandline(int argc, char **argv)
 {
@@ -75,7 +75,7 @@ void parse_commandline(int argc, char **argv)
 		ret = check_heartbeat();
 
 		if (ret == 0) {
-			printf("openNDS is already running, status [ %d ] \n", ret);
+			printf("openNDS is already running, status [ %d ] \n", 1);
 			exit(1);
 		}
 
@@ -86,7 +86,7 @@ void parse_commandline(int argc, char **argv)
 		ret = check_heartbeat();
 
 		if (ret == 0) {
-			printf("openNDS is already running, status [ %d ] \n", ret);
+			printf("openNDS is already running, status [ %d ] \n", 1);
 			exit(1);
 		}
 

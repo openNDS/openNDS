@@ -374,7 +374,10 @@ int download_remotes(int refresh)
 	int daemonpid = 0;
 	s_config *config = config_get_config();
 
-	if (config->themespec_path == NULL) {
+	// If themespec is not set then we do not need to download remotes
+	// client_params.sh does its own downloads for the 511 status pages
+
+	if (strcmp(config->themespec_path, "") == 0) {
 		return 0;
 	}
 

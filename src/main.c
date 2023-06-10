@@ -827,7 +827,7 @@ setup_from_config(void)
  * Main execution loop
  */
 static void
-main_loop(void)
+main_loop(int argc, char **argv)
 {
 	int result = 0;
 	char *cmd;
@@ -835,6 +835,12 @@ main_loop(void)
 	s_config *config;
 
 	config = config_get_config();
+
+	// Initialize the config
+	config_init(argc, argv);
+
+	// Initializes the linked list of connected clients
+	client_list_init();
 
 	// Set up everything we need based on the configuration
 	setup_from_config();
@@ -880,24 +886,19 @@ int main(int argc, char **argv)
 {
 	s_config *config = config_get_config();
 
-	// Initialize the config
-	config_init(argc, argv);
-
-	// Initializes the linked list of connected clients
-	client_list_init();
-
 	// Init the signals to catch chld/quit/etc
-	debug(LOG_INFO, "Initializing signal handlers");
 	init_signals();
 
-	if (config->daemon) {
+	// Get the command line arguments
+	parse_commandline(argc, argv);
 
-		debug(LOG_NOTICE, "Starting as daemon, forking to background");
+	// Choose forground or background according to commandline arguments
+	if (config->daemon != 0) {
 
 		switch(safe_fork()) {
 		case 0: // child
 			setsid();
-			main_loop();
+			main_loop(argc, argv);
 			break;
 
 		default: // parent
@@ -905,7 +906,7 @@ int main(int argc, char **argv)
 			break;
 		}
 	} else {
-		main_loop();
+		main_loop(argc, argv);
 	}
 
 	return 0; // never reached

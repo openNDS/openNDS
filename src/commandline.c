@@ -75,7 +75,7 @@ void parse_commandline(int argc, char **argv)
 		ret = check_heartbeat();
 
 		if (ret == 0) {
-			printf("openNDS is already running, status [ %d ] \n", 1);
+			printf("openNDS is already running, status [ %d ]. Aborting attempted restart... \n", 1);
 			exit(1);
 		}
 
@@ -86,7 +86,7 @@ void parse_commandline(int argc, char **argv)
 		ret = check_heartbeat();
 
 		if (ret == 0) {
-			printf("openNDS is already running, status [ %d ] \n", 1);
+			printf("openNDS is already running, status [ %d ]. Aborting attempted restart... \n", 1);
 			exit(1);
 		}
 

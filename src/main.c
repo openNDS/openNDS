@@ -459,6 +459,7 @@ setup_from_config(void)
 
 	// For Client status Page - configure the hosts file
 	if (strcmp(config->gw_fqdn, "disable") != 0 && strcmp(config->gw_fqdn, "disabled") != 0) {
+		dnscmd = safe_calloc(STATUS_BUF);
 		safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"hostconf\" \"%s\" \"%s\"",
 			config->gw_ip,
 			config->gw_fqdn
@@ -476,6 +477,7 @@ setup_from_config(void)
 
 	if (config->dhcp_default_url_enable == 1) {
 		debug(LOG_DEBUG, "Enabling RFC8910 support");
+		dnscmd = safe_calloc(STATUS_BUF);
 
 		if (strcmp(config->gw_fqdn, "disable") != 0 && strcmp(config->gw_fqdn, "disabled") != 0) {
 			safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"cpidconf\" \"%s\"", config->gw_fqdn);
@@ -493,7 +495,7 @@ setup_from_config(void)
 		free(msg);
 	} else {
 		debug(LOG_DEBUG, "Disabling RFC8910 support");
-
+		dnscmd = safe_calloc(STATUS_BUF);
 		safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"cpidconf\"");
 		msg = safe_calloc(STATUS_BUF);
 
@@ -505,6 +507,14 @@ setup_from_config(void)
 		free(dnscmd);
 		free(msg);
 	}
+
+	// Restart dnsmasq
+	dnscmd = safe_calloc(STATUS_BUF);
+	safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" &");
+	debug(LOG_DEBUG, "restart command [ %s ]", dnscmd);
+	system(dnscmd);
+	debug(LOG_INFO, "Dnsmasq restarted");
+	free(dnscmd);
 
 	// Encode gatewayname
 	char idbuf[STATUS_BUF] = {0};

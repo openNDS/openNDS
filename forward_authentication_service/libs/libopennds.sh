@@ -102,7 +102,7 @@ get_image_file() {
 	fi
 
 	# remove any trailing space character
-	imageurl=$(echo "$imageurl" | sed 's/.$//')
+	imageurl=$(echo "$imageurl" | sed 's/[[:space:]]*$//')
 
 	syslogmessage="Download request for [$imageurl]"
 	debugtype="info"
@@ -213,7 +213,7 @@ get_data_file() {
 	fi
 
 	# remove any trailing space character
-	dataurl=$(echo "$dataurl" | sed 's/.$//')
+	dataurl=$(echo "$dataurl" | sed 's/[[:space:]]*$//')
 
 	setcontents=""
 
@@ -1010,13 +1010,13 @@ get_option_from_config() {
 	uci_status=$?
 
 	if [ $uci_status -eq 0 ]; then
-		param=$(uci export opennds | grep "option" | grep "$option" | awk -F"'" 'NF > 1 {printf "%s ", $2}')
+		param=$(uci export opennds | grep -w "option" | grep -w "$option" | awk -F"'" 'NF > 1 {printf "%s ", $2}')
 	else
-		param=$(cat /etc/config/opennds | grep "option" | grep "$option" | awk -F"#" '{printf "%s\n", $1}' | awk -F"'" 'NF > 1 {printf "%s ", $2}')
+		param=$(cat /etc/config/opennds | grep -w "option" | grep -w "$option" | awk -F"#" '{printf "%s\n", $1}' | awk -F"'" 'NF > 1 {printf "%s ", $2}')
 	fi
 
 	# remove trailing space character
-	param=$(echo "$param" | sed 's/.$//')
+	param=$(echo "$param" | sed 's/[[:space:]]*$//')
 
 	# urlencode
 	urlencode "$param"
@@ -1039,7 +1039,7 @@ get_list_from_config() {
 	fi
 
 	# remove trailing space character
-	param=$(echo "$param" | sed 's/.$//')
+	param=$(echo "$param" | sed 's/[[:space:]]*$//')
 
 	if [ "$list" != "users_to_router" ] && [ "$list" != "preauthenticated_users" ] && [ "$list" != "authenticated_users" ]; then
 		urldecode "$param"
@@ -1426,12 +1426,14 @@ nft_set () {
 				nft $nftsetmode rule ip nds_filter ndsNET counter ip daddr @walledgarden tcp dport {$ports} accept
 			fi
 
+
+			##### If nftset support is available, then use it ####
 			if [ $optnftset -eq 0 ]; then
 				# using nftset support in dnsmasq
 
 				if [ -z "$uciconfig" ]; then
 					# Generic Linux
-					nftsetconf="$nftset="
+					nftsetconf="nftset="
 					fqdns=$(cat /etc/config/opennds | grep "walledgarden_fqdn_list" | awk -F"walledgarden_fqdn_list" '{printf $2}')
 
 					for fqdn in $fqdns; do
@@ -1464,9 +1466,42 @@ nft_set () {
 					echo $ucicmd | uci -q batch
 
 				fi
+
 			elif [ $optipset -eq 0 ] && [ $optnftset -eq 1 ]; then
-				# using ipset support in dnsmasq
-				echo "using ipset support in dnsmasq"
+				#### If ipset support is available BUT nft support is NOT available then we have no choice but to use ipset support ####
+
+				if [ -z "$uciconfig" ]; then
+					# Generic Linux
+					ipsetconf="ipset="
+					fqdns=$(cat /etc/config/opennds | grep "walledgarden_fqdn_list" | awk -F"walledgarden_fqdn_list" '{printf $2}')
+
+					for fqdn in $fqdns; do
+						ipsetconf="$ipsetconf/$fqdn"
+					done
+
+					if [ ! -z "$ipsetconf" ]; then
+						ipsetconf="$ipsetconf/walledgarden"
+						sed -i '/System\|walledgarden/d' $conflocation
+						echo "$ipsetconf" >> "$conflocation"
+					fi
+				else
+					# OpenWrt
+					# Note we do not commit here so that the config changes do NOT survive a reboot and can be reverted without writing to config files
+					fqdns=$(uci -q get opennds.@opennds[0].walledgarden_fqdn_list | tr -d "'")
+
+					for fqdn in $fqdns; do
+						ipsetconf="$ipsetconf/$fqdn"
+					done
+
+					if [ ! -z "$ipsetconf" ]; then
+						ipsetconf="$ipsetconf/walledgarden"
+
+						del_ipset="del_list dhcp.@dnsmasq[0].ipset='$ipsetconf'"
+						add_ipset="add_list dhcp.@dnsmasq[0].ipset='$ipsetconf'"
+						echo $del_ipset | uci -q batch
+						echo $add_ipset | uci -q batch
+					fi
+				fi
 			fi
 		else
 			# invalid nftsetmode

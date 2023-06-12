@@ -508,6 +508,26 @@ setup_from_config(void)
 		free(msg);
 	}
 
+	// nft sets
+	// For Walled Garden - Check we have nftset support and if we do, set it up
+	if (config->walledgarden_fqdn_list) {
+
+		// If Walled Garden nftset exists, destroy it.
+		msg = safe_calloc(SMALL_BUF);
+
+		execute_ret_url_encoded(msg, SMALL_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset delete walledgarden");
+		free(msg);
+
+		// Set up the Walled Garden
+		msg = safe_calloc(SMALL_BUF);
+
+		if (execute_ret_url_encoded(msg, STATUS_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset insert walledgarden ") == 0) {
+			debug(LOG_INFO, "Walled Garden Setup Request sent");
+		}
+		free(msg);
+	}
+
+
 	// Restart dnsmasq
 	dnscmd = safe_calloc(STATUS_BUF);
 	safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" &");

@@ -375,23 +375,6 @@ iptables_fw_init(void)
 	// CHAIN_TO_INTERNET, all other packets REJECT
 	rc |= nftables_do_command("add rule ip nds_filter %s counter reject", CHAIN_TO_INTERNET);
 
-	// For Walled Garden - Check we have nftset support and if we do, set it up
-	if (config->walledgarden_fqdn_list) {
-
-		// If Walled Garden nftset exists, destroy it.
-		msg = safe_calloc(SMALL_BUF);
-		execute_ret_url_encoded(msg, SMALL_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset delete walledgarden");
-		free(msg);
-
-		// Set up the Walled Garden
-		msg = safe_calloc(SMALL_BUF);
-
-		if (execute_ret_url_encoded(msg, STATUS_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset insert walledgarden ") == 0) {
-			debug(LOG_INFO, "Walled Garden Setup Request sent");
-		}
-		free(msg);
-	}
-
 	/*
 	 * End of filter table chains and rules
 	 **************************************

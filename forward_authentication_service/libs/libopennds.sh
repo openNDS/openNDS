@@ -1401,15 +1401,19 @@ nft_set () {
 		if [ "$nftsetmode" = "add" ] || [ "$nftsetmode" = "insert" ]; then
 			# Add the set, add/insert the rule and the Dnsmasq config
 			nft add set ip nds_filter walledgarden { type ipv4_addr\; size 128\; }
-			#ports=$(uci -q get opennds.@opennds[0].walledgarden_port_list | tr -d "'")
 
 			if [ $have_ipset ]; then
 				ipset create walledgarden hash:ip &>/dev/null
 			fi
+			list="walledgarden_fqdn_list"
+			get_list_from_config
+			fqdns=$param
+			urldecode "$fqdns"
+			fqdns="$urldecoded"
 
-			option="walledgarden_port_list"
-			get_option_from_config
-			ports=$walledgarden_port_list
+			list="walledgarden_port_list"
+			get_list_from_config
+			ports=$param
 			urldecode "$ports"
 			ports="$urldecoded"
 
@@ -1434,7 +1438,6 @@ nft_set () {
 				if [ -z "$uciconfig" ]; then
 					# Generic Linux
 					nftsetconf="nftset="
-					fqdns=$(cat /etc/config/opennds | grep "walledgarden_fqdn_list" | awk -F"walledgarden_fqdn_list" '{printf $2}')
 
 					for fqdn in $fqdns; do
 						nftsetconf="$nftsetconf/$fqdn"
@@ -1453,7 +1456,7 @@ nft_set () {
 					uci -q set dhcp.nds_nftset.table='nds_filter'
 					uci -q set dhcp.nds_nftset.table_family='ip'
 
-					domains=$(uci -q get opennds.@opennds[0].walledgarden_fqdn_list | tr -d "'")
+					domains=$fqdns
 
 					for domain in $domains; do
 						ucicmd="add_list dhcp.nds_nftset.domain='$domain'"
@@ -1473,7 +1476,6 @@ nft_set () {
 				if [ -z "$uciconfig" ]; then
 					# Generic Linux
 					ipsetconf="ipset="
-					fqdns=$(cat /etc/config/opennds | grep "walledgarden_fqdn_list" | awk -F"walledgarden_fqdn_list" '{printf $2}')
 
 					for fqdn in $fqdns; do
 						ipsetconf="$ipsetconf/$fqdn"
@@ -1487,7 +1489,6 @@ nft_set () {
 				else
 					# OpenWrt
 					# Note we do not commit here so that the config changes do NOT survive a reboot and can be reverted without writing to config files
-					fqdns=$(uci -q get opennds.@opennds[0].walledgarden_fqdn_list | tr -d "'")
 
 					for fqdn in $fqdns; do
 						ipsetconf="$ipsetconf/$fqdn"
@@ -1547,7 +1548,7 @@ check_heartbeat () {
 			fi
 		done
 
-		exitmessage="Time since last heatbeat is $elapsed_time second(s)"
+		exitmessage="Time since last heartbeat is $elapsed_time second(s)"
 	else
 		exitmessage="No heartbeat found"
 		dead=1

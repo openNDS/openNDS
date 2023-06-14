@@ -192,7 +192,6 @@ iptables_fw_init(void)
 	int fas_port = 0;
 	t_MAC *pt;
 	int rc = 0;
-	char *msg;
 	char *dnscmd;
 
 	debug(LOG_NOTICE, "Initializing firewall rules");

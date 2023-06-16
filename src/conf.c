@@ -259,8 +259,8 @@ config_init(int argc, char **argv)
 	sscanf(set_option_str("upload_bucket_ratio", DEFAULT_UPLOAD_BUCKET_RATIO, debug_level), "%llu", &config.upload_bucket_ratio);
 	sscanf(set_option_str("max_upload_bucket_size", DEFAULT_MAX_UPLOAD_BUCKET_SIZE, debug_level), "%llu", &config.max_upload_bucket_size);
 	sscanf(set_option_str("upload_unrestricted_bursting", DEFAULT_UPLOAD_UNRESTRICTED_BURSTING, debug_level), "%u", &config.upload_unrestricted_bursting);
-	sscanf(set_option_str("upload_quota", DEFAULT_UPLOAD_QUOTA, debug_level), "%llu", &config.upload_quota);
-	sscanf(set_option_str("download_quota", DEFAULT_DOWNLOAD_QUOTA, debug_level), "%llu", &config.download_quota);
+	sscanf(set_option_str("uploadquota", DEFAULT_UPLOAD_QUOTA, debug_level), "%llu", &config.upload_quota);
+	sscanf(set_option_str("downloadquota", DEFAULT_DOWNLOAD_QUOTA, debug_level), "%llu", &config.download_quota);
 	sscanf(set_option_str("fw_mark_authenticated", DEFAULT_FW_MARK_AUTHENTICATED, debug_level), "%x", &config.fw_mark_authenticated);
 	sscanf(set_option_str("fw_mark_trusted", DEFAULT_FW_MARK_TRUSTED, debug_level), "%x", &config.fw_mark_trusted);
 /*

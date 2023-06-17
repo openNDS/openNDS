@@ -543,35 +543,26 @@ config opennds
 	#option downloadquota '0'
 	###########################################################################################
 
-	# Enable BinAuth Support. BinAuth enables POST AUTHENTICATION PROCESSING
-	# and is useful in particular when a FAS is configured remotely
-	# Default disabled
+	# BinAuth facilitates POST AUTHENTICATION PROCESSING
 	#
-	# If set, a BinAuth program or script is triggered by several possible methods
-	# and is called with several arguments on both authentication and deauthentication:
+	# Cannot be disabled
 	#
+	# Default: uses /usr/lib/opennds/binauth_log.sh
 	#
-	# Possible methods
+	# By default it manages the authenticated client database.
+	# In turn this database is used by openNDS to reauthenticate clients if a restart occurs.
+	# This is automatically achieved by a call to the auth_restore() library function.
+	# After openNDS has restarted, clients that have remaining session time are reauthenticated.
 	#
-	# Authentication:
-	# "auth_client": Request for authentication received from the captive portal splash page.
-	# "client_auth": Acknowledgement that Client was authenticated via this script.
-	# "ndsctl_auth": Client was authenticated by ndsctl auth command.
+	# The custom binauth script /usr/lib/opennds/custombinauth.sh is called.
+	# This custom script can be edited to provide additional user defined functionality.
 	#
-	# Deauthentication:
-	# "client_deauth": Client deauthenticated by the client via captive portal splash page.
-	# "idle_deauth": Client was deauthenticated because of inactivity.
-	# "timeout_deauth": Client was deauthenticated because the session timed out.
-	# "ndsctl_deauth": Client was deauthenticated by ndsctl deauth command.
-	# "uprate_deauth": Client was deauthenticated because its average upload rate exceeded the allowed value
-	# "downrate_deauth": Client was deauthenticated because its average download rate exceeded the allowed value
-	# "upquota_deauth": Client was deauthenticated because its upload quota exceeded the allowed value
-	# "downquota_deauth": Client was deauthenticated because its download quota exceeded the allowed value
-	# "shutdown_deauth": Client was deauthenticated by openNDS terminating.
+	####
+	# WARNING:
+	# The default binauth script can be replaced, but this will disable the auth_restore functionality.
+	####
 	#
-	# A fully functional BinAuth script is pre-installed and provides local logging
-	# of client activity. This is enabled by uncommenting the following line:
-	#option binauth '/usr/lib/opennds/binauth_log.sh'
+	#option binauth '/usr/lib/opennds/my_binauth_script.sh'
 	###########################################################################################
 
 	# Set Fasport

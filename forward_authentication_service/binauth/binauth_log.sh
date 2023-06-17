@@ -290,13 +290,22 @@ upload_rate=0
 download_rate=0
 upload_quota=0
 download_quota=0
+exitlevel=0
+
+# Include custom binauth script
+custombinauthpath="/usr/lib/opennds/custombinauth.sh"
+
+if [ -e "$custombinauthpath" ]; then
+	. $custombinauthpath
+fi
 
 # Finally before exiting, output the session length, upload rate, download rate, upload quota and download quota (only effective for auth_client).
-
+# The custom binauth script migh change these values
 echo "$session_length $upload_rate $download_rate $upload_quota $download_quota"
 
 # Exit, setting level (only effective for auth_client)
 #
-# exit 0 tells NDS it is ok to allow the client to have access.
+# exit 0 tells NDS it is ok to allow the client to have access (default).
 # exit 1 would tell NDS to deny access.
-exit 0
+# The custom binauth script might change this value
+exit $exitlevel

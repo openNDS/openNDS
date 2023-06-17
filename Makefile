@@ -45,6 +45,8 @@ install:
 	mkdir -p $(DESTDIR)/etc/systemd/system
 	cp resources/opennds.service $(DESTDIR)/etc/systemd/system/
 	mkdir -p $(DESTDIR)/usr/lib/opennds
+	cp forward_authentication_service/binauth/custombinauth.sh $(DESTDIR)/usr/lib/opennds/
+	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/opennds/custombinauth.sh
 	cp forward_authentication_service/binauth/binauth_log.sh $(DESTDIR)/usr/lib/opennds/
 	sed -i 's/#!\/bin\/sh/#!\/bin\/bash/' $(DESTDIR)/usr/lib/opennds/binauth_log.sh
 	cp forward_authentication_service/libs/libopennds.sh $(DESTDIR)/usr/lib/opennds/

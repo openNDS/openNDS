@@ -1585,8 +1585,8 @@ auth_restore () {
 	option="downloadrate"
 	get_option_from_config
 
-	# Check if openNDS is running
-	local timeout=8
+	# Check if ndsctl is ready and therefore opennds is running
+	local timeout=15
 
 	for tic in $(seq $timeout); do
 		ndsctl status &> /dev/null
@@ -1598,6 +1598,12 @@ auth_restore () {
 
 		sleep 1
 	done
+
+	if [ $ndsstatus -ne 0 ]; then
+		# we should give up
+		echo "ndsctl failed to become ready - aborting auth_restore"
+		exit 1
+	fi
 
 	while read -r client; do
 		b64mac="$(echo "$client" | awk -F"=" '{printf("%s", $1)}')""=="

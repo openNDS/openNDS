@@ -334,15 +334,103 @@ delete_chains:
 
 Returns exit code 0 always
 
+delete_client_rule:
+-------------------
+
+    arg1: delete_client_rule, deletes a client rule
+
+        arg2: is the table
+
+        arg3: is the chain
+
+        arg4: is the verdict - accept, drop, queue, continue, return, jump, goto or all
+
+        arg5: is the client ip address
+
+Returns exit code 0 if successful
+
+replace_client_rule
+-------------------
+
+    arg1: replace_client_rule, deletes a client rule
+
+        arg2: is the table
+
+        arg3: is the chain
+
+        arg4: is the verdict - accept, drop, queue, continue, return, jump, goto or all
+
+        arg5: is the client ip address
+
+Returns exit code 0 if successful
+
+nftset
+------
+
+    arg1: nftset, Creates walledgarden nftset
+
+        arg2: is add, insert or delete the rule
+
+        arg3: is the nftset name
+
+Returns exit code 0 if successful
+
+pad_string
+----------
+
+    arg1: pad_string, pads a string to a length given by the length of the pad string, with extra characters from the pad string.
+
+        arg2: is the hand, ie "left" or "right"
+
+        arg3: is the pad string eg "1234567890"
+
+        arg4: is the string to pad
+
+Returns exit code 0 if successful
+
+write_to_syslog
+---------------
+
+    arg1: write_to_syslog, write debug message to syslog
+
+        arg2: contains the string to log
+
+        arg3: contains the debug level string: debug, info, warn, notice, err, emerg.
+
+Returns exit code 0 if successful
+
+check_heartbeat
+---------------
+
+    arg1: check_heartbeat, check the openNDS heartbeat
+
+Returns the heartbeat status string and exit code 0 if alive, 1 if dead
+
+auth_restore
+------------
+
+    arg1: auth_restore, restore the authentication of clients after a restart.
+
+        Reads the authenticated client database if created by Binauth
+
+Returns exit code 0 always
+
+configure_log_location
+----------------------
+
+    arg1: configure_log_location, configure the log location
+
+Returns the directory into which log files should be stored and exit code 0 if successful
+
 ?fas:
 -----
-    **arg1**: "*?fas=<b64string>*", generates ThemeSpec html using b64encoded data sent from openNDS
+    arg1: "*?fas=<b64string>*", generates ThemeSpec html using b64encoded data sent from openNDS
 
-        **arg2**: urlencoded_useragent_string
+        arg2: urlencoded_useragent_string
 
-        **arg3**: mode (1, 2 or 3) (this is the mode specified in option login_option in the config file.
+        arg3: mode (1, 2 or 3) (this is the mode specified in option login_option in the config file.
 
-        **arg4**: themespecpath (if mode = 3)
+        arg4: themespecpath (if mode = 3)
 
 
-    *returns*: html for the specified ThemeSpec.
+Returns html for the specified ThemeSpec.

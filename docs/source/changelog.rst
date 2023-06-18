@@ -3,10 +3,13 @@ What's New? - ChangeLog
 
 opennds (10.1.0)
 
-  * This version is a major upgrade including full migration to nftables
-  * and native uci configuration support even for generic Linux distributions.
-  * It also includes a significant refactoring of inbuilt memory management,
-  * improving long term reliability, fixing several memory leaks, buffer overflows and several edge case crashes.
+This version is a major upgrade including full migration to nftables and native uci configuration support even for generic Linux distributions. It also includes a significant refactoring of inbuilt memory management, improving long term reliability, fixing several memory leaks, buffer overflows and several edge case crashes.
+
+  * Add - support for included custom binauth script [bluewavenet]
+  * Add - emit a useful stderr message if auth_restore fails [bluewavenet]
+  * Add - procd respawn threshold, respawn timeout and respawn retry parameters [bluewavenet]
+  * Add - user friendly commandline message if already running [bluewavenet]
+  * Fix - Enabling of Data volume quotas [bluewavenet]
   * Fix - use get_list_from_config instead of get_option_from_config [bluewavenet]
   * Fix - compiler warning - unused variable [bluewavenet]
   * Fix - remove redundant function call ipsetconf [bluewavenet]

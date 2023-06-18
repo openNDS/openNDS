@@ -81,7 +81,7 @@ _debug(const char filename[], int line, int level, const char *format, ...)
 		sigaddset(&block_chld, SIGCHLD);
 		sigprocmask(SIG_BLOCK, &block_chld, NULL);
 
-		if (config->daemon) {
+		if (config->daemon != 0) {
 			out = stdout;
 		} else {
 			out = stderr;
@@ -94,13 +94,11 @@ _debug(const char filename[], int line, int level, const char *format, ...)
 		fputc('\n', out);
 		fflush(out);
 
-		if (config->log_syslog) {
-			openlog("opennds", LOG_PID, config->syslog_facility);
-			va_start(vlist, format);
-			vsyslog(level, format, vlist);
-			va_end(vlist);
-			closelog();
-		}
+		openlog("opennds", LOG_PID, LOG_DAEMON);
+		va_start(vlist, format);
+		vsyslog(level, format, vlist);
+		va_end(vlist);
+		closelog();
 
 		sigprocmask(SIG_UNBLOCK, &block_chld, NULL);
 	}

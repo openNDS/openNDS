@@ -374,7 +374,10 @@ int download_remotes(int refresh)
 	int daemonpid = 0;
 	s_config *config = config_get_config();
 
-	if (config->themespec_path == NULL) {
+	// If themespec is not set then we do not need to download remotes
+	// client_params.sh does its own downloads for the 511 status pages
+
+	if (strcmp(config->themespec_path, "") == 0) {
 		return 0;
 	}
 
@@ -430,6 +433,64 @@ int write_client_info(char* msg, int msg_len, const char *mode, const char *cid,
 			debug(LOG_DEBUG, "Client Info updated: %s", info);
 		} else {
 			debug(LOG_INFO, "Failed to write client info [%s] - giving up", info);
+		}
+	}
+	free (cmd);
+	return 0;
+}
+
+int check_heartbeat()
+{
+	char *cmd;
+	char *msg;
+	int ret;
+
+	cmd = safe_calloc(STATUS_BUF);
+	msg = safe_calloc(STATUS_BUF);
+
+	safe_asprintf(&cmd, "/usr/lib/opennds/libopennds.sh check_heartbeat");
+
+	ret = execute_ret_url_encoded(msg, STATUS_BUF - 1, cmd);
+
+	free (cmd);
+	free (msg);
+	return ret;
+}
+
+int get_option_from_config(char* msg, int msg_len, const char *option)
+{
+	char *cmd;
+
+	cmd = safe_calloc(STATUS_BUF);
+	safe_asprintf(&cmd, "/usr/lib/opennds/libopennds.sh get_option_from_config '%s'", option);
+
+	if (execute_ret_url_encoded(msg, msg_len - 1, cmd) != 0) {
+		debug(LOG_INFO, "Failed to get option [%s] - retrying", option);
+		sleep(1);
+
+		if (execute_ret_url_encoded(msg, msg_len - 1, cmd) != 0) {
+			debug(LOG_INFO, "Failed to get option [%s] - giving up", option);
+		}
+	}
+
+	free (cmd);
+	return 0;
+}
+
+
+int get_list_from_config(char* msg, int msg_len, const char *list)
+{
+	char *cmd;
+
+	cmd = safe_calloc(MID_BUF);
+	safe_asprintf(&cmd, "/usr/lib/opennds/libopennds.sh get_list_from_config '%s'", list);
+
+	if (execute_ret_url_encoded(msg, msg_len - 1, cmd) != 0) {
+		debug(LOG_INFO, "Failed to get list [%s] - retrying", list);
+		sleep(1);
+
+		if (execute_ret_url_encoded(msg, msg_len - 1, cmd) != 0) {
+			debug(LOG_INFO, "Failed to get list [%s] - giving up", list);
 		}
 	}
 	free (cmd);
@@ -525,8 +586,8 @@ static int _execute_ret(char* msg, int msg_len, const char *cmd)
 	rc = pclose(fp);
 
 	if (WIFSIGNALED(rc) != 0) {
-		debug(LOG_NOTICE, "Command process exited due to signal [%d]", WTERMSIG(rc));
-		debug(LOG_NOTICE, "Requested command: [%s]", cmd);
+		debug(LOG_DEBUG, "Command process exited due to signal [%d]", WTERMSIG(rc));
+		debug(LOG_DEBUG, "Requested command: [%s]", cmd);
 		rc = WTERMSIG(rc);
 	} else {
 		rc = WEXITSTATUS(rc);
@@ -598,9 +659,9 @@ get_iface_ip(const char ifname[], int ip6)
 	iptype = safe_calloc(STATUS_BUF);
 
 	if (ip6) {
-		snprintf(iptype, sizeof(iptype), "inet6");
+		snprintf(iptype, STATUS_BUF, "inet6");
 	} else {
-		snprintf(iptype, sizeof(iptype), "inet");
+		snprintf(iptype, STATUS_BUF, "inet");
  	}
 
 	cmd = safe_calloc(STATUS_BUF);
@@ -634,7 +695,7 @@ get_iface_mac(const char ifname[])
 
 	config = config_get_config();
 
-	debug(LOG_NOTICE, "Attempting to get mac of interface: %s", ifname);
+	debug(LOG_DEBUG, "Attempting to get mac of interface: %s", ifname);
 
 	if (config->gw_mac == NULL) {
 		config->gw_mac = safe_strdup("00:00:00:00:00:00");

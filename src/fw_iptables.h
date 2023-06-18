@@ -63,6 +63,9 @@ int iptables_fw_init(void);
 /** @brief Destroy the firewall */
 int iptables_fw_destroy(void);
 
+/** @brief Create the client access control ruleset */
+int create_client_ruleset(char rulesetname[], char ruleset[]);
+
 /** @brief Define the access of a specific client */
 int iptables_fw_authenticate(t_client *client);
 int iptables_fw_deauthenticate(t_client *client);

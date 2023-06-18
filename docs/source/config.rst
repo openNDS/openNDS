@@ -11,7 +11,7 @@ Set to 0 to disable opennds
 Use deprecated generic configuration file
 ******************************************
 
-Use of this setting is not recommended.
+Use of this setting is no longer supported and if present is ignored.
 
 ``option config '/etc/opennds/opennds.conf'``
 
@@ -41,9 +41,11 @@ debuglevel 2 + LOG_DEBUG
 Firewall Restart hook
 *********************
 
-Set to 0 to disable hook that makes opennds restart when the firewall restarts.
+Specific to OpenWrt only, Firewall 4 (FW4) informs openNDS when it is restarting.
 
-This hook is needed as a restart of Firewall overwrites opennds iptables entries.
+If enabled (Set to 1), openNDS reinserts any nftables it may need in the FW4 ruleset.
+
+Default: 1
 
 ``option fwhook_enabled '1'``
 
@@ -69,8 +71,8 @@ Default: router's volatile tmpfs storage eg on OpenWrt '/tmp'
 
 Local logging can be directed to any storage accessible to the router eg USB drive, SSD etc
 
-**WARNING** - you cannot use the router's built in flash storage as this would cause
-excessive wear and eventual flash failure
+**WARNING** - you should not use the router's built in flash storage as this would cause
+excessive wear and in a live system will result quite quickly in flash failure making the router useless.
 
 Example:
 
@@ -115,6 +117,8 @@ Mode 0
 ------
 If FAS is not enabled, then this functions as mode 1
 
+If FAS is configured, FAS is used.
+
 Mode 1
 ------
 Default Dynamic Click to Continue
@@ -144,9 +148,9 @@ Use Theme defined in ThemeSpec path (option themespec_path)
 Allow Preemptive Authentication
 *******************************
 
-Default: 0 - Disabled
+Default: 1 - Enabled
 
-Enable by setting to 1
+Disable by setting to 0
 
 This allows the ndsctl utility to preemptively authorise **connected** clients that have not entered the preauthenticated state.
 
@@ -156,7 +160,7 @@ or for a FAS to manage inter-captive-portal roaming by making use of a centralis
 
 Example:
 
-``option allow_preemptive_authentication '1'``
+``option allow_preemptive_authentication '0'``
 
 ThemeSpec Path
 **************
@@ -376,7 +380,7 @@ Use outdated libmicrohttpd (MHD)
 
 Default 0 (Disabled)
 
-Warning, enabling this *may* cause instability or in the worst case total failure - it would be better to upgrade MHD.
+**Warning**: enabling this *may* cause instability or in the worst case total failure - it would be better to upgrade MHD.
 
 **Use at your own risk.**
 
@@ -449,7 +453,7 @@ Example:
 Set the GatewayInterface
 ************************
 
-Default br-lan
+Default: br-lan
 
 Use this option to set the device opennds will bind to.
 
@@ -508,7 +512,7 @@ Appends a serial number suffix to the gatewayname string.
 
 openNDS constructs a serial number based on the router mac address and adds it to the gatewayname
 
-Default 1 (enabled)
+Default: 1 (enabled)
 
 To disable, set to 0
 
@@ -609,7 +613,7 @@ Set the Checkinterval
 
 The interval in seconds at which openNDS checks client timeouts, quota usage and runs watchdog checks.
 
-Default 15 seconds (one quarter of a minute).
+Default: 15 seconds (one quarter of a minute).
 
 Example: Set to 30 seconds.
 
@@ -646,7 +650,7 @@ Default 10
 
 Upload and Download bucket ratios can be defined.
 
-Allows control of upload rate limit threshold overrun per client.
+Allows fine control of upload rate limit threshold overrun per client.
 
 Used in conjunction with MaxDownloadBucketSize and MaxUploadBucketSize.
 
@@ -702,7 +706,7 @@ Example:
 DownLoadUnrestrictedBursting
 ****************************
 
-Default 0
+Default: 0
 
 Enables / disables unrestricted bursting
 
@@ -723,7 +727,7 @@ Example:
 UpLoadUnrestrictedBursting
 **************************
 
-Default 0
+Default: 0
 
 Enables / disables unrestricted bursting
 
@@ -744,7 +748,7 @@ Example:
 Set RateCheckWindow
 *******************
 
-Default 2
+Default: 2
 
 The client data rate is calculated using a moving average.
 
@@ -790,11 +794,13 @@ Example:
 Enable BinAuth Support.
 ***********************
 
-Default disabled
+Default: Enabled
 
 BinAuth enables POST AUTHENTICATION PROCESSING and and is useful in particular when a FAS is configured remotely.
 
-If set, a BinAuth program or script is triggered by several possible methods and is called with several arguments on both authentication and deauthentication.
+The default binauth script is used to generate a client authentication database that is used for pre-emptive re-authentication.
+
+The BinAuth program or script is triggered by several possible methods and is called with several arguments on both authentication and deauthentication.
 
 Possible methods
 ----------------
@@ -1014,12 +1020,35 @@ Example:
 Access Control For Authenticated Users
 **************************************
 
+Grant Access For Authenticated Users (allow)
+--------------------------------------------
+
+* Access can be allowed by openNDS but the final decision will be passed on to the operating system firewall. (Note: passthrough is deprecated as in nftables "allow" is equivalent to the old "passthrough"
+
+Any entries set here, or below in Block Access, will override the default
+
+Default:
+
+No Entry, equivalent to
+
+ ``list authenticated_users 'allow all'``
+
+Example:
+
+Grant access to https web sites, subject to the operating system's firewall rules
+
+ ``list authenticated_users 'allow tcp port 443'``
+
+Grant access to udp services at address 123.1.1.1, on port 5000.
+
+ ``list authenticated_users 'allow udp port 5000 to 123.1.1.1'``
+
 Block Access For Authenticated Users (block)
 --------------------------------------------
 
 Default: None
 
-If Block Access is specified, an allow or passthrough must be specified afterwards as any entries set here will override the access default.
+All block access items must follow "allow" items (see above) as any entries set here will override the access default.
 
 Examples:
 
@@ -1035,44 +1064,7 @@ or block access to a single IP address. e.g.:
 
  ``list authenticated_users 'block to 123.2.3.4'``
 
-Do not forget to add an allow or passthrough if the default only is assumed (see Grant Access)
-
-
-Grant Access For Authenticated Users (allow and passthrough)
-------------------------------------------------------------
-
-* Access can be allowed by openNDS directly, overriding the operating system firewall rules
-
-or
-
-* Access can be allowed by openNDS but the final decision can be passed on to the operating system firewall.
-
-Default:
-
-No Entry, equivalent to
-
- ``list authenticated_users 'passthrough all'``
-
-Any entries set here, or above in Block Access, will override the default
-
-Example:
-
-Grant access overriding operating system firewall
- ``list authenticated_users 'allow all'``
-
-Example:
-
-Grant access to https web sites, subject to the operating system's firewall rules
-
- ``list authenticated_users 'passthrough tcp port 443'``
-
-Grant access to http web sites, overriding the operating system firewall rules.
-
- ``list authenticated_users 'allow tcp port 80'``
-
-Grant access to udp services at address 123.1.1.1, on port 5000, overriding the operating system firewall rules.
-
- ``list authenticated_users 'allow udp port 5000 to 123.1.1.1'``
+Do not forget to add an allow if the default only is assumed (see above)
 
 Access Control For Preauthenticated Users:
 ******************************************
@@ -1196,7 +1188,9 @@ Access falls into two categories:
 Essential Access
 ----------------
 
-It is essential that you allow ports for DNS and DHCP (unless you have a very specific reason for doing so, **disabling these will soft brick your router!**):
+Essential access for DNS and DHCP is granted by default.
+
+If additional optional access is required, it is essential that you specifically allow ports for DNS and DHCP (unless you have a very specific reason for not doing so and know what you are doing. **Disabling these will soft brick your router!**):
 
 ``list users_to_router 'allow tcp port 53'``
 

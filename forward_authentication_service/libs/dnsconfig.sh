@@ -20,7 +20,7 @@ ipset_to_nftset () {
 	local timeout=$loopcount
 
 	for tic in $(seq $timeout); do
-		ipset list "$ipsetname" 2>/dev/null
+		ipset list "$ipsetname" &>/dev/null
 		ipsetstat=$?
 		elements=$(ipset list "$ipsetname" 2>/dev/null | awk -F"." 'NF==4 {printf ", %s", $0}')
 
@@ -74,24 +74,6 @@ elif [ "$setconf" = "revert" ]; then
 
 	if [ ! -z "$uciconfig" ]; then
 		uci revert dhcp
-	fi
-
-	printf "%s" "done"
-	exit 0
-
-elif [ "$setconf" = "ipsetconf" ]; then
-	ipsetconf=$2
-
-	if [ -z "$uciconfig" ]; then
-		sed -i '/System\|walledgarden/d' $conflocation
-		echo "ipset=$ipsetconf" >> $conflocation
-	else
-		# OpenWrt
-		# Note we do not commit here so that the config changes do NOT survive a reboot and can be reverted without writing to config files
-		del_ipset="del_list dhcp.@dnsmasq[0].ipset='$ipsetconf'"
-		add_ipset="add_list dhcp.@dnsmasq[0].ipset='$ipsetconf'"
-		echo $del_ipset | uci batch
-		echo $add_ipset | uci batch
 	fi
 
 	printf "%s" "done"

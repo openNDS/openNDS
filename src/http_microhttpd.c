@@ -1046,9 +1046,6 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 		return ret;
 	} else {
 		free (preauthpath);
-		free(enc_user_agent);
-		free(enc_query);
-
 		return send_error(connection, 404);
 	}
 }

@@ -300,7 +300,6 @@ setup_from_config(void)
 	time_t sysuptime;
 	time_t now = time(NULL);
 	char *dnscmd;
-	char *setupcmd;
 
 	s_config *config;
 
@@ -336,18 +335,6 @@ setup_from_config(void)
 	}
 
 	debug(LOG_INFO, "tmpfs mountpoint is [%s]", config->tmpfsmountpoint);
-	// Before we do anything else, reset the firewall (cleans it, in case we are restarting after opennds crash)
-	iptables_fw_destroy();
-
-	// Call pre setup library function
-	safe_asprintf(&setupcmd, "/usr/lib/opennds/libopennds.sh \"pre_setup\"");
-	msg = safe_calloc(STATUS_BUF);
-
-	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, setupcmd) == 0) {
-		debug(LOG_INFO, "Pre-Setup request sent");
-	}
-	free(setupcmd);
-	free(msg);
 
 	// Check for libmicrohttp version at runtime, ie actual installed version
 	int major = 0;
@@ -383,31 +370,6 @@ setup_from_config(void)
 		}
 	}
 
-	// If we don't have the Gateway IP address, get it. Exit on failure.
-	if (!config->gw_ip) {
-		debug(LOG_DEBUG, "Finding IP address of %s", config->gw_interface);
-		config->gw_ip = get_iface_ip(config->gw_interface, config->ip6);
-		if (is_addr(config->gw_ip) != 1) {
-			debug(LOG_ERR, "Could not get IP address information of %s, exiting...", config->gw_interface);
-			exit(1);
-		} else {
-			debug(LOG_NOTICE, "Interface %s is up", config->gw_interface);
-		}
-	}
-
-	// format gw_address accordingly depending on if gw_ip is v4 or v6
-	const char *ipfmt = config->ip6 ? "[%s]:%d" : "%s:%d";
-	safe_asprintf(&config->gw_address, ipfmt, config->gw_ip, config->gw_port);
-
-	config->gw_mac = get_iface_mac(config->gw_interface);
-
-	if (strcmp(config->gw_mac, "00:00:00:00:00:00") == 0 || config->gw_mac == NULL) {
-		debug(LOG_ERR, "Could not get MAC address information of %s, exiting...", config->gw_interface);
-		exit(1);
-	}
-
-	debug(LOG_NOTICE, "Interface %s is at %s (%s)", config->gw_interface, config->gw_ip, config->gw_mac);
-
 	// Check routing configuration
 	int watchdog = 0;
 	int routercheck;
@@ -419,11 +381,6 @@ setup_from_config(void)
 	// Warn if Preemptive Authentication is enabled
 	if (config->allow_preemptive_authentication == 1) {
 		debug(LOG_NOTICE, "Preemptive authentication is enabled");
-	}
-
-	// Make sure fas_remoteip is set. Note: This does not enable FAS.
-	if (!config->fas_remoteip) {
-		config->fas_remoteip = safe_strdup(config->gw_ip);
 	}
 
 	// Setup custom FAS parameters if configured
@@ -502,6 +459,7 @@ setup_from_config(void)
 
 	// For Client status Page - configure the hosts file
 	if (strcmp(config->gw_fqdn, "disable") != 0 && strcmp(config->gw_fqdn, "disabled") != 0) {
+		dnscmd = safe_calloc(STATUS_BUF);
 		safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"hostconf\" \"%s\" \"%s\"",
 			config->gw_ip,
 			config->gw_fqdn
@@ -519,6 +477,7 @@ setup_from_config(void)
 
 	if (config->dhcp_default_url_enable == 1) {
 		debug(LOG_DEBUG, "Enabling RFC8910 support");
+		dnscmd = safe_calloc(STATUS_BUF);
 
 		if (strcmp(config->gw_fqdn, "disable") != 0 && strcmp(config->gw_fqdn, "disabled") != 0) {
 			safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"cpidconf\" \"%s\"", config->gw_fqdn);
@@ -536,7 +495,7 @@ setup_from_config(void)
 		free(msg);
 	} else {
 		debug(LOG_DEBUG, "Disabling RFC8910 support");
-
+		dnscmd = safe_calloc(STATUS_BUF);
 		safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"cpidconf\"");
 		msg = safe_calloc(STATUS_BUF);
 
@@ -549,19 +508,47 @@ setup_from_config(void)
 		free(msg);
 	}
 
+	// nft sets
+	// For Walled Garden - Check we have nftset support and if we do, set it up
+	if (config->walledgarden_fqdn_list) {
+
+		// If Walled Garden nftset exists, destroy it.
+		msg = safe_calloc(SMALL_BUF);
+
+		execute_ret_url_encoded(msg, SMALL_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset delete walledgarden");
+		free(msg);
+
+		// Set up the Walled Garden
+		msg = safe_calloc(SMALL_BUF);
+
+		if (execute_ret_url_encoded(msg, STATUS_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset insert walledgarden ") == 0) {
+			debug(LOG_INFO, "Walled Garden Setup Request sent");
+		}
+		free(msg);
+	}
+
+
+	// Restart dnsmasq
+	dnscmd = safe_calloc(STATUS_BUF);
+	safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" &");
+	debug(LOG_DEBUG, "restart command [ %s ]", dnscmd);
+	system(dnscmd);
+	debug(LOG_INFO, "Dnsmasq restarted");
+	free(dnscmd);
+
 	// Encode gatewayname
 	char idbuf[STATUS_BUF] = {0};
-	char cmd[256] = {0};
-	char gatewayid[256] = {0};
+	char cmd[STATUS_BUF] = {0};
+	char gatewayid[SMALL_BUF] = {0};
 
 	if (config->enable_serial_number_suffix == 1) {
 
-		snprintf(cmd, sizeof(cmd), "/usr/lib/opennds/libopennds.sh gatewayid \"%s\"",
+		snprintf(cmd, STATUS_BUF, "/usr/lib/opennds/libopennds.sh gatewayid \"%s\"",
 			config->gw_interface
 		);
 
-		if (execute_ret(idbuf, sizeof(idbuf), cmd) == 0) {
-			snprintf(gatewayid, sizeof(gatewayid), "%s Node:%s ",
+		if (execute_ret(idbuf, STATUS_BUF, cmd) == 0) {
+			snprintf(gatewayid, SMALL_BUF, "%s Node:%s ",
 				config->gw_name,
 				idbuf
 			);
@@ -624,7 +611,7 @@ setup_from_config(void)
 
 
 		if (!((stat(config->preauth, &sb) == 0) && S_ISREG(sb.st_mode) && (sb.st_mode & S_IXUSR))) {
-			debug(LOG_ERR, "Login script does not exist or is not executable: %s", config->preauth);
+			debug(LOG_ERR, "Preauth script does not exist or is not executable: %s", config->preauth);
 			debug(LOG_ERR, "Exiting...");
 			exit(1);
 		}
@@ -829,14 +816,6 @@ setup_from_config(void)
 		debug(LOG_INFO, "Binauth Script is %s\n", config->binauth);
 	}
 
-	// Now initialize the firewall
-	if (iptables_fw_init() != 0) {
-		debug(LOG_ERR, "Error initializing firewall rules! Cleaning up");
-		iptables_fw_destroy();
-		debug(LOG_ERR, "Exiting because of error initializing firewall rules");
-		exit(1);
-	}
-
 	// Preload remote files defined in themespec
 	if (routercheck > 0) {
 		download_remotes(1);
@@ -864,6 +843,7 @@ setup_from_config(void)
 	}
 	free(debuglevel);
 
+	// Create the ndsinfo database
 	write_ndsinfo();
 
 	// Test for Y2.038K bug
@@ -877,7 +857,7 @@ setup_from_config(void)
  * Main execution loop
  */
 static void
-main_loop(void)
+main_loop(int argc, char **argv)
 {
 	int result = 0;
 	char *cmd;
@@ -885,6 +865,12 @@ main_loop(void)
 	s_config *config;
 
 	config = config_get_config();
+
+	// Initialize the config
+	config_init(argc, argv);
+
+	// Initializes the linked list of connected clients
+	client_list_init();
 
 	// Set up everything we need based on the configuration
 	setup_from_config();
@@ -911,11 +897,12 @@ main_loop(void)
 	system(cmd);
 	free(cmd);
 
-
 	result = pthread_join(tid, NULL);
+
 	if (result) {
 		debug(LOG_INFO, "Failed to wait for opennds thread.");
 	}
+
 	//MHD_stop_daemon(webserver);
 	stop_mhd();
 
@@ -928,31 +915,20 @@ main_loop(void)
 int main(int argc, char **argv)
 {
 	s_config *config = config_get_config();
-	config_init();
-
-	parse_commandline(argc, argv);
-
-	// Initialize the config
-	debug(LOG_NOTICE, "openNDS Version %s is in startup\n", VERSION);
-	debug(LOG_INFO, "Reading and validating configuration file %s", config->configfile);
-	config_read(config->configfile);
-	config_validate();
-
-	// Initializes the linked list of connected clients
-	client_list_init();
 
 	// Init the signals to catch chld/quit/etc
-	debug(LOG_INFO, "Initializing signal handlers");
 	init_signals();
 
-	if (config->daemon) {
+	// Get the command line arguments
+	parse_commandline(argc, argv);
 
-		debug(LOG_NOTICE, "Starting as daemon, forking to background");
+	// Choose forground or background according to commandline arguments
+	if (config->daemon != 0) {
 
 		switch(safe_fork()) {
 		case 0: // child
 			setsid();
-			main_loop();
+			main_loop(argc, argv);
 			break;
 
 		default: // parent
@@ -960,7 +936,7 @@ int main(int argc, char **argv)
 			break;
 		}
 	} else {
-		main_loop();
+		main_loop(argc, argv);
 	}
 
 	return 0; // never reached

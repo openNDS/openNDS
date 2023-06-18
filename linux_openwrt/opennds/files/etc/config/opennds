@@ -1,10 +1,9 @@
 
-# The options available here are an adaptation of the settings used in the legacy opennds.conf.
-
 config opennds
 	# enabled
+	# Default: 1 (enabled)
 	# Set to 0 to disable opennds
-	option enabled 1
+	#option enabled 0
 	###########################################################################################
 
 	# debuglevel
@@ -51,7 +50,7 @@ config opennds
 	###########################################################################################
 
 	# Login Option
-	# Default: 1
+	# Default: 0
 	# Integer value sent to PreAuth script as login mode
 	#
 	# opennds comes preconfigured for three basic modes of operation
@@ -70,15 +69,16 @@ config opennds
 	#
 	# 3. Use Theme defined in ThemeSpec path (option themespec_path)
 	#
-	#option login_option_enabled '1'
+	#option login_option_enabled '3'
 	###########################################################################################
 
 	# Allow Preemptive Authentication
-	# Default: 0 - Disabled
-	# Enable by setting to 1
+	# Default: 1 - Enabled
+	# Disable by setting to 0
 	# This allows the ndsctl utility to preemptively authorise **connected** clients
 	# that have not entered the preauthenticated state.
-	# This is useful for example with IoT devices that do not have CPD (captive portal detection)
+	# This is used by default to re-authenticate clients after a restart.
+	# This is also useful for example with IoT devices that do not have CPD (captive portal detection)
 	# or for a FAS to manage inter-captive-portal roaming by making use of a centralised database of client validations.
 	#
 	#option allow_preemptive_authentication '1'
@@ -344,7 +344,7 @@ config opennds
 	# Instead use:
 	# option gatewayname 'Bill&#39;s WiFi'
 	#
-	#option gatewayname 'OpenWrt openNDS'
+	#option gatewayname 'My Captive Portal'
 	###########################################################################################
 
 	# Serial Number Suffix Enable
@@ -366,7 +366,7 @@ config opennds
 	# This is the simulated FQDN used by a client to access the Client Status Page
 	# If not set, the Status page can be accessed at: http://gatewayaddress:gatewayport/
 	#
-	# Warning - if set, services on port 80 of the gateway will no longer be accessible (eg Luci AdminUI)
+	# Warning - services on port 80 of the gateway will no longer be accessible (eg Luci AdminUI)
 	#
 	# By default, the Error511/Status page will be found at http://status.client/ by a redirection
 	# of port 80 to http://gatewayaddress:gatewayport/
@@ -532,7 +532,7 @@ config opennds
 	###########################################################################################
 
 	# Volume Quotas:
-	# If the client data quota exceeds the value set here, the client will be forced out
+	# If the client data quota exceeds the value set here, the client will be deauthenticated
 	# Defaults 0
 	# Integer values only
 	#
@@ -543,35 +543,26 @@ config opennds
 	#option downloadquota '0'
 	###########################################################################################
 
-	# Enable BinAuth Support. BinAuth enables POST AUTHENTICATION PROCESSING
-	# and is useful in particular when a FAS is configured remotely
-	# Default disabled
+	# BinAuth facilitates POST AUTHENTICATION PROCESSING
 	#
-	# If set, a BinAuth program or script is triggered by several possible methods
-	# and is called with several arguments on both authentication and deauthentication:
+	# Cannot be disabled
 	#
+	# Default: uses /usr/lib/opennds/binauth_log.sh
 	#
-	# Possible methods
+	# By default it manages the authenticated client database.
+	# In turn this database is used by openNDS to reauthenticate clients if a restart occurs.
+	# This is automatically achieved by a call to the auth_restore() library function.
+	# After openNDS has restarted, clients that have remaining session time are reauthenticated.
 	#
-	# Authentication:
-	# "auth_client": Request for authentication received from the captive portal splash page.
-	# "client_auth": Acknowledgement that Client was authenticated via this script.
-	# "ndsctl_auth": Client was authenticated by ndsctl auth command.
+	# The custom binauth script /usr/lib/opennds/custombinauth.sh is called.
+	# This custom script can be edited to provide additional user defined functionality.
 	#
-	# Deauthentication:
-	# "client_deauth": Client deauthenticated by the client via captive portal splash page.
-	# "idle_deauth": Client was deauthenticated because of inactivity.
-	# "timeout_deauth": Client was deauthenticated because the session timed out.
-	# "ndsctl_deauth": Client was deauthenticated by ndsctl deauth command.
-	# "uprate_deauth": Client was deauthenticated because its average upload rate exceeded the allowed value
-	# "downrate_deauth": Client was deauthenticated because its average download rate exceeded the allowed value
-	# "upquota_deauth": Client was deauthenticated because its upload quota exceeded the allowed value
-	# "downquota_deauth": Client was deauthenticated because its download quota exceeded the allowed value
-	# "shutdown_deauth": Client was deauthenticated by openNDS terminating.
+	####
+	# WARNING:
+	# The default binauth script can be replaced, but this will disable the auth_restore functionality.
+	####
 	#
-	# A fully functional BinAuth script is pre-installed and provides local logging
-	# of client activity. This is enabled by uncommenting the following line:
-	#option binauth '/usr/lib/opennds/binauth_log.sh'
+	#option binauth '/usr/lib/opennds/my_binauth_script.sh'
 	###########################################################################################
 
 	# Set Fasport
@@ -601,6 +592,8 @@ config opennds
 	# Note: For a CDN (Content Delivery Network) hosted server,
 	#	you must also add fasremotefqdn to the Walled Garden list of FQDNs
 	#
+	# Typical Remote Shared Hosting Example (replace this with your own remote FQDN):
+	#option fasremotefqdn 'portal.mydomain.com'
 	###########################################################################################
 
 	# Option: fasremoteip
@@ -643,6 +636,9 @@ config opennds
 	# Default: 1
 
 	# ****If set to "0"****
+	##
+	# WARNING This mode is insecure and is not recommended.
+	##
 	# The FAS is enforced by NDS to use http protocol.
 	# The client token is sent to the FAS in clear text in the query string of the redirect along with authaction and redir.
 	# Note: This level is insecure and can be easily bypassed
@@ -684,20 +680,20 @@ config opennds
 	# An example FAS level 3 php script (fas-aes-https.php) is included in the /etc/opennds directory and also supplied in the source code.
 	#
 	# Note: Option faskey must be pre shared with the FAs script in use (including any ThemeSpec local file) if fas secure is set to levels 1, 2 and 3.
-	#option fas_secure_enabled '1'
+	#option fas_secure_enabled '3'
 	###########################################################################################
 
 	# NAT Traversal Poll Interval
 	# Sets the polling interval for NAT Traversal in seconds
 	#
-	# Default 10 seconds
+	# Default 5 seconds
 	# Allowed values between 1 and 60 seconds inclusive
-	# Defaults to 10 seconds if set outside this range
+	# Defaults to 5 seconds if set outside this range
 	#
 	# Effective only when option fas_secure_enabled is set to 3
 	#
 	# Example:
-	#option nat_traversal_poll_interval '5'
+	#option nat_traversal_poll_interval '2'
 	###########################################################################################
 
 	# PreAuth
@@ -726,30 +722,24 @@ config opennds
 	#
 	#list authenticated_users 'block to 123.2.3.4'
 	#
-	# Do not forget to add an allow or passthrough if the default only is assumed (see Grant Access)
+	# Do not forget to add an allow rule if any block rules are added (see Grant Access)
+	# Block rules added here are final with all packets to the target being dropped.
 	#
 	###########################################################################################
 
-	# Grant Access For Authenticated Users (allow and passthrough):
+	# Grant Access For Authenticated Users (allow):
 	#
-	# Access can be allowed by openNDS directly, overriding firewall rules that might be set elsewhere
-	# or Access can be allowed by openNDS but the final decision can be passed on to other firewall rules that might be set.
+	# Access can be allowed by openNDS directly, but the final decision will be passed on to other firewall rules that might be set.
 	#
-	# Default: list authenticated_users 'passthrough all'
+	# Default: list authenticated_users 'allow all'
 	#
 	# Any entries set here, or above in Block Access, will override the default
 	#
-	# Example: Grant access overriding firewall rules that might be set elsewhere.
-	#list authenticated_users 'allow all'
-	#
 	# Example: 
 	# Grant access to https web sites, subject to firewall rules that might be set elsewhere.
-	#list authenticated_users 'passthrough tcp port 443'
+	#list authenticated_users 'allow tcp port 443'
 	#
-	# Grant access to http web sites, overriding firewall rules that might be set elsewhere.
-	#list authenticated_users 'allow tcp port 80'
-	#
-	# Grant access to udp services at address 123.1.1.1, on port 5000, overriding firewall rules that might be set elsewhere.
+	# Grant access to udp services at address 123.1.1.1, on port 5000, subject to firewall rules that might be set elsewhere.
 	#list authenticated_users 'allow udp port 5000 to 123.1.1.1'
 	#
 	###########################################################################################
@@ -792,13 +782,7 @@ config opennds
 	# Autonomous Walled Garden configuration using a list of FQDNs and Ports.
 	#
 	# This has the advantage of discovering all ip addresses used by the Walled Garden sites.
-	# But it does require the ipset and dnsmasq-full packages to be installed
-	# by running the following commands:
-	#
-	# opkg update
-	# opkg install ipset
-	# opkg remove dnsmasq
-	# opkg install dnsmasq-full
+	# But it does require the dnsmasq-full package (and also the ipset package if dnsmasq does not support nftsets) to be installed
 	#
 	# Configuration is then a simple matter of adding two lists as follows:
 	# 
@@ -821,6 +805,13 @@ config opennds
 	# 2. To add Paypal to the Walled Garden, the list entries would be:
 	# 	list walledgarden_fqdn_list 'paypal.com paypalobjects.com'
 	# 	list walledgarden_port_list '443'
+	#
+	# 3. To restrict access to a port or list of ports:
+	# 	list walledgarden_port_list '443'
+	# or
+	# 	list walledgarden_port_list '443 8020'
+	#
+	# WARNING: Adding port 80 to a walledgarden_port_list can result in the client's built in CPD functionality being defeated and is therefore not recommended.
 
 	###########################################################################################
 
@@ -829,23 +820,33 @@ config opennds
 	# users_to_router_passthrough
 	# Default 0 (disabled)
 	#
-	# Warning: Enabling this option may soft brick your router
+	####
+	# WARNING: Enabling this option may soft brick your router
+	####
+	#
 	# If enabled you must allow access to essential services via rules configured in the system firewall
+	#option users_to_router_passthrough '1'
 
-	#option users_to_router_passthrough '0'
+	####
+	# WARNING: If adding rules, the defaults are overridden, so you must also add the essential service ports.
+	####
+	#
+	# Essential Services - Allow ports for DNS and DHCP (disabling these will soft brick your router), SSH and HTTPS:
+	#list users_to_router 'allow udp port 53'
+	#list users_to_router 'allow udp port 67'
+	#list users_to_router 'allow tcp port 22'
+	#list users_to_router 'allow tcp port 443'
 
-	# Essential Services - Allow ports for DNS and DHCP (disabling these will soft brick your router):
-	list users_to_router 'allow tcp port 53'
-	list users_to_router 'allow udp port 53'
-	list users_to_router 'allow udp port 67'
 
-	# Optional Services - Allow ports for SSH/HTTPS:
-	list users_to_router 'allow tcp port 22'
-	list users_to_router 'allow tcp port 443'
 	###########################################################################################
 
 	# MAC addresses that do not need to authenticate
-	#list trustedmac '00:00:C0:01:D0:1D'
+	####
+	# WARNING: As client devices can use random mac addresses, a client my loose its "trusted" status by changing its mac address
+	####
+	# WARNING: As mac addresses can be "spoofed" setting a trusted mac may be a security hazard
+	####
+	#list trustedmac '00:00:C0:01:D0:1D 00:00:C0:01:D0:2A'
 	###########################################################################################
 
 	# dhcp_default_url_enable

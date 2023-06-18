@@ -43,18 +43,46 @@ get_client_zone () {
 	fi
 }
 
+urlencode() {
+	entitylist="
+		s/%/%25/g
+		s/\s/%20/g
+		s/\"/%22/g
+		s/>/%3E/g
+		s/</%3C/g
+		s/'/%27/g
+		s/\`/%60/g
+	"
+	local buffer="$1"
+
+	for entity in $entitylist; do
+		urlencoded=$(echo "$buffer" | sed "$entity")
+		buffer=$urlencoded
+	done
+
+	urlencoded=$(echo "$buffer" | awk '{ gsub(/\$/, "\\%24"); print }')
+}
+
 get_option_from_config() {
-	local param=""
 
-	if [ -e "/etc/config/opennds" ]; then
-		param=$(uci -q get opennds.@opennds[0].$option | awk '{printf("%s", $0)}')
+	type uci &> /dev/null
+	uci_status=$?
 
-	elif [ -e "/etc/opennds/opennds.conf" ]; then
-		param=$(cat "/etc/opennds/opennds.conf" | awk -F"$option" '{printf("%s", $2)}')
+	if [ $uci_status -eq 0 ]; then
+		param=$(uci export opennds | grep "option" | grep "$option" | awk -F"'" 'NF > 1 {printf "%s ", $2}')
+	else
+		param=$(cat /etc/config/opennds | grep "option" | grep "$option" | awk -F"#" '{printf "%s\n", $1}' | awk -F"'" 'NF > 1 {printf "%s ", $2}')
 	fi
 
-	eval $option=$param
+	# remove trailing space character
+	param=$(echo "$param" | sed 's/.$//')
+
+	# urlencode
+	urlencode "$param"
+	param=$urlencoded
+	eval $option="$param" &>/dev/null
 }
+
 
 configure_log_location() {
 	# Generate the Logfile location; use the tmpfs "temporary" directory to prevent flash wear.
@@ -91,7 +119,7 @@ configure_log_location() {
 	fi
 
 	# Get PID For syslog
-	ndspid=$(pgrep '/usr/bin/opennds')
+	ndspid=$(pgrep -f '/usr/bin/opennds')
 }
 
 write_log () {
@@ -170,7 +198,6 @@ else
 	if [ "$action" = "deauth" ]; then
 		returned=$(/usr/lib/opennds/libopennds.sh "send_to_fas_deauthed" "$loginfo")
 	fi
-
 fi
 
 # In the case of ThemeSpec, get the client id information from the cid database
@@ -225,7 +252,7 @@ logname="$fulllog"
 logtype=""
 date_inhibit=""
 
-write_log
+write_log &> /dev/null
 
 # Append to the authenticated clients list
 session_end=$6
@@ -244,7 +271,7 @@ if [ "$action" = "auth_client" ] || [ "$action" = "auth" ]; then
 
 	date_inhibit="date_inhibit"
 
-	write_log
+	write_log &> /dev/null
 fi
 
 #Quotas and session length set elsewhere can be overridden here if action=auth_client, otherwise will be ignored.
@@ -263,13 +290,22 @@ upload_rate=0
 download_rate=0
 upload_quota=0
 download_quota=0
+exitlevel=0
+
+# Include custom binauth script
+custombinauthpath="/usr/lib/opennds/custombinauth.sh"
+
+if [ -e "$custombinauthpath" ]; then
+	. $custombinauthpath
+fi
 
 # Finally before exiting, output the session length, upload rate, download rate, upload quota and download quota (only effective for auth_client).
-
+# The custom binauth script migh change these values
 echo "$session_length $upload_rate $download_rate $upload_quota $download_quota"
 
 # Exit, setting level (only effective for auth_client)
 #
-# exit 0 tells NDS it is ok to allow the client to have access.
+# exit 0 tells NDS it is ok to allow the client to have access (default).
 # exit 1 would tell NDS to deny access.
-exit 0
+# The custom binauth script might change this value
+exit $exitlevel

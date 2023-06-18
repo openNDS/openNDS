@@ -86,6 +86,21 @@ You cannot upgrade from NoDogSplash to openNDS, instead you must first uninstall
 
    Data Rate Quotas are now enhanced with packet rate limiting being applied when a client average rate rises above its preset threshold. The time window over which the rate is averaged can be tuned using settings in the config file, allowing rate bursting for best user experience while still limiting the rate of larger downloads or uploads that might otherwise impact other clients.
 
+**openNDS v10** This version introduces major changes, including:
+
+ * **Full migration to nftables from iptables**
+
+   Iptables is no longer used, instead, nftables is used exclusively.
+
+ * **A UCI configuration file is used natively, even for non-OpenWrt Linux distributions**
+
+   The legacy opennds.conf file is not used and is ignored if present.
+
+ * **Preemptive Authentication is introduced and is enabled by default**
+
+   * Designed to support inter-portal roaming in cases where a remote FAS supports numerous instances of openNDS.
+   * Automatically re-authenticates clients that were logged in when a service restart occurs.
+
 Can I upgrade from NoDogSplash to openNDS?
 ******************************************
 
@@ -124,10 +139,17 @@ You can, if:
  * You modify your FAS scripts to use the openNDS v9 API
  * You move to ThemeSpec scripts or FAS **from Legacy Splash**. Legacy Splash Pages are no longer supported. The default ThemeSpec (option login_option 1) is equivalent to the old splash.html click to continue page.
 
+Can I upgrade from v9 to v10
+****************************
+
+On OpenWrt you can (v22.3 onwards), but many config options are now default, so some care should be taken to make sure default values are not changed inadvertently.
+
+On any other Linux distribution you cannot. You will need to produce a UCI config file to replace your opennds.conf file and you must have at least the basic nftables packages installed.
+
 How can I add custom parameters, such as site specific information?
 *******************************************************************
 
-Custom parameters were introduced in openNDS version 7 and are defined simply in the config file. These parameters are passed to the FAS in the query string. Version 8 embeds any custom parameters in the encoded/encrypted query string, macing it much simpler to parse for them in the FAS script.
+Custom parameters were introduced in openNDS version 7 and are defined simply in the config file. These parameters are passed to the FAS in the query string. Version 8 embeds any custom parameters in the encoded/encrypted query string, making it much simpler to parse for them in the FAS script.
 
 How can I add custom fields on the login page, such as phone number, car licence plate number etc.?
 ***************************************************************************************************
@@ -177,3 +199,13 @@ What is CPD / Captive Portal Detection?
 CPD (Captive Portal Detection) has evolved as an enhancement to the network manager component included with major Operating Systems (Linux, Android, iOS/MacOS, Windows).
 
  Using a pre-defined port 80 web page (the one that gets used depends on the vendor) the network manager will detect the presence of a captive portal hotspot and notify the user. In addition, most major browsers now support CPD.
+
+What is CPI / Captive Portal Identification?
+********************************************
+CPI (Captive Portal Identification) is defined in RFC8910 and RFC8908.
+
+The captive portal informs the client device, using DHCP, that is is held captive by the portal, and indicates what the client should to to authenticate.
+
+CPI is an evolving standard and at the time of writing, implementation of full support by mobile device vendors is very far from universal. Nevertheless, CPI shows in one form or another, great potential as a viable future method for connecting to Captive Portals.
+
+

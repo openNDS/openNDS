@@ -306,22 +306,9 @@ fi
 # Do the download(s):
 
 # This default status.client page can by example show a custom logo:
-ucipath=$(type uci &>/dev/null)
-retcode="$?"
+/usr/lib/opennds/libopennds.sh download "/usr/lib/opennds/download_resources.sh" "" "" "0" "" &>/dev/null
 
-if [ "$retcode" = "0" ]; then
-	customimagelist=$(uci -q get opennds.@opennds[0].fas_custom_images_list | grep "logo_")
-else
-	#not supported
-	customimagelist=""
-fi
-
-
-if [ ! -z "$customimagelist" ] && [ ! -e "/etc/opennds/htdocs/ndsremote/logo.png" ]; then
-	/usr/lib/opennds/libopennds.sh download "/usr/lib/opennds/download_resources.sh" "" "" "0" "" &>/dev/null
-fi
-
-if [ ! -z "$customimagelist" ] && [ -e "/etc/opennds/htdocs/ndsremote/logo.png" ]; then
+if [ -e "/etc/opennds/htdocs/ndsremote/logo.png" ]; then
 	imagepath="ndsremote/logo.png"
 else
 	imagepath="images/splash.jpg"
@@ -361,6 +348,7 @@ if [ "$status" = "status" ] || [ "$status" = "err511" ]; then
 	header
 	body
 	footer
+	exit 0
 else
 	exit 1
 fi

@@ -6,14 +6,7 @@
 
 # Get configured option
 get_option_from_config() {
-	option_value=""
-
-	if [ -e "/etc/config/opennds" ]; then
-		option_value=$(uci -q get opennds.@opennds[0].$option | awk '{printf("%s", $0)}')
-
-	elif [ -e "/etc/opennds/opennds.conf" ]; then
-		option_value=$(cat "/etc/opennds/opennds.conf" | awk -F"$option " '{printf("%s", $2)}')
-	fi
+	option_value=$(/usr/lib/opennds/libopennds.sh get_option_from_config $option)
 }
 
 # Function to send commands to openNDS:
@@ -87,10 +80,9 @@ do_ndsctl
 # Get the configured debuglevel and version
 debuglevel=$(echo "$ndsctlout" | grep "Debug Level" | awk '{printf $4}')
 version=$(echo "$ndsctlout" | grep "Version" | awk '{printf $2}')
-echo "debuglevel=$debuglevel"
 
-# Get PID For syslog
-ndspid=$(pgrep '/usr/bin/opennds')
+# Get our PID For syslog use
+ndspid=$(pgrep -f '/usr/lib/opennds/authmon.sh')
 
 #get arguments and set variables
 url=$1
@@ -122,7 +114,7 @@ if [ ! -z "$owrt" ]; then
 	cabundle=$(opkg list-installed | grep "ca-bundle")
 
 	if [ -z "$cabundle" ]; then
-		echo "authmon - FATAL ERROR: ca-bundle not installed - Terminating" | logger -p "daemon.err" -s -t "opennds[$ndspid]"
+		echo "authmon - FATAL ERROR: ca-bundle not installed - Terminating" | logger -p "daemon.err" -t "authmon[$ndspid]"
 		ndsctl stop
 		exit 1
 	fi
@@ -137,11 +129,11 @@ payload="none"
 ret=$($phpcli -f "$postrequest" "$url" "$action" "$gatewayhash" "$user_agent" "$payload")
 
 if [ $debuglevel -ge 3 ]; then
-	echo "authmon - action $action, response [$ret]" | logger -p "daemon.debug" -s -t "opennds[$ndspid]"
+	echo "authmon - action $action, response [$ret]" | logger -p "daemon.debug" -t "authmon[$ndspid]"
 fi
 
 if [ $debuglevel -ge 1 ]; then
-	echo "authmon - nat_traversal_poll_interval is $loop_interval second(s)" | logger -p "daemon.notice" -s -t "opennds[$ndspid]"
+	echo "authmon - nat_traversal_poll_interval is $loop_interval second(s)" | logger -p "daemon.notice" -t "authmon[$ndspid]"
 fi
 
 
@@ -151,7 +143,6 @@ while true; do
 
 	if [ -e "$mountpoint/ndsdebuglevel" ]; then
 		debuglevel=$(cat $mountpoint/ndsdebuglevel)
-		echo "debuglevel=$debuglevel"
 	fi
 
 	# Get remote authlist from the FAS:
@@ -162,7 +153,7 @@ while true; do
 	authlist=$($phpcli -f "$postrequest" "$url" "$action" "$gatewayhash" "$user_agent" "$payload")
 
 	if [ $debuglevel -ge 3 ]; then
-		echo "authmon - authlist $authlist" | logger -p "daemon.debug" -s -t "opennds[$ndspid]"
+		echo "authmon - authlist $authlist" | logger -p "daemon.debug" -t "authmon[$ndspid]"
 	fi
 
 	validator=${authlist:0:1}
@@ -180,7 +171,7 @@ while true; do
 				authparams=$(printf "${authparams_enc//%/\\x}")
 
 				if [ $debuglevel -ge 2 ]; then
-					echo "authmon - authentication parameters $authparams" | logger -p "daemon.info" -s -t "opennds[$ndspid]"
+					echo "authmon - authentication parameters $authparams" | logger -p "daemon.info" -t "authmon[$ndspid]"
 				fi
 
 				ndsctlcmd="auth $authparams 2>/dev/null"
@@ -193,7 +184,7 @@ while true; do
 				fi
 
 				if [ "$ndsstatus" = "busy" ]; then
-					echo "authmon - ERROR: ndsctl is in use by another process" | logger -p "daemon.err" -s -t "opennds[$ndspid]"
+					echo "authmon - ERROR: ndsctl is in use by another process" | logger -p "daemon.err" -t "authmon[$ndspid]"
 				fi
 
 				if [ "$authcount" < 1 ]; then
@@ -205,9 +196,9 @@ while true; do
 		for keyword in $authlist; do
 
 			if [ $keyword = "ERROR:" ]; then
-				echo "authmon - [$authlist]" | logger -p "daemon.err" -s -t "opennds[$ndspid]"
+				echo "authmon - [$authlist]" | logger -p "daemon.err" -t "authmon[$ndspid]"
 				echo "authmon - Check Internet connection, FAS url, and package ca-bundle installation" |
-					logger -p "daemon.err" -s -t "opennds[$ndspid]"
+					logger -p "daemon.err" -t "authmon[$ndspid]"
 				break
 			fi
 		done
@@ -217,7 +208,7 @@ while true; do
 	# Send acklist to the FAS for upstream processing:
 	ackresponse=$($phpcli -f "$postrequest" "$url" "$action" "$gatewayhash" "$user_agent" "$acklist")
 	if [ $debuglevel -ge 3 ]; then
-		echo "authmon - remote FAS response [$ackresponse]" | logger -p "daemon.debug" -s -t "opennds[$ndspid]"
+		echo "authmon - remote FAS response [$ackresponse]" | logger -p "daemon.debug" -t "authmon[$ndspid]"
 	fi
 
 	# Sleep for a while:

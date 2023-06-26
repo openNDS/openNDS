@@ -725,16 +725,19 @@ setup_from_config(void)
 		}
 
 		// Setup the FAS URL
-		if (config->fas_remotefqdn) {
-			safe_asprintf(&fasurl, "%s://%s:%u%s",
-				protocol, config->fas_remotefqdn, config->fas_port, config->fas_path);
-			config->fas_url = safe_strdup(fasurl);
-		} else {
+
+		if (strcmp(config->fas_remotefqdn, "") == 0) {
 			safe_asprintf(&fasurl, "%s://%s:%u%s",
 				protocol, config->fas_remoteip, config->fas_port, config->fas_path);
 			config->fas_url = safe_strdup(fasurl);
+			debug(LOG_DEBUG, "fasurl (ip) is %s\n", fasurl);
+		} else {
+			safe_asprintf(&fasurl, "%s://%s:%u%s",
+				protocol, config->fas_remotefqdn, config->fas_port, config->fas_path);
+			config->fas_url = safe_strdup(fasurl);
+			debug(LOG_DEBUG, "fasurl (fqdn) is %s\n", fasurl);
 		}
-		debug(LOG_NOTICE, "FAS URL is %s\n", config->fas_url);
+
 		free(fasurl);
 
 		// Check if authmon is running and if it is, kill it

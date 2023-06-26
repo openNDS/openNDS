@@ -335,6 +335,7 @@ config_init(int argc, char **argv)
 		config.fas_remoteip = safe_strdup(config.gw_ip);
 	}
 
+	debug(LOG_DEBUG, "FAS remote ip address is [ %s ]", config.fas_remoteip);
 
 	// Now initialize the firewall
 	if (iptables_fw_init() != 0) {

@@ -206,7 +206,6 @@ config_init(int argc, char **argv)
 	config.fas_remoteip = safe_strdup(set_option_str("fasremoteip", DEFAULT_FAS_REMOTEIP, debug_level));
 	config.fas_remotefqdn = safe_strdup(set_option_str("fasremotefqdn", DEFAULT_FAS_REMOTEFQDN, debug_level));
 
-
 	/*
 	********** Integer config parameters **********
 	*/
@@ -234,8 +233,8 @@ config_init(int argc, char **argv)
 	//
 
 	sscanf(set_option_str("sessiontimeout", DEFAULT_SESSION_TIMEOUT, debug_level), "%u", &config.session_timeout);
-	sscanf(set_option_str("preauth_idle_timeout", DEFAULT_PREAUTH_IDLE_TIMEOUT, debug_level), "%u", &config.preauth_idle_timeout);
-	sscanf(set_option_str("auth_idle_timeout", DEFAULT_AUTH_IDLE_TIMEOUT, debug_level), "%u", &config.auth_idle_timeout);
+	sscanf(set_option_str("preauthidletimeout", DEFAULT_PREAUTH_IDLE_TIMEOUT, debug_level), "%u", &config.preauth_idle_timeout);
+	sscanf(set_option_str("authidletimeout", DEFAULT_AUTH_IDLE_TIMEOUT, debug_level), "%u", &config.auth_idle_timeout);
 	sscanf(set_option_str("maxclients", DEFAULT_MAXCLIENTS, debug_level), "%u", &config.maxclients);
 	sscanf(set_option_str("enable_serial_number_suffix", DEFAULT_ENABLE_SERIAL_NUMBER_SUFFIX, debug_level), "%u", &config.enable_serial_number_suffix);
 	sscanf(set_option_str("dhcp_default_url_enable", DEFAULT_DHCP_DEFAULT_URL_ENABLE, debug_level), "%u", &config.dhcp_default_url_enable);
@@ -250,7 +249,7 @@ config_init(int argc, char **argv)
 	sscanf(set_option_str("fas_secure_enabled", DEFAULT_FAS_SECURE_ENABLED, debug_level), "%u", &config.fas_secure_enabled);
 	sscanf(set_option_str("remotes_refresh_interval", DEFAULT_REMOTES_REFRESH_INTERVAL, debug_level), "%u", &config.remotes_refresh_interval);
 	sscanf(set_option_str("checkinterval", DEFAULT_CHECKINTERVAL, debug_level), "%u", &config.checkinterval);
-	sscanf(set_option_str("rate_check_window", DEFAULT_RATE_CHECK_WINDOW, debug_level), "%u", &config.rate_check_window);
+	sscanf(set_option_str("ratecheckwindow", DEFAULT_RATE_CHECK_WINDOW, debug_level), "%u", &config.rate_check_window);
 	sscanf(set_option_str("uploadrate", DEFAULT_UPLOAD_RATE, debug_level), "%llu", &config.upload_rate);
 	sscanf(set_option_str("downloadrate", DEFAULT_DOWNLOAD_RATE, debug_level), "%llu", &config.download_rate);
 	sscanf(set_option_str("download_bucket_ratio", DEFAULT_DOWNLOAD_BUCKET_RATIO, debug_level), "%llu", &config.download_bucket_ratio);

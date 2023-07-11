@@ -1908,7 +1908,7 @@ static int send_error(struct MHD_Connection *connection, int error)
 
 		free(cmd);
 
-		response = MHD_create_response_from_buffer(HTMLMAXSIZE, (char *)page_511, MHD_RESPMEM_MUST_FREE);
+		response = MHD_create_response_from_buffer(strlen(page_511), (char *)page_511, MHD_RESPMEM_MUST_FREE);
 
 		if (response) {
 			MHD_add_response_header(response, "Content-Type", mimetype);

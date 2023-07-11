@@ -206,7 +206,6 @@ config_init(int argc, char **argv)
 	config.fas_remoteip = safe_strdup(set_option_str("fasremoteip", DEFAULT_FAS_REMOTEIP, debug_level));
 	config.fas_remotefqdn = safe_strdup(set_option_str("fasremotefqdn", DEFAULT_FAS_REMOTEFQDN, debug_level));
 
-
 	/*
 	********** Integer config parameters **********
 	*/

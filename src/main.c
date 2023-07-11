@@ -305,7 +305,6 @@ setup_from_config(void)
 
 	config = config_get_config();
 
-
 	safe_asprintf(&lib_cmd, "/usr/lib/opennds/libopennds.sh \"pad_string\" \"left\" \"00000000\" \"%x\"", config->fw_mark_authenticated);
 	msg = safe_calloc(SMALL_BUF);
 
@@ -603,7 +602,6 @@ setup_from_config(void)
 		config->preauth = NULL;
 	}
 
-
 	// If PreAuth is enabled, override any FAS configuration and check script exists
 	if (config->preauth) {
 		debug(LOG_NOTICE, "Preauth is Enabled - Overriding FAS configuration.\n");
@@ -618,7 +616,7 @@ setup_from_config(void)
 
 		//override all other FAS settings
 		config->fas_remoteip = safe_strdup(config->gw_ip);
-		config->fas_remotefqdn = NULL;
+		config->fas_remotefqdn = safe_strdup(config->gw_fqdn);
 		config->fas_port = config->gw_port;
 		safe_asprintf(&preauth_dir, "/%s/", config->preauthdir);
 		config->fas_path = safe_strdup(preauth_dir);
@@ -725,8 +723,9 @@ setup_from_config(void)
 		}
 
 		// Setup the FAS URL
+		fasurl = safe_calloc(SMALL_BUF);
 
-		if (strcmp(config->fas_remotefqdn, "") == 0) {
+		if (strcmp(config->fas_remotefqdn, "disable") == 0 || strcmp(config->fas_remotefqdn, "disabled") == 0) {
 			safe_asprintf(&fasurl, "%s://%s:%u%s",
 				protocol, config->fas_remoteip, config->fas_port, config->fas_path);
 			config->fas_url = safe_strdup(fasurl);

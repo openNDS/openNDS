@@ -219,11 +219,16 @@ Be aware that many client CPD processes will **automatically close** the landing
 BinAuth Post FAS Processing
 ***************************
 
-As BinAuth can be enabled at the same time as FAS, a BinAuth script may be used for custom post FAS processing. (see BinAuth).
+From v10.1.0 onwards, BinAuth is enabled at all times. Additional BinAuth functionality can be added by editing the file /usr/lib/opennds/custombinauth.sh.
 
-The example BinAuth script, binauth_log.sh, is designed to locally log details of each client authentication and receives client data including the token, ipaddress and macaddress. In addition it receives the custom data string sent from FAS.
+The BinAuth script, binauth_log.sh, is designed to locally log details of each client authentication and receives client data including the token, ipaddress and macaddress. In addition it receives the custom data string sent from FAS.
 
-In addition, if option fas_secure_enabled is set to 3, binauth_log.sh sends a deauthentication log to the remote https FAS whenever a client is deauthenticated.
+If option fas_secure_enabled is set to 3, BinAuth sends a deauthentication log to the remote https FAS whenever a client is deauthenticated.
+
+BinAuth maintains a database of authenticated clients that is used by openNDS on startup to re-authenticate any clients that still have a valid session.
+
+By default this database does not survive a reboot. (see ``option log_mountpoint``)
+
 
 Manual Access of NDS Virtual URL
 ********************************

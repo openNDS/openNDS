@@ -1,6 +1,18 @@
 What's New? - ChangeLog
 #######################
 
+opennds (10.1.1)
+
+This version contains some minor bug fixes and documentation updates
+
+  * Fix - send only contents of buffer, not entire buffer when serving page511 [bluewavenet]
+  * Fix - Set fas_remotefqdn to gw_fqdn when overriding FAS settings [bluewavenet]
+  * Fix - use absolute path for css and images in ThemeSpec [bluewavenet]
+  * Fix - revert to old option names without underscores [bluewavenet]
+  * Fix - FAS URL when fas_remotefqdn is not set [bluewavenet]
+
+ -- Rob White <dot@blue-wave.net>  Fri, 14 Jul 2023 13:56:50 +0000
+
 opennds (10.1.0)
 
 This version is a major upgrade including full migration to nftables and native uci configuration support even for generic Linux distributions. It also includes a significant refactoring of inbuilt memory management, improving long term reliability, fixing several memory leaks, buffer overflows and several edge case crashes.
@@ -16,7 +28,7 @@ This version is a major upgrade including full migration to nftables and native 
   * Fix - walledgarden for both nftset and ipset on OpenWrt [bluewavenet]
   * Add - more meaningful output if attempt is made to restart when already running [bluewavenet]
   * Fix - resolve gatewayfqdn after startup [bluewavenet]
-  * Fix - Choose forground or background running according to commandline arguments [bluewavenet]
+  * Fix - Choose foreground or background running according to commandline arguments [bluewavenet]
   * Fix - remove superfluous debug message [bluewavenet]
   * Fix - replace sleep with procd_set_param term_timeout [bluewavenet]
   * Fix - make option enabled default to enabled [bluewavenet]

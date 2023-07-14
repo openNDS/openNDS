@@ -27,20 +27,18 @@ It should be noted when designing a custom splash page that for security reasons
 The Configuration File
 **********************
 
-In OpenWrt, or operating systems supporting UCI (such as LEDE) the configuration is kept in the file:
+For all operating systems from openNDS v10.1.0 onwards, the configuration is kept in the file:
 
   ``/etc/config/opennds``
 
 
-In other operating systems the configuration is kept in the file:
-
-  ``/etc/opennds/opennds.conf``
-
-Both of these files contain a full list of options and can be edited directly. A restart of NDS is required for any changes to take effect.
+This file contains a full list of options and can be edited directly. A restart of NDS is required for any changes to take effect.
 
 In the case of OpenWrt though, once you are confident in your configuration requirements you can use UCI to read and set any of the configuration options using simple commands, making this very convenient if making changes from scripts, such as those you may write to use with Binauth and FAS.
 
-For example, to list the full configuration, at the command line type:
+For other operating systems you must directly edit the configuration file.
+
+On OpenWrt, to list the full configuration, at the command line type:
 
 .. code-block:: sh
 

@@ -2627,6 +2627,24 @@ elif [ "$1" = "is_nodog" ]; then
 	fi
 
 	exit $nodog
+
+elif [ "$1" = "generate_key" ]; then
+	# Generate a key
+	date | sha256sum | awk '{printf "%s", $1}'
+	exit 0
+
+elif [ "$1" = "set_key" ]; then
+	cmd="echo \"	option faskey '$2'\" >> /etc/config/opennds"
+	shelldetect=$(head -1 "/usr/lib/opennds/libopennds.sh")
+
+	if [ "$shelldetect" = "#!/bin/sh" ]; then
+		shell="/bin/sh"
+	else
+		shell="/bin/bash"
+	fi
+
+	echo "$cmd" | $shell
+
 fi
 
 ########################################################################

@@ -349,6 +349,31 @@ config_init(int argc, char **argv)
 
 	debug(LOG_DEBUG, "FAS remote ip address is [ %s ]", config.fas_remoteip);
 
+	// Generate a unique faskey if not set in config
+	if (strcmp(config.fas_key, DEFAULT_FASKEY) == 0) {
+		setupcmd = safe_calloc(STATUS_BUF);
+		safe_asprintf(&setupcmd, "/usr/lib/opennds/libopennds.sh \"generate_key\"");
+		msg = safe_calloc(STATUS_BUF);
+
+		if (execute_ret_url_encoded(msg, STATUS_BUF - 1, setupcmd) == 0) {
+			config.fas_key = safe_strdup(msg);
+		}
+
+		free(setupcmd);
+		free(msg);
+
+		setupcmd = safe_calloc(STATUS_BUF);
+		safe_asprintf(&setupcmd, "/usr/lib/opennds/libopennds.sh \"set_key\" \"%s\"", config.fas_key);
+		msg = safe_calloc(STATUS_BUF);
+
+		if (execute_ret_url_encoded(msg, STATUS_BUF - 1, setupcmd) == 0) {
+			debug(LOG_NOTICE, "faskey generated");
+		}
+
+		free(setupcmd);
+		free(msg);
+	}
+
 	// Now initialize the firewall
 	if (iptables_fw_init() != 0) {
 		debug(LOG_ERR, "Error initializing firewall rules! Cleaning up");

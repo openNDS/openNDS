@@ -145,6 +145,10 @@ static int do_binauth(
 	user_agent = safe_calloc(USER_AGENT);
 	MHD_get_connection_values(connection, MHD_HEADER_KIND, get_user_agent_callback, &user_agent);
 
+	if (user_agent == NULL) {
+		return send_error(connection, 403);
+	}
+
 	debug(LOG_DEBUG, "BinAuth: User Agent is [ %s ]", user_agent);
 
 	// Get custom data string as passed in the query string
@@ -983,6 +987,10 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 		enc_user_agent = safe_calloc(ENC_USER_AGENT);
 
 		MHD_get_connection_values(connection, MHD_HEADER_KIND, get_user_agent_callback, &user_agent);
+
+		if (user_agent == NULL) {
+			return send_error(connection, 403);
+		}
 
 		uh_urlencode(enc_user_agent, ENC_USER_AGENT, user_agent, strlen(user_agent));
 		debug(LOG_DEBUG, "PreAuth: Encoded User Agent is [ %s ]", enc_user_agent);

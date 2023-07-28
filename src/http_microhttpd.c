@@ -522,6 +522,11 @@ static int try_to_authenticate(struct MHD_Connection *connection, t_client *clie
 	// Check for authdir
 	if (check_authdir_match(url, config->authdir)) {
 		tok = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "tok");
+
+		if (tok == NULL) {
+			return send_error(connection, 403);
+		}
+
 		debug(LOG_DEBUG, "client->token=%s tok=%s ", client->token, tok );
 
 		//Check if token (tok) or hash_id (hid) mode
@@ -613,6 +618,9 @@ static int authenticate_client(struct MHD_Connection *connection,
 	// get custom string
 	custom = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "custom");
 
+	if (!custom || strlen(custom) == 0) {
+		custom="bmE=";
+	}
 
 	if (config->binauth) {
 		rc = do_binauth(
@@ -1215,6 +1223,10 @@ static int preauthenticated(struct MHD_Connection *connection, const char *url, 
 
 		redirect_url = safe_calloc(REDIRECT_URL);
 		redirect_url = get_redirect_url(connection);
+
+		if (redirect_url == NULL) {
+			return send_error(connection, 403);
+		}
 
 		if (!try_to_authenticate(connection, client, host, url)) {
 			// user used an invalid token, redirect to splashpage but hold query "redir" intact

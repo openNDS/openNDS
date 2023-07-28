@@ -6,7 +6,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=opennds
-PKG_VERSION:=10.1.0
+PKG_VERSION:=10.1.2
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
@@ -30,7 +30,6 @@ define Package/opennds
   DEPENDS:=+libmicrohttpd-no-ssl
   TITLE:=open Network Demarcation Service
   URL:=https://github.com/opennds/opennds
-  CONFLICTS:=nodogsplash
 endef
 
 define Package/opennds/description

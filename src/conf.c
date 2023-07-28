@@ -144,6 +144,20 @@ config_init(int argc, char **argv)
 	FILE *fd;
 	char *lockfile;
 
+	// Check if nodogsplash is installed. If it is, issue a warning and exit
+	libcmd = safe_calloc(STATUS_BUF);
+	msg = safe_calloc(STATUS_BUF);
+
+	safe_asprintf(&libcmd, "/usr/lib/opennds/libopennds.sh \"is_nodog\"");
+
+	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, libcmd) == 0) {
+		debug(LOG_DEBUG, "NoDogSplash is installed, to continue please uninstall it and restart openNDS, exiting.....");
+		exit (1);
+	}
+
+	free(libcmd);
+	free(msg);
+
 	// get configured debuglevel
 	memset(debug_level, 0, STATUS_BUF);
 	get_option_from_config(debug_level, STATUS_BUF, "debuglevel");
@@ -228,7 +242,7 @@ config_init(int argc, char **argv)
 		debug(LOG_ERR, "debuglevel [%u] signaled to externals - unable to set", config.debuglevel);
 	}
 
-	free(libcmd);		
+	free(libcmd);
 	free(msg);
 	//
 
@@ -866,7 +880,7 @@ int set_debuglevel(const char opt[])
 			debug(LOG_ERR, "debuglevel [%d] signaled to externals - unable to set", level);
 		}
 
-		free(libcmd);		
+		free(libcmd);
 		free(msg);
 		return 0;
 	} else {

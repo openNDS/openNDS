@@ -418,25 +418,6 @@ Example:
 
 ``option max_page_size '4096'``
 
-MHD Unescape callback
-*********************
-
-Default 0 (Disabled)
-
-MHD has a built in unescape function that urldecodes incoming queries from browsers.
-
-This advanced option allows an external unescape script to replace the built in decoder.
-
-The script must be named unescape.sh, be present in /usr/lib/opennds/ and be executable.
-
-A very simple standard unescape.sh script is installed by default.
-
-Set to 1 to enable this option, 0 to disable.
-
-Example:
-
-``option unescape_callback_enabled '1'``
-
 Set the MHD WebRoot
 *******************
 

@@ -259,7 +259,6 @@ config_init(int argc, char **argv)
 	sscanf(set_option_str("max_page_size", DEFAULT_MAX_PAGE_SIZE, debug_level), "%llu", &config.max_page_size);
 	sscanf(set_option_str("max_log_entries", DEFAULT_MAX_LOG_ENTRIES, debug_level), "%llu", &config.max_log_entries);
 	sscanf(set_option_str("allow_preemptive_authentication", DEFAULT_ALLOW_PREEMPTIVE_AUTHENTICATION, debug_level), "%u", &config.allow_preemptive_authentication);
-	sscanf(set_option_str("unescape_callback_enabled", DEFAULT_UNESCAPE_CALLBACK_ENABLED, debug_level), "%u", &config.unescape_callback_enabled);
 	sscanf(set_option_str("fas_secure_enabled", DEFAULT_FAS_SECURE_ENABLED, debug_level), "%u", &config.fas_secure_enabled);
 	sscanf(set_option_str("remotes_refresh_interval", DEFAULT_REMOTES_REFRESH_INTERVAL, debug_level), "%u", &config.remotes_refresh_interval);
 	sscanf(set_option_str("checkinterval", DEFAULT_CHECKINTERVAL, debug_level), "%u", &config.checkinterval);

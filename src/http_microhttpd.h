@@ -28,7 +28,4 @@ enum MHD_Result libmicrohttpd_cb (void *cls,
 					const char *version,
 					const char *upload_data, size_t *upload_data_size, void **ptr);
 
-
-size_t unescape(void * cls, struct MHD_Connection *c, char *src);
-
 #endif // HTTP_MICROHTTPD_H

@@ -30,7 +30,7 @@
 #ifndef _CONF_H_
 #define _CONF_H_
 
-#define VERSION "10.1.2beta"
+#define VERSION "10.1.2"
 
 /*
  * Defines how many times should we try detecting the interface with the default route (in seconds).
@@ -67,7 +67,6 @@
 #define DEFAULT_MAX_LOG_ENTRIES "100"
 #define DEFAULT_USE_OUTDATED_MHD "0"
 #define DEFAULT_ALLOW_PREEMPTIVE_AUTHENTICATION "1"
-#define DEFAULT_UNESCAPE_CALLBACK_ENABLED "0"
 #define DEFAULT_FAS_SECURE_ENABLED "1"
 #define DEFAULT_FASPATH "/"
 #define DEFAULT_FASKEY "1234567890"
@@ -215,7 +214,6 @@ typedef struct {
 	int use_outdated_mhd;					//@brief Use outdated libmicrohttpd
 	unsigned long long int max_page_size;			//@brief Max page size to be served by libmicrohttpd
 	int allow_preemptive_authentication;			//@brief Allow Preemptive Authentication using the ndsctl utility
-	int unescape_callback_enabled;				//@brief Enable external MHD unescape callback script
 	int fas_secure_enabled;					//@brief Enable Secure FAS
 	char *fas_path;						//@brief Path to forward authentication page of FAS
 	char *fas_key;						//@brief AES key for FAS

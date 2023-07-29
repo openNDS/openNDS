@@ -279,7 +279,6 @@ fi
 session_length=0
 
 custom=$8
-custom=$(/usr/lib/opennds/unescape.sh -url "$custom")
 custom=$(ndsctl b64decode "$custom")
 session_length=$(echo "$custom" | awk -F"session_length=" '{printf "%d", $2}')
 

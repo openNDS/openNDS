@@ -33,30 +33,6 @@ Its output is also sent to FAS in the encrypted query string as the variable "cl
 
     [local_mesh_interface] is the local 802.11s interface the client is using (null if mesh not present).
 
-unescape.sh
-###########
-This utility allows an input string to be unescaped. It currently only supports url-decoding.
-
-It can be used by NDS as the unescape callback for libmicrohttpd.
-
-To enable, set the unescape_callback_enabled option to "1"
-
-To disable, set the unescape_callback_enabled option to "0"
-
-The default is disabled (use internal MHD unescape)
-
-eg In the OpenWrt configuration file
-
-	``option unescape_callback_enabled '0'``
-
-  Usage: unescape.sh [-option] [escapedstring]
-
-  Returns: [unescapedstring]
-
-  Where:
-
-    [-option] is unescape type, currently -url only
-
 libopennds.sh
 #############
 This utility controls many of the functions required for PreAuth/ThemeSpec scripts.

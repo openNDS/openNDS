@@ -144,6 +144,20 @@ config_init(int argc, char **argv)
 	FILE *fd;
 	char *lockfile;
 
+	// Check if nodogsplash is installed. If it is, issue a warning and exit
+	libcmd = safe_calloc(STATUS_BUF);
+	msg = safe_calloc(STATUS_BUF);
+
+	safe_asprintf(&libcmd, "/usr/lib/opennds/libopennds.sh \"is_nodog\"");
+
+	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, libcmd) == 0) {
+		debug(LOG_DEBUG, "NoDogSplash is installed, to continue please uninstall it and restart openNDS, exiting.....");
+		exit (1);
+	}
+
+	free(libcmd);
+	free(msg);
+
 	// get configured debuglevel
 	memset(debug_level, 0, STATUS_BUF);
 	get_option_from_config(debug_level, STATUS_BUF, "debuglevel");
@@ -228,7 +242,7 @@ config_init(int argc, char **argv)
 		debug(LOG_ERR, "debuglevel [%u] signaled to externals - unable to set", config.debuglevel);
 	}
 
-	free(libcmd);		
+	free(libcmd);
 	free(msg);
 	//
 
@@ -245,7 +259,6 @@ config_init(int argc, char **argv)
 	sscanf(set_option_str("max_page_size", DEFAULT_MAX_PAGE_SIZE, debug_level), "%llu", &config.max_page_size);
 	sscanf(set_option_str("max_log_entries", DEFAULT_MAX_LOG_ENTRIES, debug_level), "%llu", &config.max_log_entries);
 	sscanf(set_option_str("allow_preemptive_authentication", DEFAULT_ALLOW_PREEMPTIVE_AUTHENTICATION, debug_level), "%u", &config.allow_preemptive_authentication);
-	sscanf(set_option_str("unescape_callback_enabled", DEFAULT_UNESCAPE_CALLBACK_ENABLED, debug_level), "%u", &config.unescape_callback_enabled);
 	sscanf(set_option_str("fas_secure_enabled", DEFAULT_FAS_SECURE_ENABLED, debug_level), "%u", &config.fas_secure_enabled);
 	sscanf(set_option_str("remotes_refresh_interval", DEFAULT_REMOTES_REFRESH_INTERVAL, debug_level), "%u", &config.remotes_refresh_interval);
 	sscanf(set_option_str("checkinterval", DEFAULT_CHECKINTERVAL, debug_level), "%u", &config.checkinterval);
@@ -335,6 +348,31 @@ config_init(int argc, char **argv)
 	}
 
 	debug(LOG_DEBUG, "FAS remote ip address is [ %s ]", config.fas_remoteip);
+
+	// Generate a unique faskey if not set in config
+	if (strcmp(config.fas_key, DEFAULT_FASKEY) == 0) {
+		setupcmd = safe_calloc(STATUS_BUF);
+		safe_asprintf(&setupcmd, "/usr/lib/opennds/libopennds.sh \"generate_key\"");
+		msg = safe_calloc(STATUS_BUF);
+
+		if (execute_ret_url_encoded(msg, STATUS_BUF - 1, setupcmd) == 0) {
+			config.fas_key = safe_strdup(msg);
+		}
+
+		free(setupcmd);
+		free(msg);
+
+		setupcmd = safe_calloc(STATUS_BUF);
+		safe_asprintf(&setupcmd, "/usr/lib/opennds/libopennds.sh \"set_key\" \"%s\"", config.fas_key);
+		msg = safe_calloc(STATUS_BUF);
+
+		if (execute_ret_url_encoded(msg, STATUS_BUF - 1, setupcmd) == 0) {
+			debug(LOG_NOTICE, "faskey generated");
+		}
+
+		free(setupcmd);
+		free(msg);
+	}
 
 	// Now initialize the firewall
 	if (iptables_fw_init() != 0) {
@@ -866,7 +904,7 @@ int set_debuglevel(const char opt[])
 			debug(LOG_ERR, "debuglevel [%d] signaled to externals - unable to set", level);
 		}
 
-		free(libcmd);		
+		free(libcmd);
 		free(msg);
 		return 0;
 	} else {

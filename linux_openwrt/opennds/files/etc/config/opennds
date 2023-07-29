@@ -281,22 +281,6 @@ config opennds
 	#option max_log_entries '1000'
 	###########################################################################################
 
-	# MHD Unescape callback - This is an advanced option
-	# Default 0
-	#
-	# MHD has a built in unescape function that urldecodes incoming queries from browsers
-	#
-	# This option allows an external unescape script to be enabled and replace the built in decoder
-	#
-	# The script must be named unescape.sh, be present in /usr/lib/opennds/ and be executable.
-	#
-	# A very simple standard unescape.sh script is installed by default
-	# Set to 1 to enable this option, 0 to disable
-	# default is disabled
-	#
-	#option unescape_callback_enabled '0'
-	###########################################################################################
-
 	# WebRoot
 	# Default: /etc/opennds/htdocs
 	#
@@ -622,7 +606,7 @@ config opennds
 	###########################################################################################
 
 	# Option: faskey
-	# Default: 1234567890
+	# Default: A system generated sha256 string
 	# A key phrase for NDS to encrypt the query string sent to FAS
 	# Can be any text string with no white space
 	# Hint and Example: Choose a secret string and use sha256sum utility to generate a hash.

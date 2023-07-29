@@ -83,44 +83,21 @@ void start_mhd(void)
 	s_config *config;
 	config = config_get_config();
 
-	if (config->unescape_callback_enabled == 0) {
-		debug(LOG_INFO, "MHD Unescape Callback is Disabled");
+	if ((webserver = MHD_start_daemon(
+		MHD_USE_INTERNAL_POLLING_THREAD | MHD_USE_THREAD_PER_CONNECTION | MHD_USE_TCP_FASTOPEN,
+		config->gw_port,
+		NULL,
+		NULL,
+		libmicrohttpd_cb,
+		NULL,
+		MHD_OPTION_CONNECTION_LIMIT, (unsigned int) 100,
+		MHD_OPTION_CONNECTION_TIMEOUT, (unsigned int) 10,
+		MHD_OPTION_PER_IP_CONNECTION_LIMIT, (unsigned int) 10,
+		MHD_OPTION_END)) == NULL) {
 
-		if ((webserver = MHD_start_daemon(
-			MHD_USE_INTERNAL_POLLING_THREAD | MHD_USE_THREAD_PER_CONNECTION | MHD_USE_TCP_FASTOPEN,
-			config->gw_port,
-			NULL,
-			NULL,
-			libmicrohttpd_cb,
-			NULL,
-			MHD_OPTION_CONNECTION_LIMIT, (unsigned int) 100,
-			MHD_OPTION_CONNECTION_TIMEOUT, (unsigned int) 10,
-			MHD_OPTION_PER_IP_CONNECTION_LIMIT, (unsigned int) 10,
-			MHD_OPTION_END)) == NULL)
-		{
-			debug(LOG_ERR, "Could not create web server: %s", strerror(errno));
-			exit(1);
-		}
-	} else {
-		debug(LOG_NOTICE, "MHD Unescape Callback is Enabled");
+		debug(LOG_ERR, "Could not create web server: %s", strerror(errno));
+		exit(1);
 
-		if ((webserver = MHD_start_daemon(
-			MHD_USE_INTERNAL_POLLING_THREAD | MHD_USE_THREAD_PER_CONNECTION | MHD_USE_TCP_FASTOPEN,
-			config->gw_port,
-			NULL,
-			NULL,
-			libmicrohttpd_cb,
-			NULL,
-			MHD_OPTION_CONNECTION_LIMIT, (unsigned int) 100,
-			MHD_OPTION_CONNECTION_TIMEOUT, (unsigned int) 10,
-			MHD_OPTION_PER_IP_CONNECTION_LIMIT, (unsigned int) 10,
-			MHD_OPTION_UNESCAPE_CALLBACK, unescape, NULL,
-			MHD_OPTION_END)
-			) == NULL)
-		{
-			debug(LOG_ERR, "Could not create web server: %s", strerror(errno));
-			exit(1);
-		}
 	}
 
 	debug(LOG_INFO, "MHD Handle [%lu]", webserver);
@@ -167,6 +144,10 @@ static int do_binauth(
 	// Get the client user agent
 	user_agent = safe_calloc(USER_AGENT);
 	MHD_get_connection_values(connection, MHD_HEADER_KIND, get_user_agent_callback, &user_agent);
+
+	if (user_agent == NULL) {
+		return send_error(connection, 403);
+	}
 
 	debug(LOG_DEBUG, "BinAuth: User Agent is [ %s ]", user_agent);
 
@@ -545,6 +526,11 @@ static int try_to_authenticate(struct MHD_Connection *connection, t_client *clie
 	// Check for authdir
 	if (check_authdir_match(url, config->authdir)) {
 		tok = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "tok");
+
+		if (tok == NULL) {
+			return send_error(connection, 403);
+		}
+
 		debug(LOG_DEBUG, "client->token=%s tok=%s ", client->token, tok );
 
 		//Check if token (tok) or hash_id (hid) mode
@@ -636,6 +622,9 @@ static int authenticate_client(struct MHD_Connection *connection,
 	// get custom string
 	custom = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "custom");
 
+	if (!custom || strlen(custom) == 0) {
+		custom="bmE=";
+	}
 
 	if (config->binauth) {
 		rc = do_binauth(
@@ -999,6 +988,10 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 
 		MHD_get_connection_values(connection, MHD_HEADER_KIND, get_user_agent_callback, &user_agent);
 
+		if (user_agent == NULL) {
+			return send_error(connection, 403);
+		}
+
 		uh_urlencode(enc_user_agent, ENC_USER_AGENT, user_agent, strlen(user_agent));
 		debug(LOG_DEBUG, "PreAuth: Encoded User Agent is [ %s ]", enc_user_agent);
 
@@ -1238,6 +1231,10 @@ static int preauthenticated(struct MHD_Connection *connection, const char *url, 
 
 		redirect_url = safe_calloc(REDIRECT_URL);
 		redirect_url = get_redirect_url(connection);
+
+		if (redirect_url == NULL) {
+			return send_error(connection, 403);
+		}
 
 		if (!try_to_authenticate(connection, client, host, url)) {
 			// user used an invalid token, redirect to splashpage but hold query "redir" intact
@@ -2124,26 +2121,3 @@ static int serve_file(struct MHD_Connection *connection, t_client *client, const
 	return ret;
 }
 
-size_t unescape(void * cls, struct MHD_Connection *c, char *src)
-{
-	char *unescapecmd;
-	char *msg;
-
-	debug(LOG_DEBUG, "Escaped string=%s\n", src);
-
-	unescapecmd = safe_calloc(QUERYMAXLEN);
-	msg = safe_calloc(QUERYMAXLEN);
-
-	snprintf(unescapecmd, QUERYMAXLEN, "/usr/lib/opennds/unescape.sh -url \"%s\"", src);
-	debug(LOG_DEBUG, "unescapecmd=%s\n", unescapecmd);
-
-	if (execute_ret_url_encoded(msg, sizeof(msg) - 1, unescapecmd) == 0) {
-		debug(LOG_DEBUG, "Unescaped string=%s\n", msg);
-		strcpy(src, msg);
-	}
-
-	free(unescapecmd);
-	free(msg);
-
-	return strlen(src);
-}

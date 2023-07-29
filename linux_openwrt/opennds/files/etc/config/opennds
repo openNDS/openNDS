@@ -606,7 +606,7 @@ config opennds
 	###########################################################################################
 
 	# Option: faskey
-	# Default: 1234567890
+	# Default: A system generated sha256 string
 	# A key phrase for NDS to encrypt the query string sent to FAS
 	# Can be any text string with no white space
 	# Hint and Example: Choose a secret string and use sha256sum utility to generate a hash.

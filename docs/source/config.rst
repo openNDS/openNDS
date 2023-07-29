@@ -900,15 +900,19 @@ In the following examples, replace with your own values for faspath:
 Set the Faskey
 **************
 
-Default: 1234567890
+Default: A system generated sha256 string
 
 A key phrase for NDS to encrypt the query string sent to FAS.
 
 Can be any text string with no white space.
 
+Hint and Example: Choose a secret string and use sha256sum utility to generate a hash.
+
+eg. Use the command - `echo "mysecretopenNDSfaskey" | sha256sum`
+
 Option faskey must be pre-shared with FAS. (It is automatically pre-shared with Themespec files)
 
-``option faskey 'mysecretopenNDSfaskey'``
+``option faskey '328411b33fe55127421fa394995711658526ed47d0affad3fe56a0b3930c8689'``
 
 Set Security Level: fas_secure_enabled
 **************************************

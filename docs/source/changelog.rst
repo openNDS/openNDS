@@ -1,6 +1,18 @@
 What's New? - ChangeLog
 #######################
 
+opennds (10.1.2)
+  * Security Advisory. This version contains fixes for multiple potential security vulnerabilities
+  * Credit - Stanislav Dashevskyi - standash.github.io [standash]
+  * It also contains some minor bug fixes
+  * Fix - Generate unique sha256 faskey if not set in config - CVE-2023-38324 [bluewavenet]
+  * Fix - NULL pointer dereference if user_agent is NULL - CVE-2023-38320, CVE-2023-38322 [bluewavenet]
+  * Fix - NULL pointer dereference if authdir is called with an incomplete or missing query string - CVE-2023-38313, CVE-2023-38314, CVE-2023-38315 [bluewavenet]
+  * Fix - remove deprecated and non-functioning unescape callback - CVE-2023-38316 [bluewavenet]
+  * Fix - prevent potential recursive dependency and detect if conflicting package is installed [bluewavenet]
+
+ -- Rob White <dot@blue-wave.net>  Sat, 29 Jul 2023 10:04:52 +0000
+
 opennds (10.1.1)
 
 This version contains some minor bug fixes and documentation updates

@@ -143,6 +143,7 @@ static int do_binauth(
 
 	// Get the client user agent
 	user_agent = safe_calloc(USER_AGENT);
+
 	MHD_get_connection_values(connection, MHD_HEADER_KIND, get_user_agent_callback, &user_agent);
 
 	if (user_agent == NULL) {
@@ -153,6 +154,7 @@ static int do_binauth(
 
 	// Get custom data string as passed in the query string
 	custom = safe_calloc(CUSTOM);
+
 	custom = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "custom");
 
 	if (!custom || strlen(custom) == 0) {
@@ -977,69 +979,76 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 	int ret;
 	struct MHD_Response *response;
 
-	preauthpath = safe_calloc(SMALL_BUF);
-	safe_asprintf(&preauthpath, "/%s/", config->preauthdir);
+	if ( strlen(query) < 1 ) {
+		// query string is blank, too long or corrupt
+		return send_error(connection, 511);
+	} else {	
+		preauthpath = safe_calloc(SMALL_BUF);
+		safe_asprintf(&preauthpath, "/%s/", config->preauthdir);
 
-	if (strcmp(preauthpath, config->fas_path) == 0) {
-		free (preauthpath);
+		if (strcmp(preauthpath, config->fas_path) == 0) {
+			free (preauthpath);
 
-		user_agent = safe_calloc(USER_AGENT);
-		enc_user_agent = safe_calloc(ENC_USER_AGENT);
+			user_agent = safe_calloc(USER_AGENT);
+			debug(LOG_DEBUG, "PreAuth: User Agent ptr is [ %d ]", &user_agent);
+			enc_user_agent = safe_calloc(ENC_USER_AGENT);
 
-		MHD_get_connection_values(connection, MHD_HEADER_KIND, get_user_agent_callback, &user_agent);
+			MHD_get_connection_values(connection, MHD_HEADER_KIND, get_user_agent_callback, &user_agent);
+			debug(LOG_DEBUG, "PreAuth: MHD User Agent ptr is [ %d ]", &user_agent);
 
-		if (user_agent == NULL) {
-			return send_error(connection, 403);
-		}
+			if (user_agent == NULL) {
+				return send_error(connection, 403);
+			}
 
-		uh_urlencode(enc_user_agent, ENC_USER_AGENT, user_agent, strlen(user_agent));
-		debug(LOG_DEBUG, "PreAuth: Encoded User Agent is [ %s ]", enc_user_agent);
+			uh_urlencode(enc_user_agent, ENC_USER_AGENT, user_agent, strlen(user_agent));
+			debug(LOG_DEBUG, "PreAuth: Encoded User Agent is [ %s ]", enc_user_agent);
 
-		enc_query = safe_calloc(ENC_QUERYSTR);
-		uh_urlencode(enc_query, ENC_QUERYSTR, query, strlen(query));
-		debug(LOG_DEBUG, "PreAuth: Encoded query: %s", enc_query);
+			enc_query = safe_calloc(ENC_QUERYSTR);
+			uh_urlencode(enc_query, ENC_QUERYSTR, query, strlen(query));
+			debug(LOG_DEBUG, "PreAuth: Encoded query: %s", enc_query);
 
-		msg = safe_calloc(HTMLMAXSIZE);
+			msg = safe_calloc(HTMLMAXSIZE);
 
-		if (!msg) {
-			ret = send_error(connection, 503);
-			free(msg);
+			if (!msg) {
+				ret = send_error(connection, 503);
+				free(msg);
+				free(enc_user_agent);
+				free(enc_query);
+				return ret;
+			}
+
+			cmd = safe_calloc(QUERYMAXLEN);
+			safe_asprintf(&cmd, "%s '%s' '%s' '%d' '%s'", config->preauth, enc_query, enc_user_agent, config->login_option_enabled, config->themespec_path);
+			rc = execute_ret_url_encoded(msg, HTMLMAXSIZE - 1, cmd);
+			free(cmd);
+
+			if (rc != 0) {
+				debug(LOG_WARNING, "Preauth script - failed to execute: %s, Query[%s]", config->preauth, query);
+				free(msg);
+				free(enc_user_agent);
+				free(enc_query);
+
+				return send_error(connection, 511);
+			}
+
+			// serve the script output (in msg)
+			response = MHD_create_response_from_buffer(strlen(msg), (char *)msg, MHD_RESPMEM_MUST_FREE);
+
+			if (!response) {
+				return send_error(connection, 503);
+			}
+
+			MHD_add_response_header(response, "Content-Type", "text/html; charset=utf-8");
+			ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
+			MHD_destroy_response(response);
+
 			free(enc_user_agent);
 			free(enc_query);
 			return ret;
+		} else {
+			free (preauthpath);
+			return send_error(connection, 404);
 		}
-
-		cmd = safe_calloc(QUERYMAXLEN);
-		safe_asprintf(&cmd, "%s '%s' '%s' '%d' '%s'", config->preauth, enc_query, enc_user_agent, config->login_option_enabled, config->themespec_path);
-		rc = execute_ret_url_encoded(msg, HTMLMAXSIZE - 1, cmd);
-		free(cmd);
-
-		if (rc != 0) {
-			debug(LOG_WARNING, "Preauth script - failed to execute: %s, Query[%s]", config->preauth, query);
-			free(msg);
-			free(enc_user_agent);
-			free(enc_query);
-
-			return send_error(connection, 511);
-		}
-
-		// serve the script output (in msg)
-		response = MHD_create_response_from_buffer(strlen(msg), (char *)msg, MHD_RESPMEM_MUST_FREE);
-
-		if (!response) {
-			return send_error(connection, 503);
-		}
-
-		MHD_add_response_header(response, "Content-Type", "text/html; charset=utf-8");
-		ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
-		MHD_destroy_response(response);
-
-		free(enc_user_agent);
-		free(enc_query);
-		return ret;
-	} else {
-		free (preauthpath);
-		return send_error(connection, 404);
 	}
 }
 
@@ -1230,6 +1239,7 @@ static int preauthenticated(struct MHD_Connection *connection, const char *url, 
 		debug(LOG_DEBUG, "authdir url detected: %s", url);
 
 		redirect_url = safe_calloc(REDIRECT_URL);
+
 		redirect_url = get_redirect_url(connection);
 
 		if (redirect_url == NULL) {
@@ -1740,7 +1750,7 @@ static int get_query(struct MHD_Connection *connection, char **query, const char
 	char *query_str;
 	struct collect_query collect_query;
 	int i;
-	int j;
+	int j = 4;
 	int length = 0;
 
 	debug(LOG_DEBUG, " Getting query, separator is [%s].", separator);
@@ -1767,6 +1777,8 @@ static int get_query(struct MHD_Connection *connection, char **query, const char
 
 		if (i > 0) // q=foo&o=bar the '&' need also some space
 			length++;
+
+		debug(LOG_DEBUG, " cumulative element length is [%d]", length);
 	}
 
 	// don't miss the zero terminator
@@ -1787,21 +1799,22 @@ static int get_query(struct MHD_Connection *connection, char **query, const char
 
 		debug(LOG_DEBUG, " element [%d] is [%s]", i, elements[i]);
 
-		strncpy(*query + j, elements[i], length - j);
-		if (i == 0) {
-			// query_str is empty when i = 0 so safe to copy a single char into it
-			strcpy(query_str, "?");
-		} else {
-			if (QUERYMAXLEN - strlen(query_str) > length - j + 1) {
-				strncat(query_str, separator, QUERYMAXLEN - strlen(query_str));
-			}
-		}
+		if (length + j < QUERYMAXLEN) {
 
-		// note: query string will be truncated if too long
-		if (QUERYMAXLEN - strlen(query_str) > length - j) {
+			strncpy(*query + j, elements[i], length - j);
+
+			if (i == 0) {
+				// query_str is empty when i = 0 so safe to copy a single char into it
+				strcpy(query_str, "?");
+			} else {
+				if (QUERYMAXLEN - strlen(query_str) > length - j + 1) {
+					strncat(query_str, separator, QUERYMAXLEN - strlen(query_str));
+				}
+			}
+
 			strncat(query_str, *query, QUERYMAXLEN - strlen(query_str));
 		} else {
-			debug(LOG_WARNING, " Query string exceeds the maximum of %d bytes so has been truncated.", QUERYMAXLEN/2);
+			debug(LOG_WARNING, " Query string is too long, invalid or corrupt so is ignored.");
 		}
 
 		free(elements[i]);

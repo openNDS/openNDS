@@ -72,6 +72,25 @@ char * safe_strdup(const char s[])
 	return (retval);
 }
 
+int safe_snprintf(char *strp, size_t size, const char *fmt, ...)
+{
+	va_list ap;
+	int retval;
+
+	va_start(ap, fmt);
+	retval = vsnprintf(strp, size, fmt, ap);
+	va_end(ap);
+
+	debug(LOG_DEBUG, "safe_snprintf: [ %d ]", retval);
+
+	if (retval < 1) {
+		debug(LOG_CRIT, "safe_snprintf: Failed");
+		return (retval);
+	}
+
+	return (retval);
+}
+
 int safe_asprintf(char **strp, const char *fmt, ...)
 {
 	va_list ap;

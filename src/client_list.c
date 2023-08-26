@@ -168,7 +168,7 @@ void client_reset(t_client *client)
 	// Reset token and hid
 	hash = safe_calloc(STATUS_BUF);
 	client->token = safe_calloc(STATUS_BUF);
-	safe_asprintf(&client->token, "%04hx%04hx", rand16(), rand16());
+	safe_snprintf(client->token, STATUS_BUF, "%04hx%04hx", rand16(), rand16());
 	hash_str(hash, STATUS_BUF, client->token);
 	client->hid = safe_strdup(hash);
 	free(hash);
@@ -183,7 +183,7 @@ void client_reset(t_client *client)
 		if (strlen(client->cid) > 0) {
 			msg = safe_calloc(SMALL_BUF);
 			cidinfo = safe_calloc(MID_BUF);
-			safe_asprintf(&cidinfo, "cid=\"%s\"", client->cid);
+			safe_snprintf(cidinfo, MID_BUF, "cid=\"%s\"", client->cid);
 			write_client_info(msg, SMALL_BUF, "rmcid", client->cid, cidinfo);
 			free(msg);
 			free(cidinfo);
@@ -223,7 +223,7 @@ client_list_add_client(const char mac[], const char ip[])
 
 	// check if client ip was allocated by dhcp
 	libcmd = safe_calloc(SMALL_BUF);
-	safe_asprintf(&libcmd, "/usr/lib/opennds/libopennds.sh dhcpcheck \"%s\"", ip);
+	safe_snprintf(libcmd, SMALL_BUF, "/usr/lib/opennds/libopennds.sh dhcpcheck \"%s\"", ip);
 	msg = safe_calloc(SMALL_BUF);
 	rc = execute_ret_url_encoded(msg, SMALL_BUF, libcmd);
 	free(libcmd);
@@ -373,7 +373,7 @@ client_list_find_by_token(const char token[])
 		if (strlen(token) > 8) {
 			// hid mode
 			rhidraw = safe_calloc(SMALL_BUF);
-			safe_asprintf(&rhidraw, "%s%s", ptr->hid, config->fas_key);
+			safe_snprintf(rhidraw, SMALL_BUF, "%s%s", ptr->hid, config->fas_key);
 
 			rhid = safe_calloc(SMALL_BUF);
 			hash_str(rhid, SMALL_BUF, rhidraw);
@@ -421,7 +421,7 @@ _client_list_free_node(t_client *client)
 		if (strlen(client->cid) > 0) {
 			msg = safe_calloc(SMALL_BUF);
 			cidinfo = safe_calloc(MID_BUF);
-			safe_asprintf(&cidinfo, "cid=\"%s\"", client->cid);
+			safe_snprintf(cidinfo, MID_BUF, "cid=\"%s\"", client->cid);
 			write_client_info(msg, SMALL_BUF, "rmcid", client->cid, cidinfo);
 			free(msg);
 			free(cidinfo);

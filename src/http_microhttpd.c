@@ -66,7 +66,6 @@ static int send_redirect_temp(struct MHD_Connection *connection, t_client *clien
 static int is_foreign_hosts(struct MHD_Connection *connection, const char *host);
 static int get_query(struct MHD_Connection *connection, char **collect_query, const char *separator);
 static char *construct_querystring(struct MHD_Connection *connection, t_client *client, char *originurl, char *querystr);
-static const char *get_redirect_url(struct MHD_Connection *connection);
 static const char *lookup_mimetype(const char *filename);
 
 struct MHD_Daemon * webserver = NULL;
@@ -178,7 +177,7 @@ static int do_binauth(
 
 	// Note: username, password and user_agent may contain spaces so argument should be quoted
 	argv = safe_calloc(REDIRECT_URL_ENC_BUF + CUSTOM_ENC);
-	safe_asprintf(&argv,"%s auth_client '%s' '%s' '%s' '%s' '%s' '%s'",
+	safe_snprintf(argv, REDIRECT_URL_ENC_BUF + CUSTOM_ENC, "%s auth_client '%s' '%s' '%s' '%s' '%s' '%s'",
 		binauth,
 		client->mac,
 		redirect_url_enc_buf,
@@ -443,7 +442,7 @@ enum MHD_Result libmicrohttpd_cb(
 
 	// check if client ip is on our subnet
 	testcmd = safe_calloc(SMALL_BUF);
-	safe_asprintf(&testcmd, "/usr/lib/opennds/libopennds.sh get_interface_by_ip \"%s\"", ip);
+	safe_snprintf(testcmd, SMALL_BUF, "/usr/lib/opennds/libopennds.sh get_interface_by_ip \"%s\"", ip);
 	msg = safe_calloc(SMALL_BUF);
 	rc = execute_ret_url_encoded(msg, SMALL_BUF, testcmd);
 	free(testcmd);
@@ -539,7 +538,7 @@ static int try_to_authenticate(struct MHD_Connection *connection, t_client *clie
 		if (strlen(tok) > 8) {
 			// hid mode
 			rhidraw = safe_calloc(SMALL_BUF);
-			safe_asprintf(&rhidraw, "%s%s", client->hid, config->fas_key);
+			safe_snprintf(rhidraw, SMALL_BUF, "%s%s", client->hid, config->fas_key);
 			rhid = safe_calloc(STATUS_BUF);
 			hash_str(rhid, STATUS_BUF, rhidraw);
 			free (rhidraw);
@@ -772,12 +771,12 @@ static int authenticated(struct MHD_Connection *connection,
 		captive_json = safe_calloc(SMALL_BUF);
 
 		if (strcmp(config->gw_fqdn, "disable") == 0 || strcmp(config->gw_fqdn, "disabled") == 0) {
-			safe_asprintf(&originurl_raw, "http://%s", config->gw_ip);
+			safe_snprintf(originurl_raw, SMALL_BUF, "http://%s", config->gw_ip);
 		} else {
-			safe_asprintf(&originurl_raw, "http://%s", config->gw_fqdn);
+			safe_snprintf(originurl_raw, SMALL_BUF, "http://%s", config->gw_fqdn);
 		}
 
-		safe_asprintf(&captive_json,
+		safe_snprintf(captive_json, SMALL_BUF,
 			"{ \"captive\": false, \"user-portal-url\": \"%s\", \"venue-info-url\": \"%s\", \"can-extend-session\": false }",
 			originurl_raw,
 			originurl_raw
@@ -856,7 +855,7 @@ static int authenticated(struct MHD_Connection *connection,
 			return ret;
 		} else if (config->fas_port && config->preauth) {
 			fasurl = safe_calloc(QUERYMAXLEN);
-			safe_asprintf(&fasurl, "?clientip=%s%sgatewayname=%s%sgatewayaddress=%s%sclientif=%s%sstatus=authenticated",
+			safe_snprintf(fasurl, QUERYMAXLEN, "?clientip=%s%sgatewayname=%s%sgatewayaddress=%s%sclientif=%s%sstatus=authenticated",
 				client->ip,
 				QUERYSEPARATOR,
 				config->url_encoded_gw_name,
@@ -984,17 +983,17 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 		return send_error(connection, 511);
 	} else {	
 		preauthpath = safe_calloc(SMALL_BUF);
-		safe_asprintf(&preauthpath, "/%s/", config->preauthdir);
+		safe_snprintf(preauthpath, SMALL_BUF, "/%s/", config->preauthdir);
 
 		if (strcmp(preauthpath, config->fas_path) == 0) {
 			free (preauthpath);
 
 			user_agent = safe_calloc(USER_AGENT);
-			debug(LOG_DEBUG, "PreAuth: User Agent ptr is [ %d ]", &user_agent);
+			debug(LOG_DEBUG, "PreAuth: User Agent ptr is [ %llu ]", &user_agent);
 			enc_user_agent = safe_calloc(ENC_USER_AGENT);
 
 			MHD_get_connection_values(connection, MHD_HEADER_KIND, get_user_agent_callback, &user_agent);
-			debug(LOG_DEBUG, "PreAuth: MHD User Agent ptr is [ %d ]", &user_agent);
+			debug(LOG_DEBUG, "PreAuth: MHD User Agent ptr is [ %llu ]", &user_agent);
 
 			if (user_agent == NULL) {
 				return send_error(connection, 403);
@@ -1018,7 +1017,7 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 			}
 
 			cmd = safe_calloc(QUERYMAXLEN);
-			safe_asprintf(&cmd, "%s '%s' '%s' '%d' '%s'", config->preauth, enc_query, enc_user_agent, config->login_option_enabled, config->themespec_path);
+			safe_snprintf(cmd, QUERYMAXLEN, "%s '%s' '%s' '%d' '%s'", config->preauth, enc_query, enc_user_agent, config->login_option_enabled, config->themespec_path);
 			rc = execute_ret_url_encoded(msg, HTMLMAXSIZE - 1, cmd);
 			free(cmd);
 
@@ -1141,9 +1140,9 @@ static int preauthenticated(struct MHD_Connection *connection, const char *url, 
 		originurl_raw = safe_calloc(REDIRECT_URL);
 
 		if (strcmp(config->gw_fqdn, "disable") == 0 || strcmp(config->gw_fqdn, "disabled") == 0) {
-			safe_asprintf(&originurl_raw, "http://%s", config->gw_ip);
+			safe_snprintf(originurl_raw, REDIRECT_URL, "http://%s", config->gw_ip);
 		} else {
-			safe_asprintf(&originurl_raw, "http://%s", config->gw_fqdn);
+			safe_snprintf(originurl_raw, REDIRECT_URL, "http://%s", config->gw_fqdn);
 		}
 
 		originurl = safe_calloc(REDIRECT_URL_ENC_BUF);
@@ -1240,7 +1239,7 @@ static int preauthenticated(struct MHD_Connection *connection, const char *url, 
 
 		redirect_url = safe_calloc(REDIRECT_URL);
 
-		redirect_url = get_redirect_url(connection);
+		redirect_url = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "redir");
 
 		if (redirect_url == NULL) {
 			return send_error(connection, 403);
@@ -1412,9 +1411,9 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 	gw_url_raw = safe_calloc(REDIRECT_URL);
 
 	if (strcmp(config->gw_fqdn, "disable") == 0 || strcmp(config->gw_fqdn, "disabled") == 0) {
-		safe_asprintf(&gw_url_raw, "http://%s", config->gw_ip);
+		safe_snprintf(gw_url_raw, REDIRECT_URL, "http://%s", config->gw_ip);
 	} else {
-		safe_asprintf(&gw_url_raw, "http://%s", config->gw_fqdn);
+		safe_snprintf(gw_url_raw, REDIRECT_URL, "http://%s", config->gw_fqdn);
 	}
 
 	gw_url = safe_calloc(REDIRECT_URL_ENC_BUF);
@@ -1483,7 +1482,7 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 					if (client->cid) {
 						cidgood = 1;
 						cidfile = safe_calloc(SMALL_BUF);
-						safe_asprintf(&cidfile, "%s/ndscids/%s", config->tmpfsmountpoint, client->cid);
+						safe_snprintf(cidfile, SMALL_BUF, "%s/ndscids/%s", config->tmpfsmountpoint, client->cid);
 
 						// Check if cidfile exists
 						if(access(cidfile, F_OK) != 0) {
@@ -1502,61 +1501,61 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 						cidinfo = safe_calloc(SMALL_BUF);
 						debug(LOG_DEBUG, "writing cid file [%s]", cid);
 
-						safe_asprintf(&cidinfo, "hid=\"%s\"\0", client->hid);
+						safe_snprintf(cidinfo, SMALL_BUF, "hid=\"%s\"\0", client->hid);
 						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
-						safe_asprintf(&cidinfo, "clientip=\"%s\"\0", client->ip);
+						safe_snprintf(cidinfo, SMALL_BUF, "clientip=\"%s\"\0", client->ip);
 						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
-						safe_asprintf(&cidinfo, "clientmac=\"%s\"\0", client->mac);
+						safe_snprintf(cidinfo, SMALL_BUF, "clientmac=\"%s\"\0", client->mac);
 						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
-						safe_asprintf(&cidinfo, "client_type=\"%s\"\0", clienttype);
+						safe_snprintf(cidinfo, SMALL_BUF, "client_type=\"%s\"\0", clienttype);
 						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
-						safe_asprintf(&cidinfo, "gatewayname=\"%s\"\0", config->http_encoded_gw_name);
+						safe_snprintf(cidinfo, SMALL_BUF, "gatewayname=\"%s\"\0", config->http_encoded_gw_name);
 						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
-						safe_asprintf(&cidinfo, "gatewayurl=\"%s\"\0", gw_url);
+						safe_snprintf(cidinfo, SMALL_BUF, "gatewayurl=\"%s\"\0", gw_url);
 						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
-						safe_asprintf(&cidinfo, "version=\"%s\"\0", VERSION);
+						safe_snprintf(cidinfo, SMALL_BUF, "version=\"%s\"\0", VERSION);
 						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
-						safe_asprintf(&cidinfo, "gatewayaddress=\"%s\"\0", config->gw_address);
+						safe_snprintf(cidinfo, SMALL_BUF, "gatewayaddress=\"%s\"\0", config->gw_address);
 						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
-						safe_asprintf(&cidinfo, "gatewaymac=\"%s\"\0", config->gw_mac);
+						safe_snprintf(cidinfo, SMALL_BUF, "gatewaymac=\"%s\"\0", config->gw_mac);
 						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
-						safe_asprintf(&cidinfo, "originurl=\"%s\"\0", originurl);
+						safe_snprintf(cidinfo, SMALL_BUF, "originurl=\"%s\"\0", originurl);
 						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
-						safe_asprintf(&cidinfo, "clientif=\"%s\"\0", clientif);
+						safe_snprintf(cidinfo, SMALL_BUF, "clientif=\"%s\"\0", clientif);
 						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
 						if (config->themespec_path) {
-							safe_asprintf(&cidinfo, "themespec=\"%s\"\0", config->themespec_path);
+							safe_snprintf(cidinfo, SMALL_BUF, "themespec=\"%s\"\0", config->themespec_path);
 							write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 						}
 
 						if (config->custom_params) {
-							safe_asprintf(&cidinfo, "%s\0", config->custom_params);
+							safe_snprintf(cidinfo, SMALL_BUF, "%s\0", config->custom_params);
 							write_client_info(msg, STATUS_BUF, "parse", cid, cidinfo);
 						}
 
 						if (config->custom_vars) {
-							safe_asprintf(&cidinfo, "%s\0", config->custom_vars);
+							safe_snprintf(cidinfo, SMALL_BUF, "%s\0", config->custom_vars);
 							write_client_info(msg, STATUS_BUF, "parse", cid, cidinfo);
 						}
 
 						if (config->custom_images) {
-							safe_asprintf(&cidinfo, "%s\0", config->custom_images);
+							safe_snprintf(cidinfo, SMALL_BUF, "%s\0", config->custom_images);
 							write_client_info(msg, STATUS_BUF, "parse", cid, cidinfo);
 						}
 
 						if (config->custom_files) {
-							safe_asprintf(&cidinfo, "%s\0", config->custom_files);
+							safe_snprintf(cidinfo, SMALL_BUF, "%s\0", config->custom_files);
 							write_client_info(msg, STATUS_BUF, "parse", cid, cidinfo);
 						}
 
@@ -1607,7 +1606,7 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 		);
 
 		phpcmd = safe_calloc(QUERYMAXLEN);
-		safe_asprintf(&phpcmd,
+		safe_snprintf(phpcmd, QUERYMAXLEN,
 			"echo '<?php \n"
 			"$key=\"%s\";\n"
 			"$string=\"%s\";\n"
@@ -1684,7 +1683,7 @@ int send_redirect_temp(struct MHD_Connection *connection, t_client *client, cons
 
 	redirect = safe_calloc(SMALL_BUF);
 
-	safe_asprintf(&redirect, "<html><head></head><body><a href='%s'>Click here to continue to<br>%s</a></body></html", url, url);
+	safe_snprintf(redirect, SMALL_BUF, "<html><head></head><body><a href='%s'>Click here to continue to<br>%s</a></body></html", url, url);
 
 	debug(LOG_DEBUG, "send_redirect_temp: MHD_create_response_from_buffer. url [%s]", url);
 	debug(LOG_DEBUG, "send_redirect_temp: Redirect to [%s]", redirect);
@@ -1727,19 +1726,6 @@ int send_redirect_temp(struct MHD_Connection *connection, t_client *client, cons
 	MHD_destroy_response(response);
 
 	return ret;
-}
-
-
-/**
- * @brief get_url_from_query
- * @param connection
- * @param redirect_url as plaintext - not url encoded
- * @param redirect_url_len
- * @return NULL or redirect url
- */
-static const char *get_redirect_url(struct MHD_Connection *connection)
-{
-	return MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "redir");
 }
 
 // save the query or empty string into **query.
@@ -1904,7 +1890,7 @@ static int send_error(struct MHD_Connection *connection, int error)
 		}
 
 		cmd = safe_calloc(SMALL_BUF);
-		safe_asprintf(&cmd, "%s err511 '%s'", config->status_path, ip);
+		safe_snprintf(cmd, SMALL_BUF, "%s err511 '%s'", config->status_path, ip);
 
 		if (execute_ret_url_encoded(page_511, HTMLMAXSIZE - 1, cmd) == 0) {
 			debug(LOG_INFO, "Network Authentication Required - page_511 html generated for [%s]", ip);

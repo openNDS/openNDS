@@ -207,7 +207,7 @@ iptables_fw_init(void)
 
 	if (config->ip6) {
 		// ip6 addresses must be in square brackets like [ffcc:e08::1]
-		safe_asprintf(&gw_ip, "[%s]", config->gw_ip); // must free
+		safe_snprintf(gw_ip, STATUS_BUF, "[%s]", config->gw_ip); // must free
 	} else {
 		gw_ip = safe_strdup(config->gw_ip);    // must free
 	}
@@ -381,7 +381,7 @@ iptables_fw_init(void)
 
 	// Restart dnsmasq
 	dnscmd = safe_calloc(STATUS_BUF);
-	safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" &");
+	safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" &");
 	debug(LOG_DEBUG, "restart command [ %s ]", dnscmd);
 	system(dnscmd);
 	debug(LOG_INFO, "Dnsmasq restarted");
@@ -485,7 +485,7 @@ iptables_download_ratelimit_enable(t_client *client, int enable)
 
 		libcommand = safe_calloc(SMALL_BUF);
 
-		safe_asprintf(&libcommand, "/usr/lib/opennds/libopennds.sh replace_client_rule nds_mangle %s accept %s \"ip daddr %s counter packets %llu bytes %llu accept\"",
+		safe_snprintf(libcommand, SMALL_BUF, "/usr/lib/opennds/libopennds.sh replace_client_rule nds_mangle %s accept %s \"ip daddr %s counter packets %llu bytes %llu accept\"",
 			CHAIN_DOWNLOAD_RATE,
 			client->ip,
 			client->ip,
@@ -507,7 +507,7 @@ iptables_download_ratelimit_enable(t_client *client, int enable)
 
 		libcommand = safe_calloc(SMALL_BUF);
 
-		safe_asprintf(&libcommand, "/usr/lib/opennds/libopennds.sh replace_client_rule nds_mangle %s accept %s \"ip daddr %s limit rate %llu/minute burst %llu packets counter packets %llu bytes %llu accept\"",
+		safe_snprintf(libcommand, SMALL_BUF, "/usr/lib/opennds/libopennds.sh replace_client_rule nds_mangle %s accept %s \"ip daddr %s limit rate %llu/minute burst %llu packets counter packets %llu bytes %llu accept\"",
 			CHAIN_DOWNLOAD_RATE,
 			client->ip,
 			client->ip,
@@ -579,7 +579,7 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 
 		libcommand = safe_calloc(SMALL_BUF);
 
-		safe_asprintf(&libcommand, "/usr/lib/opennds/libopennds.sh replace_client_rule nds_filter %s return %s \"ip saddr %s counter packets %llu bytes %llu return\"",
+		safe_snprintf(libcommand, SMALL_BUF, "/usr/lib/opennds/libopennds.sh replace_client_rule nds_filter %s return %s \"ip saddr %s counter packets %llu bytes %llu return\"",
 			CHAIN_UPLOAD_RATE,
 			client->ip,
 			client->ip,
@@ -599,7 +599,7 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 		// Update limiting rule set for this client
 		libcommand = safe_calloc(SMALL_BUF);
 
-		safe_asprintf(&libcommand, "/usr/lib/opennds/libopennds.sh replace_client_rule nds_filter %s return %s \"ip saddr %s limit rate %llu/minute burst %llu packets counter packets %llu bytes %llu return\"",
+		safe_snprintf(libcommand, SMALL_BUF, "/usr/lib/opennds/libopennds.sh replace_client_rule nds_filter %s return %s \"ip saddr %s limit rate %llu/minute burst %llu packets counter packets %llu bytes %llu return\"",
 			CHAIN_UPLOAD_RATE,
 			client->ip,
 			client->ip,

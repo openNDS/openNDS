@@ -18,6 +18,7 @@ generate_splash_sequence() {
 
 header() {
 # Define a common header html for every page served
+	gatewayurl=$(printf "${gatewayurl//%/\\x}")
 	echo "<!DOCTYPE html>
 		<html>
 		<head>

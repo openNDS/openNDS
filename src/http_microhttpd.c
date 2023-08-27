@@ -1034,6 +1034,10 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 			response = MHD_create_response_from_buffer(strlen(msg), (char *)msg, MHD_RESPMEM_MUST_FREE);
 
 			if (!response) {
+				free(msg);
+				free(enc_user_agent);
+				free(enc_query);
+
 				return send_error(connection, 503);
 			}
 
@@ -1041,6 +1045,7 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 			ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
 			MHD_destroy_response(response);
 
+			// MHD will free(msg) when it has finished with it ( ie MHD_RESPMEM_MUST_FREE). Do not free here or MHD will page fault.
 			free(enc_user_agent);
 			free(enc_query);
 			return ret;

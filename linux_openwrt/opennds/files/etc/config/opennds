@@ -680,15 +680,6 @@ config opennds
 	#option nat_traversal_poll_interval '2'
 	###########################################################################################
 
-	# PreAuth
-	# Default Not set, or automatically set by "option login_option_enabled"
-	# PreAuth support allows FAS to call a local program or script with html served by the built in NDS web server
-	# If the option is set, it points to a program/script that is called by the NDS FAS handler
-	# All other FAS settings will be overidden.
-	#
-	#option preauth '/path/to/myscript/myscript.sh'
-	###########################################################################################
-
 	# Block Access For Authenticated Users (block):
 	# Default: None
 	#

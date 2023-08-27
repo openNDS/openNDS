@@ -811,7 +811,7 @@ static int authenticated(struct MHD_Connection *connection,
 			return ret;
 		}
 
-		safe_asprintf(&redirect_to_us, "http://%s/", config->gw_address);
+		safe_snprintf(redirect_to_us, QUERYMAXLEN, "http://%s/", config->gw_address);
 
 		ret = send_redirect_temp(connection, client, redirect_to_us);
 		free (redirect_to_us);
@@ -841,7 +841,7 @@ static int authenticated(struct MHD_Connection *connection,
 
 			get_query(connection, &query, HTMLQUERYSEPARATOR);
 
-			safe_asprintf(&fasurl, "%s%s%sstatus=authenticated",
+			safe_snprintf(fasurl, QUERYMAXLEN, "%s%s%sstatus=authenticated",
 				config->fas_url,
 				query,
 				HTMLQUERYSEPARATOR
@@ -888,7 +888,7 @@ static int authenticated(struct MHD_Connection *connection,
 
 			get_query(connection, &query, QUERYSEPARATOR);
 
-			safe_asprintf(&fasurl, "%s%sstatus=authenticated",
+			safe_snprintf(fasurl, QUERYMAXLEN, "%s%sstatus=authenticated",
 				query,
 				QUERYSEPARATOR
 			);
@@ -1068,7 +1068,7 @@ static int send_json(struct MHD_Connection *connection, const char *json)
 		return ret;
 	}
 
-	safe_asprintf(&msg, "%s", json);
+	safe_snprintf(msg, SMALL_BUF * 2, "%s", json);
 
 	debug(LOG_DEBUG, "json string [%s],  buffer [%s]", json, msg);
 
@@ -1084,6 +1084,7 @@ static int send_json(struct MHD_Connection *connection, const char *json)
 	MHD_add_response_header(response, "Content-Type", "application/captive+json");
 	ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
 	MHD_destroy_response(response);
+	free(msg);
 	return ret;
 
 }
@@ -1174,7 +1175,7 @@ static int preauthenticated(struct MHD_Connection *connection, const char *url, 
 			return ret;
 		}
 
-		safe_asprintf(&captive_json, "{ \"captive\": true, \"user-portal-url\": \"%s%s\" }", config->fas_url, querystr);
+		safe_snprintf(captive_json, QUERYMAXLEN, "{ \"captive\": true, \"user-portal-url\": \"%s%s\" }", config->fas_url, querystr);
 
 		debug(LOG_DEBUG, "captive_json [%s]", captive_json);
 		ret = send_json(connection, captive_json);

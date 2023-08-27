@@ -315,7 +315,7 @@ setup_from_config(void)
 	debug(LOG_DEBUG, "Authentication mark: %s", config->authentication_mark);
 	free(msg);
 	free(lib_cmd);
-
+	free(mark_auth);
 
 	// Revert any uncommitted uci configs
 	safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"revert\"");

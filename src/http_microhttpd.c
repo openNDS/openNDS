@@ -1295,13 +1295,13 @@ static int encode_and_redirect_to_splashpage(struct MHD_Connection *connection, 
 		// Generate secure query string or authaction url
 		// Note: config->fas_path contains a leading / as it is the path from the FAS web root.
 		if (config->fas_secure_enabled == 0) {
-			safe_asprintf(&splashpageurl, "%s?authaction=http://%s/%s/%s",
+			safe_snprintf(splashpageurl, QUERYMAXLEN, "%s?authaction=http://%s/%s/%s",
 				config->fas_url, config->gw_address, config->authdir, querystr);
 		} else if (config->fas_secure_enabled >= 1) {
-				safe_asprintf(&splashpageurl, "%s%s",
+				safe_snprintf(splashpageurl, QUERYMAXLEN, "%s%s",
 					config->fas_url, querystr);
 		} else {
-			safe_asprintf(&splashpageurl, "%s?%s",
+			safe_snprintf(splashpageurl, QUERYMAXLEN, "%s?%s",
 				config->fas_url, querystr);
 		}
 	}

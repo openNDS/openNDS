@@ -775,6 +775,7 @@ setup_from_config(void)
 			debug(LOG_DEBUG, "authmon startup command is: %s\n", fasssl);
 
 			system(fasssl);
+			free(fasssl);
 
 			// Check authmon is running
 			safe_asprintf(&fasssl,

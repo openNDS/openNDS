@@ -383,7 +383,7 @@ ndsctl_auth(FILE *fp, char *arg)
 		debug(LOG_DEBUG, "Client is not in client list.");
 		// Build command to get client mac and ip
 		libcmd = safe_calloc(SMALL_BUF);
-		safe_asprintf(&libcmd, "/usr/lib/opennds/libopennds.sh clientaddress \"%s\"", arg2 );
+		safe_snprintf(libcmd, SMALL_BUF, "/usr/lib/opennds/libopennds.sh clientaddress \"%s\"", arg2 );
 
 		msg = safe_calloc(64);
 		rc = execute_ret_url_encoded(msg, 64 - 1, libcmd);

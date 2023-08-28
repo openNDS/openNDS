@@ -315,7 +315,7 @@ setup_from_config(void)
 	debug(LOG_DEBUG, "Authentication mark: %s", config->authentication_mark);
 	free(msg);
 	free(lib_cmd);
-
+	free(mark_auth);
 
 	// Revert any uncommitted uci configs
 	safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"revert\"");
@@ -459,7 +459,7 @@ setup_from_config(void)
 	// For Client status Page - configure the hosts file
 	if (strcmp(config->gw_fqdn, "disable") != 0 && strcmp(config->gw_fqdn, "disabled") != 0) {
 		dnscmd = safe_calloc(STATUS_BUF);
-		safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"hostconf\" \"%s\" \"%s\"",
+		safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"hostconf\" \"%s\" \"%s\"",
 			config->gw_ip,
 			config->gw_fqdn
 		);
@@ -479,9 +479,9 @@ setup_from_config(void)
 		dnscmd = safe_calloc(STATUS_BUF);
 
 		if (strcmp(config->gw_fqdn, "disable") != 0 && strcmp(config->gw_fqdn, "disabled") != 0) {
-			safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"cpidconf\" \"%s\"", config->gw_fqdn);
+			safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"cpidconf\" \"%s\"", config->gw_fqdn);
 		} else {
-			safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"cpidconf\" \"%s\"", config->gw_address);
+			safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"cpidconf\" \"%s\"", config->gw_address);
 		}
 		msg = safe_calloc(STATUS_BUF);
 
@@ -495,7 +495,7 @@ setup_from_config(void)
 	} else {
 		debug(LOG_DEBUG, "Disabling RFC8910 support");
 		dnscmd = safe_calloc(STATUS_BUF);
-		safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"cpidconf\"");
+		safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"cpidconf\"");
 		msg = safe_calloc(STATUS_BUF);
 
 		if (execute_ret_url_encoded(msg, STATUS_BUF - 1, dnscmd) == 0) {
@@ -529,7 +529,7 @@ setup_from_config(void)
 
 	// Restart dnsmasq
 	dnscmd = safe_calloc(STATUS_BUF);
-	safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" &");
+	safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" &");
 	debug(LOG_DEBUG, "restart command [ %s ]", dnscmd);
 	system(dnscmd);
 	debug(LOG_INFO, "Dnsmasq restarted");
@@ -726,12 +726,12 @@ setup_from_config(void)
 		fasurl = safe_calloc(SMALL_BUF);
 
 		if (strcmp(config->fas_remotefqdn, "disable") == 0 || strcmp(config->fas_remotefqdn, "disabled") == 0) {
-			safe_asprintf(&fasurl, "%s://%s:%u%s",
+			safe_snprintf(fasurl, SMALL_BUF, "%s://%s:%u%s",
 				protocol, config->fas_remoteip, config->fas_port, config->fas_path);
 			config->fas_url = safe_strdup(fasurl);
 			debug(LOG_DEBUG, "fasurl (ip) is %s\n", fasurl);
 		} else {
-			safe_asprintf(&fasurl, "%s://%s:%u%s",
+			safe_snprintf(fasurl, SMALL_BUF, "%s://%s:%u%s",
 				protocol, config->fas_remotefqdn, config->fas_port, config->fas_path);
 			config->fas_url = safe_strdup(fasurl);
 			debug(LOG_DEBUG, "fasurl (fqdn) is %s\n", fasurl);
@@ -775,6 +775,7 @@ setup_from_config(void)
 			debug(LOG_DEBUG, "authmon startup command is: %s\n", fasssl);
 
 			system(fasssl);
+			free(fasssl);
 
 			// Check authmon is running
 			safe_asprintf(&fasssl,

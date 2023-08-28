@@ -30,7 +30,7 @@
 #ifndef _CONF_H_
 #define _CONF_H_
 
-#define VERSION "10.1.3beta"
+#define VERSION "10.1.3"
 
 /*
  * Defines how many times should we try detecting the interface with the default route (in seconds).
@@ -99,7 +99,7 @@
 #define DEFAULT_AUTHENTICATION_MARK "0x00030000"
 #define DEFAULT_FW_MARK_TRUSTED "0x20000"
 #define DEFAULT_THEMESPEC_PATH ""
-#define DEFAULT_FAS_REMOTEFQDN ""
+#define DEFAULT_FAS_REMOTEFQDN "disabled"
 #define DEFAULT_FAS_REMOTEIP ""
 
 /* N.B.: default policies here must be ACCEPT, REJECT, or RETURN
@@ -265,7 +265,7 @@ typedef struct {
 	char *authentication_mark;				//@brief Padded authentication mark
 	unsigned int fw_mark_trusted;				//@brief nftables mark for trusted packets
 	int ip6;						//@brief enable IPv6
-	char *binauth;						//@brief external authentication program
+	char *binauth;						//@brief external postauthentication program
 	char *preauth;						//@brief external preauthentication program
 	int lockfd;						//@brief ndsctl lockfile file descriptor
 } s_config;

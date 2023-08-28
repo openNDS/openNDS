@@ -44,6 +44,10 @@ void * safe_malloc (size_t size);
  */
 char * safe_strdup(const char s[]);
 
+/* @brief Safe version of snprintf
+ */
+int safe_snprintf(char *strp, size_t size, const char *fmt, ...);
+
 /* @brief Safe version of asprintf
  */
 int safe_asprintf(char **strp, const char *fmt, ...);

@@ -37,6 +37,7 @@ generate_splash_sequence() {
 
 header() {
 # Define a common header html for every page served
+	gatewayurl=$(printf "${gatewayurl//%/\\x}")
 	echo "<!DOCTYPE html>
 		<html>
 		<head>
@@ -67,7 +68,7 @@ footer() {
 		<hr>
 		<div style=\"font-size:0.5em;\">
 			<br>
-			<img style=\"height:60px; width:60px; float:left;\" src=\"$gatewayurl/$imagepath\" alt=\"Splash Page: For access to the Internet.\">
+			<img style=\"height:60px; width:60px; float:left;\" src=\"$gatewayurl""$imagepath\" alt=\"Splash Page: For access to the Internet.\">
 			&copy; Portal: BlueWave Projects and Services 2015 - $year<br>
 			<br>
 			Portal Version: $version

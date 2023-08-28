@@ -123,9 +123,8 @@ int startdaemon(char *cmd, int daemonpid)
 
 	b64_encode(buff, MID_BUF, cmd, strlen(cmd));
 
-	safe_asprintf(&daemoncmd, "/usr/lib/opennds/libopennds.sh startdaemon '%s'",
-		buff
-	);
+	daemoncmd = safe_calloc(MID_BUF);
+	safe_snprintf(daemoncmd, MID_BUF, "/usr/lib/opennds/libopennds.sh startdaemon '%s'", buff);
 
 	debug(LOG_DEBUG, "startdaemon command: %s", daemoncmd);
 
@@ -168,9 +167,8 @@ int stopdaemon(int daemonpid)
 	int ret;
 
 	msg = safe_calloc(STATUS_BUF);
-	safe_asprintf(&daemoncmd, "/usr/lib/opennds/libopennds.sh stopdaemon '%d'",
-		daemonpid
-	);
+	daemoncmd = safe_calloc(MID_BUF);
+	safe_snprintf(daemoncmd, MID_BUF, "/usr/lib/opennds/libopennds.sh stopdaemon '%d'", daemonpid);
 
 	debug(LOG_DEBUG, "stopdaemon command: %s", daemoncmd);
 
@@ -211,6 +209,14 @@ void write_ndsinfo(void)
 	);
 	execute_ret_url_encoded(msg, SMALL_BUF - 1, cmd);
 
+	if (strcmp(msg, write_yes) != 0) {
+		debug(LOG_ERR, "Unable to write ndsinfo, exiting ...");
+		exit(1);
+	}
+
+	free(msg);
+	free(cmd);
+
 	msg = safe_calloc(SMALL_BUF);
 	safe_asprintf(&cmd,
 		"/usr/lib/opennds/libopennds.sh write ndsinfo '%s' 'gatewaynamehtml=\"%s\"'",
@@ -218,6 +224,14 @@ void write_ndsinfo(void)
 		config->http_encoded_gw_name
 	);
 	execute_ret_url_encoded(msg, SMALL_BUF - 1, cmd);
+
+	if (strcmp(msg, write_yes) != 0) {
+		debug(LOG_ERR, "Unable to write ndsinfo, exiting ...");
+		exit(1);
+	}
+
+	free(msg);
+	free(cmd);
 
 	msg = safe_calloc(SMALL_BUF);
 	safe_asprintf(&cmd,
@@ -227,6 +241,14 @@ void write_ndsinfo(void)
 	);
 	execute_ret_url_encoded(msg, SMALL_BUF - 1, cmd);
 
+	if (strcmp(msg, write_yes) != 0) {
+		debug(LOG_ERR, "Unable to write ndsinfo, exiting ...");
+		exit(1);
+	}
+
+	free(msg);
+	free(cmd);
+
 	msg = safe_calloc(SMALL_BUF);
 	safe_asprintf(&cmd,
 		"/usr/lib/opennds/libopennds.sh write ndsinfo '%s' 'gatewayfqdn=\"%s\"'",
@@ -234,6 +256,14 @@ void write_ndsinfo(void)
 		config->gw_fqdn
 	);
 	execute_ret_url_encoded(msg, SMALL_BUF - 1, cmd);
+
+	if (strcmp(msg, write_yes) != 0) {
+		debug(LOG_ERR, "Unable to write ndsinfo, exiting ...");
+		exit(1);
+	}
+
+	free(msg);
+	free(cmd);
 
 	msg = safe_calloc(SMALL_BUF);
 	safe_asprintf(&cmd,
@@ -421,8 +451,9 @@ int write_client_info(char* msg, int msg_len, const char *mode, const char *cid,
 	s_config *config = config_get_config();
 	cmd = safe_calloc(MID_BUF);
 	debug(LOG_DEBUG, "Client Info: %s", info);
-	safe_asprintf(&cmd, "/usr/lib/opennds/libopennds.sh '%s' '%s' '%s' '%s'", mode, cid, config->tmpfsmountpoint, info);
-		debug(LOG_DEBUG, "WriteClientInfo command: %s", cmd);
+	safe_snprintf(cmd, MID_BUF, "/usr/lib/opennds/libopennds.sh '%s' '%s' '%s' '%s'", mode, cid, config->tmpfsmountpoint, info);
+	debug(LOG_DEBUG, "WriteClientInfo command: %s", cmd);
+
 	if (execute_ret_url_encoded(msg, msg_len - 1, cmd) == 0) {
 		debug(LOG_DEBUG, "Client Info updated: %s", info);
 	} else {
@@ -445,10 +476,10 @@ int check_heartbeat()
 	char *msg;
 	int ret;
 
-	cmd = safe_calloc(STATUS_BUF);
+	cmd = safe_calloc(SMALL_BUF);
 	msg = safe_calloc(STATUS_BUF);
 
-	safe_asprintf(&cmd, "/usr/lib/opennds/libopennds.sh check_heartbeat");
+	safe_snprintf(cmd, SMALL_BUF, "/usr/lib/opennds/libopennds.sh check_heartbeat");
 
 	ret = execute_ret_url_encoded(msg, STATUS_BUF - 1, cmd);
 
@@ -461,8 +492,8 @@ int get_option_from_config(char* msg, int msg_len, const char *option)
 {
 	char *cmd;
 
-	cmd = safe_calloc(STATUS_BUF);
-	safe_asprintf(&cmd, "/usr/lib/opennds/libopennds.sh get_option_from_config '%s'", option);
+	cmd = safe_calloc(SMALL_BUF);
+	safe_snprintf(cmd, SMALL_BUF, "/usr/lib/opennds/libopennds.sh get_option_from_config '%s'", option);
 
 	if (execute_ret_url_encoded(msg, msg_len - 1, cmd) != 0) {
 		debug(LOG_INFO, "Failed to get option [%s] - retrying", option);
@@ -483,7 +514,7 @@ int get_list_from_config(char* msg, int msg_len, const char *list)
 	char *cmd;
 
 	cmd = safe_calloc(MID_BUF);
-	safe_asprintf(&cmd, "/usr/lib/opennds/libopennds.sh get_list_from_config '%s'", list);
+	safe_snprintf(cmd, MID_BUF, "/usr/lib/opennds/libopennds.sh get_list_from_config '%s'", list);
 
 	if (execute_ret_url_encoded(msg, msg_len - 1, cmd) != 0) {
 		debug(LOG_INFO, "Failed to get list [%s] - retrying", list);
@@ -501,7 +532,7 @@ int get_client_interface(char* clientif, int clientif_len, const char *climac)
 {
 	char *clifcmd;
 	clifcmd = safe_calloc(SMALL_BUF);
-	safe_asprintf(&clifcmd, "/usr/lib/opennds/get_client_interface.sh %s", climac);
+	safe_snprintf(clifcmd, SMALL_BUF, "/usr/lib/opennds/get_client_interface.sh %s", climac);
 
 	if (execute_ret_url_encoded(clientif, clientif_len - 1, clifcmd) == 0) {
 		debug(LOG_DEBUG, "Client Mac Address: %s", climac);
@@ -524,10 +555,10 @@ int get_client_interface(char* clientif, int clientif_len, const char *climac)
 int hash_str(char* hash, int hash_len, const char *src)
 {
 	char *hashcmd = NULL;
-	hashcmd = safe_calloc(SMALL_BUF);
 	s_config *config = config_get_config();
 
-	safe_asprintf(&hashcmd, "printf '%s' | %s | awk -F' ' '{printf $1}'", src, config->fas_hid);
+	hashcmd = safe_calloc(SMALL_BUF);
+	safe_snprintf(hashcmd, SMALL_BUF, "printf '%s' | %s | awk -F' ' '{printf $1}'", src, config->fas_hid);
 
 	if (execute_ret_url_encoded(hash, hash_len - 1, hashcmd) == 0) {
 		debug(LOG_DEBUG, "Source string: %s", src);

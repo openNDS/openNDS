@@ -148,7 +148,8 @@ config_init(int argc, char **argv)
 	libcmd = safe_calloc(STATUS_BUF);
 	msg = safe_calloc(STATUS_BUF);
 
-	safe_asprintf(&libcmd, "/usr/lib/opennds/libopennds.sh \"is_nodog\"");
+	safe_snprintf(libcmd, STATUS_BUF, "/usr/lib/opennds/libopennds.sh \"is_nodog\"");
+
 
 	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, libcmd) == 0) {
 		debug(LOG_DEBUG, "NoDogSplash is installed, to continue please uninstall it and restart openNDS, exiting.....");
@@ -234,7 +235,7 @@ config_init(int argc, char **argv)
 	libcmd = safe_calloc(STATUS_BUF);
 	msg = safe_calloc(STATUS_BUF);
 
-	safe_asprintf(&libcmd, "/usr/lib/opennds/libopennds.sh \"debuglevel\" \"%u\"", config.debuglevel);
+	safe_snprintf(libcmd, STATUS_BUF, "/usr/lib/opennds/libopennds.sh \"debuglevel\" \"%u\"", config.debuglevel);
 
 	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, libcmd) == 0) {
 		debug(LOG_DEBUG, "debuglevel [%u] signaled to externals - [%s] acknowledged", config.debuglevel, msg);
@@ -306,7 +307,7 @@ config_init(int argc, char **argv)
 
 	// Call the pre setup library function to create the base nttables ruleset
 	setupcmd = safe_calloc(STATUS_BUF);
-	safe_asprintf(&setupcmd, "/usr/lib/opennds/libopennds.sh \"pre_setup\"");
+	safe_snprintf(setupcmd, STATUS_BUF, "/usr/lib/opennds/libopennds.sh \"pre_setup\"");
 	msg = safe_calloc(STATUS_BUF);
 
 	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, setupcmd) == 0) {
@@ -352,7 +353,7 @@ config_init(int argc, char **argv)
 	// Generate a unique faskey if not set in config
 	if (strcmp(config.fas_key, DEFAULT_FASKEY) == 0) {
 		setupcmd = safe_calloc(STATUS_BUF);
-		safe_asprintf(&setupcmd, "/usr/lib/opennds/libopennds.sh \"generate_key\"");
+		safe_snprintf(setupcmd, STATUS_BUF, "/usr/lib/opennds/libopennds.sh \"generate_key\"");
 		msg = safe_calloc(STATUS_BUF);
 
 		if (execute_ret_url_encoded(msg, STATUS_BUF - 1, setupcmd) == 0) {
@@ -362,8 +363,8 @@ config_init(int argc, char **argv)
 		free(setupcmd);
 		free(msg);
 
-		setupcmd = safe_calloc(STATUS_BUF);
-		safe_asprintf(&setupcmd, "/usr/lib/opennds/libopennds.sh \"set_key\" \"%s\"", config.fas_key);
+		setupcmd = safe_calloc(SMALL_BUF);
+		safe_snprintf(setupcmd, SMALL_BUF, "/usr/lib/opennds/libopennds.sh \"set_key\" \"%s\"", config.fas_key);
 		msg = safe_calloc(STATUS_BUF);
 
 		if (execute_ret_url_encoded(msg, STATUS_BUF - 1, setupcmd) == 0) {
@@ -391,7 +392,7 @@ config_init(int argc, char **argv)
 	libcmd = safe_calloc(STATUS_BUF);
 	msg = safe_calloc(STATUS_BUF);
 
-	safe_asprintf(&libcmd, "/usr/lib/opennds/libopennds.sh clean");
+	safe_snprintf(libcmd, STATUS_BUF, "/usr/lib/opennds/libopennds.sh clean");
 
 	execute_ret_url_encoded(msg, STATUS_BUF, libcmd);
 	free(libcmd);
@@ -404,7 +405,7 @@ config_init(int argc, char **argv)
 
 	free(msg);
 	lockfile = safe_calloc(STATUS_BUF);
-	safe_asprintf(&lockfile, "%s/ndsctl.lock", config.tmpfsmountpoint);
+	safe_snprintf(lockfile, STATUS_BUF, "%s/ndsctl.lock", config.tmpfsmountpoint);
 
 	//Remove ndsctl lock file if it exists
 	if ((fd = fopen(lockfile, "r")) != NULL) {
@@ -891,12 +892,12 @@ int set_debuglevel(const char opt[])
 
 
 	if (level >= (int) DEBUGLEVEL_MIN && level <= (int) DEBUGLEVEL_MAX) {
-		libcmd = safe_calloc(STATUS_BUF);
 		msg = safe_calloc(STATUS_BUF);
 
 		sscanf(opt, "%u", &config.debuglevel);
 
-		safe_asprintf(&libcmd, "/usr/lib/opennds/libopennds.sh \"debuglevel\" \"%s\"", opt);
+		libcmd = safe_calloc(STATUS_BUF);
+		safe_snprintf(libcmd, STATUS_BUF, "/usr/lib/opennds/libopennds.sh \"debuglevel\" \"%s\"", opt);
 
 		if (execute_ret_url_encoded(msg, STATUS_BUF - 1, libcmd) == 0) {
 			debug(LOG_DEBUG, "debuglevel [%d] signaled to externals - [%s] acknowledged", level, msg);

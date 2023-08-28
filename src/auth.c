@@ -613,7 +613,7 @@ thread_client_timeout_check(void *arg)
 
 	// Build command to check MHD
 	testcmd = safe_calloc(STATUS_BUF);
-	safe_asprintf(&testcmd,
+	safe_snprintf(testcmd, STATUS_BUF,
 		"/usr/lib/opennds/libopennds.sh mhdcheck \"%s\"",
 		config->gw_address
 	);

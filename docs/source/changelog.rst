@@ -1,6 +1,25 @@
 What's New? - ChangeLog
 #######################
 
+opennds (10.1.3)
+  * Security Advisory. This version contains fixes for multiple potential security vulnerabilities
+  * Credit - Stanislav Dashevskyi - standash.github.io [standash]
+  * It also contains some minor bug fixes
+  * Fix - Buffer overflow causing segfault - CVE-2023-41101 [bluewavenet]
+  * Fix - Memory leaks due to passing allocated buffer into safe_asprintf() - CVE-2023-41102 [bluewavenet]
+  * Fix - Remove deprecated preauth option [bluewavenet]
+  * Fix - missing free in show_preauth_page if MHD does not respond [bluewavenet]
+  * Fix - more safe_asprintf memory leaks [bluewavenet]
+  * Fix - missing free for mark_auth [bluewavenet]
+  * Fix - memory leak after starting authmon daemon [bluewavenet]
+  * Fix - memory leak in encode_and_redirect_to_splashpage [bluewavenet]
+  * Fix - Community themespec, voucher css and logo image [bluewavenet]
+  * Fix - ThemeSpec, path to logo in page footer [bluewavenet]
+  * Fix - ensure gatewayurl is urldecoded to fix broken css and images in themespec [bluewavenet]
+  * Add - set default fas remote fqdn to disabled [bluewavenet]
+
+ -- Rob White <dot@blue-wave.net>  Sat, 28 Aug 2023 09:46:35 +0000
+
 opennds (10.1.2)
   * Security Advisory. This version contains fixes for multiple potential security vulnerabilities
   * Credit - Stanislav Dashevskyi - standash.github.io [standash]

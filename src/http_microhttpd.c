@@ -1129,6 +1129,13 @@ static int preauthenticated(struct MHD_Connection *connection, const char *url, 
 		host = config->gw_address;
 	}
 
+	// check if this is an RFC8910 login request
+	if (strcmp(url, "/login") == 0) {
+		debug(LOG_INFO, "preauthenticated: RFC8910 login request received from client at [%s] [%s]", client->ip, client->mac);
+		client->client_type = "cpi_url";
+		return redirect_to_splashpage(connection, client, host, "/login");
+	}
+
 	// Is it an RFC8908 type request? - check Accept: header
 	ret = MHD_get_connection_values(connection, MHD_HEADER_KIND, get_accept_callback, &accept);
 
@@ -1225,13 +1232,6 @@ static int preauthenticated(struct MHD_Connection *connection, const char *url, 
 	}
 
 	debug(LOG_DEBUG, "preauthenticated: Requested Host is [ %s ], url is [%s]", host, url);
-
-	// check if this is an RFC8910 login request
-	if (strcmp(url, "/login") == 0) {
-		debug(LOG_INFO, "preauthenticated: RFC8910 login request received from client at [%s] [%s]", client->ip, client->mac);
-		client->client_type = "cpi_url";
-		return redirect_to_splashpage(connection, client, host, "/");
-	}
 
 	// check if this is a redirect query with a foreign host as target
 	if (is_foreign_hosts(connection, host)) {
@@ -1381,6 +1381,14 @@ static int redirect_to_splashpage(struct MHD_Connection *connection, t_client *c
 
 	safe_asprintf(&originurl_raw, "http://%s%s%s", host, url, query);
 	uh_urlencode(originurl, CUSTOM_ENC, originurl_raw, strlen(originurl_raw));
+
+	if (strcmp(url, "/login") == 0) {
+		client->cpi_query = safe_strdup(originurl);
+		debug(LOG_DEBUG, "RFC8910 request: %s", client->cpi_query);
+	} else {
+		client->cpi_query = "none";
+	}
+
 	debug(LOG_DEBUG, "originurl_raw: %s", originurl_raw);
 	debug(LOG_DEBUG, "originurl: %s", originurl);
 
@@ -1456,11 +1464,12 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 				query_str = safe_calloc(QUERYMAXLEN);
 
 				snprintf(query_str, QUERYMAXLEN,
-					"hid=%s%sclientip=%s%sclientmac=%s%sclient_type=%s%sgatewayname=%s%sgatewayurl=%s%sversion=%s%sgatewayaddress=%s%sgatewaymac=%s%soriginurl=%s%sclientif=%s%sthemespec=%s%s%s%s%s%s",
+					"hid=%s%sclientip=%s%sclientmac=%s%sclient_type=%s%scpi_query=%s%sgatewayname=%s%sgatewayurl=%s%sversion=%s%sgatewayaddress=%s%sgatewaymac=%s%soriginurl=%s%sclientif=%s%sthemespec=%s%s%s%s%s%s",
 					client->hid, QUERYSEPARATOR,
 					client->ip, QUERYSEPARATOR,
 					client->mac, QUERYSEPARATOR,
 					clienttype, QUERYSEPARATOR,
+					client->cpi_query, QUERYSEPARATOR,
 					config->url_encoded_gw_name, QUERYSEPARATOR,
 					gw_url, QUERYSEPARATOR,
 					VERSION, QUERYSEPARATOR,
@@ -1515,6 +1524,10 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 
 						safe_snprintf(cidinfo, SMALL_BUF, "clientmac=\"%s\"\0", client->mac);
 						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
+
+						safe_snprintf(cidinfo, SMALL_BUF, "cpi_query=\"%s\"\0", client->cpi_query);
+						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
+
 
 						safe_snprintf(cidinfo, SMALL_BUF, "client_type=\"%s\"\0", clienttype);
 						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
@@ -1591,11 +1604,12 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 		get_client_interface(clientif, STATUS_BUF, client->mac);
 		debug(LOG_DEBUG, "clientif: [%s]", clientif);
 		snprintf(querystr, QUERYMAXLEN,
-			"hid=%s%sclientip=%s%sclientmac=%s%sclient_type=%s%sgatewayname=%s%sgatewayurl=%s%sversion=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s%sthemespec=%s%s%s%s%s%s",
+			"hid=%s%sclientip=%s%sclientmac=%s%sclient_type=%s%scpi_query=%s%sgatewayname=%s%sgatewayurl=%s%sversion=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s%sthemespec=%s%s%s%s%s%s",
 			client->hid, QUERYSEPARATOR,
 			client->ip, QUERYSEPARATOR,
 			client->mac, QUERYSEPARATOR,
 			clienttype, QUERYSEPARATOR,
+			client->cpi_query, QUERYSEPARATOR,
 			config->url_encoded_gw_name, QUERYSEPARATOR,
 			gw_url, QUERYSEPARATOR,
 			VERSION, QUERYSEPARATOR,

@@ -173,9 +173,13 @@ void client_reset(t_client *client)
 	client->hid = safe_strdup(hash);
 	free(hash);
 
-	// Reset custom and client_type
+	// Reset custom, client_type and cpi_query
 	client->custom = safe_calloc(MID_BUF);
 	client->client_type = safe_calloc(STATUS_BUF);
+
+	if (!client->cpi_query) {
+		client->cpi_query = safe_calloc(STATUS_BUF);
+	}
 
 	//Reset cid and remove cidfile using rmcid
 	if (client->cid) {
@@ -188,9 +192,9 @@ void client_reset(t_client *client)
 			free(msg);
 			free(cidinfo);
 		}
-
-		client->cid = safe_calloc(SMALL_BUF);
 	}
+
+	client->cid = safe_calloc(SMALL_BUF);
 
 }
 
@@ -426,6 +430,16 @@ _client_list_free_node(t_client *client)
 			free(msg);
 			free(cidinfo);
 		}
+	}
+
+	free(client->token);
+	free(client->hid);
+	free(client->custom);
+	free(client->client_type);
+	free(client->cid);
+
+	if (strcmp(client->cpi_query, "") == 0) {
+		free(client->cpi_query);
 	}
 
 	free(client);

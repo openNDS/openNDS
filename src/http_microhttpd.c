@@ -1385,8 +1385,6 @@ static int redirect_to_splashpage(struct MHD_Connection *connection, t_client *c
 	if (strcmp(url, "/login") == 0) {
 		client->cpi_query = safe_strdup(originurl);
 		debug(LOG_DEBUG, "RFC8910 request: %s", client->cpi_query);
-	} else {
-		client->cpi_query = "none";
 	}
 
 	debug(LOG_DEBUG, "originurl_raw: %s", originurl_raw);

@@ -632,6 +632,7 @@ urldecode() {
 htmlentityencode() {
 	entitylist="
 		s/\"/\&quot;/g
+		s/;/\&#59;/g
 		s/>/\&gt;/g
 		s/</\&lt;/g
 		s/%/\&#37;/g
@@ -652,6 +653,7 @@ htmlentityencode() {
 htmlentitydecode() {
 	entitylist="
 		s/\&quot;/\"/g
+		s/\&#59;/;/g
 		s/\&gt;/>/g
 		s/\&lt;/</g
 		s/\&#37;/%/g

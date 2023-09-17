@@ -104,7 +104,7 @@ if (isset($_GET['status'])) {
 #
 ####################################################################################################################################
 
-$ndsparamlist=explode(" ", "clientip clientmac client_type gatewayname gatewayurl version hid gatewayaddress gatewaymac authdir originurl clientif admin_email location");
+$ndsparamlist=explode(" ", "clientip clientmac client_type gatewayname gatewayurl version hid gatewayaddress gatewaymac authdir cpi_query originurl clientif admin_email location");
 
 if (isset($_GET['fas']) and isset($_GET['iv']))  {
 	$string=$_GET['fas'];
@@ -255,12 +255,13 @@ function write_log() {
 	$clientif=$GLOBALS["clientif"];
 	$originurl=$GLOBALS["originurl"];
 	$redir=rawurldecode($originurl);
+	$cpi_query=$GLOBALS["cpi_query"];
 	$fullname=$_GET["fullname"];
 	$email=$_GET["email"];
 
-
 	$log=date('Y-m-d H:i:s', $_SERVER['REQUEST_TIME']).
-		", $script, $gatewayname, $fullname, $email, $clientip, $clientmac, $client_type, $clientif, $user_agent, $redir\n";
+		", $script, $gatewayname, $fullname, $email, $clientip, $clientmac, $client_type, $clientif, $user_agent, $cpi_query, $redir\n";
+
 
 	if ($logpath == "") {
 		$logfile="ndslog/ndslog_log.php";

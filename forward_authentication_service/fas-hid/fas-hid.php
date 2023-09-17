@@ -80,6 +80,7 @@ if (isset($fas)) {
 		if ($name == "gatewaymac") {$gatewaymac=$value;}
 		if ($name == "authdir") {$authdir=$value;}
 		if ($name == "originurl") {$originurl=$value;}
+		if ($name == "cpi_query") {$cpi_query=$value;}
 		if ($name == "clientif") {$clientif=$value;}
 		if ($name == "admin_email") {$admin_email=$value;}
 		if ($name == "location") {$location=$value;}
@@ -213,12 +214,12 @@ function write_log() {
 	$clientif=$GLOBALS["clientif"];
 	$originurl=$GLOBALS["originurl"];
 	$redir=rawurldecode($originurl);
+	$cpi_query=$GLOBALS["cpi_query"];
 	$fullname=$_GET["fullname"];
 	$email=$_GET["email"];
 
-
 	$log=date('Y-m-d H:i:s', $_SERVER['REQUEST_TIME']).
-		", $script, $gatewayname, $fullname, $email, $clientip, $clientmac, $client_type, $clientif, $user_agent, $redir\n";
+		", $script, $gatewayname, $fullname, $email, $clientip, $clientmac, $client_type, $clientif, $user_agent, $cpi_query, $redir\n";
 
 	if ($logpath == "") {
 		$logfile="ndslog/ndslog_log.php";

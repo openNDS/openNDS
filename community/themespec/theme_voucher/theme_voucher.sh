@@ -247,6 +247,19 @@ voucher_validation() {
 voucher_form() {
 	# Define a click to Continue form
 
+	# From openNDS v10.2.0 onwards, QL code scanning is supported to pre-fill the "voucher" field in this voucher_form page.
+	#
+	# The QL code must be of the link type and be of the following form:
+	#
+	# http://[gatewayfqdn]/login?voucher=[voucher_code]
+	#
+	# where [gatewayfqdn] defaults to status.client (can be set in the config)
+	# and [voucher_code] is of course the unique voucher code for the current user
+
+	# Get the voucher code:
+
+	voucher_code=$(echo "$cpi_query" | awk -F "voucher%3d" '{printf "%s", $2}' | awk -F "%26" '{printf "%s", $1}')
+
 	echo "
 		<med-blue>
 			Welcome!
@@ -258,7 +271,7 @@ voucher_form() {
 		<form action=\"/opennds_preauth/\" method=\"get\">
 			<input type=\"hidden\" name=\"fas\" value=\"$fas\"> 
 			<input type=\"checkbox\" name=\"tos\" value=\"accepted\" required> I accept the Terms of Service<br>
-			Voucher #: <input type=\"text\" name=\"voucher\" value=\"\" required><br>
+			Voucher #: <input type=\"text\" name=\"voucher\" value=\"$voucher_code\" required><br>
 			<input type=\"submit\" value=\"Connect\" >
 		</form>
 		<br>

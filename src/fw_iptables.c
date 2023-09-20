@@ -52,10 +52,11 @@
 static int _iptables_init_marks(void);
 
 // Used to mark packets, and characterize client state.  Unmarked packets are considered 'preauthenticated'
-unsigned int FW_MARK_PREAUTHENTICATED; // @brief 0: Actually not used as a packet mark
-unsigned int FW_MARK_AUTHENTICATED;    // @brief The client is authenticated
-unsigned int FW_MARK_TRUSTED;          // @brief The client is trusted
-unsigned int FW_MARK_MASK;             // @brief nftables mask: bitwise or of the others
+unsigned int FW_MARK_PREAUTHENTICATED;	// @brief 0: Actually not used as a packet mark
+unsigned int FW_MARK_AUTHENTICATED;	// @brief The client is authenticated
+unsigned int FW_MARK_AUTH_BLOCKED;	// @brief The client is authenticated
+unsigned int FW_MARK_TRUSTED;		// @brief The client is trusted
+unsigned int FW_MARK_MASK;		// @brief nftables mask: bitwise or of the others
 
 extern pthread_mutex_t client_list_mutex;
 extern pthread_mutex_t config_mutex;
@@ -77,6 +78,8 @@ fw_connection_state_as_string(int mark)
 		return "Preauthenticated";
 	if (mark == FW_MARK_AUTHENTICATED)
 		return "Authenticated";
+	if (mark == FW_MARK_AUTH_BLOCKED)
+		return "AuthBlocked";
 	if (mark == FW_MARK_TRUSTED)
 		return "Trusted";
 	return "ERROR: unrecognized mark";
@@ -229,6 +232,7 @@ iptables_fw_init(void)
 	pt = config->trustedmaclist;
 	FW_MARK_TRUSTED = config->fw_mark_trusted;
 	FW_MARK_AUTHENTICATED = config->fw_mark_authenticated;
+	FW_MARK_AUTH_BLOCKED = config->fw_mark_auth_blocked;
 	UNLOCK_CONFIG();
 
 	// Set up packet marking methods

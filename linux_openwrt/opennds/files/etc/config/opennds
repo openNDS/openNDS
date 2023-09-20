@@ -516,7 +516,8 @@ config opennds
 	###########################################################################################
 
 	# Volume Quotas:
-	# If the client data quota exceeds the value set here, the client will be deauthenticated
+	# If the client data quota exceeds the value set here,
+	# the client will be deauthenticated or rate limited as defined by the Fair Usage Policy throttle rate.
 	# Defaults 0
 	# Integer values only
 	#
@@ -525,6 +526,18 @@ config opennds
 	#
 	#option uploadquota '0'
 	#option downloadquota '0'
+	###########################################################################################
+
+	# Fair Usage Policy Throttle Rate:
+	# If Volume quota is set, a download throttle rate can be configured
+	# Defaults 0
+	# Integer values only
+	#
+	# Values are in kB
+	# If set to 0, the client will be deauthenticated when the volume quota is exceeded
+	#
+	#option fup_upload_throttle_rate '0'
+	#option fup_download_throttle_rate '0'
 	###########################################################################################
 
 	# BinAuth facilitates POST AUTHENTICATION PROCESSING

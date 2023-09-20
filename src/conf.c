@@ -274,7 +274,10 @@ config_init(int argc, char **argv)
 	sscanf(set_option_str("upload_unrestricted_bursting", DEFAULT_UPLOAD_UNRESTRICTED_BURSTING, debug_level), "%u", &config.upload_unrestricted_bursting);
 	sscanf(set_option_str("uploadquota", DEFAULT_UPLOAD_QUOTA, debug_level), "%llu", &config.upload_quota);
 	sscanf(set_option_str("downloadquota", DEFAULT_DOWNLOAD_QUOTA, debug_level), "%llu", &config.download_quota);
+	sscanf(set_option_str("fup_upload_throttle_rate", DEFAULT_FUP_UPLOAD_THROTTLE_RATE, debug_level), "%llu", &config.fup_upload_throttle_rate);
+	sscanf(set_option_str("fup_download_throttle_rate", DEFAULT_FUP_DOWNLOAD_THROTTLE_RATE, debug_level), "%llu", &config.fup_download_throttle_rate);
 	sscanf(set_option_str("fw_mark_authenticated", DEFAULT_FW_MARK_AUTHENTICATED, debug_level), "%x", &config.fw_mark_authenticated);
+	sscanf(set_option_str("fw_mark_auth_blocked", DEFAULT_FW_MARK_AUTH_BLOCKED, debug_level), "%x", &config.fw_mark_auth_blocked);
 	sscanf(set_option_str("fw_mark_trusted", DEFAULT_FW_MARK_TRUSTED, debug_level), "%x", &config.fw_mark_trusted);
 /*
 	config.ip6 = DEFAULT_IP6;

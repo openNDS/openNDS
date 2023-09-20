@@ -92,10 +92,13 @@
 #define DEFAULT_MAX_DOWNLOAD_BUCKET_SIZE "250" // Allows control over download rate limiting packet loss at the expense of increased latency
 #define DEFAULT_UPLOAD_QUOTA "0" // 0 means no limit
 #define DEFAULT_DOWNLOAD_QUOTA "0" // 0 means no limit
+#define DEFAULT_FUP_UPLOAD_THROTTLE_RATE "0" // 0 means BLOCK the client until deauthed
+#define DEFAULT_FUP_DOWNLOAD_THROTTLE_RATE "0" // 0 means BLOCK the client until deauthed
 #define DEFAULT_UPLOAD_UNRESTRICTED_BURSTING "0" // 0 means disabled, 1 means enabled
 #define DEFAULT_DOWNLOAD_UNRESTRICTED_BURSTING "0" // 0 means disabled, 1 means enabled
 #define DEFAULT_NDSCTL_SOCK "ndsctl.sock"
 #define DEFAULT_FW_MARK_AUTHENTICATED "0x30000"
+#define DEFAULT_FW_MARK_AUTH_BLOCKED "0x30001"
 #define DEFAULT_AUTHENTICATION_MARK "0x00030000"
 #define DEFAULT_FW_MARK_TRUSTED "0x20000"
 #define DEFAULT_THEMESPEC_PATH ""
@@ -246,6 +249,8 @@ typedef struct {
 	unsigned long long int max_download_bucket_size;	//@brief control download rate limiting packet loss at the expense of increased latency
 	unsigned long long int download_quota;			//@brief Download quota, kB
 	unsigned long long int upload_quota;			//@brief Upload quota, kB
+	unsigned long long int fup_download_throttle_rate;	//@brief Fair Useage Policy Download throttle rate, kb/s, activated when quota exceeded
+	unsigned long long int fup_upload_throttle_rate;	//@brief Fair Usage Policy Upload throttle rate, kb/s, activated when quota exceeded
 	int download_unrestricted_bursting;			//@brief Enable/disable unrestriced bursting
 	int upload_unrestricted_bursting;			//@brief Enable/disable unrestriced bursting
 	int syslog_facility;					//@brief facility to use when using syslog for logging
@@ -262,6 +267,7 @@ typedef struct {
 	char *custom_images;					//@brief FAS custom image string
 	char *custom_files;					//@brief FAS custom file string
 	unsigned int fw_mark_authenticated;			//@brief nftables mark for authenticated packets
+	unsigned int fw_mark_auth_blocked;			//@brief nftables mark for auth_blocked packets
 	char *authentication_mark;				//@brief Padded authentication mark
 	unsigned int fw_mark_trusted;				//@brief nftables mark for trusted packets
 	int ip6;						//@brief enable IPv6

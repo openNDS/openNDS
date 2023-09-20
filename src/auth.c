@@ -206,17 +206,53 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 			}
 
 			binauth_action(client, reason, customdata);
+			client->fw_connection_state = new_state;
+
 		} else if (new_state == FW_MARK_TRUSTED) {
 			return -1;
 		} else {
 			return -1;
 		}
 	} else if (state == FW_MARK_AUTHENTICATED) {
+
 		if (new_state == FW_MARK_PREAUTHENTICATED) {
 			iptables_fw_deauthenticate(client);
 			binauth_action(client, reason, customdata);
 			client_reset(client);
 			client_list_delete(client);
+			client->fw_connection_state = new_state;
+
+		} else if (new_state == FW_MARK_AUTH_BLOCKED) {
+			client->window_start = now;
+			client->window_counter = config->rate_check_window;
+			client->initial_loop = 1;
+			client->counters.in_window_start = client->counters.incoming;
+			client->counters.out_window_start = client->counters.outgoing;
+
+			action = ENABLE;
+
+			// Update all the counters
+			if (-1 == iptables_fw_counters_update()) {
+				debug(LOG_ERR, "Could not get counters from firewall!");
+				return -1;
+			}
+
+			debug(LOG_DEBUG, "auth_change_state: state=%x, new state=%x ", client->fw_connection_state, new_state);
+
+			if (config->download_unrestricted_bursting == 0 && config->download_bucket_ratio > 0) {
+				iptables_download_ratelimit_enable(client, action);
+				//bit 0 is not set so toggle it to signify rate limiting is on
+				client->rate_exceeded = client->rate_exceeded^1;
+			}
+
+			if (config->upload_unrestricted_bursting == 0 && config->upload_bucket_ratio > 0) {
+				iptables_upload_ratelimit_enable(client, action);
+				//bit 1 is not set so toggle it to signify rate limiting is on
+				client->rate_exceeded = client->rate_exceeded^2;
+			}
+
+			binauth_action(client, reason, customdata);
+
 		} else if (new_state == FW_MARK_TRUSTED) {
 			return -1;
 		} else {
@@ -233,8 +269,6 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 	} else {
 		return -1;
 	}
-
-	client->fw_connection_state = new_state;
 
 	return 0;
 }
@@ -349,34 +383,80 @@ fw_refresh_client_list(void)
 			);
 
 			auth_change_state(cp1, FW_MARK_PREAUTHENTICATED, "timeout_deauth", NULL);
+			continue;
 
+		}
 
-		} else if (cp1->download_quota > 0 && cp1->download_quota <= (cp1->counters.incoming / 1024)) {
-			// Download quota reached so deauthenticate the client
+		if (cp1->download_quota > 0 && cp1->download_quota <= (cp1->counters.incoming / 1024)) {
+			// Download quota reached so deauthenticate or throttle limit the client
 
-			debug(LOG_NOTICE, "Download quota reached, deauthenticating: %s %s, connected: %lus, in: %llukB, out: %llukB",
-				cp1->ip, cp1->mac,
-				now - cp1->session_end,
-				cp1->counters.incoming / 1024,
-				cp1->counters.outgoing / 1024
-			);
+			if (config->fup_download_throttle_rate == 0) {
+				debug(LOG_NOTICE, "Download quota exceeded, deauthenticating: %s %s, connected: %lus, in: %llukB, out: %llukB",
+					cp1->ip,
+					cp1->mac,
+					now - cp1->session_end,
+					cp1->counters.incoming / 1024,
+					cp1->counters.outgoing / 1024
+				);
 
-			auth_change_state(cp1, FW_MARK_PREAUTHENTICATED, "downquota_deauth", NULL);
+				auth_change_state(cp1, FW_MARK_PREAUTHENTICATED, "download_quota_deauth", NULL);
+				continue;
 
-		} else if (cp1->upload_quota > 0 && cp1->upload_quota <= (cp1->counters.outgoing / 1024)) {
-			// Upload quota reached so deauthenticate the client
+			} else {
 
-			debug(LOG_NOTICE, "Upload quota reached, deauthenticating: %s %s, connected: %lus, in: %llukB, out: %llukB",
-				cp1->ip,
-				cp1->mac,
-				now - cp1->session_end,
-				cp1->counters.incoming / 1024,
-				cp1->counters.outgoing / 1024
-			);
+				if (cp1->download_rate != config->fup_download_throttle_rate) {
+					debug(LOG_NOTICE, "Download quota exceeded, throttling: %s %s, connected: %lus, in: %llukB, out: %llukB, rate: %llukbits/s",
+						cp1->ip,
+						cp1->mac,
+						now - cp1->session_end,
+						cp1->counters.incoming / 1024,
+						cp1->counters.outgoing / 1024,
+						config->fup_download_throttle_rate
+					);
 
-			auth_change_state(cp1, FW_MARK_PREAUTHENTICATED, "upquota_deauth", NULL);
+					cp1->download_rate = config->fup_download_throttle_rate;
+					auth_change_state(cp1, FW_MARK_AUTH_BLOCKED, "download_throttle", NULL);
+				}
+			}
 
-		} else if (auth_idle_timeout_secs > 0
+		}
+
+			if (cp1->upload_quota > 0 && cp1->upload_quota <= (cp1->counters.outgoing / 1024)) {
+			// Upload quota reached so deauthenticate or throttle limit the client
+
+			if (config->fup_upload_throttle_rate == 0) {
+
+				debug(LOG_NOTICE, "Upload quota exceeded, deauthenticating: %s %s, connected: %lus, in: %llukB, out: %llukB",
+					cp1->ip,
+					cp1->mac,
+					now - cp1->session_end,
+					cp1->counters.incoming / 1024,
+					cp1->counters.outgoing / 1024
+				);
+
+				auth_change_state(cp1, FW_MARK_PREAUTHENTICATED, "upload_quota_deauth", NULL);
+				continue;
+
+			} else {
+
+				if (cp1->upload_rate != config->fup_upload_throttle_rate) {
+					debug(LOG_NOTICE, "Upload quota exceeded, throttling: %s %s, connected: %lus, in: %llukB, out: %llukB, rate: %llukbits/s",
+						cp1->ip,
+						cp1->mac,
+						now - cp1->session_end,
+						cp1->counters.incoming / 1024,
+						cp1->counters.outgoing / 1024,
+						config->fup_upload_throttle_rate
+					);
+
+					cp1->upload_rate = config->fup_upload_throttle_rate;
+					auth_change_state(cp1, FW_MARK_AUTH_BLOCKED, "upload_throttle", NULL);
+				}
+			}
+
+		}
+
+			if (auth_idle_timeout_secs > 0
 				&& conn_state == FW_MARK_AUTHENTICATED
 				&& (last_updated + auth_idle_timeout_secs) <= now) {
 			// Authenticated client reached Idle Timeout so deauthenticate the client
@@ -388,6 +468,7 @@ fw_refresh_client_list(void)
 			);
 
 			auth_change_state(cp1, FW_MARK_PREAUTHENTICATED, "idle_deauth", NULL);
+			continue;
 
 		}
 

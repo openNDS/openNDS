@@ -1147,6 +1147,7 @@ wait_for_interface () {
 }
 
 send_post_data () {
+	configure_log_location
 	option="fas_secure_enabled"
 	get_option_from_config
 
@@ -2394,20 +2395,20 @@ elif [ "$1" = "htmlentitydecode" ]; then
 	fi
 
 elif [ "$1" = "send_to_fas_deauthed" ]; then
-	# Sends deauthed notification to an https fas
-	# $2 contains the deauthentication log.
+	# Sends deauthed notification to an https fas (usually called by binauth)
+	# $2 contains the deauthentication log. (will be b64encoded by send_post_data)
 	#
-	# The deauthentication log is of the format:
+	# The deauthentication log should be of the format:
 	# method=[method], clientmac=[clientmac], bytes_incoming=[bytes_incoming],
 	#	bytes_outgoing=[bytes_outgoing], session_start=[session_start],
-	#	session_end=$6, token=[token], custom=[custom data as sent to binauth]
+	#	session_end=[session_end], token=[token], custom=[custom data as sent to binauth]
 	#
 	# Returns exit code 0 if sent, 1 if failed
 
 	if [ -z "$2" ]; then
 		exit 1
 	else
-		payload=$2
+		payload="$2"
 		action="deauthed"
 		send_post_data
 		printf "%s" "$returned_data"
@@ -2416,7 +2417,7 @@ elif [ "$1" = "send_to_fas_deauthed" ]; then
 
 elif [ "$1" = "send_to_fas_custom" ]; then
 	# Sends a custom string to an https fas
-	# $2 contains the string to send
+	# $2 contains the string to send. (will be b64encoded by send_post_data)
 	#
 	# The format of the custom string is not defined, so is fully customisable.
 	#

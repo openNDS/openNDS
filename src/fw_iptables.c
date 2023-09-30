@@ -327,8 +327,12 @@ iptables_fw_init(void)
 
 	// filter CHAIN_INPUT chain
 
-	// packets coming in on gw_interface jump to CHAIN_TO_ROUTER
-	rc |= nftables_do_command("insert rule ip nds_filter %s iifname \"%s\" counter jump %s", CHAIN_INPUT, gw_interface, CHAIN_TO_ROUTER);
+	// packets coming in on gw_interface jump to CHAIN_TO_ROUTER, unless coming from an external FAS
+	if (strcmp(fas_remoteip, gw_ip) == 0 ) {
+		rc |= nftables_do_command("insert rule ip nds_filter %s iifname \"%s\" counter jump %s", CHAIN_INPUT, gw_interface, CHAIN_TO_ROUTER);
+	} else {
+		rc |= nftables_do_command("insert rule ip nds_filter %s iifname \"%s\" ip saddr !=\"%s\" counter jump %s", CHAIN_INPUT, gw_interface, fas_remoteip, CHAIN_TO_ROUTER);
+	}
 
 	// CHAIN_TO_ROUTER, invalid packets DROP
 	rc |= nftables_do_command("add rule ip nds_filter %s ct state invalid counter drop", CHAIN_TO_ROUTER);

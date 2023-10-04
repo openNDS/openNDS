@@ -1147,6 +1147,7 @@ wait_for_interface () {
 }
 
 send_post_data () {
+	configure_log_location
 	option="fas_secure_enabled"
 	get_option_from_config
 
@@ -1659,6 +1660,28 @@ auth_restore () {
 }
 
 create_client_ruleset () {
+	status=0
+
+	# Check for user_to_router essentials and append if missing
+	essentials="allow%20udp%20port%2053 allow%20udp%20port%2067 allow%20tcp%20port%2022 allow%20tcp%20port%20443"
+	ruleset_appended=$essentials
+
+	if [ "$ruleset_name" = "users_to_router" ]; then
+
+		for rule in $ruleset; do
+
+			for essential_rule in $essentials; do
+				if [ "$rule" = "$essential_rule" ]; then
+					echo "match found $rule!"
+					continue
+				fi
+			done
+
+			ruleset_appended="$ruleset_appended $rule"
+		done
+
+		ruleset="$ruleset_appended"
+	fi
 
 	for rule in $ruleset; do
 		urldecode $rule
@@ -1681,10 +1704,59 @@ create_client_ruleset () {
 						*) verdict="drop";;
 					esac
 					;;
-				1) proto=$param;;
-				2) port=$param;;
-				3) portnum=$param;;
-				4) to_from=$param;;
+				1)
+					case $param in
+						"all") proto="";;
+						"tcp") proto="tcp";;
+						"udp") proto="udp";;
+						"port") port="port";;
+						"to") to_from="to";;
+						"from") to_from="from";;
+						*) ;;
+					esac
+					;;
+				2) #port=$param;;
+					if [ "$port" = "port" ]; then
+						portnum=$param
+					fi
+
+					if [ "$to" = "to" ] || [ "$from" = "from" ]; then
+						ipaddr=$param
+					fi
+
+					case $param in
+						"port") port="port";;
+						"to") to_from="to";;
+						"from") to_from="from";;
+						*) ;;
+					esac
+					;;
+				3) #portnum=$param;;
+					if [ "$port" = "port" ]; then
+						portnum=$param
+					fi
+
+					if [ "$to_from" = "to" ] || [ "$to_from" = "from" ]; then
+						ipaddr=$param
+					fi
+
+					case $param in
+						"to") to_from="to";;
+						"from") to_from="from";;
+						*) ;;
+					esac
+					;;
+				4) #to_from=$param;;
+					if [ "$to_from" = "to" ] || [ "$to_from" = "from" ]; then
+						ipaddr=$param
+					fi
+
+					case $param in
+						"to") to_from="to";;
+						"from") to_from="from";;
+						*) ;;
+					esac
+					;;
 				5) ipaddr=$param;;
 				*) ;;
 			esac
@@ -1698,54 +1770,61 @@ create_client_ruleset () {
 			"users_to_router") chain="ndsRTR";;
 		esac
 
-		if [ "$proto" = "all" ]; then
-			sdport=""
-			port=""
-			portnum=""
-			to_from=""
-			ipaddr=""
-		else
-			sdport="dport"
-		fi
-
-		if [ -z "$proto" ] || [ "$port" != "port" ]; then
+		if [ "$proto" = "all" ] || [ -z "$proto" ] || [ "$port" != "port" ]; then
 			proto=""
-			port=""
+			sdport=""
 			portnum=""
-			to_from=""
-			ipaddr=""
 		fi
 
-		if [ -z "$portnum" ]; then
-			dport=""
-		else
-			dport="dport"
+		if [ -z "$to_from" ]; then
+			sdaddr=""
+		fi
+
+		if [ "$to_from" = "to" ]; then
+
+			if [ ! -z "$portnum" ]; then
+				sdport="dport"
+			fi
+
+			sdaddr="daddr"
+
+		elif [ "$to_from" = "from" ]; then
+
+			if [ ! -z "$portnum" ]; then
+				sdport="sport"
+			fi
+
+			sdaddr="saddr"
+
+		elif [ -z "$to_from" ] && [ ! -z "$portnum" ]; then
+			sdport="dport"
 		fi
 
 		if [ -z "$ipaddr" ]; then
 			ipstr=""
 		else
-			ipstr="ip daddr $ipaddr"
+			ipstr="ip $sdaddr $ipaddr"
 		fi
 
 		if [ "$ruleset_name" = "authenticated_users" ]; then
-			nft insert rule ip nds_filter $chain index 1 "$ipstr" "$proto" "$dport" "$portnum" counter "$verdict"
+			nft insert rule ip nds_filter $chain index 1 "$ipstr" "$proto" "$sdport" "$portnum" counter "$verdict"
 			status=$?
 		fi
 
 		if [ "$ruleset_name" = "preauthenticated_users" ]; then
-			nft insert rule ip nds_filter $chain index 2 "$ipstr" "$proto" "$dport" "$portnum" counter "$verdict"
+			nft insert rule ip nds_filter $chain index 2 "$ipstr" "$proto" "$sdport" "$portnum" counter "$verdict"
 			status=$?
 		fi
 
 		if [ "$ruleset_name" = "users_to_router" ]; then
-			nft add rule ip nds_filter "$chain" "$proto" "$dport" "$portnum" counter "$verdict"
+			nft add rule ip nds_filter $chain "$ipstr" "$proto" "$sdport" "$portnum" counter "$verdict"
 			status=$?
 		fi
 
 	done
 
 	if [ "$ruleset_name" = "users_to_router" ]; then
+		# Block everything else
 		nft add rule ip nds_filter $chain counter reject
 	fi
 }
@@ -1926,7 +2005,7 @@ elif [ "$1" = "create_client_ruleset" ]; then
 	ruleset_name=$2
 	ruleset=$3
 	create_client_ruleset
-	exit 0
+	exit $status
 
 elif [ "$1" = "clean" ]; then
 	# Do a cleanup if asked and reply with tmpfs mountpoint
@@ -2394,20 +2473,20 @@ elif [ "$1" = "htmlentitydecode" ]; then
 	fi
 
 elif [ "$1" = "send_to_fas_deauthed" ]; then
-	# Sends deauthed notification to an https fas
-	# $2 contains the deauthentication log.
+	# Sends deauthed notification to an https fas (usually called by binauth)
+	# $2 contains the deauthentication log. (will be b64encoded by send_post_data)
 	#
-	# The deauthentication log is of the format:
+	# The deauthentication log should be of the format:
 	# method=[method], clientmac=[clientmac], bytes_incoming=[bytes_incoming],
 	#	bytes_outgoing=[bytes_outgoing], session_start=[session_start],
-	#	session_end=$6, token=[token], custom=[custom data as sent to binauth]
+	#	session_end=[session_end], token=[token], custom=[custom data as sent to binauth]
 	#
 	# Returns exit code 0 if sent, 1 if failed
 
 	if [ -z "$2" ]; then
 		exit 1
 	else
-		payload=$2
+		payload="$2"
 		action="deauthed"
 		send_post_data
 		printf "%s" "$returned_data"
@@ -2416,7 +2495,7 @@ elif [ "$1" = "send_to_fas_deauthed" ]; then
 
 elif [ "$1" = "send_to_fas_custom" ]; then
 	# Sends a custom string to an https fas
-	# $2 contains the string to send
+	# $2 contains the string to send. (will be b64encoded by send_post_data)
 	#
 	# The format of the custom string is not defined, so is fully customisable.
 	#

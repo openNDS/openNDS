@@ -413,7 +413,7 @@ function footer() {
 			<img style=\"height:60px; width:60px; float:left;\" src=\"$imagepath\" alt=\"Splash Page: For access to the Internet.\">
 			&copy; The openNDS Project 2015 - $year<br>
 			Portal Version: $version
-			<br><br>
+			<br><br><br><br>
 		</div>
 		</div>
 		</div>

@@ -289,7 +289,6 @@ config_init(int argc, char **argv)
 	config.http_encoded_gw_name = NULL;
 	config.url_encoded_gw_name = NULL;
 	config.fas_url = NULL;
-	config.fas_ssl = NULL;
 	config.fas_hid = NULL;
 	config.custom_params = NULL;
 	config.custom_vars = NULL;

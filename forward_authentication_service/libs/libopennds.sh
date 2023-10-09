@@ -1161,7 +1161,6 @@ send_post_data () {
 	fi
 
 	if [ "$fas_secure_enabled" -ge 3 ] && [ -f "$mountpoint/ndscids/authmonargs" ]; then
-		configure_log_location
 		. $mountpoint/ndscids/ndsinfo
 		. $mountpoint/ndscids/authmonargs
 
@@ -1849,6 +1848,15 @@ hash_str () {
 		debugtype="err"
 		write_to_syslog
 	fi
+}
+
+wget_request () {
+	spider=""
+	checkcert=""
+
+	webget
+	retval=$($wret -O - -U "\"$user_agent\"" "$url?auth_get=$action&gatewayhash=$gatewayhash&payload=$payload")
+	status=$?
 }
 
 #### end of functions ####
@@ -2757,6 +2765,23 @@ elif [ "$1" = "hash_str" ]; then
 	strtohash="$2"
 	hash_str
 	printf "%s" "$hashedstr"
+	exit "$status"
+
+elif [ "$1" = "wget_request" ]; then
+
+	if [ -z "$2" ]; then
+		exit 1
+	fi
+
+	url="$2"
+	action="$3"
+	gatewayhash="$4"
+	user_agent="$5"
+	payload="$6"
+
+	wget_request
+
+	printf "%s" "$retval"
 	exit "$status"
 
 fi

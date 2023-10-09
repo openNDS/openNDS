@@ -172,7 +172,7 @@ termination_handler(int s)
 	}
 
 	// If authmon is running, kill it
-	if (config->fas_secure_enabled == 3) {
+	if (config->fas_secure_enabled == 3 || config->fas_secure_enabled == 4) {
 		debug(LOG_INFO, "Explicitly killing the authmon daemon");
 		safe_asprintf(&fasssl, "kill $(pgrep -f \"usr/lib/opennds/authmon.sh\") > /dev/null 2>&1");
 
@@ -283,7 +283,7 @@ setup_from_config(void)
 	char *msg;
 	char *mark_auth;
 	char *lib_cmd;
-	char gwhash[256] = {0};
+	char gwhash[66] = {0};
 	char authmonpid[16] = {0};
 	char *socket;
 	char *fasurl = NULL;
@@ -669,7 +669,7 @@ setup_from_config(void)
 		}
 
 		// FAS secure Level 2 and 3
-		if (config->fas_key && config->fas_secure_enabled >= 2) {
+		if (config->fas_key && config->fas_secure_enabled >= 2 && config->fas_secure_enabled <= 3) {
 			// PHP cli command can be php or php-cli depending on Linux version.
 			msg = safe_calloc(SMALL_BUF);
 
@@ -687,7 +687,7 @@ setup_from_config(void)
 			} else {
 				debug(LOG_ERR, "PHP packages PHP CLI and PHP OpenSSL are required");
 
-				if (config->fas_secure_enabled >= 3) {
+				if (config->fas_secure_enabled == 3) {
 					debug(LOG_ERR, "Package ca-bundle is required for level 3 (https)");
 				}
 
@@ -715,8 +715,8 @@ setup_from_config(void)
 			free(msg);
 		}
 
-		// set the protocol used, enforcing https for Level 3
-		if (config->fas_secure_enabled == 3) {
+		// set the protocol used, enforcing https for Level >= 3
+		if (config->fas_secure_enabled >= 3) {
 			snprintf(protocol, sizeof(protocol), "https");
 		} else {
 			snprintf(protocol, sizeof(protocol), "http");
@@ -744,17 +744,16 @@ setup_from_config(void)
 		system(fasssl);
 		free(fasssl);
 
-		// Start the authmon daemon if configured for Level 3
-		if (config->fas_key && config->fas_secure_enabled == 3) {
+		// Start the authmon daemon if configured for Level >= 3
+		if (config->fas_key && config->fas_secure_enabled >= 3) {
 
 			// Get the sha256 digest of gatewayname
 			safe_asprintf(&fasssl,
-				"echo \"<?php echo openssl_digest('%s', 'sha256'); ?>\" | %s",
-				config->url_encoded_gw_name,
-				config->fas_ssl
+				"/usr/lib/opennds/libopennds.sh hash_str \"%s\"",
+				config->url_encoded_gw_name
 			);
 
-			if (execute_ret_url_encoded(gwhash, sizeof(gwhash) - 1, fasssl) == 0) {
+			if (execute_ret_url_encoded(gwhash, sizeof(gwhash), fasssl) == 0) {
 				safe_asprintf(&gatewayhash, "%s", gwhash);
 				debug(LOG_DEBUG, "gatewayname digest is: %s\n", gwhash);
 			} else {
@@ -805,7 +804,7 @@ setup_from_config(void)
 		}
 
 		// Report the Pre-Shared key is not available
-		if (config->fas_secure_enabled >= 2 && config->fas_key == NULL) {
+		if (config->fas_secure_enabled >= 1 && config->fas_key == NULL) {
 			debug(LOG_ERR, "Error - faskey is not set - exiting...\n");
 			exit(1);
 		}

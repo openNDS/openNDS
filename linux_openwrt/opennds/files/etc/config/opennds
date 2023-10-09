@@ -675,8 +675,24 @@ config opennds
 	# This allows the external FAS, after client verification, to effectively traverse inbound firewalls and address translation
 	# to achieve NDS authentication without generating browser security warnings or errors.
 	# An example FAS level 3 php script (fas-aes-https.php) is included in the /etc/opennds directory and also supplied in the source code.
+
+	# ****If set to "4"****
+	# The FAS is enforced by NDS to use https protocol.
 	#
-	# Note: Option faskey must be pre shared with the FAs script in use (including any ThemeSpec local file) if fas secure is set to levels 1, 2 and 3.
+	# Level 4 is the same as level 1 except the use of https protocol is enforced for FAS.
+	# The client token will be hashed and sent to the FAS along with other relevent information in a base 64 encoded string
+	#
+	# FAS must return the sha256sum of the concatenation of hid (the hashed original token), and faskey to be used by NDS for client authentication.
+	#
+	# In addition, the "authmon" daemon is loaded.
+	# This allows the external FAS, after client verification, to effectively traverse inbound firewalls and address translation
+	# to achieve NDS authentication without generating browser security warnings or errors.
+	# An example FAS level 4 php script (fas-hid-https.php) is included in the /etc/opennds directory and also supplied in the source code.
+
+	#
+	# Note: Option faskey must be pre shared with the FAS script in use (including any ThemeSpec local file) for fas secure levels 1, 2, 3 and 4.
+	#
+	# Example:
 	#option fas_secure_enabled '3'
 	###########################################################################################
 
@@ -696,7 +712,7 @@ config opennds
 	# Block Access For Authenticated Users (block):
 	# Default: None
 	#
-	# If Block Access is specified, an allow or passthrough must be specified afterwards
+	# If Block Access is specified, an allow must be specified afterwards
 	#	as any entries set here will override the access default
 	#
 	# Examples:
@@ -709,6 +725,9 @@ config opennds
 	# or block access to a single IP address. e.g.:
 	#
 	#list authenticated_users 'block to 123.2.3.4'
+	#
+	# An FQDN can be used in place of an ip address
+	#list authenticated_users 'block all to theirwebsite.com'
 	#
 	# Do not forget to add an allow rule if any block rules are added (see Grant Access)
 	# Block rules added here are final with all packets to the target being dropped.
@@ -765,6 +784,9 @@ config opennds
 	#
 	#list preauthenticated_users 'allow udp port 8020 to 112.122.123.124'
 	#
+	# An fqdn can be used in place of an ip address (but the fqdn must have only one possible ip address)
+	#
+	#list preauthenticated_users 'allow tcp port 443 to mywebsite.com'
 
 	#####
 	# Autonomous Walled Garden configuration using a list of FQDNs and Ports.
@@ -816,14 +838,19 @@ config opennds
 	#option users_to_router_passthrough '1'
 
 	####
-	# WARNING: If adding rules, the defaults are overridden, so you must also add the essential service ports.
+	# Essential service ports are always included.
+	# These ports are:
+	# Port 53 - DNS
+	# Port 67 - DHCP
+	# Port 22 - SSH
+	# Port 443 - Admin UI (Luci on OpenWrt)
 	####
 	#
-	# Essential Services - Allow ports for DNS and DHCP (disabling these will soft brick your router), SSH and HTTPS:
-	#list users_to_router 'allow udp port 53'
-	#list users_to_router 'allow udp port 67'
-	#list users_to_router 'allow tcp port 22'
-	#list users_to_router 'allow tcp port 443'
+	# Examples:
+	#list users_to_router 'allow tcp port 4443'
+	#list users_to_router 'allow udp port 4267'
+	#list users_to_router 'allow all from 192.168.1.10'
+	#list users_to_router 'allow tcp port 30000 from 192.168.1.11'
 
 
 	###########################################################################################

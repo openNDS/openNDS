@@ -220,6 +220,7 @@ config_init(int argc, char **argv)
 	config.themespec_path = safe_strdup(set_option_str("themespec_path", DEFAULT_THEMESPEC_PATH, debug_level));
 	config.fas_remoteip = safe_strdup(set_option_str("fasremoteip", DEFAULT_FAS_REMOTEIP, debug_level));
 	config.fas_remotefqdn = safe_strdup(set_option_str("fasremotefqdn", DEFAULT_FAS_REMOTEFQDN, debug_level));
+	config.fas_ssl = safe_strdup(set_option_str("fas_ssl", DEFAULT_FAS_SSL, debug_level));
 
 	/*
 	********** Integer config parameters **********
@@ -288,7 +289,6 @@ config_init(int argc, char **argv)
 	config.http_encoded_gw_name = NULL;
 	config.url_encoded_gw_name = NULL;
 	config.fas_url = NULL;
-	config.fas_ssl = NULL;
 	config.fas_hid = NULL;
 	config.custom_params = NULL;
 	config.custom_vars = NULL;

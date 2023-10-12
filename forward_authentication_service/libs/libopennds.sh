@@ -1146,24 +1146,6 @@ wait_for_interface () {
 	done
 }
 
-send_post_data () {
-	configure_log_location
-	option="fas_secure_enabled"
-	get_option_from_config
-
-	if [ "$fas_secure_enabled" = "3" ] && [ -f "$mountpoint/ndscids/authmonargs" ]; then
-		configure_log_location
-		. $mountpoint/ndscids/ndsinfo
-		. $mountpoint/ndscids/authmonargs
-		postrequest="/usr/lib/opennds/post-request.php"
-
-		# Construct our user agent string:
-		user_agent="openNDS(libopennds;NDS:$version;)"
-		returned_data=$($phpcli -f "$postrequest" "$url" "$action" "$gatewayhash" "$user_agent" "$payload")
-
-	fi
-}
-
 users_to_router () {
 
 	fw4=$(type fw4)
@@ -1826,6 +1808,50 @@ create_client_ruleset () {
 	if [ "$ruleset_name" = "users_to_router" ]; then
 		# Block everything else
 		nft add rule ip nds_filter $chain counter reject
+	fi
+}
+
+hash_str () {
+	hashedstr=""
+	status=$(type sha256sum &>/dev/null; echo $?)
+
+	if [ "$status" -eq 0 ]; then
+		hashedstr=$(printf "%s" "$strtohash" | sha256sum | awk -F' ' '{printf $1}')
+	else
+		syslogmessage="The sha256sum utility cannot be found - please install it"
+		debugtype="err"
+		write_to_syslog
+	fi
+}
+
+wget_request () {
+	spider=""
+	checkcert=""
+
+	ndsctlcmd="b64encode \"$payload\""
+	do_ndsctl
+
+	payload=$ndsctlout
+
+	webget
+	retval=$($wret -O - -U "\"$user_agent\"" "$url?auth_get=$action&gatewayhash=$gatewayhash&payload=$payload")
+	status=$?
+}
+
+send_post_data () {
+	configure_log_location
+	option="fas_secure_enabled"
+	get_option_from_config
+
+	if [ "$fas_secure_enabled" -ge 3 ] && [ -f "$mountpoint/ndscids/authmonargs" ]; then
+		. $mountpoint/ndscids/ndsinfo
+		. $mountpoint/ndscids/authmonargs
+
+		returned_data=$(eval "$remoterequest" "\"$url\"" "\"$action\"" "\"$gatewayhash\"" "\"$user_agent\"" "\"$payload\"")
+
+		syslogmessage="send_post_data - action [$action], payload [$payload], fas_response [$returned_data]."
+		debugtype="info"
+		write_to_syslog
 	fi
 }
 
@@ -2725,6 +2751,34 @@ elif [ "$1" = "set_key" ]; then
 	fi
 
 	echo "$cmd" | $shell
+
+elif [ "$1" = "hash_str" ]; then
+
+	if [ -z "$2" ]; then
+		exit 1
+	fi
+
+	strtohash="$2"
+	hash_str
+	printf "%s" "$hashedstr"
+	exit "$status"
+
+elif [ "$1" = "wget_request" ]; then
+
+	if [ -z "$2" ]; then
+		exit 1
+	fi
+
+	url="$2"
+	action="$3"
+	gatewayhash="$4"
+	user_agent="$5"
+	payload="$6"
+
+	wget_request
+
+	printf "%s" "$retval"
+	exit "$status"
 
 fi
 

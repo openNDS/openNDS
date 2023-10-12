@@ -1449,7 +1449,7 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 			originurl
 		);
 
-	} else if (config->fas_secure_enabled == 1) {
+	} else if (config->fas_secure_enabled == 1 || config->fas_secure_enabled == 4) {
 
 			if (config->fas_hid) {
 				debug(LOG_DEBUG, "hid=%s", client->hid);

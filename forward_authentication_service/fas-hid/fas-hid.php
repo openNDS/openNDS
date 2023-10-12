@@ -1,7 +1,10 @@
 <?php
 /* (c) Blue Wave Projects and Services 2015-2023. This software is released under the GNU GPL license.
 
- This is a FAS script providing an example of remote Forward Authentication for openNDS (NDS) on an http web server supporting PHP.
+ This is a FAS script designed to provide an http login sequence served from an **Internet hosted** http web server supporting PHP
+ It is an example of remote Forward Authentication for openNDS (NDS) that **does not require PHP support on the openNDS router**.
+ It is the **http only** version of the example fas-hid scripts.
+ It is less secure than the aes encrypted version (fas-aes.php), but with openNDS installed on routers with severe resource limitations, it is more likely to work.
 
  The following NDS configurations must be set:
  1. fasport: Set to the port number the remote webserver is using (typically port 80)
@@ -18,7 +21,7 @@
 
  5. faskey: Matching $key as set in this script (see below this introduction).
 	This is a key phrase for NDS to encrypt the query string sent to FAS.
-	It can be any combination of A-Z, a-z and 0-9, up to 16 characters with no white space.
+	It can be any combination of A-Z, a-z and 0-9, with no white space.
 	eg 1234567890
 
  6. fas_secure_enabled:  set to level 1
@@ -413,7 +416,7 @@ function footer() {
 			<img style=\"height:60px; width:60px; float:left;\" src=\"$imagepath\" alt=\"Splash Page: For access to the Internet.\">
 			&copy; The openNDS Project 2015 - $year<br>
 			Portal Version: $version
-			<br><br>
+			<br><br><br><br>
 		</div>
 		</div>
 		</div>

@@ -104,6 +104,7 @@
 #define DEFAULT_THEMESPEC_PATH ""
 #define DEFAULT_FAS_REMOTEFQDN "disabled"
 #define DEFAULT_FAS_REMOTEIP ""
+#define DEFAULT_FAS_SSL "wget"
 
 /* N.B.: default policies here must be ACCEPT, REJECT, or RETURN
  * In the .conf file, they must be allow, block, or passthrough

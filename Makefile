@@ -72,6 +72,7 @@ install:
 	cp forward_authentication_service/libs/post-request.php $(DESTDIR)/usr/lib/opennds/
 	cp forward_authentication_service/fas-aes/fas-aes.php $(DESTDIR)/etc/opennds/
 	cp forward_authentication_service/fas-hid/fas-hid.php $(DESTDIR)/etc/opennds/
+	cp forward_authentication_service/fas-hid/fas-hid-https.php $(DESTDIR)/etc/opennds/
 	cp forward_authentication_service/fas-aes/fas-aes-https.php $(DESTDIR)/etc/opennds/
 
 

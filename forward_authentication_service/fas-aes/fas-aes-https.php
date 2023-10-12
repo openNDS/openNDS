@@ -54,8 +54,12 @@
 
 */
 
-// Set the pre-shared key. This **MUST** be the same as faskey in the openNDS config:
-$key="1234567890";
+// Set the pre-shared key. This **MUST** be the same as faskey in the openNDS config.
+//	Note: the default value of 1234567890 will not be accepted.
+//	For example, use the sha256 hash of a secret string, but note also that if not present in the openNDS config, one will be generated and added.
+//	See: /etc/config/opennds on the router.
+
+$key="c775e7b757ede630cd0aa1113bd102661ab38829ca52a6422ab782862f268646";
 
 // Allow immediate flush to browser
 if (ob_get_level()){ob_end_clean();}
@@ -280,6 +284,10 @@ function auth_get_deauthed() {
 	// Add your own function to handle auth_get deauthed payload
 	// By default it isappended to the FAS deauth log
 	$payload_decoded=base64_decode($_POST["payload"]);
+
+	if (! str_contains($payload_decoded, 'method=')) {
+		$payload_decoded=base64_decode($payload_decoded);
+	}
 
 	$logpath=$GLOBALS["logpath"];
 	$log=date('Y-m-d H:i:s', $_SERVER['REQUEST_TIME']).
@@ -831,6 +839,7 @@ function err403() {
 		<hr>
 		<b style=\"color:red; font-size:1.5em;\">Encryption Error <br> Access Forbidden</b><br>
 	";
+
 	flush();
 	footer();
 }

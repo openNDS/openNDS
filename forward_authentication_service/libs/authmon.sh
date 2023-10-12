@@ -131,8 +131,7 @@ fi
 
 # Initialise by clearing stale FAS auth log entries
 action="clear"
-#payload="none"
-b64payload="bm9uZQ=="
+payload="none"
 acklist="*"
 
 
@@ -157,7 +156,7 @@ while true; do
 
 	# Get remote authlist from the FAS:
 	action="view"
-	payload="$b64payload"
+	payload="none"
 	acklist="*"
 
 	authlist=$(eval "$remoterequest" "\"$url\"" "\"$action\"" "\"$gatewayhash\"" "\"$user_agent\"" "\"$payload\"")
@@ -217,7 +216,6 @@ while true; do
 	# acklist is a space separated list of the rhid's of sucessfully authenticated clients.
 	# Send acklist to the FAS for upstream processing:
 
-	acklist=$(ndsctl b64encode "$acklist")
 	ackresponse=$(eval "$remoterequest" "\"$url\"" "\"$action\"" "\"$gatewayhash\"" "\"$user_agent\"" "\"$acklist\"")
 
 	if [ $debuglevel -ge 3 ]; then

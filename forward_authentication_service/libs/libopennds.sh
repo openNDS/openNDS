@@ -1146,32 +1146,6 @@ wait_for_interface () {
 	done
 }
 
-send_post_data () {
-	configure_log_location
-	option="fas_secure_enabled"
-	get_option_from_config
-
-	ndsctlcmd="b64encode \"$payload\""
-	do_ndsctl
-
-	if [ "$ndsstatus" = "ready" ]; then
-		payload=$ndsctlout
-	else
-		payload="none"
-	fi
-
-	if [ "$fas_secure_enabled" -ge 3 ] && [ -f "$mountpoint/ndscids/authmonargs" ]; then
-		. $mountpoint/ndscids/ndsinfo
-		. $mountpoint/ndscids/authmonargs
-
-		returned_data=$(eval "$remoterequest" "\"$url\"" "\"$action\"" "\"$gatewayhash\"" "\"$user_agent\"" "\"$payload\"")
-
-		syslogmessage="send_post_data - action [$action], payload [$payload], fas_response [$returned_data]."
-		debugtype="info"
-		write_to_syslog
-	fi
-}
-
 users_to_router () {
 
 	fw4=$(type fw4)
@@ -1854,9 +1828,31 @@ wget_request () {
 	spider=""
 	checkcert=""
 
+	ndsctlcmd="b64encode \"$payload\""
+	do_ndsctl
+
+	payload=$ndsctlout
+
 	webget
 	retval=$($wret -O - -U "\"$user_agent\"" "$url?auth_get=$action&gatewayhash=$gatewayhash&payload=$payload")
 	status=$?
+}
+
+send_post_data () {
+	configure_log_location
+	option="fas_secure_enabled"
+	get_option_from_config
+
+	if [ "$fas_secure_enabled" -ge 3 ] && [ -f "$mountpoint/ndscids/authmonargs" ]; then
+		. $mountpoint/ndscids/ndsinfo
+		. $mountpoint/ndscids/authmonargs
+
+		returned_data=$(eval "$remoterequest" "\"$url\"" "\"$action\"" "\"$gatewayhash\"" "\"$user_agent\"" "\"$payload\"")
+
+		syslogmessage="send_post_data - action [$action], payload [$payload], fas_response [$returned_data]."
+		debugtype="info"
+		write_to_syslog
+	fi
 }
 
 #### end of functions ####

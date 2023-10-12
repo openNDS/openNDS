@@ -47,8 +47,12 @@
 
 */
 
-// Set the pre-shared key. This **MUST** be the same as faskey in the openNDS config:
-$key="1234567890q";
+// Set the pre-shared key. This **MUST** be the same as faskey in the openNDS config.
+//	Note: the default value of 1234567890 will not be accepted.
+//	For example, use the sha256 hash of a secret string, but note also that if not present in the openNDS config, one will be generated and added.
+//	See: /etc/config/opennds on the router.
+
+$key="c775e7b757ede630cd0aa1113bd102661ab38829ca52a6422ab782862f268646";
 
 // Allow immediate flush to browser
 if (ob_get_level()){ob_end_clean();}

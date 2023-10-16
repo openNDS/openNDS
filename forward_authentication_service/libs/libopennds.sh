@@ -294,7 +294,7 @@ get_data_file() {
 
 # Function to send commands to openNDS:
 do_ndsctl () {
-	local timeout=8
+	local timeout=16
 
 	for tic in $(seq $timeout); do
 		ndsstatus="ready"
@@ -302,23 +302,23 @@ do_ndsctl () {
 
 		for keyword in $ndsctlout; do
 
-			if [ $keyword = "locked" ]; then
+			if [ "$keyword" = "locked" ] || [ "$keyword" = "busy," ]; then
 				ndsstatus="busy"
-				sleep 1
+				sleep 5
 				break
 			fi
 
-			if [ $keyword = "Failed" ]; then
+			if [ "$keyword" = "Failed" ]; then
 				ndsstatus="failed"
 				break
 			fi
 
-			if [ $keyword = "authenticated." ]; then
+			if [ "$keyword" = "authenticated." ]; then
 				ndsstatus="authenticated"
 				break
 			fi
 
-			if [ $keyword = "deauthenticated." ]; then
+			if [ "$keyword" = "deauthenticated." ]; then
 				ndsstatus="deauthenticated"
 				break
 			fi
@@ -1625,19 +1625,20 @@ auth_restore () {
 		fi
 
 		if [ $reauth -eq 1 ]; then
-			ndsctlcmd="auth $client_mac $sessiontimeout"
-			do_ndsctl
+			mac="$client_mac"
 
-			syslogmessage=$ndsctlout
-			# $syslogmessage contains the response from do_ndsctl
+			uploadrate=""
+			downloadrate=""
+			uploadquota=""
+			downloadquota=""
+			custom="auth_restore"
 
-			if [ "$ndsstatus" = "authenticated" ]; then
-				debugtype="notice"
-			else
-				debugtype="debug"
-			fi
 
-			write_to_syslog
+			authstr="\"$mac\" \"$sessiontimeout\" \"$uploadrate\" \"$downloadrate\" \"$uploadquota\" \"$downloadquota\" \"$custom\""
+
+			b64authstr=$(ndsctl b64encode "$authstr")
+
+			/usr/lib/opennds/libopennds.sh daemon_auth "$b64authstr" "quiet"
 		fi
 
 	done < $authlog

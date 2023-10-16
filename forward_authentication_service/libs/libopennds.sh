@@ -1876,7 +1876,7 @@ preemptivemac () {
 
 		b64authstr=$(ndsctl b64encode "$authstr")
 
-		/usr/lib/opennds/libopennds.sh daemon_auth "$b64authstr"
+		/usr/lib/opennds/libopennds.sh daemon_auth "$b64authstr" "quiet"
 	done
 }
 
@@ -2465,6 +2465,7 @@ elif [ "$1" = "daemon_auth" ]; then
 	# mac|ip sessiontimeout uploadrate downloadrate uploadquota downloadquota encoded_customstring
 	# Returns the pid of the daemon_deauth process
 	# The actual client deauth will be reported in the syslog if sucessful
+	# $3 contains the verbosity
 
 	if [ -z "$2" ]; then
 		exit 1
@@ -2478,8 +2479,10 @@ elif [ "$1" = "daemon_auth" ]; then
 
 		daemon_pid=$(/usr/lib/opennds/libopennds.sh "startdaemon" "$ndsctlout")
 
-		# return the daemon pid
-		echo "$daemon_pid"
+		if [ -z "$3" ]; then
+			# return the daemon pid
+			printf "%s" "$daemonpid"
+		fi
 	fi
 
 	exit 0
@@ -2865,7 +2868,6 @@ elif [ "$1" = "preemptivemac" ]; then
 
 	preemptivemac
 
-	printf "%s" "done"
 	exit 0
 
 fi

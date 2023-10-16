@@ -292,7 +292,8 @@ fw_refresh_client_list(void)
 	unsigned long long int downrate;
 	int action;
 	char *dnscmd;
-
+	char *pmaccmd;
+	char msg[MID_BUF];
 
 	// Check if router is online
 	int watchdog = 1;
@@ -675,6 +676,20 @@ fw_refresh_client_list(void)
 	}
 
 	UNLOCK_CLIENT_LIST();
+
+
+	memset(msg, 0, MID_BUF);
+	get_list_from_config(msg, MID_BUF, "preemptivemac");
+
+	if (strcmp(msg, "") == 0) {
+		debug(LOG_DEBUG, "preemptivemaclist is empty");
+	} else {
+		// Refresh preemptivemacs
+		pmaccmd = safe_calloc(STATUS_BUF);
+		safe_snprintf(pmaccmd, STATUS_BUF, "/usr/lib/opennds/libopennds.sh preemptivemac");
+		system(pmaccmd);
+		free(pmaccmd);
+	}
 }
 
 /** Launched in its own thread.

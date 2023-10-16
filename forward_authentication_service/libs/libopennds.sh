@@ -294,7 +294,7 @@ get_data_file() {
 
 # Function to send commands to openNDS:
 do_ndsctl () {
-	local timeout=8
+	local timeout=16
 
 	for tic in $(seq $timeout); do
 		ndsstatus="ready"
@@ -302,23 +302,23 @@ do_ndsctl () {
 
 		for keyword in $ndsctlout; do
 
-			if [ $keyword = "locked" ]; then
+			if [ "$keyword" = "locked" ] || [ "$keyword" = "busy," ]; then
 				ndsstatus="busy"
-				sleep 1
+				sleep 5
 				break
 			fi
 
-			if [ $keyword = "Failed" ]; then
+			if [ "$keyword" = "Failed" ]; then
 				ndsstatus="failed"
 				break
 			fi
 
-			if [ $keyword = "authenticated." ]; then
+			if [ "$keyword" = "authenticated." ]; then
 				ndsstatus="authenticated"
 				break
 			fi
 
-			if [ $keyword = "deauthenticated." ]; then
+			if [ "$keyword" = "deauthenticated." ]; then
 				ndsstatus="deauthenticated"
 				break
 			fi
@@ -1035,18 +1035,20 @@ get_list_from_config() {
 	# get list with urlencoded spaces
 
 	if [ $uci_status -eq 0 ]; then
-		param=$(uci export opennds | grep -w "list" | grep -w $list | awk -F"'" 'NF > 1 {print $2}' | sed "s/\s/%20/g" | awk '{printf "%s ", $0}')
+		param=$(uci export opennds | grep -w "list" | grep -w $list | awk -F"'" 'NF > 1 {print $2}' | awk '{printf "%s¬", $0}')
 	else
-		param=$(cat /etc/config/opennds | grep -w "list" | grep -w "$list" | awk -F"#" '{printf "%s\n", $1}' | awk -F"'" 'NF > 1 {print $2}' | sed "s/\s/%20/g" | awk '{printf "%s ", $0}')
+		param=$(cat /etc/config/opennds | grep -w "list" | grep -w "$list" | awk -F"#" '{printf "%s\n", $1}' | awk -F"'" 'NF > 1 {print $2}' | awk '{printf "%s¬", $0}')
 	fi
 
 	# remove trailing space character
 	param=$(echo "$param" | sed 's/[[:space:]]*$//')
 
-	if [ "$list" != "users_to_router" ] && [ "$list" != "preauthenticated_users" ] && [ "$list" != "authenticated_users" ]; then
-		urldecode "$param"
-		param=$urldecoded
-	fi
+	# urlencode the entire list set
+	urlencode "$param"
+	param="$urlencoded"
+
+	# Restore spaces between list blocks
+	param=$(echo "$param" | sed "s/¬/\ /g")
 
 	eval $list="$param" &>/dev/null
 }
@@ -1598,6 +1600,17 @@ auth_restore () {
 			continue
 		fi
 
+		# Skip client if it is in preemptivemac list
+		list="preemptivemac"
+		get_list_from_config
+
+		status=$(echo "$param" | grep -q "$client_mac"; echo $?)
+
+		if [ "$status" -eq 0 ]; then
+			# skip this client
+			continue
+		fi
+
 		now=$(date +%s)
 		session_end="$(echo "$client" | awk -F"=" '{printf("%s", $2)}')"
 
@@ -1623,19 +1636,20 @@ auth_restore () {
 		fi
 
 		if [ $reauth -eq 1 ]; then
-			ndsctlcmd="auth $client_mac $sessiontimeout"
-			do_ndsctl
+			mac="$client_mac"
 
-			syslogmessage=$ndsctlout
-			# $syslogmessage contains the response from do_ndsctl
+			uploadrate=""
+			downloadrate=""
+			uploadquota=""
+			downloadquota=""
+			custom="auth_restore"
 
-			if [ "$ndsstatus" = "authenticated" ]; then
-				debugtype="notice"
-			else
-				debugtype="debug"
-			fi
 
-			write_to_syslog
+			authstr="\"$mac\" \"$sessiontimeout\" \"$uploadrate\" \"$downloadrate\" \"$uploadquota\" \"$downloadquota\" \"$custom\""
+
+			b64authstr=$(ndsctl b64encode "$authstr")
+
+			/usr/lib/opennds/libopennds.sh daemon_auth "$b64authstr" "quiet"
 		fi
 
 	done < $authlog
@@ -1853,6 +1867,29 @@ send_post_data () {
 		debugtype="info"
 		write_to_syslog
 	fi
+}
+
+preemptivemac () {
+	list="preemptivemac"
+	get_list_from_config
+
+	for listblock in $param; do
+		mac=""
+		sessiontimeout=""
+		uploadrate=""
+		downloadrate=""
+		uploadquota=""
+		downloadquota=""
+		custom=""
+
+		eval $listblock
+
+		authstr="\"$mac\" \"$sessiontimeout\" \"$uploadrate\" \"$downloadrate\" \"$uploadquota\" \"$downloadquota\" \"$custom\""
+
+		b64authstr=$(ndsctl b64encode "$authstr")
+
+		/usr/lib/opennds/libopennds.sh daemon_auth "$b64authstr" "quiet"
+	done
 }
 
 #### end of functions ####
@@ -2405,6 +2442,63 @@ elif [ "$1" = "dhcpcheck" ]; then
 		fi
 	fi
 
+elif [ "$1" = "auth" ]; then
+	# Deauths a client by ip or mac address
+	# $2 contains the b64 encoded auth-string which has the format:
+	# mac|ip sessiontimeout uploadrate downloadrate uploadquota downloadquota encoded_customstring
+	# Returns the status of the auth request
+
+	if [ -z "$2" ]; then
+		exit 1
+	else
+
+		authstr=$(ndsctl b64decode "$2")
+
+		libcall="yes"
+		ndsctlcmd="auth $authstr"
+		do_ndsctl
+
+		if [ "$ndsstatus" = "authenticated" ]; then
+			debugtype="notice"
+		else
+			debugtype="debug"
+		fi
+
+		syslogmessage="$ndsctlout"
+		write_to_syslog
+	fi
+
+	exit 0
+
+elif [ "$1" = "daemon_auth" ]; then
+	# Initiates a daemon process to auth a client by ip or mac address
+	# Can be called from a binauth script
+	# $2 contains the b64 encoded auth-string which has the format:
+	# mac|ip sessiontimeout uploadrate downloadrate uploadquota downloadquota encoded_customstring
+	# Returns the pid of the daemon_deauth process
+	# The actual client deauth will be reported in the syslog if sucessful
+	# $3 contains the verbosity
+
+	if [ -z "$2" ]; then
+		exit 1
+	else
+
+		b64authstr="$2"
+
+		daemoncmd="/usr/lib/opennds/libopennds.sh auth $b64authstr"
+		ndsctlcmd="b64encode \"$daemoncmd\""
+		do_ndsctl
+
+		daemon_pid=$(/usr/lib/opennds/libopennds.sh "startdaemon" "$ndsctlout")
+
+		if [ -z "$3" ]; then
+			# return the daemon pid
+			printf "%s" "$daemonpid"
+		fi
+	fi
+
+	exit 0
+
 elif [ "$1" = "deauth" ]; then
 	# Deauths a client by ip or mac address
 	# $2 contains the ip or mac address
@@ -2440,8 +2534,10 @@ elif [ "$1" = "daemon_deauth" ]; then
 		ndsctlcmd="b64encode \"$daemoncmd\""
 		do_ndsctl
 
-		daemon_deauth=$(/usr/lib/opennds/libopennds.sh "startdaemon" "$ndsctlout")
-		echo "$daemon_deauth"
+		daemon_pid=$(/usr/lib/opennds/libopennds.sh "startdaemon" "$ndsctlout")
+
+		# return the daemon pid
+		echo "$daemon_pid"
 	fi
 
 	exit 0
@@ -2779,6 +2875,12 @@ elif [ "$1" = "wget_request" ]; then
 
 	printf "%s" "$retval"
 	exit "$status"
+
+elif [ "$1" = "preemptivemac" ]; then
+
+	preemptivemac
+
+	exit 0
 
 fi
 

@@ -1600,6 +1600,17 @@ auth_restore () {
 			continue
 		fi
 
+		# Skip client if it is in preemptivemac list
+		list="preemptivemac"
+		get_list_from_config
+
+		status=$(echo "$param" | grep -q "$client_mac"; echo $?)
+
+		if [ "$status" -eq 0 ]; then
+			# skip this client
+			continue
+		fi
+
 		now=$(date +%s)
 		session_end="$(echo "$client" | awk -F"=" '{printf("%s", $2)}')"
 

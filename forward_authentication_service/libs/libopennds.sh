@@ -1870,6 +1870,15 @@ send_post_data () {
 }
 
 preemptivemac () {
+	configure_log_location
+
+	binauthlog="$logdir""binauthlog.log"
+
+	if [ ! -e "$binauthlog" ]; then
+		mkdir -p "$logdir"
+		touch "$binauthlog"
+	fi
+
 	list="preemptivemac"
 	get_list_from_config
 
@@ -1883,6 +1892,21 @@ preemptivemac () {
 		custom=""
 
 		eval $listblock
+
+		# skip this client if not in dhcp database
+		iptocheck="$mac"
+		dhcp_check
+
+		if [ -z "$dhcprecord" ]; then
+			continue
+		fi
+
+		# skip this client if already authenticated
+		is_authed=$(grep "$mac" "$binauthlog" | tail -1 | awk -F"method=" '{print $2}' | awk -F", " '{printf "%s", $1}')
+
+		if [ "$is_authed" = "ndsctl_auth" ]; then
+			continue
+		fi
 
 		authstr="\"$mac\" \"$sessiontimeout\" \"$uploadrate\" \"$downloadrate\" \"$uploadquota\" \"$downloadquota\" \"$custom\""
 
@@ -2426,7 +2450,7 @@ elif [ "$1" = "dhcpcheck" ]; then
 	# Returns the mac address that was allocated to the ip address
 	# 	or null and return code 1 if not allocated
 	#
-	# $2 contains the ip to check
+	# $2 contains the ip (or mac address) to check
 
 	if [ -z "$2" ]; then
 		exit 1

@@ -422,7 +422,7 @@ fw_refresh_client_list(void)
 
 		}
 
-			if (cp1->upload_quota > 0 && cp1->upload_quota <= (cp1->counters.outgoing / 1024)) {
+		if (cp1->upload_quota > 0 && cp1->upload_quota <= (cp1->counters.outgoing / 1024)) {
 			// Upload quota reached so deauthenticate or throttle limit the client
 
 			if (config->fup_upload_throttle_rate == 0) {
@@ -457,9 +457,9 @@ fw_refresh_client_list(void)
 
 		}
 
-			if (auth_idle_timeout_secs > 0
-				&& conn_state == FW_MARK_AUTHENTICATED
-				&& (last_updated + auth_idle_timeout_secs) <= now) {
+		if (auth_idle_timeout_secs > 0
+			&& conn_state == FW_MARK_AUTHENTICATED
+			&& (last_updated + auth_idle_timeout_secs) <= now) {
 			// Authenticated client reached Idle Timeout so deauthenticate the client
 
 			debug(LOG_NOTICE, "Timeout authenticated idle user: %s %s, inactive: %ds, in: %llukB, out: %llukB",
@@ -470,7 +470,6 @@ fw_refresh_client_list(void)
 
 			auth_change_state(cp1, FW_MARK_PREAUTHENTICATED, "idle_deauth", NULL);
 			continue;
-
 		}
 
 		// Now we need to process rate quotas, so first refresh the connection state in case it has changed

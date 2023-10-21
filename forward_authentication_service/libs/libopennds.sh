@@ -1272,6 +1272,8 @@ pre_setup () {
 		fi
 	done
 
+	# add upload flowtable
+	nft add flowtable ip nds_mangle ndsftOUT "{ hook ingress priority -100 ; devices = { $gatewayinterface } ; }"
 
 	# add required chains
 	nft add chain ip nds_filter ndsINP "{ type filter hook input priority -100 ; }" 2> /dev/null
@@ -2215,6 +2217,34 @@ elif [ "$1" = "gatewayroute" ]; then
 	fi
 
 	printf "$gatewayinterfaces"
+
+	if [ "$gatewayinterfaces" != "offline" ]; then
+		# configure download flowtable
+
+		wandevices=""
+
+		for gatewayroute in $gatewayinterfaces; do
+			wandevice=$(echo "$gatewayroute" | awk -F "," '{printf "%s", $2}')
+			if [ -z "$wandevices" ]; then
+				wandevices="$wandevice"
+			else
+				wandevices=", $wandevice"
+			fi
+		done
+
+		handle=$(nft -a list flowtables | grep -w "ndsftINC" | awk -F "handle " '{printf "%s", $2}')
+
+		if [ ! -z "$handle" ]; then
+			ftdevices=$(nft -a list flowtables | grep -w -A 4 "ndsftINC" | awk -F "devices = " 'NF>1 {printf "%s", $2}')
+
+			if [ "$ftdevices" != "{ $wandevices }" ]; then
+				nft delete flowtable ip nds_mangle handle "$handle"
+			fi
+		fi
+
+		nft add flowtable ip nds_mangle ndsftINC "{ hook ingress priority -100 ; devices = { $wandevices } ; }" 2> /dev/null
+	fi
+
 	exit 0
 
 elif [ "$1" = "clientaddress" ]; then
@@ -2677,7 +2707,6 @@ elif [ "$1" = "users_to_router" ]; then
 
 elif [ "$1" = "pre_setup" ]; then
 	# creates/configures openNDS nftables base chains
-
 	# Returns exit code 0 if done, 1 if failed
 
 	pre_setup

@@ -250,8 +250,10 @@ iptables_fw_init(void)
 	// Create new chains in the mangle table
 	rc |= nftables_do_command("add chain ip nds_mangle " CHAIN_TRUSTED); // for marking trusted packets
 	rc |= nftables_do_command("add chain ip nds_mangle " CHAIN_INCOMING); // for counting incoming packets
+	rc |= nftables_do_command("add chain ip nds_mangle " CHAIN_FT_INC); // flowoffload for incoming packets
 	rc |= nftables_do_command("add chain ip nds_mangle " CHAIN_DOWNLOAD_RATE); // for controlling download rate per client
 	rc |= nftables_do_command("add chain ip nds_mangle " CHAIN_OUTGOING); // for marking authenticated packets, and for counting outgoing packets
+	rc |= nftables_do_command("add chain ip nds_mangle " CHAIN_FT_OUT); // flowoffload for outgoing packets
 
 	// Assign jumps to these new chains
 	rc |= nftables_do_command("insert rule ip nds_mangle %s iifname \"%s\" counter jump %s", CHAIN_PREROUTING, gw_interface, CHAIN_OUTGOING);

@@ -1272,21 +1272,20 @@ pre_setup () {
 		fi
 	done
 
-	# add upload flowtable
-	nft add flowtable ip nds_mangle ndsftOUT "{ hook ingress priority -100 ; devices = { $gatewayinterface } ; }"
-
 	# add required chains
 	nft add chain ip nds_filter ndsINP "{ type filter hook input priority -100 ; }" 2> /dev/null
 	nft add chain ip nds_filter ndsFWD "{ type filter hook forward priority -100 ; }" 2> /dev/null
 	nft add chain ip nds_nat ndsPRE "{ type nat hook prerouting priority -100 ; }"
 	nft add chain ip nds_mangle ndsPRE "{ type filter hook prerouting priority -100 ; }"
-	nft add chain ip nds_mangle ndsPOST "{ type filter hook postrouting priority -100 ; }"
+	nft add chain ip nds_mangle ndsPOST "{ type filter hook forward priority -100 ; }"
+	nft add chain ip nds_mangle nds_ft_INC
 	nft add chain ip nds_filter nds_allow_INP "{ type filter hook input priority 100 ; }"
 	nft add chain ip nds_filter nds_allow_FWD "{ type filter hook forward priority 100 ; }"
 
 	# add initial rules
 	nft insert rule ip nds_filter nds_allow_INP iifname "\"$gatewayinterface\"" counter accept comment "\"!opennds: allow input\""
 	nft insert rule ip nds_filter nds_allow_FWD iifname "\"$gatewayinterface\"" counter accept comment "\"!opennds: allow forward\""
+	nft insert rule ip nds_mangle ndsINC oifname "\"$gatewayinterface\"" counter jump nds_ft_INC
 
 	ret=$?
 
@@ -1805,7 +1804,7 @@ create_client_ruleset () {
 		fi
 
 		if [ "$ruleset_name" = "authenticated_users" ]; then
-			nft insert rule ip nds_filter $chain index 1 "$ipstr" "$proto" "$sdport" "$portnum" counter "$verdict"
+			nft insert rule ip nds_filter $chain index 2 "$ipstr" "$proto" "$sdport" "$portnum" counter "$verdict"
 			status=$?
 		fi
 
@@ -2238,12 +2237,45 @@ elif [ "$1" = "gatewayroute" ]; then
 			ftdevices=$(nft -a list flowtables | grep -w -A 4 "ndsftINC" | awk -F "devices = " 'NF>1 {printf "%s", $2}')
 
 			if [ "$ftdevices" != "{ $wandevices }" ]; then
+
+				rulehandles=$(nft -a list chain ip nds_mangle nds_ft_INC | grep "@ndsftINC"| awk -F "handle " '{printf "%s ", $2}')
+
+				for rulehandle in $rulehandles; do
+					nft delete rule ip nds_mangle nds_ft_INC handle "$rulehandle"
+				done
+
 				nft delete flowtable ip nds_mangle handle "$handle"
+				nft add flowtable ip nds_mangle ndsftINC "{ hook ingress priority -100 ; devices = { $wandevices } ; }" 2> /dev/null
+				nft add rule ip nds_mangle nds_ft_INC flow offload @ndsftINC counter
+				nft add rule ip nds_mangle nds_ft_INC counter return
 			fi
+		else
+			nft add flowtable ip nds_mangle ndsftINC "{ hook ingress priority -100 ; devices = { $wandevices } ; }" 2> /dev/null
+			nft add rule ip nds_mangle nds_ft_INC meta l4proto { tcp, udp } flow offload @ndsftINC counter
+			nft add rule ip nds_mangle nds_ft_INC counter return
+		fi
+	fi
+
+	# add upload flowtable
+
+	handle=$(nft -a list flowtables | grep -w "ndsftOUT" | awk -F "handle " '{printf "%s", $2}')
+
+	if [ -z "$handle" ]; then
+		option="gatewayinterface"
+		get_option_from_config
+
+		if [ -z "$gatewayinterface" ]; then
+			gatewayinterface="br-lan"
 		fi
 
-		nft add flowtable ip nds_mangle ndsftINC "{ hook ingress priority -100 ; devices = { $wandevices } ; }" 2> /dev/null
+		ftdevices=$gatewayinterface
+		nft add flowtable ip nds_filter ndsftOUT "{ hook ingress priority -100 ; devices = { $gatewayinterface } ; }"
+		nft add rule ip nds_filter nds_ft_OUT meta l4proto { tcp, udp } flow offload @ndsftOUT counter
+		nft add rule ip nds_filter nds_ft_OUT counter return
 	fi
+
+
+
 
 	exit 0
 

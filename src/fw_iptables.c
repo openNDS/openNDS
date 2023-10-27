@@ -192,6 +192,7 @@ iptables_fw_init(void)
 	char *gw_iprange = NULL;
 	int gw_port = 0;
 	char *fas_remoteip = NULL;
+	char *fas_remotefqdn = NULL;
 	int fas_port = 0;
 	t_MAC *pt;
 	int rc = 0;
@@ -216,11 +217,16 @@ iptables_fw_init(void)
 	}
 	
 	fas_remoteip = safe_calloc(STATUS_BUF);
+	fas_remotefqdn = safe_calloc(STATUS_BUF);
 
 	if (config->fas_port) {
 		fas_remoteip = safe_strdup(config->fas_remoteip);    // must free
 		fas_port = config->fas_port;
 	}
+
+	fas_remotefqdn = safe_strdup(config->fas_remotefqdn);    // must free
+
+	debug(LOG_INFO, "fas_remotefqdn [ %s ]", fas_remotefqdn);
 
 	gw_address = safe_calloc(STATUS_BUF);
 	gw_address = safe_strdup(config->gw_address);    // must free
@@ -294,7 +300,9 @@ iptables_fw_init(void)
 		rc |= nftables_do_command("add rule ip nds_nat %s mark and 0x%x == 0x%x counter return", CHAIN_OUTGOING, FW_MARK_MASK, FW_MARK_AUTHENTICATED);
 
 		// Allow access to remote FAS - CHAIN_OUTGOING and CHAIN_TO_INTERNET packets for remote FAS, ACCEPT
-		if (fas_port && strcmp(fas_remoteip, gw_ip)) {
+		if (fas_port && strcmp(config->fas_remotefqdn, "disabled") != 0) {
+			rc |= nftables_do_command("add rule ip nds_nat %s ip daddr %s tcp dport %d counter accept", CHAIN_OUTGOING, fas_remotefqdn, fas_port);
+		} else {
 			rc |= nftables_do_command("add rule ip nds_nat %s ip daddr %s tcp dport %d counter accept", CHAIN_OUTGOING, fas_remoteip, fas_port);
 		}
 
@@ -354,7 +362,10 @@ iptables_fw_init(void)
 	rc |= nftables_do_command("add rule ip nds_filter %s ct state invalid counter drop", CHAIN_TO_INTERNET);
 
 	// Allow access to remote FAS - CHAIN_TO_INTERNET packets for remote FAS, ACCEPT
-	if (fas_port && strcmp(fas_remoteip, gw_ip)) {
+
+	if (fas_port && strcmp(config->fas_remotefqdn, "disabled") != 0) {
+		rc |= nftables_do_command("add rule ip nds_filter %s ip daddr %s tcp dport %d counter accept", CHAIN_TO_INTERNET, fas_remotefqdn, fas_port);
+	} else {
 		rc |= nftables_do_command("add rule ip nds_filter %s ip daddr %s tcp dport %d counter accept", CHAIN_TO_INTERNET, fas_remoteip, fas_port);
 	}
 
@@ -401,6 +412,7 @@ iptables_fw_init(void)
 	free(gw_ip);
 	free(gw_address);
 	free(fas_remoteip);
+	free(fas_remotefqdn);
 
 	return rc;
 }

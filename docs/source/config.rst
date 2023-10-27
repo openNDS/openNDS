@@ -1098,11 +1098,11 @@ Autonomous Walled Garden configuration is activated using a list of FQDNs and Po
 
 This has the advantage of discovering all ip addresses used by the Walled Garden sites.
 
-But it does require the ipset and dnsmasq-full packages to be installed by running the following commands (on OpenWrt):
+But it does require the dnsmasq-full package to be installed and on OpenWrt 22.03.x or earlier the ipset package is also required. This is achieved by running the following commands (on OpenWrt):
 
 ``opkg update``
 
-``opkg install ipset``
+``opkg install ipset`` (OpenWrt version 22.03.x or earlier)
 
 ``opkg remove dnsmasq``
 

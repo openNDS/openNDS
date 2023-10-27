@@ -30,13 +30,13 @@ openNDS supports Autonomous Walled Garden by means of a simple configuration opt
 OpenWrt Walled Garden
 *********************
 
-The additional dependencies are the ipset and dnsmasq-full packages.
+The additional dependencies are the ipset (openWrt 23.03.x and earlier) and dnsmasq-full packages.
 Install these by running the following commands:
 
 .. code::
 
  opkg update
- opkg install ipset
+ opkg install ipset (not required for OpenWrt 23.05.x and onwards)
  opkg remove dnsmasq
  opkg install dnsmasq-full
 
@@ -68,7 +68,7 @@ Generic Linux Walled Garden
 ***************************
 On most generic Linux platforms the procedure is in principle the same as for OpenWrt.
 
-The ipset and full dnasmasq packages are requirements.
+The dnsmmasq-full and for OpenWrt 22.03.x and earlier, ipset packages are requirements.
 
 You can check the compile time options of dnsmasq with the following command:
 
@@ -76,7 +76,8 @@ You can check the compile time options of dnsmasq with the following command:
 
  dnsmasq --version | grep -m1 'Compile time options:' | cut -d: -f2
 
-If the returned string contains "no-ipset" then you will have to upgrade dnsmasq to the full version.
+If the returned string contains "no-nftset" then you will have to upgrade dnsmasq to the full version.
+(On OpenWrt 22.03.x and earlier if it contains "no-ipset", upgrade to the full version)
 
 To enable Walled Garden, add the following to the /etc/opennds/opennds.conf file
 

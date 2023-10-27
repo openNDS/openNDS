@@ -193,6 +193,7 @@ iptables_fw_init(void)
 	int gw_port = 0;
 	char *fas_remoteip = NULL;
 	char *fas_remotefqdn = NULL;
+	char *gw_fqdn = NULL;
 	int fas_port = 0;
 	t_MAC *pt;
 	int rc = 0;
@@ -218,6 +219,7 @@ iptables_fw_init(void)
 	
 	fas_remoteip = safe_calloc(STATUS_BUF);
 	fas_remotefqdn = safe_calloc(STATUS_BUF);
+	gw_fqdn = safe_calloc(STATUS_BUF);
 
 	if (config->fas_port) {
 		fas_remoteip = safe_strdup(config->fas_remoteip);    // must free
@@ -225,6 +227,7 @@ iptables_fw_init(void)
 	}
 
 	fas_remotefqdn = safe_strdup(config->fas_remotefqdn);    // must free
+	gw_fqdn = safe_strdup(config->gw_fqdn);    // must free
 
 	debug(LOG_INFO, "fas_remotefqdn [ %s ]", fas_remotefqdn);
 
@@ -347,7 +350,7 @@ iptables_fw_init(void)
 	rc |= nftables_do_command("add rule ip nds_filter %s tcp dport %d counter accept", CHAIN_TO_ROUTER, gw_port);
 
 	// CHAIN_TO_ROUTER, packets to HTTP listening on fas_port on router ACCEPT
-	if (fas_port != gw_port && strcmp(fas_remoteip, gw_ip) == 0) {
+	if (fas_port != gw_port && strcmp(fas_remoteip, gw_ip) == 0 && strcmp(fas_remotefqdn, gw_fqdn) == 0) {
 		rc |= nftables_do_command("add rule ip nds_filter %s tcp dport %d counter accept", CHAIN_TO_ROUTER, fas_port);
 	}
 
@@ -413,6 +416,7 @@ iptables_fw_init(void)
 	free(gw_address);
 	free(fas_remoteip);
 	free(fas_remotefqdn);
+	free(gw_fqdn);
 
 	return rc;
 }

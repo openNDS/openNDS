@@ -1660,24 +1660,20 @@ create_client_ruleset () {
 	status=0
 
 	# Check for user_to_router essentials and append if missing
-	essentials="allow%20udp%20port%2053 allow%20udp%20port%2067 allow%20tcp%20port%2022 allow%20tcp%20port%20443"
-	ruleset_appended=$essentials
-
 	if [ "$ruleset_name" = "users_to_router" ]; then
+		essentials="allow%20udp%20port%2053 allow%20udp%20port%2067 allow%20tcp%20port%2022 allow%20tcp%20port%20443"
+		newrules=""
 
 		for rule in $ruleset; do
+			checkrule=$(echo "$essentials" | grep "$rule")
 
-			for essential_rule in $essentials; do
-				if [ "$rule" = "$essential_rule" ]; then
-					echo "match found $rule!"
-					continue
-				fi
-			done
-
-			ruleset_appended="$ruleset_appended $rule"
+			if [ -z $checkrule ]; then
+				newrules="$newrules $rule"
+			fi
 		done
 
-		ruleset="$ruleset_appended"
+		ruleset="$essentials $newrules"
+
 	fi
 
 	for rule in $ruleset; do

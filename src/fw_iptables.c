@@ -192,6 +192,7 @@ iptables_fw_init(void)
 	char *gw_iprange = NULL;
 	int gw_port = 0;
 	char *fas_remoteip = NULL;
+	char *fas_remotefqdn = NULL;
 	int fas_port = 0;
 	t_MAC *pt;
 	int rc = 0;
@@ -216,11 +217,16 @@ iptables_fw_init(void)
 	}
 	
 	fas_remoteip = safe_calloc(STATUS_BUF);
+	fas_remotefqdn = safe_calloc(STATUS_BUF);
 
 	if (config->fas_port) {
 		fas_remoteip = safe_strdup(config->fas_remoteip);    // must free
 		fas_port = config->fas_port;
 	}
+
+	fas_remotefqdn = safe_strdup(config->fas_remotefqdn);    // must free
+
+	debug(LOG_INFO, "fas_remotefqdn [ %s ]", fas_remotefqdn);
 
 	gw_address = safe_calloc(STATUS_BUF);
 	gw_address = safe_strdup(config->gw_address);    // must free
@@ -257,6 +263,7 @@ iptables_fw_init(void)
 	rc |= nftables_do_command("insert rule ip nds_mangle %s iifname \"%s\" counter jump %s", CHAIN_PREROUTING, gw_interface, CHAIN_OUTGOING);
 	rc |= nftables_do_command("insert rule ip nds_mangle %s iifname \"%s\" counter jump %s", CHAIN_PREROUTING, gw_interface, CHAIN_TRUSTED);
 	rc |= nftables_do_command("insert rule ip nds_mangle %s oifname \"%s\" counter jump %s", CHAIN_POSTROUTING, gw_interface, CHAIN_INCOMING);
+	rc |= nftables_do_command("insert rule ip nds_mangle %s oifname \"%s\" counter jump %s", CHAIN_INCOMING, gw_interface, CHAIN_FT_INC);
 	rc |= nftables_do_command("insert rule ip nds_mangle %s oifname \"%s\" counter jump %s", CHAIN_INCOMING, gw_interface, CHAIN_DOWNLOAD_RATE);
 
 	// Rules to mark as trusted MAC address packets in mangle PREROUTING
@@ -293,7 +300,9 @@ iptables_fw_init(void)
 		rc |= nftables_do_command("add rule ip nds_nat %s mark and 0x%x == 0x%x counter return", CHAIN_OUTGOING, FW_MARK_MASK, FW_MARK_AUTHENTICATED);
 
 		// Allow access to remote FAS - CHAIN_OUTGOING and CHAIN_TO_INTERNET packets for remote FAS, ACCEPT
-		if (fas_port && strcmp(fas_remoteip, gw_ip)) {
+		if (fas_port && strcmp(config->fas_remotefqdn, "disabled") != 0) {
+			rc |= nftables_do_command("add rule ip nds_nat %s ip daddr %s tcp dport %d counter accept", CHAIN_OUTGOING, fas_remotefqdn, fas_port);
+		} else {
 			rc |= nftables_do_command("add rule ip nds_nat %s ip daddr %s tcp dport %d counter accept", CHAIN_OUTGOING, fas_remoteip, fas_port);
 		}
 
@@ -324,6 +333,7 @@ iptables_fw_init(void)
 	rc |= nftables_do_command("add chain ip nds_filter " CHAIN_TO_ROUTER);
 	rc |= nftables_do_command("add chain ip nds_filter " CHAIN_AUTHENTICATED);
 	rc |= nftables_do_command("add chain ip nds_filter " CHAIN_UPLOAD_RATE);
+	rc |= nftables_do_command("add chain ip nds_filter " CHAIN_FT_OUT); // flowoffload for outgoing packets
 
 	// filter CHAIN_INPUT chain
 
@@ -352,7 +362,10 @@ iptables_fw_init(void)
 	rc |= nftables_do_command("add rule ip nds_filter %s ct state invalid counter drop", CHAIN_TO_INTERNET);
 
 	// Allow access to remote FAS - CHAIN_TO_INTERNET packets for remote FAS, ACCEPT
-	if (fas_port && strcmp(fas_remoteip, gw_ip)) {
+
+	if (fas_port && strcmp(config->fas_remotefqdn, "disabled") != 0) {
+		rc |= nftables_do_command("add rule ip nds_filter %s ip daddr %s tcp dport %d counter accept", CHAIN_TO_INTERNET, fas_remotefqdn, fas_port);
+	} else {
 		rc |= nftables_do_command("add rule ip nds_filter %s ip daddr %s tcp dport %d counter accept", CHAIN_TO_INTERNET, fas_remoteip, fas_port);
 	}
 
@@ -371,6 +384,9 @@ iptables_fw_init(void)
 
 	// CHAIN_AUTHENTICATED, jump to CHAIN_UPLOAD_RATE to handle upload rate limiting
 	rc |= nftables_do_command("add rule ip nds_filter %s counter jump %s", CHAIN_AUTHENTICATED, CHAIN_UPLOAD_RATE);
+
+	// CHAIN_AUTHENTICATED, jump to CHAIN_FT_OUT to handle upload flowtable
+	rc |= nftables_do_command("add rule ip nds_filter %s counter jump %s", CHAIN_AUTHENTICATED, CHAIN_FT_OUT);
 
 	// CHAIN_AUTHENTICATED, any packets not matching that ruleset REJECT
 	rc |= nftables_do_command("add rule ip nds_filter %s counter reject", CHAIN_AUTHENTICATED);
@@ -396,6 +412,7 @@ iptables_fw_init(void)
 	free(gw_ip);
 	free(gw_address);
 	free(fas_remoteip);
+	free(fas_remotefqdn);
 
 	return rc;
 }
@@ -489,7 +506,7 @@ iptables_download_ratelimit_enable(t_client *client, int enable)
 
 		libcommand = safe_calloc(SMALL_BUF);
 
-		safe_snprintf(libcommand, SMALL_BUF, "/usr/lib/opennds/libopennds.sh replace_client_rule nds_mangle %s accept %s \"ip daddr %s counter packets %llu bytes %llu accept\"",
+		safe_snprintf(libcommand, SMALL_BUF, "/usr/lib/opennds/libopennds.sh replace_client_rule nds_mangle %s return %s \"ip daddr %s counter packets %llu bytes %llu return\"",
 			CHAIN_DOWNLOAD_RATE,
 			client->ip,
 			client->ip,
@@ -511,7 +528,7 @@ iptables_download_ratelimit_enable(t_client *client, int enable)
 
 		libcommand = safe_calloc(SMALL_BUF);
 
-		safe_snprintf(libcommand, SMALL_BUF, "/usr/lib/opennds/libopennds.sh replace_client_rule nds_mangle %s accept %s \"ip daddr %s limit rate %llu/minute burst %llu packets counter packets %llu bytes %llu accept\"",
+		safe_snprintf(libcommand, SMALL_BUF, "/usr/lib/opennds/libopennds.sh replace_client_rule nds_mangle %s return %s \"ip daddr %s limit rate %llu/minute burst %llu packets counter packets %llu bytes %llu return\"",
 			CHAIN_DOWNLOAD_RATE,
 			client->ip,
 			client->ip,
@@ -638,7 +655,7 @@ iptables_fw_authenticate(t_client *client)
 
 	// This rule is just for download (incoming) byte accounting. Drop all bucket overflow packets
 	rc |= nftables_do_command("insert rule ip nds_mangle %s ip daddr %s counter meta mark set mark or 0x%x", CHAIN_INCOMING, client->ip, FW_MARK_AUTHENTICATED);
-	rc |= nftables_do_command("add rule ip nds_mangle %s ip daddr %s counter accept", CHAIN_DOWNLOAD_RATE, client->ip);
+	rc |= nftables_do_command("add rule ip nds_mangle %s ip daddr %s counter return", CHAIN_DOWNLOAD_RATE, client->ip);
 	rc |= nftables_do_command("add rule ip nds_mangle %s ip daddr %s counter drop", CHAIN_DOWNLOAD_RATE, client->ip);
 
 	client->counters.incoming = 0;

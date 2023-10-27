@@ -1,3 +1,35 @@
+opennds (10.2.0)
+  * Fix - Fix - duplicate users_to_router rules [bluewavenet]
+  * Add - Automatic dns resolution of fas_remotefqdn in nftables rules [bluewavenet]
+  * Add - flowtables rules [bluewavenet]
+  * Add - dynamic flowtable support allowing multiple upstream connections [bluewavenet]
+  * Add - skip preemptivemac client if not dhcp database or is already authenticated [bluewavenet]
+  * Add - Skip auth_restore if client is in preemptivemac list [bluewavenet]
+  * Add - use daemon_auth in auth_restore [bluewavenet]
+  * Add - Dynamic refresh of configured preemptive macs [bluewavenet]
+  * Fix - suppress demon_auth debug output [bluewavenet]
+  * Add - urlencode ALL list blocks and introduce preemptivemac lists [bluewavenet]
+  * Add - fas-hid-https to makefiles [bluewavenet]
+  * Add - warning that pre-shared key will be generated and added to config if not present [bluewavenet]
+  * Add - b64decode payload in fas [bluewavenet]
+  * Add - b64encode payload before sending to fas [bluewavenet]
+  * Add - level 4 fas-hid-https [bluewavenet]
+  * Add - support for fas_secure_enabled = 4 [bluewavenet]
+  * Add - updates to comments in fas-hid script [bluewavenet]
+  * Fix - fas-hid icon position [bluewavenet]
+  * Add - wget_request support to authmon [bluewavenet]
+  * Add - ruleset full parsing of verdict, protocol ports to/from address [bluewavenet]
+  * Fix - send_to_fas_deauthed [bluewavenet]
+  * Fix - ensure action is parsed correctly in all cases [bluewavenet]
+  * Add - Quota based Fair Usage Policy, sets throttled rate when quota exceeded [bluewavenet]
+  * Add - QL code scanning support in Community theme_voucher ThemeSpec script [bluewavenet]
+  * Add - support for cpi_query in example FAS scripts [bluewavenet]
+  * Fix - memory leak when deleting client from client list [bluewavenet]
+  * Add - html entity handling for semicolon [bluewavenet]
+  * Add - Store RFC8910 request string in client data [bluewavenet]
+
+ -- Rob White <dot@blue-wave.net>  Fri, 27 Oct 2023 16:49:15 +0000
+
 opennds (10.1.3)
   * Security Advisory. This version contains fixes for multiple potential security vulnerabilities
   * Credit - Stanislav Dashevskyi - standash.github.io [standash]

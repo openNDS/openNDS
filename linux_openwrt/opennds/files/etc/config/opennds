@@ -533,7 +533,7 @@ config opennds
 	# Defaults 0
 	# Integer values only
 	#
-	# Values are in kB
+	# Values are in kb/s
 	# If set to 0, the client will be deauthenticated when the volume quota is exceeded
 	#
 	#option fup_upload_throttle_rate '0'
@@ -855,13 +855,19 @@ config opennds
 
 	###########################################################################################
 
-	# MAC addresses that do not need to authenticate
+	# Trusted Clients
+	# A list of MAC addresses of clients that do not need to authenticate.
+	#
+	# Trusted clients are granted immediate and unconditional access and do not require authentication.
+	#
+	# Trusted client data usage is not recorded and no quotas or timeouts are applied.
 	####
 	# WARNING: As client devices can use random mac addresses, a client my loose its "trusted" status by changing its mac address
 	####
 	# WARNING: As mac addresses can be "spoofed" setting a trusted mac may be a security hazard
 	####
-	#list trustedmac '00:00:C0:01:D0:1D 00:00:C0:01:D0:2A'
+	#list trustedmac '00:00:C0:01:D0:1D'
+	#list trustedmac '00:00:C0:01:D0:2A'
 	###########################################################################################
 
 	# dhcp_default_url_enable

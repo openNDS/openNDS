@@ -529,7 +529,8 @@ config opennds
 	###########################################################################################
 
 	# Fair Usage Policy Throttle Rate:
-	# If Volume quota is set, a download throttle rate can be configured
+	# If Volume quota is set, an upload/download throttle rate can be configured
+
 	# Defaults 0
 	# Integer values only
 	#

@@ -68,7 +68,7 @@ Generic Linux Walled Garden
 ***************************
 On most generic Linux platforms the procedure is in principle the same as for OpenWrt.
 
-The dnsmmasq-full and for OpenWrt 22.03.x and earlier, ipset packages are requirements.
+The dnsmmasq-full package is a requirement, but this is generally the default.
 
 You can check the compile time options of dnsmasq with the following command:
 
@@ -77,13 +77,12 @@ You can check the compile time options of dnsmasq with the following command:
  dnsmasq --version | grep -m1 'Compile time options:' | cut -d: -f2
 
 If the returned string contains "no-nftset" then you will have to upgrade dnsmasq to the full version.
-(On OpenWrt 22.03.x and earlier if it contains "no-ipset", upgrade to the full version)
 
-To enable Walled Garden, add the following to the /etc/opennds/opennds.conf file
+To enable Walled Garden, add the following to the /etc/config/opennds file
 
 .. code::
 
- walledgarden_fqdn_list <fqdn1> <fqdn2> <fqdn3> [......] <fqdnN>
+ list walledgarden_port_list '<port1> <port2> <port3> [......] <portN>'
 
 
 In addition you can specify a restricted set of ports for access to the walled garden by adding the line:

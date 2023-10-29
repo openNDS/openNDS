@@ -6,29 +6,39 @@ Overview
 
 **BinAuth provides a method of running a post authentication script** or extension program. BinAuth is ALWAYS local to NDS and as such will have access to all the resources of the local system.
 
-*BinAuth cannot be disabled.*
+**BinAuth cannot be disabled.**
 
   By default, the script /usr/lib/opennds/binauth_log.sh is used
 
   This script manages the authenticated client database.
 
-  In turn this database is used by openNDS to reauthenticate clients if a restart occurs.
+  In turn this database is used by openNDS to re-authenticate clients if a restart occurs.
   This is automatically achieved by a call to the **auth_restore** library function.
   After openNDS has restarted, clients that have remaining session time are re-authenticated.
 
-  *The custom binauth script /usr/lib/opennds/custombinauth.sh is called.
-  This custom script can be edited to provide additional user defined functionality.*
+Custom Binauth Script
+*********************
 
-  **WARNING:** The default binauth script can be replaced using ``option binauth``, but this will disable the **auth_restore** functionality.
+  The custom binauth script **/usr/lib/opennds/custombinauth.sh** is called by binauth.
+
+  This custom script can be edited to provide additional user defined functionality.
+
+  **WARNING:** The default binauth script can be replaced using ``option binauth``, but this will disable the **auth_restore** and other significant functionality.
 
   ``option binauth '/usr/lib/opennds/my_binauth_script.sh'``
+
+The Custom Binauth Variable
+***************************
 
 **A custom variable is forwarded to BinAuth**
   This can contain an embedded payload of custom data defined by the FAS. As FAS is typically remote from the NDS router, this provides a link to the local system.
 
-**BinAuth has the means to override session timeout, data rate and data volume quotas** on a client by client basis.
+Binauth Functionality
+*********************
 
-**BinAuth is called by openNDS at the following times:**
+**1. BinAuth provides a means to override session timeout, data rate and data volume quotas** on a client by client basis.
+
+**2. BinAuth is called by openNDS at the following times:**
 
  * After the client CPD browser makes an authentication request to openNDS
  * After the client device is granted Internet access by openNDS
@@ -39,6 +49,8 @@ Overview
  * After the client is authenticated by ndsctl command
  * After the client is deauthenticated by ndsctl command
  * After NDS has received a shutdown command
+
+**3. Binauth provides the openNDS logging mechanism** for both local logs and remote FAS logs.
 
 BinAuth Command Line Arguments
 ******************************

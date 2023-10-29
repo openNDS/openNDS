@@ -12,8 +12,7 @@ The global values can be overridden on a client by client basis as required.
 
 Global Data Volume Quota
 ------------------------
-If a client exceeds the global data volume quota, or the individual client quota, that client will be forced out by deauthentication.
-To continue, the client must re-authenticate.
+If a client exceeds the global data volume quota, or the individual client quota, that client will be deauthenticated or rate limited as defined by the Fair Usage Policy throttle rate.
 
 Configuring Data Volume Quotas
 ==============================
@@ -21,23 +20,40 @@ Global volume quotas are configured in the config file.
 
 **Example UCI configuration options:**
 
-.. code-block:: sh
+Values are in kB.
 
-	# If the client data quota exceeds the value set here, the client will be forced out
-	# Values are in kB
-	# If set to 0, there is no limit
-	# Integer values only
-	#
-	option uploadquota '0'
-	option downloadquota '0'
+If set to 0, there is no limit.
+
+Integer values only.
+
+``option uploadquota '0'``
+
+``option downloadquota '0'``
 
 Note: upload means to the Internet, download means from the Internet
 
 **Quotas for individual clients** will override configured global values and are set either by BinAuth or the Authmon Daemon (fas_secure_enable level 3) - see example BinAuth script (binauth_log.sh) and example FAS script (fas-aes-https.php).
 
+Fair Usage Policy Throttle Rate
+===============================
+
+If Volume quota is set, an upload/download throttle rate can be configured
+
+Defaults 0
+
+Integer values only
+
+Values are in kb/s
+
+If set to 0, the client will be deauthenticated when the volume quota is exceeded
+
+``option fup_upload_throttle_rate '0'``
+
+``option fup_download_throttle_rate '0'``
 
 Data Rate Quota Threshold
--------------------------
+=========================
+
 Both upload and download data rate quotas are a threshold above which traffic is rate limited using a dynamic bucket filter.
 
 There are no additional packages required or further dependencies.
@@ -81,9 +97,9 @@ Data Rate Quotas for Individual Clients
 ---------------------------------------
 **Data Rate Quotas for individual clients** will override configured global values and are set by ThemeSpec, BinAuth or the Authmon Daemon.
 
-FAS Level 3
-===========
-FAS level 3 uses the Authmon daemon to set quota values determined by the FAS. The example script fas-aes-https.php shows how to implement this.
+FAS Levels 3 and 4
+==================
+FAS levels 3 and 4 use the Authmon daemon to set quota values determined by the FAS. The example scripts fas-hid-https.php and fas-aes-https.php show how to implement this.
 
 FAS level 0, 1 and 2
 ====================
@@ -95,7 +111,3 @@ Traffic Shaping
 ***************
 
 If a fixed ceiling data rate is required, third party traffic shaping packages can be used in place of the built in openNDS Rate Quota Thresholds.
-
-For example, SQM - Smart Queue Management (sqm-scripts) package is available for OpenWrt and generic Linux (note however, at the time of writing SQM scripts is not fully compatible with nftables and has a limited dependency on legacy iptables.
-
-See: https://github.com/tohojo/sqm-scripts

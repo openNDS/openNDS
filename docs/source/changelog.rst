@@ -2,6 +2,7 @@ What's New? - ChangeLog
 #######################
 
 opennds (10.2.0)
+  * Add - urandom hash to key generation [bluewavenet]
   * Fix - Fix - duplicate users_to_router rules [bluewavenet]
   * Add - Automatic dns resolution of fas_remotefqdn in nftables rules [bluewavenet]
   * Add - flowtables rules [bluewavenet]

@@ -2914,7 +2914,10 @@ elif [ "$1" = "is_nodog" ]; then
 
 elif [ "$1" = "generate_key" ]; then
 	# Generate a key
-	date | sha256sum | awk '{printf "%s", $1}'
+	k1=$(date | sha256sum | awk '{printf "%s", $1}')
+	k2=$(tr -cd "[:digit:]" < /dev/urandom | head -c 64 | sha256sum)
+	printf "$k1$k2" | sha256sum | awk -F' ' '{printf $1}'
+
 	exit 0
 
 elif [ "$1" = "set_key" ]; then

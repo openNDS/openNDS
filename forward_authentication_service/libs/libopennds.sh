@@ -1676,6 +1676,13 @@ create_client_ruleset () {
 
 	fi
 
+	# Check for authenticated_users and reverse the order of rules
+	if [ "$ruleset_name" = "authenticated_users" ]; then
+		ruleset=$(echo "$ruleset" | awk '{ for (i = NF; i > 0; i = i - 1) printf("%s ", $i) }')
+	fi
+
+
+
 	for rule in $ruleset; do
 		urldecode $rule
 		rule=$urldecoded

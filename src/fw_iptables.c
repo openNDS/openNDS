@@ -391,8 +391,8 @@ iptables_fw_init(void)
 	// CHAIN_AUTHENTICATED, jump to CHAIN_FT_OUT to handle upload flowtable
 	rc |= nftables_do_command("add rule ip nds_filter %s counter jump %s", CHAIN_AUTHENTICATED, CHAIN_FT_OUT);
 
-	// CHAIN_AUTHENTICATED, any packets not matching that ruleset REJECT
-	rc |= nftables_do_command("add rule ip nds_filter %s counter reject", CHAIN_AUTHENTICATED);
+	// CHAIN_AUTHENTICATED, any packets not matching that ruleset ACCEPT
+	rc |= nftables_do_command("add rule ip nds_filter %s counter accept", CHAIN_AUTHENTICATED);
 
 	// CHAIN_TO_INTERNET, all other packets REJECT
 	rc |= nftables_do_command("add rule ip nds_filter %s counter reject", CHAIN_TO_INTERNET);

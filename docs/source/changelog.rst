@@ -2,6 +2,8 @@ What's New? - ChangeLog
 #######################
 
 opennds (10.2.0)
+  * Add - ensure authenticated user rules are added in list order [bluewave.net]
+  * Add - Set default authenticated policy to accept [bluewavenet]
   * Add - urandom hash to key generation [bluewavenet]
   * Fix - Fix - duplicate users_to_router rules [bluewavenet]
   * Add - Automatic dns resolution of fas_remotefqdn in nftables rules [bluewavenet]

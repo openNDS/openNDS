@@ -1005,12 +1005,15 @@ Example:
 Access Control For Authenticated Users
 **************************************
 
-Grant Access For Authenticated Users (allow)
+* Access can be allowed by openNDS but the final decision will be passed on to the operating system firewall. (Note: passthrough is deprecated as in nftables "allow" is equivalent to the old "passthrough"
+* All listed rules will be applied in the order present in the list.
+* An ip address or an FQDN may be included in a list entry.
+* If an FQDN resolves to multiple ip addresses, the rule will **NOT** be added. Rules for such FQDNs must be added elsewhere (eg the operating system firewall)
+
+Allow Access for Authenticated Users (allow)
 --------------------------------------------
 
-* Access can be allowed by openNDS but the final decision will be passed on to the operating system firewall. (Note: passthrough is deprecated as in nftables "allow" is equivalent to the old "passthrough"
-
-Any entries set here, or below in Block Access, will override the default
+Any entries set here, or below in Block Access, are in addition to the default policy of "allow all"
 
 Default:
 

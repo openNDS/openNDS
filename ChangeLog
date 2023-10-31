@@ -1,4 +1,6 @@
 opennds (10.2.0)
+  * Add - ensure authenticated user rules are added in list order [bluewave.net]
+  * Add - Set default authenticated policy to accept [bluewavenet]
   * Fix - Fix - duplicate users_to_router rules [bluewavenet]
   * Add - Automatic dns resolution of fas_remotefqdn in nftables rules [bluewavenet]
   * Add - flowtables rules [bluewavenet]

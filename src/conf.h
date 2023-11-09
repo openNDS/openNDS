@@ -119,8 +119,6 @@
 
 // Default lists
 #define DEFAULT_TRUSTEDMACLIST ""
-#define DEFAULT_WALLEDGARDEN_FQDN_LIST ""
-#define DEFAULT_WALLEDGARDEN_PORT_LIST ""
 #define DEFAULT_FAS_CUSTOM_PARAMETERS_LIST ""
 #define DEFAULT_USERS_TO_ROUTER "allow%20udp%20port%2053 allow%20udp%20port%2067 allow%20tcp%20port%2022 allow%20tcp%20port%20443"
 #define DEFAULT_AUTHENTICATED_USERS "allow%20all"
@@ -257,8 +255,6 @@ typedef struct {
 	int syslog_facility;					//@brief facility to use when using syslog for logging
 	int macmechanism; 					//@brief mechanism wrt MAC addrs
 	t_MAC *trustedmaclist;					//@brief list of trusted macs
-	t_WGP *walledgarden_port_list;				//@brief list of Walled Garden Ports
-	t_WGFQDN *walledgarden_fqdn_list;			//@brief list of Walled Garden FQDNs
 	t_FASPARAM *fas_custom_parameters_list;			//@brief list of Custom FAS parameters
 	t_FASVAR *fas_custom_variables_list;			//@brief list of Custom FAS variables
 	t_FASIMG *fas_custom_images_list;			//@brief list of Custom FAS images
@@ -283,8 +279,6 @@ s_config *config_get_config(void);
 // @brief Initialise the conf system
 void config_init(int argc, char **argv);
 void parse_trusted_mac_list(const char[]);
-void parse_walledgarden_fqdn_list(const char[]);
-void parse_walledgarden_port_list(const char[]);
 void parse_fas_custom_parameters_list(const char[]);
 void parse_fas_custom_variables_list(const char[]);
 void parse_fas_custom_images_list(const char[]);

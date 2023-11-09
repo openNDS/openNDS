@@ -301,8 +301,6 @@ config_init(int argc, char **argv)
 
 	// Lists
 	parse_trusted_mac_list(set_list_str("trustedmac", DEFAULT_TRUSTEDMACLIST, debug_level));
-	parse_walledgarden_fqdn_list(set_list_str("walledgarden_fqdn_list", DEFAULT_WALLEDGARDEN_FQDN_LIST, debug_level));
-	parse_walledgarden_port_list(set_list_str("walledgarden_port_list", DEFAULT_WALLEDGARDEN_PORT_LIST, debug_level));
 	parse_fas_custom_parameters_list(set_list_str("fas_custom_parameters_list", DEFAULT_FAS_CUSTOM_PARAMETERS_LIST, debug_level));
 
 	// Before we do anything else, reset the firewall (cleans it, in case we are restarting or after an opennds crash)
@@ -430,51 +428,6 @@ int check_ip_format(const char *possibleip)
 int check_mac_format(const char possiblemac[])
 {
 	return ether_aton(possiblemac) != NULL;
-}
-
-int add_to_walledgarden_fqdn_list(const char possiblefqdn[])
-{
-	char fqdn[128];
-	t_WGFQDN *p = NULL;
-	char possiblefqdn_urlencoded[256] = {0};
-
-	memset(fqdn, 0, sizeof(fqdn));
-	memset(possiblefqdn_urlencoded, 0, sizeof(possiblefqdn_urlencoded));
-
-	// Sanitise FQDN
-	uh_urlencode(possiblefqdn_urlencoded, sizeof(possiblefqdn_urlencoded), possiblefqdn, strlen(possiblefqdn));
-	debug(LOG_DEBUG, "[%s] is the urlencoded FQDN", possiblefqdn_urlencoded);
-
-	if (strcmp(possiblefqdn_urlencoded, possiblefqdn) == 0) {
-
-		sscanf(possiblefqdn, "%s", fqdn);
-
-		// Add FQDN to head of list
-		p = safe_calloc(sizeof(t_WGFQDN));
-		p->wgfqdn = safe_strdup(fqdn);
-		p->next = config.walledgarden_fqdn_list;
-		config.walledgarden_fqdn_list = p;
-		debug(LOG_INFO, "Added Walled Garden FQDN [%s] to list", possiblefqdn);
-	} else {
-		debug(LOG_WARNING, "Invalid FQDN [%s], please remove from the list; skipping..", possiblefqdn);
-	}
-	return 0;
-}
-
-int add_to_walledgarden_port_list(const char possibleport[])
-{
-	unsigned short int port;
-	t_WGP *p = NULL;
-
-	sscanf(possibleport, "%hu", &port);
-
-	// Add walled garden port to head of list
-	p = safe_calloc(sizeof(t_WGP));
-	p->wgport = port;
-	p->next = config.walledgarden_port_list;
-	config.walledgarden_port_list = p;
-	debug(LOG_INFO, "Added Walled Garden port [%hu] to list", port);
-	return 0;
 }
 
 int add_to_fas_custom_parameters_list(const char possibleparam[])
@@ -656,52 +609,6 @@ int is_trusted_mac(const char *mac)
 	}
 
 	return 0;
-}
-
-/* Given a pointer to a comma or whitespace delimited sequence of
- * Walled Garden FQDNs, add each FQDN to config.walledgardenfqdnlist
- */
-void parse_walledgarden_fqdn_list(const char ptr[])
-{
-	char *ptrcopy = NULL;
-	char *ptrcopyptr;
-	char *possiblefqdn = NULL;
-
-	// strsep modifies original, so let's make a copy
-	ptrcopyptr = ptrcopy = safe_strdup(ptr);
-
-	while ((possiblefqdn = strsep(&ptrcopy, ", \t"))) {
-		if (strlen(possiblefqdn) > 0) {
-			if (add_to_walledgarden_fqdn_list(possiblefqdn) < 0) {
-				exit(1);
-			}
-		}
-	}
-
-	free(ptrcopyptr);
-}
-
-/* Given a pointer to a comma or whitespace delimited sequence of
- * Walled Garden FQDN ports, add each port number to config.walledgardenportlist
- */
-void parse_walledgarden_port_list(const char ptr[])
-{
-	char *ptrcopy = NULL;
-	char *ptrcopyptr;
-	char *possibleport = NULL;
-
-	// strsep modifies original, so let's make a copy
-	ptrcopyptr = ptrcopy = safe_strdup(ptr);
-
-	while ((possibleport = strsep(&ptrcopy, ", \t"))) {
-		if (strlen(possibleport) > 0) {
-			if (add_to_walledgarden_port_list(possibleport) < 0) {
-				exit(1);
-			}
-		}
-	}
-
-	free(ptrcopyptr);
 }
 
 /* Given a pointer to a comma or whitespace delimited sequence of

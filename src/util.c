@@ -857,6 +857,7 @@ ndsctl_status(FILE *fp)
 	t_WGP *allowed_wgport;
 	t_WGFQDN *allowed_wgfqdn;
 	const char *mhdversion = MHD_get_version();
+	char *msg;
 
 	config = config_get_config();
 
@@ -1091,39 +1092,88 @@ ndsctl_status(FILE *fp)
 	UNLOCK_CLIENT_LIST();
 
 	fprintf(fp, "====\n");
-
-	fprintf(fp, "Trusted MAC addresses:");
+	fprintf(fp, "Trusted MAC addresses:\n");
 
 	if (config->trustedmaclist != NULL) {
-		fprintf(fp, "\n");
+
 		for (trust_mac = config->trustedmaclist; trust_mac != NULL; trust_mac = trust_mac->next) {
-			fprintf(fp, "  %s\n", trust_mac->mac);
+			fprintf(fp, "%s\n", trust_mac->mac);
 		}
 	} else {
-		fprintf(fp, " none\n");
+		fprintf(fp, "none\n");
 	}
 
-	fprintf(fp, "Walled Garden FQDNs:");
+	fprintf(fp, "====\n");
+	fprintf(fp, "Walledgarden FQDNs:\n");
 
-	if (config->walledgarden_fqdn_list != NULL) {
-		fprintf(fp, "\n");
-		for (allowed_wgfqdn = config->walledgarden_fqdn_list; allowed_wgfqdn != NULL; allowed_wgfqdn = allowed_wgfqdn->next) {
-			fprintf(fp, "  %s\n", allowed_wgfqdn->wgfqdn);
+	msg = safe_calloc(SMALL_BUF);
+
+	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, "/usr/lib/opennds/libopennds.sh get_list_from_config walledgarden_fqdn_list newlines") == 0) {
+
+		if (strcmp(msg, "") == 0) {
+			fprintf(fp, "none");
+
+		} else {
+			debug(LOG_INFO, "Walledgarden fqdn(s) [ %s ]", msg);
+			fprintf(fp, "%s", msg);
 		}
-	} else {
-		fprintf(fp, " none\n");
 	}
+	free(msg);
 
-	fprintf(fp, "Walled Garden Ports:");
+	fprintf(fp, "\n");
+	fprintf(fp, "\n");
+	fprintf(fp, "Walledgarden Ports:\n");
 
-	if (config->walledgarden_port_list != NULL) {
-		fprintf(fp, "\n");
-		for (allowed_wgport = config->walledgarden_port_list; allowed_wgport != NULL; allowed_wgport = allowed_wgport->next) {
-			fprintf(fp, "  %u\n", allowed_wgport->wgport);
+	msg = safe_calloc(SMALL_BUF);
+
+	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, "/usr/lib/opennds/libopennds.sh get_list_from_config walledgarden_port_list newlines") == 0) {
+
+		if (strcmp(msg, "") == 0) {
+			fprintf(fp, "all");
+
+		} else {
+			debug(LOG_INFO, "Walledgarden port(s) [ %s ]", msg);
+			fprintf(fp, "%s", msg);
 		}
-	} else {
-		fprintf(fp, " none\n");
 	}
+	fprintf(fp, "\n");
+	free(msg);
+
+	fprintf(fp, "====\n");
+	fprintf(fp, "Blocklist FQDNs:\n");
+
+	msg = safe_calloc(SMALL_BUF);
+
+	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, "/usr/lib/opennds/libopennds.sh get_list_from_config blocklist_fqdn_list newlines") == 0) {
+
+		if (strcmp(msg, "") == 0) {
+			fprintf(fp, "none");
+
+		} else {
+			debug(LOG_INFO, "Blocklist fqdn(s) [ %s ]", msg);
+			fprintf(fp, "%s", msg);
+		}
+	}
+	free(msg);
+
+	fprintf(fp, "\n");
+	fprintf(fp, "\n");
+	fprintf(fp, "Blocklist Ports:\n");
+
+	msg = safe_calloc(SMALL_BUF);
+
+	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, "/usr/lib/opennds/libopennds.sh get_list_from_config blocklist_port_list newlines") == 0) {
+
+		if (strcmp(msg, "") == 0) {
+			fprintf(fp, "all\n");
+
+		} else {
+			debug(LOG_INFO, "Blocklist port(s) [ %s ]", msg);
+			fprintf(fp, "%s\n", msg);
+		}
+	}
+
+	free(msg);
 
 	fprintf(fp, "========\n");
 }

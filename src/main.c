@@ -199,6 +199,11 @@ termination_handler(int s)
 	execute_ret_url_encoded(msg, SMALL_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset delete walledgarden");
 	free(msg);
 
+	// If Block List nftset exists, destroy it.
+	msg = safe_calloc(SMALL_BUF);
+	execute_ret_url_encoded(msg, SMALL_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset delete blocklist");
+	free(msg);
+
 	// Restart dnsmasq
 	safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" &");
 	debug(LOG_DEBUG, "restart command [ %s ]", dnscmd);
@@ -508,23 +513,34 @@ setup_from_config(void)
 	}
 
 	// nft sets
-	// For Walled Garden - Check we have nftset support and if we do, set it up
-	if (config->walledgarden_fqdn_list) {
+	// Check we have nftset support and if we do, set it up
 
-		// If Walled Garden nftset exists, destroy it.
-		msg = safe_calloc(SMALL_BUF);
 
-		execute_ret_url_encoded(msg, SMALL_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset delete walledgarden");
-		free(msg);
+	// Clean up: If nftsets exist, destroy them.
+	msg = safe_calloc(SMALL_BUF);
+	execute_ret_url_encoded(msg, SMALL_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset delete walledgarden");
+	free(msg);
 
-		// Set up the Walled Garden
-		msg = safe_calloc(SMALL_BUF);
+	msg = safe_calloc(SMALL_BUF);
+	execute_ret_url_encoded(msg, SMALL_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset delete blocklist");
+	free(msg);
 
-		if (execute_ret_url_encoded(msg, STATUS_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset insert walledgarden ") == 0) {
-			debug(LOG_INFO, "Walled Garden Setup Request sent");
-		}
-		free(msg);
+
+	// Set up the Walled Garden
+	msg = safe_calloc(SMALL_BUF);
+
+	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset insert walledgarden") == 0) {
+		debug(LOG_INFO, "Walled Garden Setup Request sent");
 	}
+	free(msg);
+
+	// Set up the Block List
+	msg = safe_calloc(SMALL_BUF);
+
+	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset insert blocklist reject") == 0) {
+		debug(LOG_INFO, "Block List Setup Request sent");
+	}
+	free(msg);
 
 
 	// Restart dnsmasq

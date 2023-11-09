@@ -854,8 +854,6 @@ ndsctl_status(FILE *fp)
 	unsigned long long int download_bytes, upload_bytes;
 	t_MAC *trust_mac;
 	time_t sysuptime;
-	t_WGP *allowed_wgport;
-	t_WGFQDN *allowed_wgfqdn;
 	const char *mhdversion = MHD_get_version();
 	char *msg;
 

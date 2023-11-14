@@ -921,9 +921,9 @@ ndsctl_status(FILE *fp)
 	}
 
 	if (config->preauth) {
-		fprintf(fp, "Preauth Script: %s\n", config->preauth);
+		fprintf(fp, "ThemeSpec Core Library: %s\n", config->preauth);
 	} else {
-		fprintf(fp, "Preauth: Disabled\n");
+		fprintf(fp, "ThemeSpec: Disabled\n");
 	}
 
 	if (config->fas_port) {

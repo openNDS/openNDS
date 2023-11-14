@@ -308,3 +308,5 @@ int set_debuglevel(const char[]);
 } while (0)
 
 #endif // _CONF_H_
+
+char *set_list_str(char *list, const char *default_list, char *debug_level);

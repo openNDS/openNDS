@@ -280,9 +280,9 @@ config_init(int argc, char **argv)
 	sscanf(set_option_str("fw_mark_authenticated", DEFAULT_FW_MARK_AUTHENTICATED, debug_level), "%x", &config.fw_mark_authenticated);
 	sscanf(set_option_str("fw_mark_auth_blocked", DEFAULT_FW_MARK_AUTH_BLOCKED, debug_level), "%x", &config.fw_mark_auth_blocked);
 	sscanf(set_option_str("fw_mark_trusted", DEFAULT_FW_MARK_TRUSTED, debug_level), "%x", &config.fw_mark_trusted);
-/*
-	config.ip6 = DEFAULT_IP6;
-*/
+
+	// config.ip6 = DEFAULT_IP6;
+
 	// Parameters kept in config but have no default or config value
 	config.gw_address = NULL;
 	config.gw_ip = NULL;
@@ -375,19 +375,6 @@ config_init(int argc, char **argv)
 		free(setupcmd);
 		free(msg);
 	}
-
-	// Now initialize the firewall
-	if (iptables_fw_init() != 0) {
-		debug(LOG_ERR, "Error initializing firewall rules! Cleaning up");
-		iptables_fw_destroy();
-		debug(LOG_ERR, "Exiting because of error initializing firewall rules");
-		exit(1);
-	}
-
-	// Add rulesets
-	create_client_ruleset ("users_to_router", set_list_str("users_to_router", DEFAULT_USERS_TO_ROUTER, debug_level));
-	create_client_ruleset ("preauthenticated_users", set_list_str("preauthenticated_users", DEFAULT_PREAUTHENTICATED_USERS, debug_level));
-	create_client_ruleset ("authenticated_users", set_list_str("authenticated_users", DEFAULT_AUTHENTICATED_USERS, debug_level));
 
 	// Clean up any old database files and set some needed parameters
 	libcmd = safe_calloc(STATUS_BUF);

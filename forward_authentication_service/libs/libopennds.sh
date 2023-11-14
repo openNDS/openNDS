@@ -1718,7 +1718,7 @@ create_client_ruleset () {
 		for rule in $ruleset; do
 			checkrule=$(echo "$essentials" | grep "$rule")
 
-			if [ -z $checkrule ]; then
+			if [ -z "$checkrule" ]; then
 				newrules="$newrules $rule"
 			fi
 		done
@@ -1983,7 +1983,8 @@ preemptivemac () {
 #					#
 #########################################
 
-querystr=$1
+querystr="$1"
+
 query_type=${querystr:0:9}
 
 if [ "$query_type" = "%3ffas%3d" ]; then
@@ -2286,6 +2287,8 @@ elif [ "$1" = "gatewayroute" ]; then
 	printf "$gatewayinterfaces"
 
 	if [ "$gatewayinterfaces" != "offline" ]; then
+		# check if flowtables exist and create or update them as required
+
 		# configure download flowtable
 
 		wandevices=""
@@ -2326,9 +2329,9 @@ elif [ "$1" = "gatewayroute" ]; then
 
 	# add upload flowtable
 
-	handle=$(nft -a list flowtables | grep -w "ndsftOUT" | awk -F "handle " '{printf "%s", $2}')
+	fttest=$(nft list flowtable ip nds_filter ndsftOUT &> /dev/null ; echo $?)
 
-	if [ -z "$handle" ]; then
+	if [ $fttest -gt 0 ]; then
 		option="gatewayinterface"
 		get_option_from_config
 
@@ -2336,14 +2339,15 @@ elif [ "$1" = "gatewayroute" ]; then
 			gatewayinterface="br-lan"
 		fi
 
-		ftdevices=$gatewayinterface
 		nft add flowtable ip nds_filter ndsftOUT "{ hook ingress priority -100 ; devices = { $gatewayinterface } ; }"
+	fi
+
+	ftruletest=$(nft list chain ip nds_filter nds_ft_OUT 2> /dev/null | grep -q -w "meta l4proto"; echo $?)
+
+	if [ $ftruletest -gt 0 ]; then
 		nft add rule ip nds_filter nds_ft_OUT meta l4proto { tcp, udp } flow offload @ndsftOUT counter
 		nft add rule ip nds_filter nds_ft_OUT counter return
 	fi
-
-
-
 
 	exit 0
 

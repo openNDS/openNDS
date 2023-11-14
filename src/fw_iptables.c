@@ -366,10 +366,13 @@ iptables_fw_init(void)
 
 	// Allow access to remote FAS - CHAIN_TO_INTERNET packets for remote FAS, ACCEPT
 
-	if (fas_port && strcmp(config->fas_remotefqdn, "disabled") != 0) {
-		rc |= nftables_do_command("add rule ip nds_filter %s ip daddr %s tcp dport %d counter accept", CHAIN_TO_INTERNET, fas_remotefqdn, fas_port);
-	} else {
-		rc |= nftables_do_command("add rule ip nds_filter %s ip daddr %s tcp dport %d counter accept", CHAIN_TO_INTERNET, fas_remoteip, fas_port);
+	if (config->fas_port != 0) {
+
+		if (strcmp(config->fas_remotefqdn, "disabled") != 0) {
+			rc |= nftables_do_command("add rule ip nds_filter %s ip daddr %s tcp dport %d counter accept", CHAIN_TO_INTERNET, fas_remotefqdn, fas_port);
+		} else {
+			rc |= nftables_do_command("add rule ip nds_filter %s ip daddr %s tcp dport %d counter accept", CHAIN_TO_INTERNET, fas_remoteip, fas_port);
+		}
 	}
 
 	// CHAIN_TO_INTERNET, packets marked TRUSTED:

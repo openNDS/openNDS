@@ -512,44 +512,15 @@ setup_from_config(void)
 		free(msg);
 	}
 
-	// nft sets
-	// Check we have nftset support and if we do, set it up
-
-
-	// Clean up: If nftsets exist, destroy them.
-	msg = safe_calloc(SMALL_BUF);
-	execute_ret_url_encoded(msg, SMALL_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset delete walledgarden");
-	free(msg);
-
-	msg = safe_calloc(SMALL_BUF);
-	execute_ret_url_encoded(msg, SMALL_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset delete blocklist");
-	free(msg);
-
-
-	// Set up the Walled Garden
-	msg = safe_calloc(SMALL_BUF);
-
-	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset insert walledgarden") == 0) {
-		debug(LOG_INFO, "Walled Garden Setup Request sent");
-	}
-	free(msg);
-
-	// Set up the Block List
-	msg = safe_calloc(SMALL_BUF);
-
-	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset insert blocklist reject") == 0) {
-		debug(LOG_INFO, "Block List Setup Request sent");
-	}
-	free(msg);
-
-
-	// Restart dnsmasq
+	// Restart dnsmasq (because we need it to resolve our gateway fqdn) and wait for it
 	dnscmd = safe_calloc(STATUS_BUF);
-	safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" &");
+	safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" ");
 	debug(LOG_DEBUG, "restart command [ %s ]", dnscmd);
 	system(dnscmd);
-	debug(LOG_INFO, "Dnsmasq restarted");
+	debug(LOG_INFO, "Dnsmasq restarting");
 	free(dnscmd);
+	// Even though the command completed, dnsmasq might not be up yet, so sleep a little
+	sleep(1);
 
 	// Encode gatewayname
 	char idbuf[STATUS_BUF] = {0};
@@ -611,24 +582,15 @@ setup_from_config(void)
 	} else if (config->login_option_enabled == 0 && config->fas_port == 0 && config->preauth == NULL) {
 		debug(LOG_NOTICE, "Click to Continue option is Enabled.\n");
 		config->preauth = safe_strdup(libscript);
-	} else if (config->login_option_enabled == 0 && config->fas_port == 0 && config->preauth != NULL) {
-		debug(LOG_NOTICE, "Custom PreAuth Script Enabled.\n");
 	} else if (config->login_option_enabled == 0 && config->fas_port >= 1 ) {
 		debug(LOG_NOTICE, "FAS Enabled.\n");
 		config->preauth = NULL;
 	}
 
-	// If PreAuth is enabled, override any FAS configuration and check script exists
-	if (config->preauth) {
+	// If fasport not set, override any FAS configuration
+	if (config->fas_port == 0) {
 		debug(LOG_NOTICE, "Preauth is Enabled - Overriding FAS configuration.\n");
 		debug(LOG_INFO, "Preauth Script is %s\n", config->preauth);
-
-
-		if (!((stat(config->preauth, &sb) == 0) && S_ISREG(sb.st_mode) && (sb.st_mode & S_IXUSR))) {
-			debug(LOG_ERR, "Preauth script does not exist or is not executable: %s", config->preauth);
-			debug(LOG_ERR, "Exiting...");
-			exit(1);
-		}
 
 		//override all other FAS settings
 		config->fas_remoteip = safe_strdup(config->gw_ip);
@@ -869,6 +831,59 @@ setup_from_config(void)
 	if (sizeof(time_t) == 4) {
 		debug(LOG_WARNING, "WARNING - Year 2038 bug detected in system (32 bit time). Continuing.....");
 	}
+
+	// Now initialize the firewall
+	if (iptables_fw_init() != 0) {
+		debug(LOG_ERR, "Error initializing firewall rules! Cleaning up");
+		iptables_fw_destroy();
+		debug(LOG_ERR, "Exiting because of error initializing firewall rules");
+		exit(1);
+	}
+
+	// Add rulesets
+	create_client_ruleset ("users_to_router", set_list_str("users_to_router", DEFAULT_USERS_TO_ROUTER, "2"));
+	create_client_ruleset ("preauthenticated_users", set_list_str("preauthenticated_users", DEFAULT_PREAUTHENTICATED_USERS, "2"));
+	create_client_ruleset ("authenticated_users", set_list_str("authenticated_users", DEFAULT_AUTHENTICATED_USERS, "2"));
+
+	// nft sets
+
+	// Clean up: If nftsets exist, destroy them.
+	msg = safe_calloc(SMALL_BUF);
+	execute_ret_url_encoded(msg, SMALL_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset delete walledgarden");
+	free(msg);
+
+	msg = safe_calloc(SMALL_BUF);
+	execute_ret_url_encoded(msg, SMALL_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset delete blocklist");
+	free(msg);
+
+
+	// Set up the Walled Garden
+	msg = safe_calloc(SMALL_BUF);
+
+	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset insert walledgarden") == 0) {
+		debug(LOG_INFO, "Walled Garden Setup Request sent");
+	}
+
+	free(msg);
+
+	// Set up the Block List
+	msg = safe_calloc(SMALL_BUF);
+
+	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset insert blocklist reject") == 0) {
+		debug(LOG_INFO, "Block List Setup Request sent");
+	}
+
+	free(msg);
+
+	// Restart dnsmasq again for nftsets, but this time se can do it in the background
+	dnscmd = safe_calloc(STATUS_BUF);
+	safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" &");
+	debug(LOG_DEBUG, "restart command [ %s ]", dnscmd);
+	system(dnscmd);
+	debug(LOG_INFO, "Dnsmasq restarting");
+	free(dnscmd);
+
+
 }
 
 /**@internal

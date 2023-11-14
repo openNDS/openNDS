@@ -39,7 +39,11 @@ install:
 	cp opennds $(DESTDIR)/usr/bin/
 	mkdir -p $(DESTDIR)/etc/opennds/htdocs/images
 	mkdir -p $(DESTDIR)/etc/config
-	cp linux_openwrt/opennds/files/etc/config/opennds $(DESTDIR)/etc/config/
+	if [ -e $(DESTDIR)/etc/config/opennds ]; then \
+		cp linux_openwrt/opennds/files/etc/config/opennds $(DESTDIR)/etc/config/opennds.default; \
+	else\
+		cp linux_openwrt/opennds/files/etc/config/opennds $(DESTDIR)/etc/config/; \
+	fi
 	cp resources/splash.css $(DESTDIR)/etc/opennds/htdocs/
 	cp resources/splash.jpg $(DESTDIR)/etc/opennds/htdocs/images/
 	mkdir -p $(DESTDIR)/etc/systemd/system

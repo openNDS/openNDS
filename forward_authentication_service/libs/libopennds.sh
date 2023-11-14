@@ -1517,8 +1517,8 @@ nft_set () {
 
 					if [ ! -z "$ipsetconf" ]; then
 						ipsetconf="$ipsetconf/$nftsetname"
-						sedcmd="-i '/System\|$nftsetname/d' $conflocation"
-						sed "$sedcmd"
+						config=$(grep -v "$nftsetname" "$conflocation")
+						echo "$config" > "$conflocation"
 						echo "$ipsetconf" >> "$conflocation"
 					fi
 				else
@@ -1545,10 +1545,6 @@ nft_set () {
 		fi
 	fi
 }
-
-#sanitise_fqdn () {
-#
-#}
 
 pad_str () {
 	if [ "$hand" = "right" ]; then

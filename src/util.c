@@ -348,8 +348,9 @@ int check_routing(int watchdog)
 		debug(LOG_DEBUG, "Online Status [ %d ]", config->online_status);
 		return config->online_status;
 	} else {
-		debug(LOG_ERR, "Unable to get routing configuration, exiting ...");
-		exit(1);
+		debug(LOG_ERR, "Unable to get routing configuration, retrying later ...");
+		config->online_status = 0;
+		return config->online_status;
 	}
 }
 

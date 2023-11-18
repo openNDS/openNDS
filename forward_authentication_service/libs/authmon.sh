@@ -11,16 +11,23 @@ get_option_from_config() {
 
 # Function to send commands to openNDS:
 do_ndsctl () {
-	local timeout=4
+	local timeout=15
 
 	for tic in $(seq $timeout); do
 		ndsstatus="ready"
+		ndsctlcmd="$ndsctlcmd 2>&1"
 		ndsctlout=$(eval ndsctl "$ndsctlcmd")
 
 		for keyword in $ndsctlout; do
 
 			if [ $keyword = "locked" ]; then
 				ndsstatus="busy"
+				sleep 1
+				break
+			fi
+
+			if [ $keyword = "probably" ]; then
+				ndsstatus="not_started"
 				sleep 1
 				break
 			fi
@@ -47,6 +54,10 @@ do_ndsctl () {
 
 		if [ "$ndsstatus" = "ready" ]; then
 			break
+		fi
+
+		if [ "$ndsstatus" = "not_started" ]; then
+			continue
 		fi
 	done
 }
@@ -137,11 +148,11 @@ acklist="*"
 
 ret=$(eval "$remoterequest" "\"$url\"" "\"$action\"" "\"$gatewayhash\"" "\"$user_agent\"" "\"$payload\"")
 
-if [ $debuglevel -ge 3 ]; then
+if [ "$debuglevel" -ge 3 ]; then
 	echo "authmon - action $action, response [$ret]" | logger -p "daemon.debug" -t "authmon[$ndspid]"
 fi
 
-if [ $debuglevel -ge 1 ]; then
+if [ "$debuglevel" -ge 1 ]; then
 	echo "authmon - nat_traversal_poll_interval is $loop_interval second(s)" | logger -p "daemon.notice" -t "authmon[$ndspid]"
 fi
 

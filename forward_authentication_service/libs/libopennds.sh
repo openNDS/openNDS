@@ -79,9 +79,9 @@ webget() {
 	fetch=$(type -t uclient-fetch)
 
 	if [ -z "$fetch" ]; then
-		wret="wget $spider $checkcert -t 1 -T 4"
+		wret="wget -q $spider $checkcert -t 1 -T 4"
 	else
-		wret="uclient-fetch $spider $checkcert -T 4"
+		wret="uclient-fetch -q $spider $checkcert -T 4"
 	fi
 }
 
@@ -1293,7 +1293,9 @@ pre_setup () {
 	nft add chain ip nds_nat ndsPRE "{ type nat hook prerouting priority -100 ; }"
 	nft add chain ip nds_mangle ndsPRE "{ type filter hook prerouting priority -100 ; }"
 	nft add chain ip nds_mangle ndsPOST "{ type filter hook forward priority -100 ; }"
+	nft add chain ip nds_mangle ndsINC
 	nft add chain ip nds_mangle nds_ft_INC
+	nft add chain ip nds_filter nds_ft_OUT
 	nft add chain ip nds_filter nds_allow_INP "{ type filter hook input priority 100 ; }"
 	nft add chain ip nds_filter nds_allow_FWD "{ type filter hook forward priority 100 ; }"
 
@@ -1392,7 +1394,7 @@ nft_set () {
 		if [ -z "$uciconfig" ]; then
 			# Generic Linux
 			linnum=$(cat /etc/dnsmasq.conf | grep -n -w "$nftsetname" | awk -F":" '{printf "%s", $1}')
-			sed "$linnum""d" "/etc/dnsmasq.conf"
+			sed "$linnum""d" "/etc/dnsmasq.conf" &>/dev/null
 		else
 			uci -q delete dhcp.nds_nftset
 			uci -q delete dhcp.@dnsmasq[0].ipset
@@ -1624,7 +1626,7 @@ auth_restore () {
 	local timeout=15
 
 	for tic in $(seq $timeout); do
-		ndsctl status &> /dev/null
+		ndsctl status &>/dev/null
 		ndsstatus=$?
 
 		if [ $ndsstatus -eq 0 ]; then

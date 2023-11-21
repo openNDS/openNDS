@@ -152,7 +152,6 @@ static int do_binauth(
 	debug(LOG_DEBUG, "BinAuth: User Agent is [ %s ]", user_agent);
 
 	// Get custom data string as passed in the query string
-	custom = safe_calloc(CUSTOM);
 
 	custom = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "custom");
 
@@ -1242,8 +1241,6 @@ static int preauthenticated(struct MHD_Connection *connection, const char *url, 
 	// request is directed to us, check if client wants to be authenticated
 	if (check_authdir_match(url, config->authdir)) {
 		debug(LOG_DEBUG, "authdir url detected: %s", url);
-
-		redirect_url = safe_calloc(REDIRECT_URL);
 
 		redirect_url = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "redir");
 

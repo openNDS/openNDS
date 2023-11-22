@@ -2,7 +2,20 @@ What's New? - ChangeLog
 #######################
 
 opennds (10.2.0)
-  * Add - ensure authenticated user rules are added in list order [bluewave.net]
+  * Add - Page 202 HTTP_ACCEPTED for future use
+  * Fix - remove redundant workaround for old MHD versions [bluewavenet]
+  * Fix - some nft and other error messages [bluewavenet]
+  * Fix - remove unnecessary debug messages [bluewavenet]
+  * Add - improved ndsctl status detection for authmon [bluewavenet]
+  * Add - increase RestartSec parameter in opennds.service for generic Linux [bluewavenet]
+  * Fix - prevent unnecessary shutdown [bluewavenet]
+  * Fix - Generic Linux, error updating dnsmasq.conf [bluewavenet]
+  * Add - allow dynamic update of flowtable rules [bluewavenet]
+  * Fix - use Themespec in place of deprecated preauth in ndectl status [bluewavenet]
+  * Fix - Generic linux -  keep old config [bluewavenet]
+  * Fix - remove some unused variables [bluewavenet]
+  * Add - support for nftables blocklists [bluewavenet]
+  * Add - ensure authenticated user rules are added in list order [bluewavenet]
   * Add - Set default authenticated policy to accept [bluewavenet]
   * Add - urandom hash to key generation [bluewavenet]
   * Fix - Fix - duplicate users_to_router rules [bluewavenet]
@@ -34,7 +47,7 @@ opennds (10.2.0)
   * Add - html entity handling for semicolon [bluewavenet]
   * Add - Store RFC8910 request string in client data [bluewavenet]
 
- -- Rob White <dot@blue-wave.net>  Fri, 27 Oct 2023 16:49:15 +0000
+ -- Rob White <dot@blue-wave.net>  Wed, 22 Nov 2023 11:08:15 +0000
 
 opennds (10.1.3)
   * Security Advisory. This version contains fixes for multiple potential security vulnerabilities

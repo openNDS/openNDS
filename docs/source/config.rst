@@ -1226,13 +1226,18 @@ Pre-emptive Clients
 
 A list of the MAC addresses and access conditions of pre-emptively authenticated client devices.
 
-Pre-emptive clients have data usage monitored. Quotas and timeouts are applied.
+Unlike Trusted Clients, Pre-emptive clients have their data usage monitored. Quotas and timeouts are applied.
 
+Pre-emptive clients are logged both locally and in remote fas servers in the same way as normal validated clients.
+
+Pre-emptive Authentication must be enabled (default). See "allow_preemptive_authentication".
+
+  Default: Not Set
 
 .. note::
  Be aware that most mobile devices randomise their mac address for each wireless network encountered.
 
-List parameters will be mac, sessiontimeout, uploadrate, downloadrate, uploadquota, downloadquota and custom and the ";" character is used as a parameter separator.
+List parameters will be mac, sessiontimeout, uploadrate, downloadrate, uploadquota, downloadquota and custom. The ";" character is used as a parameter separator.
 
 List parameters set to "0" or omitted are set to the global or default value.
 

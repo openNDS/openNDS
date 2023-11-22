@@ -8,7 +8,7 @@ StartLimitBurst=10
 Type=forking
 ExecStart=/usr/bin/opennds -b
 Restart=on-failure
-RestartSec=10
+RestartSec=20
 
 [Install]
 WantedBy=multi-user.target

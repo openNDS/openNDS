@@ -753,23 +753,38 @@ Example: Disable all rate quotas for all clients, overriding settings made in FA
 Set Volume Quotas
 *****************
 
-Defaults 0
-
-Integer values only.
-
-Values are in kB.
-
-If set to 0, there is no limit.
-
-If the client data quota exceeds the value set here, the client will be deauthenticated.
+If the client data quota exceeds the value set here, the client will be deauthenticated or rate limited as defined by the Fair Usage Policy throttle rate.
 
 The client by default may re-authenticate. It is the responsibility of the FAS (whether Themespec, other local or remote) to restrict further authentication of the client if so desired.
 
-Example:
+Defaults 0
 
-``option uploadquota '1000'``
+Integer values only
 
-``option downloadquota '10000'``
+Values are in kB
+
+If set to 0, there is no limit
+
+``option uploadquota '0'``
+
+``option downloadquota '0'``
+
+Set Fair Usage Policy Throttle Rate
+***********************************
+
+If Volume quota is set, a download throttle rate can be configured.
+
+Defaults 0
+
+Integer values only
+
+Values are in kb/s
+
+If set to 0, the client will be deauthenticated when the volume quota is exceeded
+
+``option fup_upload_throttle_rate '0'``
+
+``option fup_download_throttle_rate '0'``
 
 
 Enable BinAuth Support.
@@ -987,30 +1002,18 @@ Example:
 
 ``option nat_traversal_poll_interval '5'``
 
-Set PreAuth
-***********
-
-Default Not set, or automatically set by "option login_option_enabled".
-
-PreAuth support allows FAS to call a local program or script with html served by the built in NDS web server.
-
-If the option is set, it points to a program/script that is called by the NDS FAS handler.
-
-All other FAS settings will be overidden.
-
-Example:
-
-``option preauth '/path/to/myscript/myscript.sh'``
-
 Access Control For Authenticated Users
 **************************************
 
-Grant Access For Authenticated Users (allow)
+* Access can be allowed by openNDS but the final decision will be passed on to the operating system firewall. (Note: passthrough is deprecated as in nftables "allow" is equivalent to the old "passthrough"
+* All listed rules will be applied in the order present in the list.
+* An ip address or an FQDN may be included in a list entry.
+* If an FQDN resolves to multiple ip addresses, the rule will **NOT** be added. Rules for such FQDNs must be added elsewhere (eg the operating system firewall)
+
+Allow Access for Authenticated Users (allow)
 --------------------------------------------
 
-* Access can be allowed by openNDS but the final decision will be passed on to the operating system firewall. (Note: passthrough is deprecated as in nftables "allow" is equivalent to the old "passthrough"
-
-Any entries set here, or below in Block Access, will override the default
+Any entries set here, or below in Block Access, are in addition to the default policy of "allow all"
 
 Default:
 
@@ -1098,11 +1101,11 @@ Autonomous Walled Garden configuration is activated using a list of FQDNs and Po
 
 This has the advantage of discovering all ip addresses used by the Walled Garden sites.
 
-But it does require the ipset and dnsmasq-full packages to be installed by running the following commands (on OpenWrt):
+But it does require the dnsmasq-full package to be installed and on OpenWrt 22.03.x or earlier the ipset package is also required. This is achieved by running the following commands (on OpenWrt):
 
 ``opkg update``
 
-``opkg install ipset``
+``opkg install ipset`` (OpenWrt version 22.03.x or earlier)
 
 ``opkg remove dnsmasq``
 
@@ -1198,43 +1201,56 @@ For example - Allow ports for SSH/Telnet/HTTP/HTTPS:
 
 ``list users_to_router 'allow tcp port 443'``
 
-MAC Address Access Control List
-*******************************
-
-A list of MAC addresses can be defined that are either allowed to use the system, or are blocked.
-
-Note: This can easily be bypassed as a client MAC address can usually be easily changed.
-
-The mechanism used is either 'allow' or 'block' (It cannot be both).
-
-Examples:
-
-``option macmechanism 'allow'``
-
-``list allowedmac '00:00:C0:01:D0:0D'``
-
-``list allowedmac '00:00:C0:01:D0:1D'``
-
-or
-
-``option macmechanism 'block'``
-
-``list blockedmac '00:00:C0:01:D0:2D'``
-
-
 Trusted Clients
 ***************
 
-A list of the MAC addresses of client devices that do not require authentication can be defined.
+A list of the MAC addresses of trusted client devices.
+
+Trusted clients are granted immediate and unconditional access and do not require authentication.
+
+Trusted client data usage is not recorded and no quotas or timeouts are applied.
+
+See "Pre-emptive Clients" for conditional access for "trusted" clients.
 
 .. note::
- This can easily be be used to allow unauthorised access as a client MAC address can be changed. For a potentially more secure alternative, see "option allow_preemptive_authentication"
+ Be aware that most mobile devices randomise their mac address for each wireless network encountered.
 
 Example:
 
 ``list trustedmac '00:00:C0:01:D0:0D'``
 
 ``list trustedmac '00:00:C0:01:D0:1D'``
+
+Pre-emptive Clients
+*******************
+
+A list of the MAC addresses and access conditions of pre-emptively authenticated client devices.
+
+Unlike Trusted Clients, Pre-emptive clients have their data usage monitored. Quotas and timeouts are applied.
+
+Pre-emptive clients are logged both locally and in remote fas servers in the same way as normal validated clients.
+
+Pre-emptive Authentication must be enabled (default). See "allow_preemptive_authentication".
+
+  Default: Not Set
+
+.. note::
+ Be aware that most mobile devices randomise their mac address for each wireless network encountered.
+
+List parameters will be mac, sessiontimeout, uploadrate, downloadrate, uploadquota, downloadquota and custom. The ";" character is used as a parameter separator.
+
+List parameters set to "0" or omitted are set to the global or default value.
+
+Pre-emptive clients are logged both locally and in remote fas servers in the same way as normal validated clients.
+
+Examples:
+
+``list preemptivemac 'mac=00:00:C0:01:D0:01;sessiontimeout=1200;uploadrate=200;downloadrate=0;uploadquota=0;downloadquota=0;custom=custom string for preemptivemac1'``
+
+``list preemptivemac 'mac=00:00:D0:01:D0:02;sessiontimeout=1000;uploadrate=200;downloadrate=800;uploadquota=0;downloadquota=0;custom=custom string for preemptivemac2'``
+
+``list preemptivemac 'mac=00:00:E0:01:D0:03;sessiontimeout=4200;uploadrate=100;downloadrate=0;uploadquota=0;downloadquota=0;custom=custom_string_for_preemptivemac3'``
+
 
 Dhcp option 114 Enable - RFC8910
 ********************************

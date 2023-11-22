@@ -65,10 +65,8 @@ Do not use directly, use the debug macro */
 void
 _debug(const char filename[], int line, int level, const char *format, ...)
 {
-	char buf[64];
 	va_list vlist;
 	s_config *config;
-	FILE *out;
 	time_t ts;
 	sigset_t block_chld;
 
@@ -80,19 +78,6 @@ _debug(const char filename[], int line, int level, const char *format, ...)
 		sigemptyset(&block_chld);
 		sigaddset(&block_chld, SIGCHLD);
 		sigprocmask(SIG_BLOCK, &block_chld, NULL);
-
-		if (config->daemon != 0) {
-			out = stdout;
-		} else {
-			out = stderr;
-		}
-
-		fprintf(out, "[%d][%.24s][%u](%s:%d) ", level, format_time(ts, buf), getpid(), filename, line);
-		va_start(vlist, format);
-		vfprintf(out, format, vlist);
-		va_end(vlist);
-		fputc('\n', out);
-		fflush(out);
 
 		openlog("opennds", LOG_PID, LOG_DAEMON);
 		va_start(vlist, format);

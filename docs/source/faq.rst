@@ -19,13 +19,13 @@ You cannot upgrade from NoDogSplash to openNDS, instead you must first uninstall
 
    A forwarding authentication service. FAS supports development of "Credential Verification" running on any dynamic web serving platform, on the same device as openNDS, on another device on the local network, or on an Internet hosted web server.
 
- * **PreAuth**
+ * **ThemeSpec**
 
    An implementation of FAS running on the same device as openNDS and using openNDS's own web server to generate dynamic web pages. Any scripting language or even a compiled application program can be used. This has the advantage of not requiring the resources of a separate web server.
 
  * **BinAuth**
 
-   Enabling an external script to be called for doing post authentication processing such as setting session durations or writing local logs.
+   Enabling an external script to be called for doing post authentication processing such as setting session durations, writing local logs and re-authenticating valid clients after a restart.
 
  * **Enforce HTTPS option**
 
@@ -168,17 +168,8 @@ openNDS (NDS) has built in *Data Volume* and *Data Rate* quota support.
 
  * Data volume and data rate quotas can be set globally in the config file.
  * The global values can be overridden on a client by client basis as required, either by FAS or BinAuth.
- * If a client exceeds their volume quota they will be deauthenticated.
+ * If a client exceeds their volume quota they will be deauthenticated or packet rate limited to the fair usage throttle value determined in the configuration file.
  * If a client exceeds their rate quota, they will be packet rate limited to ensure their average rate stays below the rate quota value. This allows clients to burst at a higher rate for short intervals, improving performance, but prevents them from hogging bandwidth. 
-
-Can I use Traffic Shaping with openNDS?
-***************************************
-
-SQM Scripts (Smart Queue Management), is fully compatible with openNDS and if configured to operate on the openNDS interface (br-lan by default) will provide efficient IP connection based traffic control to ensure fair usage of available bandwidth.
-
-This can be installed as a package on OpenWrt.
-For other distributions of Linux it is available at:
-https://github.com/tohojo/sqm-scripts
 
 Is an *https splash page* supported?
 ************************************

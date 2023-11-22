@@ -301,7 +301,14 @@ fw_refresh_client_list(void)
 	routercheck = check_routing(watchdog);
 
 	// If Walled Garden ipset exists, copy it to the nftset.
-	safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"ipset_to_nftset\" \"walledgarden\" %d &", config->checkinterval);
+	dnscmd = safe_calloc(STATUS_BUF);
+	safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"ipset_to_nftset\" \"walledgarden\" %d &", config->checkinterval);
+	system(dnscmd);
+	free(dnscmd);
+
+	// If Block List ipset exists, copy it to the nftset.
+	dnscmd = safe_calloc(STATUS_BUF);
+	safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"ipset_to_nftset\" \"blocklist\" %d &", config->checkinterval);
 	system(dnscmd);
 	free(dnscmd);
 

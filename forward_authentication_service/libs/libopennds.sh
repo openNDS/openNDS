@@ -79,9 +79,9 @@ webget() {
 	fetch=$(type -t uclient-fetch)
 
 	if [ -z "$fetch" ]; then
-		wret="wget $spider $checkcert -t 1 -T 4"
+		wret="wget -q $spider $checkcert -t 1 -T 4"
 	else
-		wret="uclient-fetch $spider $checkcert -T 4"
+		wret="uclient-fetch -q $spider $checkcert -T 4"
 	fi
 }
 
@@ -638,6 +638,7 @@ htmlentityencode() {
 		s/%/\&#37;/g
 		s/'/\&#39;/g
 		s/\`/\&#96;/g
+		s/?/\&#63;/g
 	"
 	local buffer="$1"
 
@@ -646,7 +647,10 @@ htmlentityencode() {
 		buffer=$entityencoded
 	done
 
-	entityencoded=$(echo "$buffer" | awk '{ gsub(/\$/, "\\&#36;"); print }')
+	buffer=$(echo "$buffer" | awk '{ gsub(/\$/, "\\&#36;"); print }')
+	buffer=$(echo "$buffer" | awk '{ gsub(/\//, "\\&#47;"); print }')
+	buffer=$(echo "$buffer" | awk '{ gsub(/\\/, "\\&#92;"); print }')
+	entityencoded="$buffer"
 }
 
 
@@ -658,6 +662,8 @@ htmlentitydecode() {
 		s/\&lt;/</g
 		s/\&#37;/%/g
 		s/\&#39;/'/g
+		s/\&#96;/\`/g
+		s/\&#63;/?/g
 	"
 	local buffer="$1"
 
@@ -666,8 +672,10 @@ htmlentitydecode() {
 		buffer=$entitydecoded
 	done
 
-	buffer=$(echo "$buffer" | awk '{ gsub(/&#96;/, "\\`"); print }')
-	entitydecoded=$(echo "$buffer" | awk '{ gsub(/&#36;/, "\\$"); print }')
+	buffer=$(echo "$buffer" | awk '{ gsub(/&#36;/, "\\$"); print }')
+	buffer=$(echo "$buffer" | awk '{ gsub(/&#47;/, "\/"); print }')
+	buffer=$(echo "$buffer" | awk '{ gsub(/&#92;/, "\\`"); print }')
+	entitydecoded="$buffer"
 }
 
 get_client_zone () {
@@ -1035,20 +1043,27 @@ get_list_from_config() {
 	# get list with urlencoded spaces
 
 	if [ $uci_status -eq 0 ]; then
-		param=$(uci export opennds | grep -w "list" | grep -w $list | awk -F"'" 'NF > 1 {print $2}' | awk '{printf "%s¬", $0}')
+		param=$(uci export opennds | grep -w "list" | grep -w "$list" | awk -F"'" 'NF > 1 {print $2}' | awk '{printf "%s*", $0}')
 	else
-		param=$(cat /etc/config/opennds | grep -w "list" | grep -w "$list" | awk -F"#" '{printf "%s\n", $1}' | awk -F"'" 'NF > 1 {print $2}' | awk '{printf "%s¬", $0}')
+		param=$(cat /etc/config/opennds | grep -w "list" | grep -w "$list" | awk -F"#" '{printf "%s\n", $1}' | awk -F"'" 'NF > 1 {print $2}' | awk '{printf "%s*", $0}')
 	fi
-
-	# remove trailing space character
-	param=$(echo "$param" | sed 's/[[:space:]]*$//')
 
 	# urlencode the entire list set
 	urlencode "$param"
 	param="$urlencoded"
 
-	# Restore spaces between list blocks
-	param=$(echo "$param" | sed "s/¬/\ /g")
+	# Restore spaces or newlines between list blocks
+
+	if [ -z "$newline" ]; then
+		param=$(echo "$param" | sed "s/*/\ /g")
+		# remove trailing space character
+		param=$(echo "$param" | sed 's/[[:space:]]*$//')
+	else
+		# urldecode
+		urldecode "$param"
+		param="$urldecoded"
+		param=$(echo "$param" | tr "*" "\n")
+	fi
 
 	eval $list="$param" &>/dev/null
 }
@@ -1278,7 +1293,9 @@ pre_setup () {
 	nft add chain ip nds_nat ndsPRE "{ type nat hook prerouting priority -100 ; }"
 	nft add chain ip nds_mangle ndsPRE "{ type filter hook prerouting priority -100 ; }"
 	nft add chain ip nds_mangle ndsPOST "{ type filter hook forward priority -100 ; }"
+	nft add chain ip nds_mangle ndsINC
 	nft add chain ip nds_mangle nds_ft_INC
+	nft add chain ip nds_filter nds_ft_OUT
 	nft add chain ip nds_filter nds_allow_INP "{ type filter hook input priority 100 ; }"
 	nft add chain ip nds_filter nds_allow_FWD "{ type filter hook forward priority 100 ; }"
 
@@ -1342,7 +1359,7 @@ nft_set () {
 
 		if [ $optipset -eq 1 ]; then
 			debugtype="warn"
-			syslogmessage="Warning: dnsmasq ipset complile option not available -- Upgrade to dnsmasq-full version. Unable to configure walled garden...."
+			syslogmessage="Warning: dnsmasq ipset complile option not available -- Upgrade to dnsmasq-full version. Unable to configure $nftsetname...."
 			write_to_syslog
 			exit 0
 		fi
@@ -1354,12 +1371,12 @@ nft_set () {
 
 			if [ $have_ipset -eq 1 ]; then
 				debugtype="warn"
-				syslogmessage="Warning: ipset utility not not available -- Install ipset utility. Unable to configure walled garden...."
+				syslogmessage="Warning: ipset utility not not available -- Install ipset utility. Unable to configure $nftsetname...."
 				write_to_syslog
 				exit 0
 			else
 				debugtype="warn"
-				syslogmessage="Warning: using deprecated legacy ipset utility -- Upgrade dnsmasq to version supporting nftsets. Configuring walled garden...."
+				syslogmessage="Warning: using deprecated legacy ipset utility -- Upgrade dnsmasq to version supporting nftsets. Configuring $nftsetname...."
 				write_to_syslog
 			fi
 		fi
@@ -1376,38 +1393,71 @@ nft_set () {
 
 		if [ -z "$uciconfig" ]; then
 			# Generic Linux
-			linnum=$(cat /etc/dnsmasq.conf | grep -n -w "walledgarden" | awk -F":" '{printf "%s", $1}')
-			sed "$linnum""d" "/etc/dnsmasq.conf"
+			linnum=$(cat /etc/dnsmasq.conf | grep -n -w "$nftsetname" | awk -F":" '{printf "%s", $1}')
+			sed "$linnum""d" "/etc/dnsmasq.conf" &>/dev/null
 		else
 			uci -q delete dhcp.nds_nftset
 			uci -q delete dhcp.@dnsmasq[0].ipset
 		fi
 
-		ipset destroy walledgarden &>/dev/null
+		ipset destroy "$nftsetname" &>/dev/null
 	else
 
 		if [ "$nftsetmode" = "add" ] || [ "$nftsetmode" = "insert" ]; then
 			# Add the set, add/insert the rule and the Dnsmasq config
-			nft add set ip nds_filter walledgarden { type ipv4_addr\; size 128\; }
+			nft add set ip nds_filter "$nftsetname" { type ipv4_addr\; size 128\; }
+			ret=$?
+
+			if [ "$ret" -ne 0 ]; then
+				debugtype="warn"
+				syslogmessage="Unable to create nftset [ $nftsetname ]"
+				write_to_syslog
+			fi
+
 
 			if [ $have_ipset ]; then
-				ipset create walledgarden hash:ip &>/dev/null
+				ipset create "$nftsetname" hash:ip &>/dev/null
 			fi
-			list="walledgarden_fqdn_list"
+
+			list="$nftsetname""_fqdn_list"
 			get_list_from_config
 			fqdns=$param
 			urldecode "$fqdns"
 			fqdns="$urldecoded"
+			debugtype="debug"
+			syslogmessage="list $list is [ $fqdns ]"
+			write_to_syslog
+			fqdnlist=""
 
-			list="walledgarden_port_list"
+			for fqdn in $fqdns; do
+				htmlentityencode "$fqdn"
+
+				if [ "$entityencoded" = "$fqdn" ]; then
+					fqdnlist="$fqdnlist $fqdn"
+				else
+					debugtype="warn"
+					syslogmessage="fqdn [ $fqdn ] is invalid, please remove it."
+					write_to_syslog
+				fi
+			done
+
+			fqdns="$fqdnlist"
+
+			list="$nftsetname""_port_list"
 			get_list_from_config
 			ports=$param
 			urldecode "$ports"
 			ports="$urldecoded"
 
+			if [ ! -z "$ports" ]; then
+				debugtype="debug"
+				syslogmessage="list $list is [ $ports ]"
+				write_to_syslog
+			fi
+
 			if [ -z "$ports" ]; then
-				nft $nftsetmode rule ip nds_filter ndsNET counter ip daddr @walledgarden accept
-				ret=$?
+				nft $nftsetmode rule ip nds_filter ndsNET counter ip daddr "@$nftsetname" "$nftruletype"
+
 			else
 				numports=$(echo $ports | tr -d "'" | awk '{printf NF}')
 
@@ -1415,7 +1465,7 @@ nft_set () {
 					ports=$(printf "$ports" | tr -d "'" | tr -s " " ",")
 				fi
 
-				nft $nftsetmode rule ip nds_filter ndsNET counter ip daddr @walledgarden tcp dport {$ports} accept
+				nft $nftsetmode rule ip nds_filter ndsNET counter ip daddr "@$nftsetname" tcp dport {"$ports"} "$nftruletype"
 			fi
 
 
@@ -1432,29 +1482,27 @@ nft_set () {
 					done
 
 					if [ ! -z "$nftsetconf" ]; then
-						nftsetconf="$nftsetconf/4#ip#nds_filter#walledgarden"
+						nftsetconf="$nftsetconf/4#ip#nds_filter#$nftsetname"
 						echo "$nftsetconf" >> "$conflocation"
 					fi
 
 				else
 					# OpenWrt
-					uci -q set dhcp.nds_nftset='ipset'
-					ucicmd="add_list dhcp.nds_nftset.name='$nftsetname'"
+					ucicmd="set dhcp.nds_$nftsetname='ipset'"
 					echo $ucicmd | uci -q batch
-					uci -q set dhcp.nds_nftset.table='nds_filter'
-					uci -q set dhcp.nds_nftset.table_family='ip'
+					ucicmd="add_list dhcp.nds_$nftsetname.name='$nftsetname'"
+					echo $ucicmd | uci -q batch
+					ucicmd="set dhcp.nds_$nftsetname.table='nds_filter'"
+					echo $ucicmd | uci -q batch
+					ucicmd="set dhcp.nds_$nftsetname.table_family='ip'"
+					echo $ucicmd | uci -q batch
 
 					domains=$fqdns
 
 					for domain in $domains; do
-						ucicmd="add_list dhcp.nds_nftset.domain='$domain'"
+						ucicmd="add_list dhcp.nds_$nftsetname.domain='$domain'"
 						echo $ucicmd | uci -q batch
-						ipset="$ipset/$domain"
 					done
-
-					ipset="$ipset/walledgarden"
-					ucicmd="set dhcp.@dnsmasq[0].ipset='$ipset'"
-					echo $ucicmd | uci -q batch
 
 				fi
 
@@ -1470,8 +1518,9 @@ nft_set () {
 					done
 
 					if [ ! -z "$ipsetconf" ]; then
-						ipsetconf="$ipsetconf/walledgarden"
-						sed -i '/System\|walledgarden/d' $conflocation
+						ipsetconf="$ipsetconf/$nftsetname"
+						config=$(grep -v "$nftsetname" "$conflocation")
+						echo "$config" > "$conflocation"
 						echo "$ipsetconf" >> "$conflocation"
 					fi
 				else
@@ -1483,7 +1532,7 @@ nft_set () {
 					done
 
 					if [ ! -z "$ipsetconf" ]; then
-						ipsetconf="$ipsetconf/walledgarden"
+						ipsetconf="$ipsetconf/$nftsetname"
 
 						del_ipset="del_list dhcp.@dnsmasq[0].ipset='$ipsetconf'"
 						add_ipset="add_list dhcp.@dnsmasq[0].ipset='$ipsetconf'"
@@ -1577,7 +1626,7 @@ auth_restore () {
 	local timeout=15
 
 	for tic in $(seq $timeout); do
-		ndsctl status &> /dev/null
+		ndsctl status &>/dev/null
 		ndsstatus=$?
 
 		if [ $ndsstatus -eq 0 ]; then
@@ -1660,25 +1709,28 @@ create_client_ruleset () {
 	status=0
 
 	# Check for user_to_router essentials and append if missing
-	essentials="allow%20udp%20port%2053 allow%20udp%20port%2067 allow%20tcp%20port%2022 allow%20tcp%20port%20443"
-	ruleset_appended=$essentials
-
 	if [ "$ruleset_name" = "users_to_router" ]; then
+		essentials="allow%20udp%20port%2053 allow%20udp%20port%2067 allow%20tcp%20port%2022 allow%20tcp%20port%20443"
+		newrules=""
 
 		for rule in $ruleset; do
+			checkrule=$(echo "$essentials" | grep "$rule")
 
-			for essential_rule in $essentials; do
-				if [ "$rule" = "$essential_rule" ]; then
-					echo "match found $rule!"
-					continue
-				fi
-			done
-
-			ruleset_appended="$ruleset_appended $rule"
+			if [ -z "$checkrule" ]; then
+				newrules="$newrules $rule"
+			fi
 		done
 
-		ruleset="$ruleset_appended"
+		ruleset="$essentials $newrules"
+
 	fi
+
+	# Check for authenticated_users and reverse the order of rules
+	if [ "$ruleset_name" = "authenticated_users" ]; then
+		ruleset=$(echo "$ruleset" | awk '{ for (i = NF; i > 0; i = i - 1) printf("%s ", $i) }')
+	fi
+
+
 
 	for rule in $ruleset; do
 		urldecode $rule
@@ -1929,7 +1981,8 @@ preemptivemac () {
 #					#
 #########################################
 
-querystr=$1
+querystr="$1"
+
 query_type=${querystr:0:9}
 
 if [ "$query_type" = "%3ffas%3d" ]; then
@@ -2075,15 +2128,29 @@ elif [ "$1" = "get_option_from_config" ]; then
 	# $2 contains the option to get
 	option=$2
 	get_option_from_config
-	echo -n "$param"
+	printf "%s" "$param"
 	exit 0
 
 elif [ "$1" = "get_list_from_config" ]; then
 	# Get the config list value(s)
 	# $2 contains the list to get
+	# $3 contains the newline option, ie add a newline between each element
+
+	if [ ! -z "$3" ]; then
+		newline="newline"
+	else
+		newline=""
+	fi
+
 	list=$2
 	get_list_from_config
-	echo -n "$param"
+
+	#if [ -z "$newline" ]; then
+		printf "%s" "$param"
+	#else
+	#	echo "$param"
+	#fi
+
 	exit 0
 
 elif [ "$1" = "create_client_ruleset" ]; then
@@ -2218,6 +2285,8 @@ elif [ "$1" = "gatewayroute" ]; then
 	printf "$gatewayinterfaces"
 
 	if [ "$gatewayinterfaces" != "offline" ]; then
+		# check if flowtables exist and create or update them as required
+
 		# configure download flowtable
 
 		wandevices=""
@@ -2258,9 +2327,9 @@ elif [ "$1" = "gatewayroute" ]; then
 
 	# add upload flowtable
 
-	handle=$(nft -a list flowtables | grep -w "ndsftOUT" | awk -F "handle " '{printf "%s", $2}')
+	fttest=$(nft list flowtable ip nds_filter ndsftOUT &> /dev/null ; echo $?)
 
-	if [ -z "$handle" ]; then
+	if [ $fttest -gt 0 ]; then
 		option="gatewayinterface"
 		get_option_from_config
 
@@ -2268,14 +2337,15 @@ elif [ "$1" = "gatewayroute" ]; then
 			gatewayinterface="br-lan"
 		fi
 
-		ftdevices=$gatewayinterface
 		nft add flowtable ip nds_filter ndsftOUT "{ hook ingress priority -100 ; devices = { $gatewayinterface } ; }"
+	fi
+
+	ftruletest=$(nft list chain ip nds_filter nds_ft_OUT 2> /dev/null | grep -q -w "meta l4proto"; echo $?)
+
+	if [ $ftruletest -gt 0 ]; then
 		nft add rule ip nds_filter nds_ft_OUT meta l4proto { tcp, udp } flow offload @ndsftOUT counter
 		nft add rule ip nds_filter nds_ft_OUT counter return
 	fi
-
-
-
 
 	exit 0
 
@@ -2827,20 +2897,43 @@ elif [ "$1" = "ipt_to_nft" ]; then
 	exit $ret
 
 elif [ "$1" = "nftset" ]; then
-	# Creates walledgarden nftset
+	# Creates walledgarden or blocklist nftset
 	# $2 is add, insert or delete the rule
 	# $3 is the nftset name
+	# $4 is the rule type (accept, drop or reject)
 
 	if [ -z "$2" ]; then
 		exit 4
 	fi
 
+	nftsetmode=$2
+
 	if [ -z "$3" ]; then
 		exit 4
 	fi
 
-	nftsetmode=$2
-	nftsetname=$3
+	if [ -z "$4" ]; then
+		nftruletype="accept"
+	else
+		case $4 in
+			"accept") nftruletype="accept";;
+			"drop") nftruletype="drop";;
+			"reject") nftruletype="reject";;
+			*) nftruletype="accept";;
+		esac
+	fi
+
+	if [ "$3" = "walledgarden" ] && [ "$nftruletype" = "accept" ]; then
+		nftsetname="walledgarden"
+	elif [ "$3" = "blocklist" ]; then
+		nftsetname="blocklist"
+
+		if [ -z "$nftruletype" ]; then
+			nftruletype="block"
+		fi
+	else
+		exit 4
+	fi
 
 	nft_set
 
@@ -2918,7 +3011,10 @@ elif [ "$1" = "is_nodog" ]; then
 
 elif [ "$1" = "generate_key" ]; then
 	# Generate a key
-	date | sha256sum | awk '{printf "%s", $1}'
+	k1=$(date | sha256sum | awk '{printf "%s", $1}')
+	k2=$(tr -cd "[:digit:]" < /dev/urandom | head -c 64 | sha256sum)
+	printf "$k1$k2" | sha256sum | awk -F' ' '{printf $1}'
+
 	exit 0
 
 elif [ "$1" = "set_key" ]; then

@@ -529,11 +529,12 @@ config opennds
 	###########################################################################################
 
 	# Fair Usage Policy Throttle Rate:
-	# If Volume quota is set, a download throttle rate can be configured
+	# If Volume quota is set, an upload/download throttle rate can be configured
+
 	# Defaults 0
 	# Integer values only
 	#
-	# Values are in kB
+	# Values are in kb/s
 	# If set to 0, the client will be deauthenticated when the volume quota is exceeded
 	#
 	#option fup_upload_throttle_rate '0'
@@ -703,12 +704,19 @@ config opennds
 	# Allowed values between 1 and 60 seconds inclusive
 	# Defaults to 5 seconds if set outside this range
 	#
-	# Effective only when option fas_secure_enabled is set to 3
+	# Effective only when option fas_secure_enabled is set to 3 or greater
 	#
 	# Example:
 	#option nat_traversal_poll_interval '2'
 	###########################################################################################
 
+	# Authenticated User Rulesets
+	# Rules for authenticated users can be specified.
+	# If no rules are specified, authenticated users have unrestricted access.
+	#
+	# Note: All authenticated user rules are implemented in the order in which they are specified  in this config file.
+	#
+	#
 	# Block Access For Authenticated Users (block):
 	# Default: None
 	#
@@ -726,11 +734,10 @@ config opennds
 	#
 	#list authenticated_users 'block to 123.2.3.4'
 	#
-	# An FQDN can be used in place of an ip address
+	# An FQDN can be used in place of an ip address if that fqdn has only one IP address
 	#list authenticated_users 'block all to theirwebsite.com'
 	#
-	# Do not forget to add an allow rule if any block rules are added (see Grant Access)
-	# Block rules added here are final with all packets to the target being dropped.
+	# Block rules added here are final with all packets to the target being dropped regardless of any settings in the operating system firewall.
 	#
 	###########################################################################################
 
@@ -767,7 +774,7 @@ config opennds
 	# This is commonly referred to as a Walled Garden.
 	#
 	# A Walled Garden can be configured either:
-	# 1. Manually for known ip addresses
+	# 1. Manually for known ip addresses or fqdns with single ip addresses
 	# or
 	# 2. Autonomously from a list of FQDNs and ports
 
@@ -800,11 +807,12 @@ config opennds
 	# list walledgarden_port_list 'port1 port2 port3 .... portN'
 	#
 	# Note: If walledgarden_port_list is NOT specified, then Walled Garden access is granted
-	# for all protocols (tcp, udp, icmp) on ALL ports for each fqdn specified in walledgarden_fqdn_list.
+	# for all protocols (tcp, udp) on ALL ports for each fqdn specified in walledgarden_fqdn_list.
 	#
 	# Note: If walledgarden_port_list IS specified, then:
 	#  1. Specified port numbers apply to ALL FQDN's specified in walledgarden_fqdn_list.
-	#  2. Only tcp protocol Walled Garden access is granted.
+	#  2. Access is granted only for specified ports in each Walled Garden fqdn.
+	#  3. Walledgarden only applies to preauthenticated users.
 
 	# Autonomous configuration examples:
 	#
@@ -825,6 +833,71 @@ config opennds
 
 	###########################################################################################
 
+	#####
+	# Block Lists
+	# Deny authenticated users access to external services
+	# This is commonly referred to as a Block List.
+	#
+	# A Block List can be configured either:
+	# 1. Manually for known ip addresses or fqdns with single ip addresses
+	# or
+	# 2. Autonomously from a list of FQDNs and ports
+
+	#####
+	# Manual Block List configuration requires research to determine the ip addresses of the Block List site(s)
+	# This can be problematic as sites can use many dynamic ip addresses.
+	# However, manual configuration does not require any additional dependencies (ie additional installed packages).
+	#
+	# Manual configuration example:
+	#
+	#list authenticated_users 'block udp port 8020 to 112.122.123.124'
+	#
+	# An fqdn can be used in place of an ip address (but the fqdn must have only one possible ip address)
+	#
+	#list authenticated_users 'block tcp port 443 to mywebsite.com'
+
+	# Autonomous Blocklist configuration using a list of FQDNs and Ports.
+	#
+	# This has the advantage of discovering all ip addresses used by the Blocklist sites.
+	# But it does require the dnsmasq-full package (and also the ipset package if dnsmasq does not support nftsets) to be installed
+	#
+	# Configuration is then a simple matter of adding two lists as follows:
+	#
+	# list blocklist_fqdn_list 'fqdn1 fqdn2 fqdn3 .... fqdnN'
+	# list blocklist_port_list 'port1 port2 port3 .... portN'
+	#
+	# or
+	#
+	# list blocklist_fqdn_list 'fqdn1'
+	# list blocklist_fqdn_list 'fqdn2'
+	# list blocklist_fqdn_list '....... etc.
+	# list blocklist_fqdn_list 'fqdnN'
+	#
+	# Similarly, ports can be listed on multiple lines
+	#
+	# Note: If blocklist_port_list is NOT specified, then blocklist access is denied
+	# for all protocols (tcp, udp, icmp) on ALL ports for each fqdn specified in blocklist_fqdn_list.
+	#
+	# Note: If blocklist_port_list IS specified, then:
+	#  1. Specified port numbers apply to ALL FQDN's specified in blocklist_fqdn_list.
+	#  2. Access is blocked only for specified ports in each blocklist fqdn.
+	#  3. Blocklist only applies to authenticated users.
+
+
+	# Autonomous configuration examples:
+	#
+	# 1. To add Facebook to the blocklist, the list entries would be:
+	# 	list blocklist_fqdn_list 'facebook.com fbcdn.net'
+	#
+	# 2. To add YouTube to the blocklist, the list entries would be:
+	# 	list blocklist_fqdn_list 'youtube.com'
+	#
+	# 3. To deny access only to a port or list of ports, allowing other ports:
+	# 	list blocklist_port_list '443 80'
+	#
+
+	###########################################################################################
+
 	# User access to the router
 	#
 	# users_to_router_passthrough
@@ -838,7 +911,7 @@ config opennds
 	#option users_to_router_passthrough '1'
 
 	####
-	# Essential service ports are always included.
+	# Essential service ports are always included and do not have to be specified.
 	# These ports are:
 	# Port 53 - DNS
 	# Port 67 - DHCP
@@ -855,13 +928,41 @@ config opennds
 
 	###########################################################################################
 
-	# MAC addresses that do not need to authenticate
+	# Trusted Clients
+	# A list of MAC addresses of clients that do not need to authenticate.
+	#
+	# Trusted clients are granted immediate and unconditional access and do not require authentication.
+	#
+	# Trusted client data usage is not recorded and no quotas or timeouts are applied.
 	####
 	# WARNING: As client devices can use random mac addresses, a client my loose its "trusted" status by changing its mac address
 	####
-	# WARNING: As mac addresses can be "spoofed" setting a trusted mac may be a security hazard
+	# WARNING: As mac addresses can be "spoofed". Setting a trusted mac may be a security hazard
 	####
-	#list trustedmac '00:00:C0:01:D0:1D 00:00:C0:01:D0:2A'
+	#list trustedmac '00:00:C0:01:D0:1D'
+	#list trustedmac '00:00:C0:01:D0:2A'
+
+	###########################################################################################
+
+	# Pre-emptive Clients
+	# A list of the MAC addresses and access conditions of pre-emptively authenticated client devices.
+	# Unlike Trusted Clients, Pre-emptive clients have their data usage monitored. Quotas and timeouts are applied.
+	# Pre-emptive clients are logged both locally and in remote fas servers in the same way as normal validated clients.
+	# Pre-emptive Authentication must be enabled (default). See "allow_preemptive_authentication".
+	#
+	# Default: Not Set
+	#
+	# note: Be aware that most mobile devices randomise their mac address for each wireless network encountered.
+	#
+	# List parameters will be mac, sessiontimeout, uploadrate, downloadrate, uploadquota, downloadquota and custom. The ";" character is used as a parameter separator.
+	# List parameters set to "0" or omitted are set to the global or default value.
+	#
+	# Examples:
+	#
+	#list preemptivemac 'mac=00:00:C0:01:D0:01;sessiontimeout=1200;uploadrate=200;downloadrate=0;uploadquota=0;downloadquota=0;custom=custom string for preemptivemac1'
+	#list preemptivemac 'mac=00:00:D0:01:D0:02;sessiontimeout=1000;uploadrate=200;downloadrate=800;uploadquota=0;downloadquota=0;custom=custom string for preemptivemac2'
+	#list preemptivemac 'mac=00:00:E0:01:D0:03;sessiontimeout=4200;uploadrate=100;downloadrate=0;uploadquota=0;downloadquota=0;custom=custom_string_for_preemptivemac3'
+
 	###########################################################################################
 
 	# dhcp_default_url_enable

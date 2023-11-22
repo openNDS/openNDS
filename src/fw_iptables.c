@@ -193,6 +193,7 @@ iptables_fw_init(void)
 	int gw_port = 0;
 	char *fas_remoteip = NULL;
 	char *fas_remotefqdn = NULL;
+	char *gw_fqdn = NULL;
 	int fas_port = 0;
 	t_MAC *pt;
 	int rc = 0;
@@ -218,6 +219,7 @@ iptables_fw_init(void)
 	
 	fas_remoteip = safe_calloc(STATUS_BUF);
 	fas_remotefqdn = safe_calloc(STATUS_BUF);
+	gw_fqdn = safe_calloc(STATUS_BUF);
 
 	if (config->fas_port) {
 		fas_remoteip = safe_strdup(config->fas_remoteip);    // must free
@@ -225,6 +227,7 @@ iptables_fw_init(void)
 	}
 
 	fas_remotefqdn = safe_strdup(config->fas_remotefqdn);    // must free
+	gw_fqdn = safe_strdup(config->gw_fqdn);    // must free
 
 	debug(LOG_INFO, "fas_remotefqdn [ %s ]", fas_remotefqdn);
 
@@ -347,7 +350,7 @@ iptables_fw_init(void)
 	rc |= nftables_do_command("add rule ip nds_filter %s tcp dport %d counter accept", CHAIN_TO_ROUTER, gw_port);
 
 	// CHAIN_TO_ROUTER, packets to HTTP listening on fas_port on router ACCEPT
-	if (fas_port != gw_port && strcmp(fas_remoteip, gw_ip) == 0) {
+	if (fas_port != gw_port && strcmp(fas_remoteip, gw_ip) == 0 && strcmp(fas_remotefqdn, gw_fqdn) == 0) {
 		rc |= nftables_do_command("add rule ip nds_filter %s tcp dport %d counter accept", CHAIN_TO_ROUTER, fas_port);
 	}
 
@@ -363,10 +366,13 @@ iptables_fw_init(void)
 
 	// Allow access to remote FAS - CHAIN_TO_INTERNET packets for remote FAS, ACCEPT
 
-	if (fas_port && strcmp(config->fas_remotefqdn, "disabled") != 0) {
-		rc |= nftables_do_command("add rule ip nds_filter %s ip daddr %s tcp dport %d counter accept", CHAIN_TO_INTERNET, fas_remotefqdn, fas_port);
-	} else {
-		rc |= nftables_do_command("add rule ip nds_filter %s ip daddr %s tcp dport %d counter accept", CHAIN_TO_INTERNET, fas_remoteip, fas_port);
+	if (config->fas_port != 0) {
+
+		if (strcmp(config->fas_remotefqdn, "disabled") != 0) {
+			rc |= nftables_do_command("add rule ip nds_filter %s ip daddr %s tcp dport %d counter accept", CHAIN_TO_INTERNET, fas_remotefqdn, fas_port);
+		} else {
+			rc |= nftables_do_command("add rule ip nds_filter %s ip daddr %s tcp dport %d counter accept", CHAIN_TO_INTERNET, fas_remoteip, fas_port);
+		}
 	}
 
 	// CHAIN_TO_INTERNET, packets marked TRUSTED:
@@ -388,8 +394,8 @@ iptables_fw_init(void)
 	// CHAIN_AUTHENTICATED, jump to CHAIN_FT_OUT to handle upload flowtable
 	rc |= nftables_do_command("add rule ip nds_filter %s counter jump %s", CHAIN_AUTHENTICATED, CHAIN_FT_OUT);
 
-	// CHAIN_AUTHENTICATED, any packets not matching that ruleset REJECT
-	rc |= nftables_do_command("add rule ip nds_filter %s counter reject", CHAIN_AUTHENTICATED);
+	// CHAIN_AUTHENTICATED, any packets not matching that ruleset ACCEPT
+	rc |= nftables_do_command("add rule ip nds_filter %s counter accept", CHAIN_AUTHENTICATED);
 
 	// CHAIN_TO_INTERNET, all other packets REJECT
 	rc |= nftables_do_command("add rule ip nds_filter %s counter reject", CHAIN_TO_INTERNET);
@@ -413,6 +419,7 @@ iptables_fw_init(void)
 	free(gw_address);
 	free(fas_remoteip);
 	free(fas_remotefqdn);
+	free(gw_fqdn);
 
 	return rc;
 }

@@ -152,7 +152,6 @@ static int do_binauth(
 	debug(LOG_DEBUG, "BinAuth: User Agent is [ %s ]", user_agent);
 
 	// Get custom data string as passed in the query string
-	custom = safe_calloc(CUSTOM);
 
 	custom = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "custom");
 
@@ -1243,8 +1242,6 @@ static int preauthenticated(struct MHD_Connection *connection, const char *url, 
 	if (check_authdir_match(url, config->authdir)) {
 		debug(LOG_DEBUG, "authdir url detected: %s", url);
 
-		redirect_url = safe_calloc(REDIRECT_URL);
-
 		redirect_url = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "redir");
 
 		if (redirect_url == NULL) {
@@ -1839,6 +1836,7 @@ static int send_error(struct MHD_Connection *connection, int error)
 	 * -- and cannot rely on MHD_HTTP_ values to provide an upper bound for an array
 	 */
 	const char *page_200 = "<br>OK<br>";
+	const char *page_202 = "<html><body><h1>Processing Request</h1></body></html>";
 	const char *page_400 = "<html><head><title>Error 400</title></head><body><h1>Error 400 - Bad Request</h1></body></html>";
 	const char *page_403 = "<html><head><title>Error 403</title></head><body><h1>Error 403 - Forbidden - Access Denied to this Client!</h1></body></html>";
 	const char *page_404 = "<html><head><title>Error 404</title></head><body><h1>Error 404 - Not Found</h1></body></html>";
@@ -1858,7 +1856,13 @@ static int send_error(struct MHD_Connection *connection, int error)
 	case 200:
 		response = MHD_create_response_from_buffer(strlen(page_200), (char *)page_200, MHD_RESPMEM_MUST_COPY);
 		MHD_add_response_header(response, "Content-Type", mimetype);
-		ret = MHD_queue_response(connection, error, response);
+		ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
+		break;
+
+	case 202:
+		response = MHD_create_response_from_buffer(strlen(page_202), (char *)page_202, MHD_RESPMEM_MUST_COPY);
+		MHD_add_response_header(response, "Content-Type", mimetype);
+		ret = MHD_queue_response(connection, MHD_HTTP_ACCEPTED, response);
 		break;
 
 	case 400:

@@ -17,7 +17,7 @@ get_client_interface.sh
 #######################
 This utility allows the interface a client is using to be determined from the client mac address.
 
-It can be used in PreAuth and local FAS scripts.
+It can be used in ThemeSpec and local FAS scripts.
 
 Its output is also sent to FAS in the encrypted query string as the variable "clientif"
 
@@ -397,6 +397,13 @@ configure_log_location
     arg1: configure_log_location, configure the log location
 
 Returns the directory into which log files should be stored and exit code 0 if successful
+
+generate_key
+------------
+
+    arg1: generate_key, generate a pseudo-random hexadecimal key value
+
+Returns the pseudo-random hexadecimal key value
 
 ?fas:
 -----

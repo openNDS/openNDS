@@ -1031,28 +1031,75 @@ Grant access to udp services at address 123.1.1.1, on port 5000.
 
  ``list authenticated_users 'allow udp port 5000 to 123.1.1.1'``
 
-Block Access For Authenticated Users (block)
---------------------------------------------
+Block Access For Authenticated Users (Block Lists)
+--------------------------------------------------
 
-Default: None
+Deny authenticated users access to external services
 
-All block access items must follow "allow" items (see above) as any entries set here will override the access default.
+A Block List can be configured either:
+    1. Manually for known ip addresses or fqdns with single ip addresses
+    2. Autonomously from a list of FQDNs and ports
 
-Examples:
+Manual Block List configuration
+...............................
 
- You might want to block entire IP subnets. e.g.:
+This requires research to determine the ip addresses of the Block List site(s) and can be problematic as sites can use many dynamic ip addresses.
 
- ``list authenticated_users 'block to 123.2.3.0/24'``
+However, manual configuration does not require any additional dependencies (ie additional installed packages).
 
- ``list authenticated_users 'block to 123.2.0.0/16'``
+Manual configuration example:
 
- ``list authenticated_users 'block to 123.0.0.0/8'``
+``list authenticated_users 'block udp port 8020 to 112.122.123.124'``
 
-or block access to a single IP address. e.g.:
+An fqdn can be used in place of an ip address (but the fqdn must have only one possible ip address)
 
- ``list authenticated_users 'block to 123.2.3.4'``
+``list authenticated_users 'block tcp port 443 to mywebsite.com'``
 
-Do not forget to add an allow if the default only is assumed (see above)
+Autonomous Blocklist configuration using a list of FQDNs and Ports
+..................................................................
+
+This has the advantage of discovering all ip addresses used by the Blocklist sites.
+
+But it does require the dnsmasq-full package (and also the ipset package if dnsmasq does not support nftsets) to be installed.
+
+Configuration is then a simple matter of adding two lists as follows:
+
+``list blocklist_fqdn_list 'fqdn1 fqdn2 fqdn3 .... fqdnN'``
+
+``list blocklist_port_list 'port1 port2 port3 .... portN'``
+
+or
+
+``list blocklist_fqdn_list 'fqdn1'``
+
+``list blocklist_fqdn_list 'fqdn2'``
+
+``list blocklist_fqdn_list '....... etc.``
+
+``list blocklist_fqdn_list 'fqdnN'``
+
+Similarly, ports can be listed on multiple lines
+
+.. Note:: If blocklist_port_list is NOT specified, then blocklist access is denied for all protocols (tcp, udp, icmp) on ALL ports for each fqdn specified in blocklist_fqdn_list.
+
+If blocklist_port_list IS specified, then:
+
+    1. Specified port numbers apply to ALL FQDN's specified in blocklist_fqdn_list.
+    2. Access is blocked only for specified ports in each blocklist fqdn.
+    3. Blocklist only applies to authenticated users.
+
+
+Autonomous configuration examples
+.................................
+
+    1. To add Facebook to the blocklist, the list entries would be:
+        ``list blocklist_fqdn_list 'facebook.com fbcdn.net'``
+
+    2. To add YouTube to the blocklist, the list entries would be:
+        ``list blocklist_fqdn_list 'youtube.com'``
+
+    3. To deny access only to a port or list of ports, allowing other ports:
+        ``list blocklist_port_list '443 80'``
 
 Access Control For Preauthenticated Users:
 ******************************************

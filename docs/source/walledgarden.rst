@@ -1,5 +1,7 @@
-Walled Garden
-#############
+Walled Garden and Block Lists
+#############################
+
+From opennDS v10.2.0 onwards, it is possible to configure both Walled Garden (allowing specified FQDN access for Preauthenticated users) and Block Lists (blocking specified FQDN access for authenticated users). The following documentation applies to walled Garden, but configuring a Block List is very similar. (see Configuration Options in this documentation)
 
 Manual Walled Garden
 ********************

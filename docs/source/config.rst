@@ -1270,7 +1270,7 @@ Example:
 Packet Marking Compatibility
 ****************************
 
-openNDS uses specific HEXADECIMAL values to mark packets used by iptables as a bitwise mask.
+openNDS uses specific HEXADECIMAL values to mark packets used by nftables as a bitwise mask.
 
 This mask can conflict with the requirements of other packages.
 
@@ -1288,8 +1288,8 @@ Option: fw_mark_trusted
 
 Default: 20000 (0010|0000|0000|0000|0000 binary)
 
-Option: fw_mark_blocked
------------------------
+Option: fw_mark_blocked (deprecated)
+------------------------------------
 
 Default: 10000 (0001|0000|0000|0000|0000 binary)
 

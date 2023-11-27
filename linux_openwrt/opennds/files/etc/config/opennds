@@ -102,6 +102,15 @@ config opennds
 	#option themespec_path '/usr/lib/opennds/<filename>'
 	###########################################################################################
 
+	# Custom DHCP Leases File Location
+	# Default: Try /tmp/dhcp.leases, /var/lib/misc/dnsmasq.lease or /var/db/dnsmasq.leases
+	#
+	# This allows setting a custom path to the DHCP leases file and is useful if the path has been changed or when using
+	# multiple instances of DNSmasq where more than one DHCP leases file may be required.
+	#
+	#option dhcp_leases_file '/tmp/dhcp.leases.special'
+	###########################################################################################
+
 	# Define Custom Parameters
 	# Custom parameters are sent as fixed values to FAS
 	# Default None

@@ -1121,7 +1121,15 @@ check_gw_ip() {
 }
 
 dhcp_check() {
-	dhcpdblocations="/tmp/dhcp.leases /var/lib/misc/dnsmasq.leases /var/db/dnsmasq.leases"
+	option="dhcp_leases_file"
+	get_option_from_config
+
+	if [ -z "$dhcp_leases_file" ] ; then
+		dhcpdblocations="/tmp/dhcp.leases /var/lib/misc/dnsmasq.leases /var/db/dnsmasq.leases"
+	else
+		dhcpdblocations="$dhcp_leases_file"
+	fi
+
 	dhcprecord=""
 	dbfile="no"
 

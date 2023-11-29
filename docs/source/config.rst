@@ -183,6 +183,16 @@ The file must be flagged as executable and have the correct shebang for the defa
 
 ``option themespec_path '/usr/lib/opennds/<filename>'``
 
+DHCP Leases File
+****************
+
+Default: Try /tmp/dhcp.leases, /var/lib/misc/dnsmasq.lease or /var/db/dnsmasq.leases
+
+The file containing the list of active DHCP leases.
+
+Example:
+
+``option dhcp_leases_file '/tmp/dhcp.leases.special'``
 
 Define Custom Parameters
 ************************

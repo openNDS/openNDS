@@ -205,10 +205,11 @@ termination_handler(int s)
 	free(msg);
 
 	// Restart dnsmasq
-	safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" &");
+	dnscmd = safe_calloc(STATUS_BUF);
+	safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" ");
 	debug(LOG_DEBUG, "restart command [ %s ]", dnscmd);
 	system(dnscmd);
-	debug(LOG_INFO, "Dnsmasq restarted");
+	debug(LOG_INFO, "Dnsmasq restarting");
 	free(dnscmd);
 
 	auth_client_deauth_all();
@@ -875,7 +876,7 @@ setup_from_config(void)
 
 	free(msg);
 
-	// Restart dnsmasq again for nftsets, but this time se can do it in the background
+	// Restart dnsmasq again for nftsets, but this time we can do it in the background
 	dnscmd = safe_calloc(STATUS_BUF);
 	safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" &");
 	debug(LOG_DEBUG, "restart command [ %s ]", dnscmd);

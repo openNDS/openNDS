@@ -55,9 +55,9 @@ delete_114s() {
 
 restart_dnsmasq() {
 	if [ "$uciconfig" = "" ]; then
-		systemctl restart dnsmasq &
+		systemctl restart dnsmasq
 	else
-		/etc/init.d/dnsmasq restart &
+		service dnsmasq restart
 	fi
 }
 

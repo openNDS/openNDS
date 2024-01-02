@@ -368,7 +368,7 @@ iptables_fw_init(void)
 
 	if (config->fas_port != 0) {
 
-		if (strcmp(config->fas_remotefqdn, "disabled") != 0) {
+		if ((strcmp(config->fas_remotefqdn, "disabled") != 0) || (strcmp(config->fas_remotefqdn, "disable") != 0)) {
 			rc |= nftables_do_command("add rule ip nds_filter %s ip daddr %s tcp dport %d counter accept", CHAIN_TO_INTERNET, fas_remotefqdn, fas_port);
 		} else {
 			rc |= nftables_do_command("add rule ip nds_filter %s ip daddr %s tcp dport %d counter accept", CHAIN_TO_INTERNET, fas_remoteip, fas_port);
@@ -407,7 +407,7 @@ iptables_fw_init(void)
 
 	// Restart dnsmasq
 	dnscmd = safe_calloc(STATUS_BUF);
-	safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" &");
+	safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"restart_only\"");
 	debug(LOG_DEBUG, "restart command [ %s ]", dnscmd);
 	system(dnscmd);
 	debug(LOG_INFO, "Dnsmasq restarted");

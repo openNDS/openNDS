@@ -194,6 +194,7 @@ void client_reset(t_client *client)
 		}
 	}
 
+	free(client->cid);
 	client->cid = safe_calloc(SMALL_BUF);
 
 }
@@ -432,11 +433,13 @@ _client_list_free_node(t_client *client)
 		}
 	}
 
+	free(client->ip);
+	free(client->mac);
 	free(client->token);
 	free(client->hid);
+	free(client->cid);
 	free(client->custom);
 	free(client->client_type);
-	free(client->cid);
 
 	if (strcmp(client->cpi_query, "") == 0) {
 		free(client->cpi_query);

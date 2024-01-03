@@ -342,6 +342,10 @@ int check_routing(int watchdog)
 			}
 		}
 
+		if (config->ext_gateway) {
+			free (config->ext_gateway);
+		}
+
 		config->ext_gateway = safe_strdup(rtest);
 		free (rcmd);
 		free (rtest);
@@ -350,6 +354,9 @@ int check_routing(int watchdog)
 	} else {
 		debug(LOG_ERR, "Unable to get routing configuration, retrying later ...");
 		config->online_status = 0;
+		free (rcmd);
+		free (rtest);
+
 		return config->online_status;
 	}
 }

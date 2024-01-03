@@ -55,9 +55,17 @@ delete_114s() {
 
 restart_dnsmasq() {
 	if [ "$uciconfig" = "" ]; then
-		systemctl restart dnsmasq &
+		systemctl restart dnsmasq
 	else
-		/etc/init.d/dnsmasq restart &
+		service dnsmasq restart
+	fi
+}
+
+reload_dnsmasq() {
+	if [ "$uciconfig" = "" ]; then
+		systemctl reload dnsmasq
+	else
+		service dnsmasq reload
 	fi
 }
 
@@ -67,6 +75,11 @@ if [ "$setconf" = "" ]; then
 
 elif [ "$setconf" = "restart_only" ]; then
 	restart_dnsmasq
+	printf "%s" "done"
+	exit 0
+
+elif [ "$setconf" = "reload_only" ]; then
+	reoad_dnsmasq
 	printf "%s" "done"
 	exit 0
 

@@ -205,10 +205,11 @@ termination_handler(int s)
 	free(msg);
 
 	// Restart dnsmasq
-	safe_asprintf(&dnscmd, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" &");
+	dnscmd = safe_calloc(STATUS_BUF);
+	safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" ");
 	debug(LOG_DEBUG, "restart command [ %s ]", dnscmd);
 	system(dnscmd);
-	debug(LOG_INFO, "Dnsmasq restarted");
+	debug(LOG_INFO, "Dnsmasq restarting");
 	free(dnscmd);
 
 	auth_client_deauth_all();
@@ -379,7 +380,6 @@ setup_from_config(void)
 	int routercheck;
 
 	// Initialise config->ext_gateway and check router config
-	config->ext_gateway = safe_calloc(SMALL_BUF);
 	routercheck = check_routing(watchdog);
 
 	// Warn if Preemptive Authentication is enabled
@@ -512,15 +512,13 @@ setup_from_config(void)
 		free(msg);
 	}
 
-	// Restart dnsmasq (because we need it to resolve our gateway fqdn) and wait for it
+	// Reload dnsmasq (because we need it to resolve our gateway fqdn) and wait for it
 	dnscmd = safe_calloc(STATUS_BUF);
-	safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" ");
-	debug(LOG_DEBUG, "restart command [ %s ]", dnscmd);
+	safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"reload_only\" ");
+	debug(LOG_DEBUG, "reload command [ %s ]", dnscmd);
 	system(dnscmd);
-	debug(LOG_INFO, "Dnsmasq restarting");
+	debug(LOG_INFO, "Dnsmasq reloading");
 	free(dnscmd);
-	// Even though the command completed, dnsmasq might not be up yet, so sleep a little
-	sleep(1);
 
 	// Encode gatewayname
 	char idbuf[STATUS_BUF] = {0};
@@ -875,12 +873,12 @@ setup_from_config(void)
 
 	free(msg);
 
-	// Restart dnsmasq again for nftsets, but this time se can do it in the background
+	// Reload dnsmasq again for nftsets, but this time we can do it in the background
 	dnscmd = safe_calloc(STATUS_BUF);
-	safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" &");
-	debug(LOG_DEBUG, "restart command [ %s ]", dnscmd);
+	safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"reload_only\" &");
+	debug(LOG_DEBUG, "reload command [ %s ]", dnscmd);
 	system(dnscmd);
-	debug(LOG_INFO, "Dnsmasq restarting");
+	debug(LOG_INFO, "Dnsmasq reloading");
 	free(dnscmd);
 
 

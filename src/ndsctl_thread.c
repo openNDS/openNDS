@@ -308,8 +308,6 @@ ndsctl_auth(FILE *fp, char *arg)
 
 	debug(LOG_DEBUG, "Entering ndsctl_auth [%s]", arg);
 
-	argcopy = safe_calloc(SMALL_BUF);
-
 	argcopy=strdup(arg);
 
 	// arg2 = ip|mac|tok

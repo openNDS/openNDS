@@ -150,8 +150,8 @@ nftables_do_command(const char *format, ...)
 		rc = execute("nft %s", fmt_cmd);
 		debug(LOG_DEBUG,"nftables command [ %s ], iteration [ %d ]return code [ %d ]", fmt_cmd, i, rc);
 
-		if (rc == 4) {
-			/* nftables error code 4 indicates a resource problem that might
+		if (rc != 0) {
+			/* nftables error code != 0 indicates a resource problem that might
 			 * be temporary. So we retry to insert the rule a few times. (Mitar) */
 			sleep(1);
 		} else {

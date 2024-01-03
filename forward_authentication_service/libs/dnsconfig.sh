@@ -61,12 +61,25 @@ restart_dnsmasq() {
 	fi
 }
 
+reload_dnsmasq() {
+	if [ "$uciconfig" = "" ]; then
+		systemctl reload dnsmasq
+	else
+		service dnsmasq reload
+	fi
+}
+
 
 if [ "$setconf" = "" ]; then
 	exit 1
 
 elif [ "$setconf" = "restart_only" ]; then
 	restart_dnsmasq
+	printf "%s" "done"
+	exit 0
+
+elif [ "$setconf" = "reload_only" ]; then
+	reoad_dnsmasq
 	printf "%s" "done"
 	exit 0
 

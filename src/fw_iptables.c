@@ -398,12 +398,12 @@ iptables_fw_init(void)
 	 **************************************
 	 */
 
-	// Restart dnsmasq
+	// Reload dnsmasq
 	dnscmd = safe_calloc(STATUS_BUF);
-	safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"restart_only\"");
-	debug(LOG_DEBUG, "restart command [ %s ]", dnscmd);
+	safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"reload_only\"");
+	debug(LOG_DEBUG, "reload command [ %s ]", dnscmd);
 	system(dnscmd);
-	debug(LOG_INFO, "Dnsmasq restarted");
+	debug(LOG_INFO, "Dnsmasq reloaded");
 	free(dnscmd);
 
 	free(gw_interface);

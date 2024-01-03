@@ -512,15 +512,13 @@ setup_from_config(void)
 		free(msg);
 	}
 
-	// Restart dnsmasq (because we need it to resolve our gateway fqdn) and wait for it
+	// Reload dnsmasq (because we need it to resolve our gateway fqdn) and wait for it
 	dnscmd = safe_calloc(STATUS_BUF);
-	safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" ");
-	debug(LOG_DEBUG, "restart command [ %s ]", dnscmd);
+	safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"reload_only\" ");
+	debug(LOG_DEBUG, "reload command [ %s ]", dnscmd);
 	system(dnscmd);
-	debug(LOG_INFO, "Dnsmasq restarting");
+	debug(LOG_INFO, "Dnsmasq reloading");
 	free(dnscmd);
-	// Even though the command completed, dnsmasq might not be up yet, so sleep a little
-	sleep(1);
 
 	// Encode gatewayname
 	char idbuf[STATUS_BUF] = {0};
@@ -875,12 +873,12 @@ setup_from_config(void)
 
 	free(msg);
 
-	// Restart dnsmasq again for nftsets, but this time we can do it in the background
+	// Reload dnsmasq again for nftsets, but this time we can do it in the background
 	dnscmd = safe_calloc(STATUS_BUF);
-	safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" &");
-	debug(LOG_DEBUG, "restart command [ %s ]", dnscmd);
+	safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"reload_only\" &");
+	debug(LOG_DEBUG, "reload command [ %s ]", dnscmd);
 	system(dnscmd);
-	debug(LOG_INFO, "Dnsmasq restarting");
+	debug(LOG_INFO, "Dnsmasq reloading");
 	free(dnscmd);
 
 

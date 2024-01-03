@@ -204,7 +204,6 @@ iptables_fw_init(void)
 	LOCK_CONFIG();
 	config = config_get_config();
 
-	gw_interface = safe_calloc(STATUS_BUF);
 	gw_interface = safe_strdup(config->gw_interface); // must free
 	
 	// ip4 vs ip6 differences
@@ -217,10 +216,6 @@ iptables_fw_init(void)
 		gw_ip = safe_strdup(config->gw_ip);    // must free
 	}
 	
-	fas_remoteip = safe_calloc(STATUS_BUF);
-	fas_remotefqdn = safe_calloc(STATUS_BUF);
-	gw_fqdn = safe_calloc(STATUS_BUF);
-
 	if (config->fas_port) {
 		fas_remoteip = safe_strdup(config->fas_remoteip);    // must free
 		fas_port = config->fas_port;
@@ -231,10 +226,8 @@ iptables_fw_init(void)
 
 	debug(LOG_INFO, "fas_remotefqdn [ %s ]", fas_remotefqdn);
 
-	gw_address = safe_calloc(STATUS_BUF);
 	gw_address = safe_strdup(config->gw_address);    // must free
 
-	gw_iprange = safe_calloc(STATUS_BUF);
 	gw_iprange = safe_strdup(config->gw_iprange);    // must free
 
 	gw_port = config->gw_port;

@@ -191,7 +191,7 @@ config_init(int argc, char **argv)
 
 	// Special handling for gatewayname as library call returns a url-encoded response
 	gatewayname_raw = safe_calloc(SMALL_BUF);
-	gatewayname = safe_calloc(SMALL_BUF);
+
 	gatewayname = safe_strdup(set_option_str("gatewayname", DEFAULT_GATEWAYNAME, debug_level));
 	uh_urldecode(gatewayname_raw, SMALL_BUF, gatewayname, SMALL_BUF);
 	config.gw_name = safe_strdup(gatewayname_raw);
@@ -578,6 +578,7 @@ void parse_trusted_mac_list(const char ptr[])
 		}
 	}
 
+	free(ptrcopy);
 	free(ptrcopyptr);
 }
 

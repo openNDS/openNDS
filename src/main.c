@@ -380,7 +380,6 @@ setup_from_config(void)
 	int routercheck;
 
 	// Initialise config->ext_gateway and check router config
-	config->ext_gateway = safe_calloc(SMALL_BUF);
 	routercheck = check_routing(watchdog);
 
 	// Warn if Preemptive Authentication is enabled

@@ -402,8 +402,11 @@ iptables_fw_init(void)
 	dnscmd = safe_calloc(STATUS_BUF);
 	safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"reload_only\"");
 	debug(LOG_DEBUG, "reload command [ %s ]", dnscmd);
-	system(dnscmd);
-	debug(LOG_INFO, "Dnsmasq reloaded");
+	if (system(dnscmd) == 0) {
+		debug(LOG_INFO, "Dnsmasq reloaded");
+	} else {
+		debug(LOG_ERR, "Dnsmasq reload failed!");
+	}
 	free(dnscmd);
 
 	free(gw_interface);

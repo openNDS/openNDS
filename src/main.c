@@ -208,8 +208,11 @@ termination_handler(int s)
 	dnscmd = safe_calloc(STATUS_BUF);
 	safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"restart_only\" ");
 	debug(LOG_DEBUG, "restart command [ %s ]", dnscmd);
-	system(dnscmd);
-	debug(LOG_INFO, "Dnsmasq restarting");
+	if (system(dnscmd) == 0) {
+		debug(LOG_INFO, "Dnsmasq restarted");
+	} else {
+		debug(LOG_ERR, "Dnsmasq restart failed!");
+	}
 	free(dnscmd);
 
 	auth_client_deauth_all();
@@ -516,8 +519,11 @@ setup_from_config(void)
 	dnscmd = safe_calloc(STATUS_BUF);
 	safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"reload_only\" ");
 	debug(LOG_DEBUG, "reload command [ %s ]", dnscmd);
-	system(dnscmd);
-	debug(LOG_INFO, "Dnsmasq reloading");
+	if (system(dnscmd) == 0) {
+		debug(LOG_INFO, "Dnsmasq reloading");
+	} else {
+		debug(LOG_ERR, "Dnsmasq reload failed!");
+	}
 	free(dnscmd);
 
 	// Encode gatewayname
@@ -717,7 +723,9 @@ setup_from_config(void)
 
 		// Check if authmon is running and if it is, kill it
 		safe_asprintf(&fasssl, "kill $(pgrep -f \"usr/lib/opennds/authmon.sh\") > /dev/null 2>&1");
-		system(fasssl);
+		if (system(fasssl) < 0) {
+			debug(LOG_ERR, "Error returned from system call - Continuing");
+		}
 		free(fasssl);
 
 		// Start the authmon daemon if configured for Level >= 3
@@ -749,7 +757,9 @@ setup_from_config(void)
 
 			debug(LOG_DEBUG, "authmon startup command is: %s\n", fasssl);
 
-			system(fasssl);
+			if (system(fasssl) != 0) {
+				debug(LOG_ERR, "Error returned from system call - Continuing");
+			}
 			free(fasssl);
 
 			// Check authmon is running
@@ -877,8 +887,12 @@ setup_from_config(void)
 	dnscmd = safe_calloc(STATUS_BUF);
 	safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"reload_only\" &");
 	debug(LOG_DEBUG, "reload command [ %s ]", dnscmd);
-	system(dnscmd);
-	debug(LOG_INFO, "Dnsmasq reloading");
+	if (system(dnscmd) == 0) {
+		debug(LOG_INFO, "Dnsmasq reloading");
+	} else {
+		debug(LOG_ERR, "Dnsmasq reload failed!");
+	}
+
 	free(dnscmd);
 
 
@@ -925,7 +939,9 @@ main_loop(int argc, char **argv)
 
 	debug(LOG_NOTICE, "openNDS is now running.\n");
 	safe_asprintf(&cmd, "/usr/lib/opennds/libopennds.sh \"auth_restore\" &");
-	system(cmd);
+	if (system(cmd) != 0) {
+		debug(LOG_ERR, "failure: %s", cmd);
+	}
 	free(cmd);
 
 	result = pthread_join(tid, NULL);

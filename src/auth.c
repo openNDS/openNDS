@@ -303,13 +303,17 @@ fw_refresh_client_list(void)
 	// If Walled Garden ipset exists, copy it to the nftset.
 	dnscmd = safe_calloc(STATUS_BUF);
 	safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"ipset_to_nftset\" \"walledgarden\" %d &", config->checkinterval);
-	system(dnscmd);
+	if (system(dnscmd) != 0) {
+		debug(LOG_ERR, "failure: %s", dnscmd);
+	}
 	free(dnscmd);
 
 	// If Block List ipset exists, copy it to the nftset.
 	dnscmd = safe_calloc(STATUS_BUF);
 	safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"ipset_to_nftset\" \"blocklist\" %d &", config->checkinterval);
-	system(dnscmd);
+	if (system(dnscmd) != 0) {
+		debug(LOG_ERR, "failure: %s", dnscmd);
+	}
 	free(dnscmd);
 
 	if (routercheck > 0) {
@@ -693,7 +697,9 @@ fw_refresh_client_list(void)
 		// Refresh preemptivemacs
 		pmaccmd = safe_calloc(STATUS_BUF);
 		safe_snprintf(pmaccmd, STATUS_BUF, "/usr/lib/opennds/libopennds.sh preemptivemac");
-		system(pmaccmd);
+		if (system(pmaccmd) != 0) {
+			debug(LOG_ERR, "failure: %s", pmaccmd);
+		}
 		free(pmaccmd);
 	}
 }

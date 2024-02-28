@@ -79,7 +79,7 @@ elif [ "$setconf" = "restart_only" ]; then
 	exit 0
 
 elif [ "$setconf" = "reload_only" ]; then
-	reoad_dnsmasq
+	reload_dnsmasq
 	printf "%s" "done"
 	exit 0
 

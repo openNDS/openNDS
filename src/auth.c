@@ -216,11 +216,11 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 	} else if (state == FW_MARK_AUTHENTICATED) {
 
 		if (new_state == FW_MARK_PREAUTHENTICATED) {
+			// we now delete the client instead of changing state to preauthenticated
 			iptables_fw_deauthenticate(client);
 			binauth_action(client, reason, customdata);
 			client_reset(client);
 			client_list_delete(client);
-			client->fw_connection_state = new_state;
 
 		} else if (new_state == FW_MARK_AUTH_BLOCKED) {
 			client->window_start = now;

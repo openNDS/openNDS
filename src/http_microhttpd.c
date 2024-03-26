@@ -834,6 +834,8 @@ static int authenticated(struct MHD_Connection *connection,
 
 			if (!fasurl) {
 				ret = send_error(connection, 503);
+				free(clientif);
+				free(query);
 				free(fasurl);
 				return ret;
 			}
@@ -882,6 +884,7 @@ static int authenticated(struct MHD_Connection *connection,
 			if (!query) {
 				ret = send_error(connection, 503);
 				free(query);
+				free(fasurl);
 				return ret;
 			}
 
@@ -987,10 +990,6 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 		if (strcmp(preauthpath, config->fas_path) == 0) {
 			free (preauthpath);
 
-			user_agent = safe_calloc(USER_AGENT);
-			debug(LOG_DEBUG, "PreAuth: User Agent ptr is [ %llu ]", &user_agent);
-			enc_user_agent = safe_calloc(ENC_USER_AGENT);
-
 			MHD_get_connection_values(connection, MHD_HEADER_KIND, get_user_agent_callback, &user_agent);
 			debug(LOG_DEBUG, "PreAuth: MHD User Agent ptr is [ %llu ]", &user_agent);
 
@@ -998,6 +997,7 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 				return send_error(connection, 403);
 			}
 
+			enc_user_agent = safe_calloc(ENC_USER_AGENT);
 			uh_urlencode(enc_user_agent, ENC_USER_AGENT, user_agent, strlen(user_agent));
 			debug(LOG_DEBUG, "PreAuth: Encoded User Agent is [ %s ]", enc_user_agent);
 

@@ -22,7 +22,7 @@
  5. faskey: Matching $key as set in this script (see below this introduction).
 	This is a key phrase for NDS to encrypt the query string sent to FAS.
 	It can be any combination of A-Z, a-z and 0-9, with no white space.
-	eg 1234567890
+	eg c775e7b757ede630cd0aa1113bd102661ab38829ca52a6422ab782862f268646
 
  6. fas_secure_enabled:  set to level 1
 	The NDS parameters: clientip, clientmac, gatewayname, hid and redir
@@ -44,7 +44,7 @@ if (ob_get_level()){ob_end_clean();}
 
 #####################################################################################
 // The pre-shared key "faskey" (this must be the same as in the openNDS config):
-$key="1234567890";
+$key="c775e7b757ede630cd0aa1113bd102661ab38829ca52a6422ab782862f268646";
 #####################################################################################
 
 // Setup some basics:

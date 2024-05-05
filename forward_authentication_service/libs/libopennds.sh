@@ -1074,7 +1074,7 @@ get_key_from_config() {
 	get_option_from_config
 
 	if [ -z "$faskey" ]; then
-		faskey="1234567890"
+		faskey=""
 	fi
 
 	key=$faskey
@@ -2019,7 +2019,7 @@ if [ "$query_type" = "%3ffas%3d" ]; then
 
 	# Preshared key
 	#########################################
-	# Default value is 1234567890 when faskey is not set in config
+	# There is no default value when faskey is not set in config
 	get_key_from_config
 
 	# Quotas and Data Rates

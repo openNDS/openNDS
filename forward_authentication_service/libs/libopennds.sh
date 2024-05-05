@@ -3026,7 +3026,7 @@ elif [ "$1" = "generate_key" ]; then
 	exit 0
 
 elif [ "$1" = "set_key" ]; then
-	cmd="echo \"	option faskey '$2'\" >> /etc/config/opennds"
+	cmd="sed -i \"s/^\\s*option faskey .*/    option faskey '$2'/\" /etc/config/opennds"
 	shelldetect=$(head -1 "/usr/lib/opennds/libopennds.sh")
 
 	if [ "$shelldetect" = "#!/bin/sh" ]; then

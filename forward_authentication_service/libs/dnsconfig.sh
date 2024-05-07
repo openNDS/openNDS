@@ -147,23 +147,35 @@ elif [ "$setconf" = "cpidconf" ]; then
 	else
 		# OpenWrt
 		# Note we do not commit here so that the config changes do NOT survive a reboot and can be reverted without writing to config files
-		cpidconfig=$(uci get dhcp.lan.dhcp_option_force 2>/dev/null)
-		dellist="del_list dhcp.lan.dhcp_option_force="
 
-		if [ -z "$gatewayfqdn" ]; then
-			delete_114s
-			printf "%s" "done"
-			exit 0
+		# Get the network zone
+		gwif=$(uci get opennds.@opennds[0].gatewayinterface 2> /dev/null | awk '{printf "%s", $1}')
+
+		if [ -z "$gwif" ]; then
+			gwif="br-lan"
 		fi
 
-		addlist="add_list dhcp.lan.dhcp_option_force='114,http://$gatewayfqdn'"
+		network_zone=$(uci show network | grep "device='$gwif'" | awk -F "." '{printf "%s", $2}')
 
-		if [ -z "$cpidconfig" ]; then
-			echo $addlist | uci batch
+		if [ ! -z "$network_zone" ]; then
+			cpidconfig=$(uci get dhcp.lan.dhcp_option_force 2>/dev/null)
+			dellist="del_list dhcp.$network_zone.dhcp_option_force='114,http://$gatewayfqdn'"
 
-		elif [ "$cpidconfig" != "114,http://$gatewayfqdn" ]; then
-			delete_114s
-			echo $addlist | uci batch
+			if [ -z "$gatewayfqdn" ]; then
+				delete_114s
+				printf "%s" "done"
+				exit 0
+			fi
+
+			addlist="add_list dhcp.$network_zone.dhcp_option_force='114,http://$gatewayfqdn'"
+
+			if [ -z "$cpidconfig" ]; then
+				echo $addlist | uci batch
+
+			elif [ "$cpidconfig" != "114,http://$gatewayfqdn" ]; then
+				delete_114s
+				echo $addlist | uci batch
+			fi
 		fi
 	fi
 

@@ -28,6 +28,7 @@ ipset_to_nftset () {
 			break
 		fi
 
+		elements=$(ipset list "$ipsetname" 2>/dev/null | awk -F"." 'NF==4 {printf ", %s", $0}')
 		elements=${elements:2}
 
 		if [ ! -z "$elements" ] && [ "$elements" != "$last_elements" ]; then

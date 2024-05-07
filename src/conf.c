@@ -345,7 +345,7 @@ config_init(int argc, char **argv)
 	debug(LOG_NOTICE, "Interface %s is at %s (%s)", config.gw_interface, config.gw_ip, config.gw_mac);
 
 	// Make sure fas_remoteip is set. Note: This does not enable FAS.
-	if (strcmp(config.fas_remoteip, "") == 0) {
+	if (strcmp(config.fas_remoteip, "disabled") == 0) {
 		config.fas_remoteip = safe_strdup(config.gw_ip);
 	}
 

@@ -296,10 +296,17 @@ iptables_fw_init(void)
 		rc |= nftables_do_command("add rule ip nds_nat %s mark and 0x%x == 0x%x counter return", CHAIN_OUTGOING, FW_MARK_MASK, FW_MARK_AUTHENTICATED);
 
 		// Allow access to remote FAS - CHAIN_OUTGOING and CHAIN_TO_INTERNET packets for remote FAS, ACCEPT
-		if (fas_port && strcmp(config->fas_remotefqdn, "disabled") != 0) {
-			rc |= nftables_do_command("add rule ip nds_nat %s ip daddr %s tcp dport %d counter accept", CHAIN_OUTGOING, fas_remotefqdn, fas_port);
-		} else {
-			rc |= nftables_do_command("add rule ip nds_nat %s ip daddr %s tcp dport %d counter accept", CHAIN_OUTGOING, fas_remoteip, fas_port);
+		if (config->fas_port != 0) {
+			if (strcmp(config->fas_remotefqdn, "disabled") != 0) {
+				rc |= nftables_do_command("add rule ip nds_nat %s ip daddr %s tcp dport %d counter accept", CHAIN_OUTGOING, fas_remotefqdn, fas_port);
+			} else {
+
+				if (strcmp(config->fas_remoteip, "disabled") != 0) {
+					rc |= nftables_do_command("add rule ip nds_nat %s ip daddr %s tcp dport %d counter accept", CHAIN_OUTGOING, fas_remoteip, fas_port);
+				} else {
+					rc |= nftables_do_command("add rule ip nds_nat %s ip daddr %s tcp dport %d counter accept", CHAIN_OUTGOING, gw_ip, fas_port);
+				}
+			}
 		}
 
 		// CHAIN_OUTGOING, packets for tcp port 80, redirect to gw_port on primary address for the iface
@@ -360,11 +367,15 @@ iptables_fw_init(void)
 	// Allow access to remote FAS - CHAIN_TO_INTERNET packets for remote FAS, ACCEPT
 
 	if (config->fas_port != 0) {
-
-		if ((strcmp(config->fas_remotefqdn, "disabled") != 0) || (strcmp(config->fas_remotefqdn, "disable") != 0)) {
+		if (strcmp(config->fas_remotefqdn, "disabled") != 0) {
 			rc |= nftables_do_command("add rule ip nds_filter %s ip daddr %s tcp dport %d counter accept", CHAIN_TO_INTERNET, fas_remotefqdn, fas_port);
 		} else {
-			rc |= nftables_do_command("add rule ip nds_filter %s ip daddr %s tcp dport %d counter accept", CHAIN_TO_INTERNET, fas_remoteip, fas_port);
+
+			if (strcmp(config->fas_remoteip, "disabled") != 0) {
+				rc |= nftables_do_command("add rule ip nds_filter %s ip daddr %s tcp dport %d counter accept", CHAIN_TO_INTERNET, fas_remoteip, fas_port);
+			} else {
+				rc |= nftables_do_command("add rule ip nds_filter %s ip daddr %s tcp dport %d counter accept", CHAIN_TO_INTERNET, gw_ip, fas_port);
+			}
 		}
 	}
 

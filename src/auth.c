@@ -304,7 +304,7 @@ fw_refresh_client_list(void)
 	dnscmd = safe_calloc(STATUS_BUF);
 	safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"ipset_to_nftset\" \"walledgarden\" %d &", config->checkinterval);
 	if (system(dnscmd) != 0) {
-		debug(LOG_ERR, "failure: %s", dnscmd);
+		debug(LOG_DEBUG, "legacy ipset not defined: %s", dnscmd);
 	}
 	free(dnscmd);
 
@@ -312,7 +312,7 @@ fw_refresh_client_list(void)
 	dnscmd = safe_calloc(STATUS_BUF);
 	safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"ipset_to_nftset\" \"blocklist\" %d &", config->checkinterval);
 	if (system(dnscmd) != 0) {
-		debug(LOG_ERR, "failure: %s", dnscmd);
+		debug(LOG_DEBUG, "legacy ipset not defined: %s", dnscmd);
 	}
 	free(dnscmd);
 

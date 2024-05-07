@@ -611,6 +611,10 @@ setup_from_config(void)
 		debug(LOG_INFO, "fas_secure_enabled is set to level %d", config->fas_secure_enabled);
 
 		// Check the FAS remote IP address
+		if ((strcmp(config->fas_remoteip, "disabled") == 0)) {
+			config->fas_remoteip = safe_strdup(config->gw_ip);
+		}
+
 		if (config->fas_remoteip) {
 			if (is_addr(config->fas_remoteip) == 1) {
 				debug(LOG_INFO, "fasremoteip - %s - is a valid IPv4 address...", config->fas_remoteip);
@@ -624,7 +628,7 @@ setup_from_config(void)
 		// Block fas port 80 if local FAS
 		snprintf(port, sizeof(port), "%u", config->fas_port);
 
-		if((strcmp(config->gw_ip, config->fas_remoteip) == 0) && (strcmp(port, "80") == 0)) {
+		if ((strcmp(config->gw_ip, config->fas_remoteip) == 0) && (strcmp(port, "80") == 0)) {
 			debug(LOG_ERR, "Invalid fasport - port 80 is reserved and cannot be used for local FAS...");
 			debug(LOG_ERR, "Exiting...");
 			exit(1);

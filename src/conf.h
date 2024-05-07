@@ -103,7 +103,7 @@
 #define DEFAULT_FW_MARK_TRUSTED "0x20000"
 #define DEFAULT_THEMESPEC_PATH ""
 #define DEFAULT_FAS_REMOTEFQDN "disabled"
-#define DEFAULT_FAS_REMOTEIP ""
+#define DEFAULT_FAS_REMOTEIP "disabled"
 #define DEFAULT_FAS_SSL "wget"
 
 /* N.B.: default policies here must be ACCEPT, REJECT, or RETURN

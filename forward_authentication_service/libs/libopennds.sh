@@ -132,6 +132,10 @@ get_image_file() {
 			# get protocol
 			protocol=$(echo "$imageurl" | awk -F'://' '{printf("%s", $1)}')
 
+			syslogmessage="protocol [$protocol]"
+			debugtype="debug"
+			write_to_syslog
+
 			if [ "$protocol" = "http" ]; then
 				#Try to download using http
 				spider="--spider"
@@ -231,6 +235,10 @@ get_data_file() {
 		if [ ! -f "$mountpoint/ndsdata/$filename" ] || [ "$refresh" -eq 1 ]; then
 			# get protocol
 			protocol=$(echo "$dataurl" | awk -F'://' '{printf("%s", $1)}')
+
+			syslogmessage="protocol [$protocol]"
+			debugtype="debug"
+			write_to_syslog
 
 			if [ "$protocol" = "http" ]; then
 				#Try to download using http

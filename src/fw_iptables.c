@@ -198,6 +198,8 @@ iptables_fw_init(void)
 	t_MAC *pt;
 	int rc = 0;
 	char *dnscmd;
+	char *fqdnip;
+	char *fqdncmd;
 
 	debug(LOG_NOTICE, "Initializing firewall rules");
 
@@ -298,7 +300,14 @@ iptables_fw_init(void)
 		// Allow access to remote FAS - CHAIN_OUTGOING and CHAIN_TO_INTERNET packets for remote FAS, ACCEPT
 		if (config->fas_port != 0) {
 			if (strcmp(config->fas_remotefqdn, "disabled") != 0) {
-				rc |= nftables_do_command("add rule ip nds_nat %s ip daddr %s tcp dport %d counter accept", CHAIN_OUTGOING, fas_remotefqdn, fas_port);
+
+				fqdncmd = safe_calloc(SMALL_BUF);
+				safe_snprintf(fqdncmd, SMALL_BUF, "/usr/lib/opennds/libopennds.sh resolve_fqdn \"%s\"", fas_remotefqdn);
+				fqdnip = safe_calloc(SMALL_BUF);
+				rc = execute_ret_url_encoded(fqdnip, SMALL_BUF, fqdncmd);
+				rc |= nftables_do_command("add rule ip nds_nat %s ip daddr %s tcp dport %d counter accept", CHAIN_OUTGOING, fqdnip, fas_port);
+				free(fqdncmd);
+				free(fqdnip);
 			} else {
 
 				if (strcmp(config->fas_remoteip, "disabled") != 0) {

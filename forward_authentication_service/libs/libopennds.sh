@@ -2001,6 +2001,19 @@ resolve_fqdn() {
 			continue
 		fi
 	done
+
+	if [ -z "$fqdnaddress" ]; then
+		option="gatewayinterface"
+		get_option_from_config
+
+		if [ -z "$gatewayinterface" ]; then
+			gatewayinterface="br-lan"
+		fi
+
+		ifname="$gatewayinterface"
+		check_gw_ip
+		fqdnaddress="$gw_ip"
+	fi
 }
 
 #### end of functions ####

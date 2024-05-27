@@ -1977,6 +1977,24 @@ preemptivemac () {
 	done
 }
 
+resolve_fqdn() {
+	fqdnaddress=""
+	local fqdn=$1
+	local ipaddress_list=$(nslookup "$fqdn" | grep -w -A 1 "$fqdn" | awk -F "Address: " '{printf "%s ", $2}')
+
+	for fqdnaddress in $ipaddress_list; do
+		numoctets=$(echo "$fqdnaddress" | awk -F "." '{printf "%s", NF}')
+
+		if [ "$numoctets" -eq 4 ]; then
+			# return the first valid ip4 address
+			break
+		else
+			fqdnaddress=""
+			continue
+		fi
+	done
+}
+
 #### end of functions ####
 
 
@@ -3068,6 +3086,12 @@ elif [ "$1" = "wget_request" ]; then
 elif [ "$1" = "preemptivemac" ]; then
 
 	preemptivemac
+
+	exit 0
+
+elif [ "$1" = "resolve_fqdn" ]; then
+	resolve_fqdn $2
+	printf "%s" "$fqdnaddress"
 
 	exit 0
 

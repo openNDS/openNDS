@@ -302,7 +302,6 @@ config_init(int argc, char **argv)
 	// Lists
 	parse_trusted_mac_list(set_list_str("trustedmac", DEFAULT_TRUSTEDMACLIST, debug_level));
 	parse_fas_custom_parameters_list(set_list_str("fas_custom_parameters_list", DEFAULT_FAS_CUSTOM_PARAMETERS_LIST, debug_level));
-	parse_fas_custom_variables_list(set_list_str("fas_custom_variables_list", DEFAULT_FAS_CUSTOM_VARIABLES_LIST, debug_level));
 	parse_fas_custom_images_list(set_list_str("fas_custom_images_list", DEFAULT_FAS_CUSTOM_IMAGES_LIST, debug_level));
 	parse_fas_custom_files_list(set_list_str("fas_custom_files_list", DEFAULT_FAS_CUSTOM_FILES_LIST, debug_level));
 

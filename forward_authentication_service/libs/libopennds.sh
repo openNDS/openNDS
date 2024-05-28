@@ -189,7 +189,7 @@ get_image_file() {
 				destinationfile="$mountpoint/ndsremote/$filename"
 				cp "$sourcefile" "$destinationfile"
 			else
-				unsupported="Unsupported protocol [$protocol] for [$filename]in url [$imageurl] - skipping download"
+				unsupported="Unsupported protocol [$protocol] or invalid URL for [$filename]in url [$imageurl] - skipping download"
 				echo "$unsupported" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 			fi
 		fi
@@ -292,7 +292,7 @@ get_data_file() {
 				destinationfile="$mountpoint/ndsdata/$filename"
 				cp "$sourcefile" "$destinationfile"
 			else
-				unsupported="Unsupported protocol [$protocol] for [$filename]in url [$imageurl] - skipping download"
+				unsupported="Unsupported protocol [$protocol] or invalid URL for [$filename]in url [$dataurl] - skipping download"
 				echo "$unsupported" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 			fi
 		fi
@@ -877,6 +877,11 @@ serve_error_message () {
 
 # Configure custom input fields
 config_input_fields () {
+
+	input=$(/usr/lib/opennds/libopennds.sh get_list_from_config 'fas_custom_variables_list')
+	urldecode $input
+	input="$urldecoded"
+
 	if [ ! -z "$input" ]; then
 		if [ "$1" = "input" ]; then
 			#custom variable for form input is configured
@@ -3113,6 +3118,13 @@ elif [ "$1" = "preemptivemac" ]; then
 elif [ "$1" = "resolve_fqdn" ]; then
 	resolve_fqdn $2
 	printf "%s" "$fqdnaddress"
+
+	exit 0
+
+elif [ "$1" = "config_input_fields" ]; then
+	config_input_fields $2
+	echo "$custom_inputs"
+	echo "$custom_passthrough"
 
 	exit 0
 

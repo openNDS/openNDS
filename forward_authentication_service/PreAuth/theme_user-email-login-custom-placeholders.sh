@@ -124,8 +124,8 @@ login_form() {
 		<hr>
 		<form action=\"/opennds_preauth/\" method=\"get\">
 			<input type=\"hidden\" name=\"fas\" value=\"$fas\">
-			<input type=\"text\" name=\"username\" value=\"$username\" autocomplete=\"on\" ><br>Name<br><br>
-			<input type=\"email\" name=\"emailaddress\" value=\"$emailaddress\" autocomplete=\"on\" ><br>Email<br><br>
+			<input type=\"text\" name=\"username\" value=\"$username\" autocomplete=\"on\" ><br><b>Name</b><br><br>
+			<input type=\"email\" name=\"emailaddress\" value=\"$emailaddress\" autocomplete=\"on\" ><br><b>Email</b><br><br>
 			$custom_inputs
 			<input type=\"submit\" value=\"Accept Terms of Service\" >
 		</form>
@@ -153,6 +153,8 @@ thankyou_page () {
 	urldecode "$entitydecoded"
 	banner2_message="$urldecoded"
 
+urldecode "$test_variable2"
+test_variable2="$urldecoded"
 	echo "
 		<big-red>
 			Thankyou for using this service.<br>Please click Continue for access.
@@ -160,7 +162,7 @@ thankyou_page () {
 		<br>
 		<b>Welcome $username</b>
 		<br>
-		<med-blue>You are connected to $client_zone</med-blue><br>
+		<med-blue>You are connected to <br>$client_zone</med-blue><br>
 	"
 
 	# Add your message here:

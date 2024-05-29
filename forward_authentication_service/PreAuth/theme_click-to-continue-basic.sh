@@ -82,7 +82,7 @@ continue_form() {
 
 	echo "
 		<big-red>Welcome!</big-red><br>
-		<med-blue>You are connected to $client_zone</med-blue><br>
+		<med-blue>You are connected to <br>$client_zone</med-blue><br>
 		<italic-black>
 			To access the Internet you must Accept the Terms of Service.
 		</italic-black>

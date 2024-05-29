@@ -110,7 +110,7 @@ continue_form() {
 		<big-red>Welcome!</big-red><br>
 		<img style=\"width:100%; max-width: 100%;\" src=\"$banner1\" alt=\"Placeholder: Banner1.\"><br>
 		<b>$banner1_message</b><hr>
-		<med-blue>You are connected to $client_zone</med-blue><br>
+		<med-blue>You are connected to <br>$client_zone</med-blue><br>
 		<italic-black>
 			To access the Internet you must Accept the Terms of Service.
 		</italic-black>

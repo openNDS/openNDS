@@ -703,7 +703,7 @@ get_client_zone () {
 			local_mesh_if=$(echo "$client_if_string" | awk '{printf $3}')
 
 			if [ ! -z "$client_meshnode" ]; then
-				client_zone="MeshZone: $client_meshnode LocalInterface:$local_mesh_if"
+				client_zone="MeshZone: $client_meshnode Local-Interface: $local_mesh_if"
 			else
 				client_zone="LocalZone: $client_if"
 			fi
@@ -878,70 +878,96 @@ serve_error_message () {
 # Configure custom input fields
 config_input_fields () {
 
-	input=$(/usr/lib/opennds/libopennds.sh get_list_from_config 'fas_custom_variables_list')
-	urldecode $input
-	input="$urldecoded"
+	customvarlist=$(/usr/lib/opennds/libopennds.sh get_list_from_config 'fas_custom_variables_list')
+	input=""
 
-	if [ ! -z "$input" ]; then
-		if [ "$1" = "input" ]; then
-			#custom variable for form input is configured
-			inputremainder=$input
+	if [ ! -z "$customvarlist" ]; then
+		#Scan list for input fields
+		for customvar in $customvarlist; do
+			fieldlist=$(echo "$customvar" | awk -F "input=" '{printf "%s", $2}')
 
-			# Parse for each input field. Format is name:description:type, fields separated by ";" character
-			while true; do
-				inputtail="${inputremainder##*';'}"
-				inputremainder="${inputremainder%';'*}"
+			if [ ! -z "$fieldlist" ]; then
 
-				fieldremainder=$inputtail
+				if [ -z "$input" ]; then
+					input="$fieldlist"
+					continue
+				else
+					input="$input;$fieldlist"
+					continue
+				fi
+			else
+				eval "$customvar"
+				continue
+			fi
 
-				#inputlist must list in the reverse order to that defined in the custom var (input=....)
-				inputlist="type description name"
 
-				# For each field, get the values of name:description:type
-				for var in $inputlist; do
-					fieldtail="${fieldremainder##*':'}"
-					fieldremainder="${fieldremainder%':'*}"
-					htmlentityencode "$fieldtail"
-					fieldtail=$entityencoded
+		done
 
-					eval $var=$(echo "\"$fieldtail\"")
 
-					if [ "$fieldtail" = "$fieldremainder" ]; then
+		urldecode "$input"
+		input="$urldecoded"
+
+		if [ ! -z "$input" ]; then
+			if [ "$1" = "input" ]; then
+				#custom variable for form input is configured
+				inputremainder=$input
+
+				# Parse for each input field. Format is name:description:type, fields separated by ";" character
+				while true; do
+					inputtail="${inputremainder##*';'}"
+					inputremainder="${inputremainder%';'*}"
+
+					fieldremainder=$inputtail
+
+					#inputlist must list in the reverse order to that defined in the custom var (input=....)
+					inputlist="type description name"
+
+					# For each field, get the values of name:description:type
+					for var in $inputlist; do
+						fieldtail="${fieldremainder##*':'}"
+						fieldremainder="${fieldremainder%':'*}"
+						htmlentityencode "$fieldtail"
+						fieldtail=$entityencoded
+
+						eval $var=$(echo "\"$fieldtail\"")
+
+						if [ "$fieldtail" = "$fieldremainder" ]; then
+							break
+						fi
+					done
+
+					# Make a list of field names
+					inputnames="$inputnames $name"
+
+
+					val=$(echo "$fasvars" | awk -F"$name=" '{print $2}' | awk -F', ' '{print $1}')
+
+					eval $name=$(echo "\"$val\"")
+
+					custom_inputs="
+						$custom_inputs
+						<input type=\"$type\" name=\"$name\" value=\"$val\" required autocomplete=\"on\" ><br><b>$description</b><br><br>
+					"
+
+					if [ "$inputtail" = "$inputremainder" ]; then
 						break
 					fi
 				done
 
-				# Make a list of field names
-				inputnames="$inputnames $name"
+			elif [ "$1" = "hidden" ]; then
 
+				for var in $inputnames; do
+					val=$(echo "$fasvars" | awk -F"$var=" '{print $2}' | awk -F', ' '{print $1}')
 
-				val=$(echo "$fasvars" | awk -F"$name=" '{print $2}' | awk -F', ' '{print $1}')
+					eval $var=$(echo "\"$val\"")
 
-				eval $name=$(echo "\"$val\"")
-
-				custom_inputs="
-					$custom_inputs
-					<input type=\"$type\" name=\"$name\" value=\"$val\" required autocomplete=\"on\" ><br><b>$description</b><br><br>
-				"
-
-				if [ "$inputtail" = "$inputremainder" ]; then
-					break
-				fi
-			done
-
-		elif [ "$1" = "hidden" ]; then
-
-			for var in $inputnames; do
-				val=$(echo "$fasvars" | awk -F"$var=" '{print $2}' | awk -F', ' '{print $1}')
-
-				eval $var=$(echo "\"$val\"")
-
-				userinfo="$userinfo, $var=$val"
-				custom_passthrough="
-					$custom_passthrough
-					<input type=\"hidden\" name=\"$var\" value=\"$val\" >
-				"
-			done
+					userinfo="$userinfo, $var=$val"
+					custom_passthrough="
+						$custom_passthrough
+						<input type=\"hidden\" name=\"$var\" value=\"$val\" >
+					"
+				done
+			fi
 		fi
 	fi
 }

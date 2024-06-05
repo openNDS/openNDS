@@ -1643,6 +1643,7 @@ auth_restore () {
 	configure_log_location
 
 	authlog="$logdir""authlog.log"
+	preemptive_auth="$mountpoint/ndscids/preemptive_auth"
 
 	if [ ! -e "$authlog" ]; then
 		mkdir -p "$logdir"
@@ -1656,36 +1657,62 @@ auth_restore () {
 		touch "$binauthlog"
 	fi
 
+	if [ ! -e "$preemptive_auth" ]; then
+		mkdir -p "$preemptive_auth"
+	fi
+
 	# Get default quotas
+	option="sessiontimeout"
+	get_option_from_config
+
+	if [ -z "$sessiontimeout" ]; then
+		sessiontimeout=1440
+	fi
+
 	option="uploadquota"
 	get_option_from_config
+
+	if [ -z "$uploadquota" ]; then
+		uploadquota=0
+	fi
 
 	option="downloadquota"
 	get_option_from_config
 
+	if [ -z "$downloadquota" ]; then
+		downloadquota=0
+	fi
+
 	option="uploadrate"
 	get_option_from_config
+
+	if [ -z "$uploadrate" ]; then
+		uploadrate=0
+	fi
 
 	option="downloadrate"
 	get_option_from_config
 
-	# Check if ndsctl is ready and therefore opennds is running
+	if [ -z "$downloadrate" ]; then
+		downloadrate=0
+	fi
+
+	# Check if opennds is running
 	local timeout=15
 
 	for tic in $(seq $timeout); do
-		ndsctl status &>/dev/null
-		ndsstatus=$?
+		check_heartbeat
 
-		if [ $ndsstatus -eq 0 ]; then
+		if [ $dead -eq 0 ]; then
 			break
 		fi
 
 		sleep 1
 	done
 
-	if [ $ndsstatus -ne 0 ]; then
+	if [ $dead -ne 0 ]; then
 		# we should give up
-		echo "ndsctl failed to become ready - aborting auth_restore"
+		echo "opennds failed to become ready - aborting auth_restore"
 		exit 1
 	fi
 
@@ -1734,19 +1761,11 @@ auth_restore () {
 
 		if [ $reauth -eq 1 ]; then
 			mac="$client_mac"
-
-			uploadrate=""
-			downloadrate=""
-			uploadquota=""
-			downloadquota=""
 			custom="auth_restore"
+			authstr="$mac, $sessiontimeout, $uploadrate, $downloadrate, $uploadquota, $downloadquota, preemptivemac-$mac"
+			macstr=$(echo "$mac" | awk -F":" '{printf "%s%s%s%s%s%s", $1, $2, $3, $4, $5, $6}')
 
-
-			authstr="\"$mac\" \"$sessiontimeout\" \"$uploadrate\" \"$downloadrate\" \"$uploadquota\" \"$downloadquota\" \"$custom\""
-
-			b64authstr=$(ndsctl b64encode "$authstr")
-
-			/usr/lib/opennds/libopennds.sh daemon_auth "$b64authstr" "quiet"
+			echo "$authstr" > "$preemptive_auth/$macstr"
 		fi
 
 	done < $authlog
@@ -1920,6 +1939,9 @@ create_client_ruleset () {
 	done
 
 	if [ "$ruleset_name" = "users_to_router" ]; then
+		# allow ping4 max 4 per second
+		nft insert rule ip nds_filter ndsRTR icmp type echo-request counter drop
+		nft insert rule ip nds_filter ndsRTR icmp type echo-request limit rate 4/second counter accept
 		# Block everything else
 		nft add rule ip nds_filter $chain counter reject
 	fi
@@ -1971,25 +1993,59 @@ send_post_data () {
 
 preemptivemac () {
 	configure_log_location
-
 	binauthlog="$logdir""binauthlog.log"
+	preemptive_auth="$mountpoint/ndscids/preemptive_auth"
 
 	if [ ! -e "$binauthlog" ]; then
 		mkdir -p "$logdir"
 		touch "$binauthlog"
 	fi
 
-	list="preemptivemac"
-	get_list_from_config
+	# Get default quotas
+	option="sessiontimeout"
+	get_option_from_config
+
+	if [ -z "$sessiontimeout" ]; then
+		sessiontimeout=1440
+	fi
+
+	option="uploadquota"
+	get_option_from_config
+
+	if [ -z "$uploadquota" ]; then
+		uploadquota=0
+	fi
+
+	option="downloadquota"
+	get_option_from_config
+
+	if [ -z "$downloadquota" ]; then
+		downloadquota=0
+	fi
+
+	option="uploadrate"
+	get_option_from_config
+
+	if [ -z "$uploadrate" ]; then
+		uploadrate=0
+	fi
+
+	option="downloadrate"
+	get_option_from_config
+
+	if [ -z "$downloadrate" ]; then
+		downloadrate=0
+	fi
+
+	if [ -z "$1" ]; then
+		list="preemptivemac"
+		get_list_from_config
+	else
+		param=" mac=$1;sessiontimeout=$sessiontimeout;uploadrate=$uploadrate;downloadrate=$downloadrate;uploadquota=$uploadquota;downloadquota=$downloadquota;custom=preemptivemac-$1 "
+	fi
 
 	for listblock in $param; do
 		mac=""
-		sessiontimeout=""
-		uploadrate=""
-		downloadrate=""
-		uploadquota=""
-		downloadquota=""
-		custom=""
 
 		eval $listblock
 
@@ -2008,11 +2064,13 @@ preemptivemac () {
 			continue
 		fi
 
-		authstr="\"$mac\" \"$sessiontimeout\" \"$uploadrate\" \"$downloadrate\" \"$uploadquota\" \"$downloadquota\" \"$custom\""
+		authstr="$mac, $sessiontimeout, $uploadrate, $downloadrate, $uploadquota, $downloadquota, preemptivemac-$mac"
+		macstr=$(echo "$mac" | awk -F":" '{printf "%s%s%s%s%s%s", $1, $2, $3, $4, $5, $6}')
+		echo "$authstr" > "$preemptive_auth/$macstr"
 
-		b64authstr=$(ndsctl b64encode "$authstr")
+		#b64authstr=$(ndsctl b64encode "$authstr")
 
-		/usr/lib/opennds/libopennds.sh daemon_auth "$b64authstr" "quiet"
+		#/usr/lib/opennds/libopennds.sh daemon_auth "$b64authstr" "quiet"
 	done
 }
 
@@ -2045,6 +2103,52 @@ resolve_fqdn() {
 		check_gw_ip
 		fqdnaddress="$gw_ip"
 	fi
+}
+
+get_meshnode_list() {
+	type mesh11sd &>/dev/null && meshnode_list=$(mesh11sd stations | grep -w "Station" | awk '{printf "%s ", $2}')
+	local converted_maclist=""
+
+	if [ ! -z "$meshnode_list" ]; then
+		for nodemac in $meshnode_list; do
+			convert_from_la $nodemac
+			converted_maclist="$converted_maclist $mac_from_la"
+		done
+	fi
+
+	meshnode_list="$converted_maclist"
+}
+
+convert_to_la() {
+	local mac_to_convert="$1"
+
+	eval $(echo "$mac_to_convert" | awk -F":" '{printf "p1=%s p2=%s p3=%s p4=%s p5=%s p6=%s", $1 ,$2, $3, $4, $5, $6}')
+
+	la_check=$(printf '%x\n' "$(( 0x2 & 0x$p1 ))")
+
+	if [ "$la_check" -eq 0 ]; then
+		octet=$(printf '%x\n' "$(( 0x2 | 0x$p1 ))")
+	else
+		octet="$p1"
+	fi
+
+	mac_la="$octet:$p2:$p3:$p4:$p5:$p6"
+}
+
+convert_from_la() {
+	local mac_to_convert="$1"
+
+	eval $(echo "$mac_to_convert" | awk -F":" '{printf "p1=%s p2=%s p3=%s p4=%s p5=%s p6=%s", $1 ,$2, $3, $4, $5, $6}')
+
+	la_check=$(printf '%x\n' "$(( 0x2 & 0x$p1 ))")
+
+	if [ "$la_check" -eq 2 ]; then
+		octet=$(printf '%x\n' "$(( 0x2 ^ 0x$p1 ))")
+	else
+		octet="$p1"
+	fi
+
+	mac_from_la="$octet:$p2:$p3:$p4:$p5:$p6"
 }
 
 #### end of functions ####
@@ -2677,7 +2781,7 @@ elif [ "$1" = "dhcpcheck" ]; then
 	fi
 
 elif [ "$1" = "auth" ]; then
-	# Deauths a client by ip or mac address
+	# Auths a client by ip or mac address
 	# $2 contains the b64 encoded auth-string which has the format:
 	# mac|ip sessiontimeout uploadrate downloadrate uploadquota downloadquota encoded_customstring
 	# Returns the status of the auth request
@@ -3136,8 +3240,9 @@ elif [ "$1" = "wget_request" ]; then
 	exit "$status"
 
 elif [ "$1" = "preemptivemac" ]; then
-
-	preemptivemac
+	# where $2 is an optional client mac address to immediately pre-emptively authenticate
+	# If $2 is not set then the preemptivemac list is parsed
+	preemptivemac "$2"
 
 	exit 0
 
@@ -3151,6 +3256,28 @@ elif [ "$1" = "config_input_fields" ]; then
 	config_input_fields $2
 	echo "$custom_inputs"
 	echo "$custom_passthrough"
+
+	exit 0
+
+elif [ "$1" = "get_meshnode_list" ]; then
+	get_meshnode_list
+	echo "$meshnode_list"
+
+	exit 0
+
+elif [ "$1" = "get_next_preemptive_auth" ]; then
+	configure_log_location
+	auth_files=$(ls $mountpoint/ndscids/preemptive_auth)
+
+	if [ -z $auth_files ]; then
+		exit 1
+	fi
+
+	for auth_file in $auth_files; do
+		cat "$mountpoint/ndscids/preemptive_auth/$auth_file"
+		rm "$mountpoint/ndscids/preemptive_auth/$auth_file"
+		break
+	done
 
 	exit 0
 

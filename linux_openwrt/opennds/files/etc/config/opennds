@@ -140,9 +140,9 @@ config opennds
 	# Custom Variables are used by FAS to dynamically collect information from clients
 	# Default None
 	#
-	# Custom Variables are listed in the form of var_name=var_type
-	# var_name and var_type must be urlencoded if containing white space or single quotes
-	# eg replace spaces with %20 - replace single quotes with %27
+	# Generic Custom Variables are listed in the form of var_name=var_type
+	# var_name and var_type must be urlencoded if containing single quotes
+	# eg replace single quotes with %27
 	#
 	# Variables should be configured one per line to prevent possible parsing errors.
 	# eg:
@@ -150,19 +150,19 @@ config opennds
 	#list fas_custom_variables_list '<var_name2=var_type2>'
 	# etc.
 	#
-	# FAS Generic Variables - a custom FAS or ThemeSpec must be written to make use of FAS Generic Variables
-	#-------------------------------------------------------------------------------------------------------
+	# Generic Custom Variables are made available to ThemeSpec scripts
+	#-----------------------------------------------------------------
 	# eg:
-	#list fas_custom_variables_list 'membership_number=number'
-	#list fas_custom_variables_list 'access_code=password'
+	#list fas_custom_variables_list 'caretaker_phone_number=Ext0118'
+	#list fas_custom_variables_list 'room_service=Ext0111'
 	#
 	# ThemeSpec Dynamically generated Form Fields
 	#--------------------------------------------
 	# ThemeSpec scripts can dynamically generate Form Field html and inject into the dynamic splash page sequence.
-	# This is achieved using a SINGLE line containing the keyword "input",
+	# This is achieved using one or more list entries containing the keyword "input",
 	# in the form: fieldname:field-description:fieldtype
 	#
-	# Numerous fields can be defined in this single "input=" line, separated by a semicolon (;).
+	# Numerous fields can be defined in each "input=" line, separated by a semicolon (;).
 	#
 	# The following Working Example applies to the installed ThemeSpec Files:
 	# theme_click-to-continue-custom-placeholders
@@ -171,7 +171,7 @@ config opennds
 	#
 	# this example inserts Phone Number and Home Post Code fields:
 	#
-	#list fas_custom_variables_list 'input=phone:Phone%20Number:text;postcode:Home%20Post%20Code:text'
+	#list fas_custom_variables_list 'input=phone:Phone Number:text;postcode:Home Post Code:text'
 	#
 	###########################################################################################
 

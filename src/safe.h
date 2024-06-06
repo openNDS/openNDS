@@ -21,7 +21,7 @@
 /** @file safe.h
 	@brief Safe versions of stdlib/string functions that error out and exit if memory allocation fails
 	@author Copyright (C) 2005 Mina Naguib <mina@ilesansfil.org>
-	@author Copyright (C) 2015-2023 Modifications and additions by BlueWave Projects and Services <opennds@blue-wave.net>
+	@author Copyright (C) 2015-2024 Modifications and additions by BlueWave Projects and Services <opennds@blue-wave.net>
 */
 
 #ifndef _SAFE_H_

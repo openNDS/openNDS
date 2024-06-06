@@ -1,6 +1,6 @@
 #!/bin/sh
 #Copyright (C) The openNDS Contributors 2004-2022
-#Copyright (C) BlueWave Projects and Services 2015-2023
+#Copyright (C) BlueWave Projects and Services 2015-2024
 #This software is released under the GNU GPL license.
 #
 # Warning - shebang sh is for compatibliity with busybox ash (eg on OpenWrt)
@@ -37,6 +37,10 @@ generate_splash_sequence() {
 header() {
 # Define a common header html for every page served
 	gatewayurl=$(printf "${gatewayurl//%/\\x}")
+	htmlentitydecode "$logo_message"
+	urldecode "$entitydecoded"
+	logo_message="$urldecoded"
+
 	echo "<!DOCTYPE html>
 		<html>
 		<head>
@@ -55,7 +59,7 @@ header() {
 			$gatewayname <br>
 		</med-blue>
 		<div class=\"insert\" style=\"max-width:100%;\">
-		<img src=\"$logo\" alt=\"Placeholder: Logo.\"><br>
+		<img src=\"$gatewayurl""$logo\" alt=\"Placeholder: Logo.\"><br>
 		<b>$logo_message</b><br>
 	"
 }
@@ -67,7 +71,7 @@ footer() {
 		<hr>
 		<div style=\"font-size:0.5em;\">
 			<br>
-			<img style=\"height:60px; width:60px; float:left;\" src=\"$gatewayurl""$imagepath\" alt=\"Splash Page: For access to the Internet.\">
+			<img style=\"height:60px; float:left;\" src=\"$gatewayurl""$logo\" alt=\"Splash Page: For access to the Internet.\">
 			&copy; Portal: BlueWave Projects and Services 2015 - $year<br>
 			<br>
 			Portal Version: $version
@@ -98,11 +102,15 @@ click_to_continue() {
 continue_form() {
 	# Define a click to Continue form
 
+	htmlentitydecode "$banner1_message"
+	urldecode "$entitydecoded"
+	banner1_message="$urldecoded"
+
 	echo "
 		<big-red>Welcome!</big-red><br>
 		<img style=\"width:100%; max-width: 100%;\" src=\"$banner1\" alt=\"Placeholder: Banner1.\"><br>
 		<b>$banner1_message</b><hr>
-		<med-blue>You are connected to $client_zone</med-blue><br>
+		<med-blue>You are connected to <br>$client_zone</med-blue><br>
 		<italic-black>
 			To access the Internet you must Accept the Terms of Service.
 		</italic-black>
@@ -132,6 +140,10 @@ thankyou_page () {
 
 	# Be aware that many devices will close the login browser as soon as
 	# the client user continues, so now is the time to deliver your message.
+
+	htmlentitydecode "$banner2_message"
+	urldecode "$entitydecoded"
+	banner2_message="$urldecoded"
 
 	echo "
 		<big-red>
@@ -198,13 +210,18 @@ landing_page() {
 
 	# output the landing page - note many CPD implementations will close as soon as Internet access is detected
 	# The client may not see this page, or only see it briefly
+
+	htmlentitydecode "$banner3_message"
+	urldecode "$entitydecoded"
+	banner3_message="$urldecoded"
+
 	auth_success="
 		<p>
 			<big-red>
 				You are now logged in and have been granted access to the Internet.
 			</big-red>
 			<hr>
-			<img style=\"width:100%; max-width: 100%;\" src=\"$banner3\" alt=\"Placeholder: Banner1.\"><br>
+			<img style=\"width:100%; max-width: 100%;\" src=\"$banner3\" alt=\"Placeholder: Banner3.\"><br>
 			<b>$banner3_message</b><br>
 		</p>
 		<hr>

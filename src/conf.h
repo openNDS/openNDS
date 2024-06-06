@@ -22,15 +22,15 @@
     @brief Config file parsing
     @author Copyright (C) 2004 Philippe April <papril777@yahoo.com>
     @author Copyright (C) 2007 Paul Kube <nodogsplash@kokoro.ucsd.edu>
-    @author Copyright (C) 2015-2023 Modifications and additions by BlueWave Projects and Services <opennds@blue-wave.net>
+    @author Copyright (C) 2015-2024 Modifications and additions by BlueWave Projects and Services <opennds@blue-wave.net>
 */
 
-#define COPYRIGHT "openNDS, Copyright (C) 2015-2023 Modifications and additions by BlueWave Projects and Services"
+#define COPYRIGHT "openNDS, Copyright (C) 2015-2024 Modifications and additions by BlueWave Projects and Services"
 
 #ifndef _CONF_H_
 #define _CONF_H_
 
-#define VERSION "10.2.1beta"
+#define VERSION "10.3.0"
 
 /*
  * Defines how many times should we try detecting the interface with the default route (in seconds).
@@ -120,6 +120,9 @@
 // Default lists
 #define DEFAULT_TRUSTEDMACLIST ""
 #define DEFAULT_FAS_CUSTOM_PARAMETERS_LIST ""
+#define DEFAULT_FAS_CUSTOM_VARIABLES_LIST ""
+#define DEFAULT_FAS_CUSTOM_IMAGES_LIST ""
+#define DEFAULT_FAS_CUSTOM_FILES_LIST ""
 #define DEFAULT_USERS_TO_ROUTER "allow%20udp%20port%2053 allow%20udp%20port%2067 allow%20tcp%20port%2022 allow%20tcp%20port%20443"
 #define DEFAULT_AUTHENTICATED_USERS "allow%20all"
 #define DEFAULT_PREAUTHENTICATED_USERS ""

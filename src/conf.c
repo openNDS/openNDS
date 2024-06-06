@@ -22,7 +22,7 @@
   @brief Config file parsing
   @author Copyright (C) 2004 Philippe April <papril777@yahoo.com>
   @author Copyright (C) 2007 Paul Kube <nodogsplash@kokoro.ucsd.edu>
-  @author Copyright (C) 2015-2023 Modifications and additions by BlueWave Projects and Services <opennds@blue-wave.net>
+  @author Copyright (C) 2015-2024 Modifications and additions by BlueWave Projects and Services <opennds@blue-wave.net>
  */
 
 #define _GNU_SOURCE
@@ -302,6 +302,8 @@ config_init(int argc, char **argv)
 	// Lists
 	parse_trusted_mac_list(set_list_str("trustedmac", DEFAULT_TRUSTEDMACLIST, debug_level));
 	parse_fas_custom_parameters_list(set_list_str("fas_custom_parameters_list", DEFAULT_FAS_CUSTOM_PARAMETERS_LIST, debug_level));
+	parse_fas_custom_images_list(set_list_str("fas_custom_images_list", DEFAULT_FAS_CUSTOM_IMAGES_LIST, debug_level));
+	parse_fas_custom_files_list(set_list_str("fas_custom_files_list", DEFAULT_FAS_CUSTOM_FILES_LIST, debug_level));
 
 	// Before we do anything else, reset the firewall (cleans it, in case we are restarting or after an opennds crash)
 	iptables_fw_destroy();

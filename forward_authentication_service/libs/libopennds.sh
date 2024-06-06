@@ -1,5 +1,5 @@
 #!/bin/sh
-#Copyright (C) BlueWave Projects and Services 2015-2023
+#Copyright (C) BlueWave Projects and Services 2015-2024
 #This software is released under the GNU GPL license.
 #
 # WARNING - shebang "sh" is for compatiblity with busybox ash (eg on OpenWrt)
@@ -132,6 +132,10 @@ get_image_file() {
 			# get protocol
 			protocol=$(echo "$imageurl" | awk -F'://' '{printf("%s", $1)}')
 
+			syslogmessage="protocol [$protocol]"
+			debugtype="debug"
+			write_to_syslog
+
 			if [ "$protocol" = "http" ]; then
 				#Try to download using http
 				spider="--spider"
@@ -185,7 +189,7 @@ get_image_file() {
 				destinationfile="$mountpoint/ndsremote/$filename"
 				cp "$sourcefile" "$destinationfile"
 			else
-				unsupported="Unsupported protocol [$protocol] for [$filename]in url [$imageurl] - skipping download"
+				unsupported="Unsupported protocol [$protocol] or invalid URL for [$filename]in url [$imageurl] - skipping download"
 				echo "$unsupported" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 			fi
 		fi
@@ -231,6 +235,10 @@ get_data_file() {
 		if [ ! -f "$mountpoint/ndsdata/$filename" ] || [ "$refresh" -eq 1 ]; then
 			# get protocol
 			protocol=$(echo "$dataurl" | awk -F'://' '{printf("%s", $1)}')
+
+			syslogmessage="protocol [$protocol]"
+			debugtype="debug"
+			write_to_syslog
 
 			if [ "$protocol" = "http" ]; then
 				#Try to download using http
@@ -284,7 +292,7 @@ get_data_file() {
 				destinationfile="$mountpoint/ndsdata/$filename"
 				cp "$sourcefile" "$destinationfile"
 			else
-				unsupported="Unsupported protocol [$protocol] for [$filename]in url [$imageurl] - skipping download"
+				unsupported="Unsupported protocol [$protocol] or invalid URL for [$filename]in url [$dataurl] - skipping download"
 				echo "$unsupported" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 			fi
 		fi
@@ -695,7 +703,7 @@ get_client_zone () {
 			local_mesh_if=$(echo "$client_if_string" | awk '{printf $3}')
 
 			if [ ! -z "$client_meshnode" ]; then
-				client_zone="MeshZone: $client_meshnode LocalInterface:$local_mesh_if"
+				client_zone="MeshZone: $client_meshnode Local-Interface: $local_mesh_if"
 			else
 				client_zone="LocalZone: $client_if"
 			fi
@@ -869,66 +877,97 @@ serve_error_message () {
 
 # Configure custom input fields
 config_input_fields () {
-	if [ ! -z "$input" ]; then
-		if [ "$1" = "input" ]; then
-			#custom variable for form input is configured
-			inputremainder=$input
 
-			# Parse for each input field. Format is name:description:type, fields separated by ";" character
-			while true; do
-				inputtail="${inputremainder##*';'}"
-				inputremainder="${inputremainder%';'*}"
+	customvarlist=$(/usr/lib/opennds/libopennds.sh get_list_from_config 'fas_custom_variables_list')
+	input=""
 
-				fieldremainder=$inputtail
+	if [ ! -z "$customvarlist" ]; then
+		#Scan list for input fields
+		for customvar in $customvarlist; do
+			fieldlist=$(echo "$customvar" | awk -F "input=" '{printf "%s", $2}')
 
-				#inputlist must list in the reverse order to that defined in the custom var (input=....)
-				inputlist="type description name"
+			if [ ! -z "$fieldlist" ]; then
 
-				# For each field, get the values of name:description:type
-				for var in $inputlist; do
-					fieldtail="${fieldremainder##*':'}"
-					fieldremainder="${fieldremainder%':'*}"
-					htmlentityencode "$fieldtail"
-					fieldtail=$entityencoded
+				if [ -z "$input" ]; then
+					input="$fieldlist"
+					continue
+				else
+					input="$input;$fieldlist"
+					continue
+				fi
+			else
+				eval "$customvar"
+				continue
+			fi
 
-					eval $var=$(echo "\"$fieldtail\"")
 
-					if [ "$fieldtail" = "$fieldremainder" ]; then
+		done
+
+
+		urldecode "$input"
+		input="$urldecoded"
+
+		if [ ! -z "$input" ]; then
+			if [ "$1" = "input" ]; then
+				#custom variable for form input is configured
+				inputremainder=$input
+
+				# Parse for each input field. Format is name:description:type, fields separated by ";" character
+				while true; do
+					inputtail="${inputremainder##*';'}"
+					inputremainder="${inputremainder%';'*}"
+
+					fieldremainder=$inputtail
+
+					#inputlist must list in the reverse order to that defined in the custom var (input=....)
+					inputlist="type description name"
+
+					# For each field, get the values of name:description:type
+					for var in $inputlist; do
+						fieldtail="${fieldremainder##*':'}"
+						fieldremainder="${fieldremainder%':'*}"
+						htmlentityencode "$fieldtail"
+						fieldtail=$entityencoded
+
+						eval $var=$(echo "\"$fieldtail\"")
+
+						if [ "$fieldtail" = "$fieldremainder" ]; then
+							break
+						fi
+					done
+
+					# Make a list of field names
+					inputnames="$inputnames $name"
+
+
+					val=$(echo "$fasvars" | awk -F"$name=" '{print $2}' | awk -F', ' '{print $1}')
+
+					eval $name=$(echo "\"$val\"")
+
+					custom_inputs="
+						$custom_inputs
+						<input type=\"$type\" name=\"$name\" value=\"$val\" required autocomplete=\"on\" ><br><b>$description</b><br><br>
+					"
+
+					if [ "$inputtail" = "$inputremainder" ]; then
 						break
 					fi
 				done
 
-				# Make a list of field names
-				inputnames="$inputnames $name"
+			elif [ "$1" = "hidden" ]; then
 
+				for var in $inputnames; do
+					val=$(echo "$fasvars" | awk -F"$var=" '{print $2}' | awk -F', ' '{print $1}')
 
-				val=$(echo "$fasvars" | awk -F"$name=" '{print $2}' | awk -F', ' '{print $1}')
+					eval $var=$(echo "\"$val\"")
 
-				eval $name=$(echo "\"$val\"")
-
-				custom_inputs="
-					$custom_inputs
-					<input type=\"$type\" name=\"$name\" value=\"$val\" required autocomplete=\"on\" ><br><b>$description</b><br><br>
-				"
-
-				if [ "$inputtail" = "$inputremainder" ]; then
-					break
-				fi
-			done
-
-		elif [ "$1" = "hidden" ]; then
-
-			for var in $inputnames; do
-				val=$(echo "$fasvars" | awk -F"$var=" '{print $2}' | awk -F', ' '{print $1}')
-
-				eval $var=$(echo "\"$val\"")
-
-				userinfo="$userinfo, $var=$val"
-				custom_passthrough="
-					$custom_passthrough
-					<input type=\"hidden\" name=\"$var\" value=\"$val\" >
-				"
-			done
+					userinfo="$userinfo, $var=$val"
+					custom_passthrough="
+						$custom_passthrough
+						<input type=\"hidden\" name=\"$var\" value=\"$val\" >
+					"
+				done
+			fi
 		fi
 	fi
 }
@@ -1604,6 +1643,7 @@ auth_restore () {
 	configure_log_location
 
 	authlog="$logdir""authlog.log"
+	preemptive_auth="$mountpoint/ndscids/preemptive_auth"
 
 	if [ ! -e "$authlog" ]; then
 		mkdir -p "$logdir"
@@ -1617,36 +1657,62 @@ auth_restore () {
 		touch "$binauthlog"
 	fi
 
+	if [ ! -e "$preemptive_auth" ]; then
+		mkdir -p "$preemptive_auth"
+	fi
+
 	# Get default quotas
+	option="sessiontimeout"
+	get_option_from_config
+
+	if [ -z "$sessiontimeout" ]; then
+		sessiontimeout=1440
+	fi
+
 	option="uploadquota"
 	get_option_from_config
+
+	if [ -z "$uploadquota" ]; then
+		uploadquota=0
+	fi
 
 	option="downloadquota"
 	get_option_from_config
 
+	if [ -z "$downloadquota" ]; then
+		downloadquota=0
+	fi
+
 	option="uploadrate"
 	get_option_from_config
+
+	if [ -z "$uploadrate" ]; then
+		uploadrate=0
+	fi
 
 	option="downloadrate"
 	get_option_from_config
 
-	# Check if ndsctl is ready and therefore opennds is running
+	if [ -z "$downloadrate" ]; then
+		downloadrate=0
+	fi
+
+	# Check if opennds is running
 	local timeout=15
 
 	for tic in $(seq $timeout); do
-		ndsctl status &>/dev/null
-		ndsstatus=$?
+		check_heartbeat
 
-		if [ $ndsstatus -eq 0 ]; then
+		if [ $dead -eq 0 ]; then
 			break
 		fi
 
 		sleep 1
 	done
 
-	if [ $ndsstatus -ne 0 ]; then
+	if [ $dead -ne 0 ]; then
 		# we should give up
-		echo "ndsctl failed to become ready - aborting auth_restore"
+		echo "opennds failed to become ready - aborting auth_restore"
 		exit 1
 	fi
 
@@ -1695,19 +1761,11 @@ auth_restore () {
 
 		if [ $reauth -eq 1 ]; then
 			mac="$client_mac"
-
-			uploadrate=""
-			downloadrate=""
-			uploadquota=""
-			downloadquota=""
 			custom="auth_restore"
+			authstr="$mac, $sessiontimeout, $uploadrate, $downloadrate, $uploadquota, $downloadquota, preemptivemac-$mac"
+			macstr=$(echo "$mac" | awk -F":" '{printf "%s%s%s%s%s%s", $1, $2, $3, $4, $5, $6}')
 
-
-			authstr="\"$mac\" \"$sessiontimeout\" \"$uploadrate\" \"$downloadrate\" \"$uploadquota\" \"$downloadquota\" \"$custom\""
-
-			b64authstr=$(ndsctl b64encode "$authstr")
-
-			/usr/lib/opennds/libopennds.sh daemon_auth "$b64authstr" "quiet"
+			echo "$authstr" > "$preemptive_auth/$macstr"
 		fi
 
 	done < $authlog
@@ -1881,6 +1939,9 @@ create_client_ruleset () {
 	done
 
 	if [ "$ruleset_name" = "users_to_router" ]; then
+		# allow ping4 max 4 per second
+		nft insert rule ip nds_filter ndsRTR icmp type echo-request counter drop
+		nft insert rule ip nds_filter ndsRTR icmp type echo-request limit rate 4/second counter accept
 		# Block everything else
 		nft add rule ip nds_filter $chain counter reject
 	fi
@@ -1932,25 +1993,59 @@ send_post_data () {
 
 preemptivemac () {
 	configure_log_location
-
 	binauthlog="$logdir""binauthlog.log"
+	preemptive_auth="$mountpoint/ndscids/preemptive_auth"
 
 	if [ ! -e "$binauthlog" ]; then
 		mkdir -p "$logdir"
 		touch "$binauthlog"
 	fi
 
-	list="preemptivemac"
-	get_list_from_config
+	# Get default quotas
+	option="sessiontimeout"
+	get_option_from_config
+
+	if [ -z "$sessiontimeout" ]; then
+		sessiontimeout=1440
+	fi
+
+	option="uploadquota"
+	get_option_from_config
+
+	if [ -z "$uploadquota" ]; then
+		uploadquota=0
+	fi
+
+	option="downloadquota"
+	get_option_from_config
+
+	if [ -z "$downloadquota" ]; then
+		downloadquota=0
+	fi
+
+	option="uploadrate"
+	get_option_from_config
+
+	if [ -z "$uploadrate" ]; then
+		uploadrate=0
+	fi
+
+	option="downloadrate"
+	get_option_from_config
+
+	if [ -z "$downloadrate" ]; then
+		downloadrate=0
+	fi
+
+	if [ -z "$1" ]; then
+		list="preemptivemac"
+		get_list_from_config
+	else
+		param=" mac=$1;sessiontimeout=$sessiontimeout;uploadrate=$uploadrate;downloadrate=$downloadrate;uploadquota=$uploadquota;downloadquota=$downloadquota;custom=preemptivemac-$1 "
+	fi
 
 	for listblock in $param; do
 		mac=""
-		sessiontimeout=""
-		uploadrate=""
-		downloadrate=""
-		uploadquota=""
-		downloadquota=""
-		custom=""
 
 		eval $listblock
 
@@ -1969,12 +2064,91 @@ preemptivemac () {
 			continue
 		fi
 
-		authstr="\"$mac\" \"$sessiontimeout\" \"$uploadrate\" \"$downloadrate\" \"$uploadquota\" \"$downloadquota\" \"$custom\""
+		authstr="$mac, $sessiontimeout, $uploadrate, $downloadrate, $uploadquota, $downloadquota, preemptivemac-$mac"
+		macstr=$(echo "$mac" | awk -F":" '{printf "%s%s%s%s%s%s", $1, $2, $3, $4, $5, $6}')
+		echo "$authstr" > "$preemptive_auth/$macstr"
 
-		b64authstr=$(ndsctl b64encode "$authstr")
+		#b64authstr=$(ndsctl b64encode "$authstr")
 
-		/usr/lib/opennds/libopennds.sh daemon_auth "$b64authstr" "quiet"
+		#/usr/lib/opennds/libopennds.sh daemon_auth "$b64authstr" "quiet"
 	done
+}
+
+resolve_fqdn() {
+	fqdnaddress=""
+	local fqdn=$1
+	local ipaddress_list=$(nslookup "$fqdn" | grep -w -A 1 "$fqdn" | awk -F "Address: " '{printf "%s ", $2}')
+
+	for fqdnaddress in $ipaddress_list; do
+		numoctets=$(echo "$fqdnaddress" | awk -F "." '{printf "%s", NF}')
+
+		if [ "$numoctets" -eq 4 ]; then
+			# return the first valid ip4 address
+			break
+		else
+			fqdnaddress=""
+			continue
+		fi
+	done
+
+	if [ -z "$fqdnaddress" ]; then
+		option="gatewayinterface"
+		get_option_from_config
+
+		if [ -z "$gatewayinterface" ]; then
+			gatewayinterface="br-lan"
+		fi
+
+		ifname="$gatewayinterface"
+		check_gw_ip
+		fqdnaddress="$gw_ip"
+	fi
+}
+
+get_meshnode_list() {
+	type mesh11sd &>/dev/null && meshnode_list=$(mesh11sd stations | grep -w "Station" | awk '{printf "%s ", $2}')
+	local converted_maclist=""
+
+	if [ ! -z "$meshnode_list" ]; then
+		for nodemac in $meshnode_list; do
+			convert_from_la $nodemac
+			converted_maclist="$converted_maclist $mac_from_la"
+		done
+	fi
+
+	meshnode_list="$converted_maclist"
+}
+
+convert_to_la() {
+	local mac_to_convert="$1"
+
+	eval $(echo "$mac_to_convert" | awk -F":" '{printf "p1=%s p2=%s p3=%s p4=%s p5=%s p6=%s", $1 ,$2, $3, $4, $5, $6}')
+
+	la_check=$(printf '%x\n' "$(( 0x2 & 0x$p1 ))")
+
+	if [ "$la_check" -eq 0 ]; then
+		octet=$(printf '%x\n' "$(( 0x2 | 0x$p1 ))")
+	else
+		octet="$p1"
+	fi
+
+	mac_la="$octet:$p2:$p3:$p4:$p5:$p6"
+}
+
+convert_from_la() {
+	local mac_to_convert="$1"
+
+	eval $(echo "$mac_to_convert" | awk -F":" '{printf "p1=%s p2=%s p3=%s p4=%s p5=%s p6=%s", $1 ,$2, $3, $4, $5, $6}')
+
+	la_check=$(printf '%x\n' "$(( 0x2 & 0x$p1 ))")
+
+	if [ "$la_check" -eq 2 ]; then
+		octet=$(printf '%x\n' "$(( 0x2 ^ 0x$p1 ))")
+	else
+		octet="$p1"
+	fi
+
+	mac_from_la="$octet:$p2:$p3:$p4:$p5:$p6"
 }
 
 #### end of functions ####
@@ -2607,7 +2781,7 @@ elif [ "$1" = "dhcpcheck" ]; then
 	fi
 
 elif [ "$1" = "auth" ]; then
-	# Deauths a client by ip or mac address
+	# Auths a client by ip or mac address
 	# $2 contains the b64 encoded auth-string which has the format:
 	# mac|ip sessiontimeout uploadrate downloadrate uploadquota downloadquota encoded_customstring
 	# Returns the status of the auth request
@@ -3066,8 +3240,44 @@ elif [ "$1" = "wget_request" ]; then
 	exit "$status"
 
 elif [ "$1" = "preemptivemac" ]; then
+	# where $2 is an optional client mac address to immediately pre-emptively authenticate
+	# If $2 is not set then the preemptivemac list is parsed
+	preemptivemac "$2"
 
-	preemptivemac
+	exit 0
+
+elif [ "$1" = "resolve_fqdn" ]; then
+	resolve_fqdn $2
+	printf "%s" "$fqdnaddress"
+
+	exit 0
+
+elif [ "$1" = "config_input_fields" ]; then
+	config_input_fields $2
+	echo "$custom_inputs"
+	echo "$custom_passthrough"
+
+	exit 0
+
+elif [ "$1" = "get_meshnode_list" ]; then
+	get_meshnode_list
+	echo "$meshnode_list"
+
+	exit 0
+
+elif [ "$1" = "get_next_preemptive_auth" ]; then
+	configure_log_location
+	auth_files=$(ls $mountpoint/ndscids/preemptive_auth)
+
+	if [ -z $auth_files ]; then
+		exit 1
+	fi
+
+	for auth_file in $auth_files; do
+		cat "$mountpoint/ndscids/preemptive_auth/$auth_file"
+		rm "$mountpoint/ndscids/preemptive_auth/$auth_file"
+		break
+	done
 
 	exit 0
 

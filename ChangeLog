@@ -1,5 +1,37 @@
+opennds (10.3.0)
+  * Fix - missing exit in library call [bluewavenet]
+  * Add - support for mesh11sd meshnodes and reimplement auth_restore to not use ndsctl -  [bluewavenet]
+  * Fix - formatting of ThemeSpec scripts -  [bluewavenet]
+  * Fix - move parsing of custom vaiables and fields to libopennds library script -  [bluewavenet]
+  * Fix - move custom_variables_list parsing to liboppennds library -  [bluewavenet]
+  * Fix - parsing of custom variables list -  [bluewavenet]
+  * Fix - non placeholder themespec logo size -  [bluewavenet]
+  * Fix - formatting of themespec custom placeholders and status page -  [bluewavenet]
+  * Fix - missing parseing of custom files list in config -  [bluewavenet]
+  * Fix - issue #596, Problem with fasremotefqdn that has multiple IPs ( CDN ) -  [bluewavenet] [viniciussotti ]
+  * Add - download protocol debug message -  [bluewavenet]
+  * Add - function resolve_fqdn() -  [bluewavenet]
+  * Fix - failure to parse custom variables and custom images from config lists -  [bluewavenet]
+  * Fix - issue #582, ensure list dhcp-option-force is added to the correct dnsmasq zone -  [bluewavenet] [flintt]
+  * Fix - issue #591, error adding nft rule when fasremotefqdn not set -  [bluewavenet] [billz]
+  * Fix - change error message to debug message when legacy ipset not present -  [bluewavenet]
+  * Fix - issue #588, Remove default value for faskey -  [bluewavenet] [billz]
+  * Fix - some memory leaks -  [bluewavenet] [LuMingYinDetect]
+  * Fix - typo preventing reload of dnsmasq -  [bluewavenet]
+  * Fix - issue #571, CVE-2024-25763, use after free - we now delete the client instead of changing state -  [bluewavenet] [LuMingYinDetect]
+  * Fix - Evaluate system call return values -  [bluewavenet] [sunweaver]
+  * Fix - enable iteration counter for all nft error codes -  [bluewavenet]
+  * Fix - issue #556, use dnsmasq reload instead of restart -  [bluewavenet] [rafaelfelix]
+  * Fix - remove unneeded memory allocation -  [bluewavenet]
+  * Fix - ensure all client memory is freed when removing client -  [bluewavenet]
+  * Fix - remove unneeded memory allocations and free some strdup allocations -  [bluewavenet]
+  * Fix - race condition when dnsmasq takes too long to restart -  [bluewavenet]
+  * Add - issue #547, Support specifying DHCP leases file location [mcassaniti]
+
+ -- Rob White <dot@blue-wave.net>  Wed, 07 Jun 2024 07:31:46 +0000
+
 opennds (10.2.0)
-  * Add - Page 202 HTTP_ACCEPTED for future use
+  * Add - Page 202 HTTP_ACCEPTED for future use [bluewavenet]
   * Fix - remove redundant workaround for old MHD versions [bluewavenet]
   * Fix - some nft and other error messages [bluewavenet]
   * Fix - remove unnecessary debug messages [bluewavenet]

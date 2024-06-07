@@ -3211,6 +3211,8 @@ elif [ "$1" = "set_key" ]; then
 
 	echo "$cmd" | $shell
 
+	exit 0
+
 elif [ "$1" = "hash_str" ]; then
 
 	if [ -z "$2" ]; then

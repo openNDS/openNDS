@@ -2077,19 +2077,7 @@ preemptivemac () {
 resolve_fqdn() {
 	fqdnaddress=""
 	local fqdn=$1
-	local ipaddress_list=$(nslookup "$fqdn" | grep -w -A 1 "$fqdn" | awk -F "Address: " '{printf "%s ", $2}')
-
-	for fqdnaddress in $ipaddress_list; do
-		numoctets=$(echo "$fqdnaddress" | awk -F "." '{printf "%s", NF}')
-
-		if [ "$numoctets" -eq 4 ]; then
-			# return the first valid ip4 address
-			break
-		else
-			fqdnaddress=""
-			continue
-		fi
-	done
+	fqdnaddress=$(nslookup "$fqdn" | grep -w -A 1 "Name:" | grep "Address:" | awk -F "Address: " 'NR == 1 {print $2}')
 
 	if [ -z "$fqdnaddress" ]; then
 		option="gatewayinterface"

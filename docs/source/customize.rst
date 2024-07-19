@@ -117,7 +117,7 @@ User clicks on "Continue" are recorded in the log file /[tmpfs_dir]/ndslog/ndslo
 Where [tmpfs_dir] is the operating system "temporary" tmpfs mount point.
 This will be  /tmp /run or /var and is automatically detected.
 
-Details of how the script works are contained in comments in the script theme_click-to-continue.sh
+Details of how the script works are contained in comments in the script theme_click-to-continue-basic.sh
 
 
 Pre-Installed dynamic User/email Login page sequence
@@ -133,7 +133,7 @@ User logins are recorded in the log file /[tmpfs_dir]/ndslog/ndslog.log
 Where [tmpfs_dir] is the operating system "temporary" tmpfs mount point.
 This will be  /tmp /run or /var and is automatically detected.
 
-Details of how the script works are contained in comments in the script theme_user-email-login.sh
+Details of how the script works are contained in comments in the script theme_user-email-login-basic.sh
 
 
 Custom Dynamic ThemeSpec Pages

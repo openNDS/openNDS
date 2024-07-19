@@ -169,7 +169,7 @@ Default: None
 
 Required when when login_option_enabled is set to '3'
 
-Note: /usr/lib/opennds/theme_click-to-continue.sh is used for login_option_enabled '1'
+Note: /usr/lib/opennds/theme_click-to-continue-basic.sh is used for login_option_enabled '1'
 
 and:  /usr/lib/opennds/theme_user-email-login-basic.sh is used for login_option_enabled '2'
 

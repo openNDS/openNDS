@@ -307,7 +307,7 @@ iptables_fw_init(void)
 				rc = execute_ret_url_encoded(fqdnip, SMALL_BUF, fqdncmd);
 				rc |= nftables_do_command("add rule ip nds_nat %s ip daddr %s tcp dport %d counter accept", CHAIN_OUTGOING, fqdnip, fas_port);
 				free(fqdncmd);
-				free(fqdnip);
+				// do not free(fqdnip) just yet, we will need it again shortly
 			} else {
 
 				if (strcmp(config->fas_remoteip, "disabled") != 0) {
@@ -377,7 +377,9 @@ iptables_fw_init(void)
 
 	if (config->fas_port != 0) {
 		if (strcmp(config->fas_remotefqdn, "disabled") != 0) {
-			rc |= nftables_do_command("add rule ip nds_filter %s ip daddr %s tcp dport %d counter accept", CHAIN_TO_INTERNET, fas_remotefqdn, fas_port);
+			rc |= nftables_do_command("add rule ip nds_filter %s ip daddr %s tcp dport %d counter accept", CHAIN_TO_INTERNET, fqdnip, fas_port);
+			// Now we can free(fqdnip) as we are now finished with it
+			free(fqdnip);
 		} else {
 
 			if (strcmp(config->fas_remoteip, "disabled") != 0) {

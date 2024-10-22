@@ -477,7 +477,7 @@ Default: ``250``
 
 Allows control over upload rate limiting packet loss at the expense of increased latency.
 
-***CAUTION*** Large values may consume large amounts of memory per client.
+***CAUTION*** Larger values consume more memory per client.
 
 Allowed Range ``5`` to ``10000``
 
@@ -492,7 +492,7 @@ Default: ``250``
 
 Allows control over download rate limiting packet loss at the expense of increased latency.
 
-***CAUTION*** Large values may consume large amounts of memory per client.
+***CAUTION*** Larger values consume more memory per client.
 
 Allowed Range ``5`` to ``10000``
 
@@ -830,7 +830,7 @@ Custom Variables are listed in the form of ``var_name=var_type``
 
 eg replace spaces with %20 - replace single quotes with %27
 
-Variables should be configured one per line to prevent possible parsing errors.
+Variables shall be configured one per line to prevent parsing errors.
 
 eg:
 
@@ -887,7 +887,7 @@ image_name and image_url must be urlencoded if containing white space or single 
 
 The image url must begin with ``http://`` ``https://`` or ``file://``
 
-Images should be configured one per line to prevent possible parsing errors.
+Images shall be configured one per line to prevent parsing errors.
 
 ``list fas_custom_images_list '<image_name1_[type]=image_url1>'``
 
@@ -931,7 +931,7 @@ The image url must begin with ``http://`` ``https://`` or ``file://``
 
 ``[type]`` can be any recognised file extension that can be used to display web content eg txt, htm etc.
 
-URLs using the ``file://`` protocol must point to a valid mountpoint accessible to openNDS, for example a USB storage device.
+``file://`` URLs shall point to a valid mount-point accessible to openNDS. For example, a USB storage device.
 
 Configuration for custom files in the installed ThemeSpec Files
 ----------------------------------------------------------------

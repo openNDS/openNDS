@@ -47,8 +47,7 @@ Default: ``1`` (Enabled)
 
 Specific to OpenWrt only, Firewall 4 (FW4) informs openNDS when it is restarting.
 
-If enabled (Set to 1), openNDS reinserts any nftables it may need in the FW4 ruleset.
-
+If enabled, openNDS reinserts any nftables it may need in the FW4 ruleset.
 
 ``option fwhook_enabled '1'``
 
@@ -156,9 +155,7 @@ Disable by setting to ``0``
 
 This allows the ndsctl utility to preemptively authorise **connected** clients that have not entered the preauthenticated state.
 
-This is useful for example with IoT devices that do not have CPD (captive portal detection)
-
-or for a FAS to manage inter-captive-portal roaming by making use of a centralised database of client validations.
+This is useful for example with IoT devices that do not have CPD (captive portal detection) or for a FAS to manage inter-captive-portal roaming by making use of a centralised database of client validations.
 
 Example:
 
@@ -203,9 +200,7 @@ Set refresh interval for downloaded remote files (in minutes)
 
 Default: ``0`` (Disabled)
 
-A setting of 0 (zero) means refresh is disabled.
-
-This is useful for providing automated refreshing of informational or advertising content. Should the remote resources become unavailable, current versions will continue to be used.
+This provides automated refreshing of custom content. Should the remote resources become unavailable, current versions will continue to be used.
 
 Example, set to twelve hours (720 minutes):
 
@@ -300,9 +295,7 @@ Default: ``openNDS``
 
 gatewayname is used as an identifier for the instance of openNDS
 
-It is displayed on the default splash page sequence for ThemeSpec and the example php scripts.
-
-It is particularly useful in the case of a single remote FAS server that serves multiple openNDS sites, allowing the FAS to customise its response for each site.
+It is displayed on the default splash page sequence for ThemeSpec and the example php scripts. It is particularly useful in the case of a single remote FAS server that serves multiple openNDS sites, allowing the FAS to customise its response for each site.
 
 Note: The single quote (or apostrophe) character ('), cannot be used in the gatewayname.
 
@@ -412,7 +405,7 @@ Default: ``1440`` minutes (24 hours).
 
 This is the interval after which clients are forced out (a value of 0 means never).
 
-Clients will be deauthenticated at the end of this period.
+This is the interval after which clients are forced out (a value of ``0`` means never). Clients will be deauthenticated at the end of this period.
 
 Example: Set to 20 hours (1200 minutes).
 
@@ -456,19 +449,15 @@ Set Bucket Ratio
 
 Default: ``10``
 
-Upload and Download bucket ratios can be defined.
-
-Allows fine control of upload rate limit threshold overrun per client.
+Upload and Download bucket ratios can be defined which allow fine control of upload rate limit threshold overrun per client.
 
 Used in conjunction with MaxDownloadBucketSize and MaxUploadBucketSize.
 
 Facilitates calculation of a dynamic "bucket size" or "queue length" (in packets) to be used for buffering upload and download traffic to achieve rate restrictions defined in this config file or by FAS for individual clients.
 
-If a bucket becomes full, packets will overflow and be dropped to maintain the rate limit.
+If a bucket becomes full, packets will be dropped to maintain the rate limit. To minimise the number of dropped packets, the bucket ratio can be increased whilst still maintaining the configured rate restriction.
 
-To minimise the number of dropped packets the bucket ratio can be increased whilst still maintaining the configured rate restriction.
-
-***CAUTION*** Large values may consume large amounts of memory per client.
+***CAUTION*** Larger values consume more memory per client.
 
 If the client's average rate does not exceed its configured value within the ratecheck window interval (See RateCheckWindow option), no memory is consumed.
 
@@ -546,9 +535,7 @@ Set RateCheckWindow
 
 Default: ``2``
 
-The client data rate is calculated using a moving average.
-
-This allows clients to burst at maximum possible rate, only rate limiting if the moving average exceeds the specified upload or download rate.
+The client data rate is calculated using a moving average which allows clients to burst throughput at maximum possible rate, rate limiting only if the moving average exceeds the specified upload or download rate.
 
 The moving average window size is equal to ratecheckwindow times checkinterval (seconds).
 
@@ -568,9 +555,8 @@ Example: Disable all rate quotas for all clients, overriding settings made in FA
 Set Volume Quotas
 *****************
 
-If the client data quota exceeds the value set here, the client will be deauthenticated or rate limited as defined by the Fair Usage Policy throttle rate.
+If the client data quota exceeds the value set here, the client will be deauthenticated or rate limited as defined by the Fair Usage Policy throttle rate. The client by default may re-authenticate. It is the responsibility of the FAS (whether Themespec, other local or remote) to restrict further authentication of the client if so desired.
 
-The client by default may re-authenticate. It is the responsibility of the FAS (whether Themespec, other local or remote) to restrict further authentication of the client if so desired.
 Default: ``0`` (Unlimited)
 
 Integer values only; values are in kB
@@ -725,9 +711,8 @@ Set the Faskey
 
 Default: A system generated sha256 string
 
-A key phrase for NDS to encrypt the query string sent to FAS.
+A key phrase for NDS to encrypt the query string sent to FAS. Can be any text string without white-space.
 
-Can be any text string with no white space.
 Hint and Example: Choose a secret string and use the ``sha256sum`` utility to generate a hash.
 
 e.g. Use the command - ``echo "mysecretopenNDSfaskey" | sha256sum``
@@ -798,7 +783,7 @@ Custom parameters are sent as fixed values to FAS
 
 Default: None
 
-Custom Parameters listed in the form of ``param_name=param_value``
+Custom parameters are sent as fixed values to FAS. Custom Parameters listed in the form of ``param_name=param_value``.
 
 param_name and param_value must be urlencoded if containing white space or single quotes
 
@@ -937,13 +922,7 @@ Custom Files are served by a local FAS where required in dynamic portal pages
 
 Default: None
 
-Custom files will be copied from the URL to the openNDS router
-
-Images should be configured one per line to prevent possible parsing errors.
-
-Custom files are listed in the form of ``file_name_type=file_url``
-
-file_name and file_url must be urlencoded if containing white space or single quotes
+Custom files will be copied from the URL to the openNDS router. Images shall be configured one per line to prevent parsing errors. Custom files are listed in the form of ``file_name_type=file_url``.
 
 The image url must begin with ``http://`` ``https://`` or ``file://``
 
@@ -1094,8 +1073,7 @@ Access Control For Preauthenticated Users:
 Walled Garden Access For Preauthenticated Users
 ***********************************************
 
-You can allow preauthenticated users to access external services
-This is commonly referred to as a Walled Garden.
+You can allow preauthenticated users to access external services. This is commonly referred to as a Walled Garden.
 
 A Walled Garden can be configured either:
  * Manually; for known IP addresses
@@ -1110,11 +1088,9 @@ Manual Walled Garden configuration requires research to determine the IP address
 
 This can be problematic as sites can use many dynamic IP addresses.
 
-However, manual configuration does not require any additional dependencies (ie additional installed packages).
+Manual configuration does not require any additional dependencies (i.e. additional installed packages), however.
 
-Note that standard unencrypted HTTP port (TCP port 80) is used for captive portal detection (CPD) and access to external websites should use HTTPS (TCP port 443) for security.
-
-It is however, still possible to allow TCP port 80 by using the Autonomous Walled Garden approach.
+Note that standard unencrypted HTTP port (TCP port 80) is used for captive portal detection (CPD) and access to external websites should use HTTPS (TCP port 443) for security. It is still possible to allow TCP port 80, however, by using the Autonomous Walled Garden approach.
 
 Manual configuration example:
 
@@ -1202,9 +1178,7 @@ Access falls into two categories:
 Essential Access
 ----------------
 
-Essential access for DNS and DHCP is granted by default.
-
-If additional optional access is required, it is essential that you specifically allow ports for DNS and DHCP (unless you have a very specific reason for not doing so and know what you are doing. **Disabling these will soft brick your router!**):
+Essential access for DNS and DHCP is granted by default. If additional optional access is required, it is essential that you specifically allow ports for DNS and DHCP (unless you have a very specific reason for not doing so and know what you are doing. **Disabling these will soft brick your router!**):
 
 ``list users_to_router 'allow tcp port 53'``
 
@@ -1232,11 +1206,7 @@ Trusted Clients
 
 A list of the MAC addresses of trusted client devices.
 
-Trusted clients are granted immediate and unconditional access and do not require authentication.
-
-Trusted client data usage is not recorded and no quotas or timeouts are applied.
-
-See "Pre-emptive Clients" for conditional access for "trusted" clients.
+Trusted clients are granted immediate and unconditional access and do not require authentication. Trusted client data usage is not recorded and no quotas or timeouts are applied. See "Pre-emptive Clients" for conditional access for "trusted" clients.
 
 .. note::
  Be aware that most mobile devices randomise their MAC address for each wireless network encountered.
@@ -1296,11 +1266,7 @@ Packet Marking Compatibility
 
 openNDS uses specific HEXADECIMAL values to mark packets used by nftables as a bitwise mask.
 
-This mask can conflict with the requirements of other packages.
-
-However the defaults are fully compatible with the defaults used in mwan3 and sqm
-
-Any values set here are interpreted as in hex format.
+This mask can conflict with the requirements of other packages. The defaults are fully compatible with the defaults used in mwan3 and sqm, however. Any values set here are interpreted as hex format.
 
 Option: fw_mark_authenticated
 -----------------------------

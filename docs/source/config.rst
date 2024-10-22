@@ -470,21 +470,6 @@ Examples:
 ``option download_bucket_ratio '5'``
 
 
-MaxDownloadBucketSize
-*********************
-
-Default: ``250``
-
-Allows control over download rate limiting packet loss at the expense of increased latency.
-
-***CAUTION*** Large values may consume large amounts of memory per client.
-
-Allowed Range ``5`` to ``10000``
-
-Example:
-
-``option max_upload_bucket_size '100'``
-
 MaxUploadBucketSize
 *******************
 
@@ -498,10 +483,25 @@ Allowed Range ``5`` to ``10000``
 
 Example:
 
+``option max_upload_bucket_size '100'``
+
+MaxDownloadBucketSize
+*********************
+
+Default: ``250``
+
+Allows control over download rate limiting packet loss at the expense of increased latency.
+
+***CAUTION*** Large values may consume large amounts of memory per client.
+
+Allowed Range ``5`` to ``10000``
+
+Example:
+
 ``option max_download_bucket_size '100'``
 
-DownLoadUnrestrictedBursting
-****************************
+UpLoadUnrestrictedBursting
+**************************
 
 Default: ``0`` (Disabled)
 
@@ -515,8 +515,8 @@ Example:
 
 ``option upload_unrestricted_bursting '1'``
 
-UpLoadUnrestrictedBursting
-**************************
+DownLoadUnrestrictedBursting
+****************************
 
 Default: ``0`` (Disabled)
 

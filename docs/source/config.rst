@@ -784,9 +784,7 @@ Default: None
 
 Custom parameters are sent as fixed values to FAS. Custom Parameters listed in the form of ``param_name=param_value``.
 
-param_name and param_value must be urlencoded if containing white space or single quotes
-
-eg replace spaces with %20 - replace single quotes with %27
+param_name and param_value shall be urlencoded e.g. replace spaces with %20 - replace single quotes with %27
 
 Parameters should be configured one per line to prevent possible parsing errors.
 
@@ -885,7 +883,7 @@ Custom images will be copied from the URL to the openNDS router
 
 Custom Images are listed in the form of ``image_name_type=image_url``
 
-image_name and image_url must be urlencoded if containing white space or single quotes
+``image_name`` and ``image_url`` shall be urlencoded.
 
 The image url must begin with ``http://`` ``https://`` or ``file://``
 
@@ -925,7 +923,7 @@ Default: None
 
 Custom files will be copied from the URL to the openNDS router. Images shall be configured one per line to prevent parsing errors. Custom files are listed in the form of ``file_name_type=file_url``.
 
-The image url must begin with ``http://`` ``https://`` or ``file://``
+file_name and file_url shall be urlencoded. The file url must begin with ``http://`` ``https://`` or ``file://``
 
 ``list fas_custom_files_list '<file_name1_[type]=file_url1>'``
 

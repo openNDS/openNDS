@@ -790,7 +790,7 @@ eg replace spaces with %20 - replace single quotes with %27
 
 Parameters should be configured one per line to prevent possible parsing errors.
 
-eg:
+Example:
 
 ``list fas_custom_parameters_list '<param_name1=param_value1>'``
 
@@ -808,6 +808,8 @@ theme_click-to-continue-custom-placeholders
 and
 
 theme_user-email-login-custom-placeholders
+
+Example:
 
 ``list fas_custom_parameters_list 'logo_message=openNDS:%20Perfect%20on%20OpenWrt!'``
 
@@ -832,7 +834,7 @@ eg replace spaces with %20 - replace single quotes with %27
 
 Variables shall be configured one per line to prevent parsing errors.
 
-eg:
+Example:
 
 ``list fas_custom_variables_list '<var_name1=var_type1>'``
 
@@ -844,7 +846,7 @@ FAS Generic Variables
 ---------------------
 A custom FAS or ThemeSpec must be written to make use of FAS Generic Variables
 
-eg:
+Example:
 
 ``list fas_custom_variables_list 'membership_number=number'``
 
@@ -941,6 +943,8 @@ theme_click-to-continue-custom-placeholders
 and
 
 theme_user-email-login-custom-placeholders
+
+Example:
 
 ``list fas_custom_files_list 'advert1_htm=https://raw.githubusercontent.com/openNDS/openNDS/v9.0.0/resources/bannerpickle.htm'``
 

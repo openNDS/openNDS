@@ -1012,7 +1012,7 @@ Manual configuration example:
 
 An FQDN can be used in place of an IP address (but the FQDN must have only one possible IP address).
 
-``list authenticated_users 'block tcp port 443 to mywebsite.com'``
+``list authenticated_users 'block tcp port 443 to example.com'``
 
 Autonomous Blocklist configuration using a list of FQDNs and Ports
 ..................................................................

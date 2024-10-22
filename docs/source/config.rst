@@ -451,7 +451,7 @@ Default: ``10``
 
 Upload and Download bucket ratios can be defined which allow fine control of upload rate limit threshold overrun per client.
 
-Used in conjunction with MaxDownloadBucketSize and MaxUploadBucketSize.
+Used in conjunction with :ref:`MaxDownloadBucketSize` and :ref:`MaxUploadBucketSize`.
 
 Facilitates calculation of a dynamic "bucket size" or "queue length" (in packets) to be used for buffering upload and download traffic to achieve rate restrictions defined in this config file or by FAS for individual clients.
 
@@ -459,7 +459,7 @@ If a bucket becomes full, packets will be dropped to maintain the rate limit. To
 
 ***CAUTION*** Larger values consume more memory per client.
 
-If the client's average rate does not exceed its configured value within the ratecheck window interval (See RateCheckWindow option), no memory is consumed.
+If the client's average rate does not exceed its configured value within the ratecheck window interval (See :ref:`RateCheckWindow` option), no memory is consumed.
 
 If the rate is set to ``0``, the Bucket Ratio setting has no meaning and no memory is consumed.
 
@@ -629,8 +629,8 @@ This is enabled by the following option:
 
 ``option binauth '/usr/lib/opennds/binauth_log.sh'``
 
-Set Fasremotefqdn
-*****************
+Set the Fasremotefqdn
+*********************
 
 Default: Not set.
 
@@ -640,7 +640,7 @@ The protocol must NOT be prepended to the FQDN (i.e. http:// or https://).
 
 To prevent CPD or browser security errors NDS prepends the required http:// or https:// before redirection, depending upon the fas_secure_enabled option.
 
-If set, DNS MUST resolve fasremotefqdn to be the same IP address as fasremoteip.
+If set, DNS MUST resolve fasremotefqdn to be the same IP address as :ref:`fasremoteip<Set-the-Fasremoteip>`.
 
 Remote Shared Hosting
 ---------------------
@@ -652,7 +652,7 @@ Typical Remote Shared Hosting Example (replace this with your own FAS FQDN):
 CDN (Content Delivery Network) hosted server
 --------------------------------------------
 
-For a CDN (Content Delivery Network) hosted server, the configuration is the same as for Remote Shared Hosting but fasremotefqdn must also be added to the Walled Garden list of FQDNs
+For a CDN (Content Delivery Network) hosted server, the configuration is the same as for Remote Shared Hosting but :ref:`fasremotefqdn<Set-the-Fasremotefqdn>` must also be added to the Walled Garden list of FQDNs.
 
 Set the Fasremoteip
 *******************
@@ -665,8 +665,8 @@ Typical Remote Shared Hosting Example (replace this with your own remote FAS IP)
 
 ``option fasremoteip '46.32.240.41'``
 
-Set Fasport
-***********
+Set the Fasport
+***************
 
 Default: Not set.
 
@@ -675,13 +675,13 @@ This is the Forwarding Authentication Service (FAS) port number.
 Redirection is changed to the IP port of a FAS (provided by the system administrator).
 
 .. note::
- If FAS is running locally (ie fasremoteip is NOT set), port 80 cannot be used.
+ If FAS is running locally (ie :ref:`fasremoteip<set-the-fasremoteip>` is NOT set), port ``80`` cannot be used.
 
 Typical Remote Shared Hosting Example:
 
 ``option fasport '80'``
 
-Typical Locally Hosted example (ie fasremoteip not set):
+Typical Locally Hosted example (ie :ref:`fasremoteip<set-the-fasremoteip>` not set):
 
 ``option fasport '2090'``
 
@@ -694,15 +694,15 @@ This is the path from the FAS Web Root to the FAS login page (not the file syste
 
 In the following examples, replace with your own values for faspath:
 
-	Typical Remote Shared Hosting Example (if fasremotefqdn is not specified):
+	Typical Remote Shared Hosting Example (if :ref:`fasremotefqdn<Set-the-Fasremotefqdn>` is not specified):
 
 		``option faspath '/remote_host_fqdn/fas/fas-hid.php'``
 
-	Typical Remote Shared Hosting Example (ie BOTH fasremoteip AND fasremotefqdn set):
+	Typical Remote Shared Hosting Example (i.e. BOTH :ref:`fasremoteip<Set-the-Fasremoteip>` AND :ref:`fasremotefqdn<Set-the-Fasremotefqdn>` set):
 
 		``option faspath '/fas/fas-hid.php'``
 
-	Typical Locally Hosted Example (i.e. fasremoteip not set):
+	Typical Locally Hosted Example (i.e. :ref:`fasremoteip<Set-the-Fasremoteip>` not set):
 
 		``option faspath '/fas/fas-hid.php'``
 
@@ -776,10 +776,9 @@ Note: Option faskey must be pre shared with the FAS script in use (including any
 Example:
 
 ``option fas_secure_enabled '3'``
-Define Custom Parameters
-************************
 
-Custom parameters are sent as fixed values to FAS
+Define FAS Custom Parameters
+****************************
 
 Default: None
 
@@ -818,8 +817,8 @@ theme_user-email-login-custom-placeholders
 
 ``list fas_custom_parameters_list 'banner3_message=SeaWolf%20Cruiser%20Racer'``
 
-Define Custom Variables
-***********************
+Define FAS Custom Variables
+***************************
 
 Custom Variables are used by FAS to dynamically collect information from clients
 
@@ -873,8 +872,8 @@ This example inserts Phone Number and Home Post Code fields:
 
 ``list fas_custom_variables_list 'input=phone:Phone%20Number:text;postcode:Home%20Post%20Code:text'``
 
-Define Custom Images
-********************
+Define FAS Custom Images
+************************
 
 Custom Images are served by a local FAS where required in dynamic portal pages
 
@@ -915,8 +914,8 @@ theme_user-email-login-custom-placeholders
 
 ``list fas_custom_images_list 'banner3_jpg=https://raw.githubusercontent.com/openNDS/openNDS/v9.0.0/resources/bannerseawolf.jpg'``
 
-Define Custom Files
-*******************
+Define FAS Custom Files
+***********************
 
 Custom Files are served by a local FAS where required in dynamic portal pages
 
@@ -1206,7 +1205,7 @@ Trusted Clients
 
 A list of the MAC addresses of trusted client devices.
 
-Trusted clients are granted immediate and unconditional access and do not require authentication. Trusted client data usage is not recorded and no quotas or timeouts are applied. See "Pre-emptive Clients" for conditional access for "trusted" clients.
+Trusted clients are granted immediate and unconditional access and do not require authentication. Trusted client data usage is not recorded and no quotas or timeouts are applied. See :ref:`Preemptive Clients` for conditional access for "trusted" clients.
 
 .. note::
  Be aware that most mobile devices randomise their MAC address for each wireless network encountered.
@@ -1226,7 +1225,7 @@ Unlike Trusted Clients, Preemptive clients have their data usage monitored. Quot
 
 Preemptive clients are logged both locally and in remote FAS servers in the same way as normal validated clients.
 
-Preemptive Authentication must be enabled (default). See "allow_preemptive_authentication".
+Preemptive Authentication must be enabled (default). See :ref:`allow_preemptive_authentication<Allow-Preemptive-Authentication>`.
 
   Default: Not Set
 

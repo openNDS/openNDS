@@ -669,26 +669,6 @@ This is enabled by the following option:
 
 ``option binauth '/usr/lib/opennds/binauth_log.sh'``
 
-Set Fasport
-***********
-
-Default: Not set.
-
-This is the Forwarding Authentication Service (FAS) port number.
-
-Redirection is changed to the IP port of a FAS (provided by the system administrator).
-
-.. note::
- If FAS is running locally (ie fasremoteip is NOT set), port 80 cannot be used.
-
-Typical Remote Shared Hosting Example:
-
-``option fasport '80'``
-
-Typical Locally Hosted example (ie fasremoteip not set):
-
-``option fasport '2090'``
-
 Set Fasremotefqdn
 *****************
 
@@ -724,6 +704,26 @@ If set, this is the remote ip address of the FAS.
 Typical Remote Shared Hosting Example (replace this with your own remote FAS IP):
 
 ``option fasremoteip '46.32.240.41'``
+
+Set Fasport
+***********
+
+Default: Not set.
+
+This is the Forwarding Authentication Service (FAS) port number.
+
+Redirection is changed to the IP port of a FAS (provided by the system administrator).
+
+.. note::
+ If FAS is running locally (ie fasremoteip is NOT set), port 80 cannot be used.
+
+Typical Remote Shared Hosting Example:
+
+``option fasport '80'``
+
+Typical Locally Hosted example (ie fasremoteip not set):
+
+``option fasport '2090'``
 
 Set the Faspath
 ***************

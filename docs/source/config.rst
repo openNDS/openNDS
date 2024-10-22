@@ -72,7 +72,7 @@ Local Log Mountpoint
 
 Default: router's volatile tmpfs storage eg on OpenWrt ``/tmp``
 
-Local logging can be directed to any storage accessible to the router eg USB drive, SSD etc
+Local logging can be directed to any storage accessible to the router e.g. USB drive, SSD etc
 
 **WARNING** - you should not use the router's built in flash storage as this would cause
 excessive wear and in a live system will result quite quickly in flash failure making the router useless.
@@ -222,7 +222,7 @@ Default: ``0`` (Disabled)
 
 Older versions of MHD use an older version of the MHD API and may not run correctly or fail.
 
-Older versions of MHD convert & and + characters to spaces when present in form data. This can make a PreAuth or BinAuth impossible to use for a client if form data contains either of these characters eg. in username or password.
+Older versions of MHD convert & and + characters to spaces when present in form data. This can make a PreAuth or BinAuth impossible to use for a client if form data contains either of these characters e.g. in a username or password.
 
 *There may well be other issues with older versions.*
 
@@ -388,9 +388,7 @@ Preauthidletimeout
 
 Default: ``30``
 
-This is the time in minutes after which a client is disconnected if not authenticated.
-
-ie the client has not attempted to authenticate for this period.
+This is the time in minutes after which a client is disconnected if not authenticated; i.e. the client has not attempted to authenticate for this period.
 
 Example:
 
@@ -401,8 +399,7 @@ Authidletimeout
 
 Default: ``120``
 
-This is the time in minutes after which an idle client is disconnected
-ie the client has not used the network access for this period
+This is the time in minutes after which an idle client is disconnected; i.e. the client has not used the network access for this period.
 
 Example:
 
@@ -442,7 +439,7 @@ Integer values only.
 .. note::
  Upload means *to* the Internet, download means *from* the Internet.
 
-If the client average data rate exceeds the value set here, the client will be rate limited.
+If the client average data rate exceeds the value set here, the client will become rate-limited.
 
 Values are in kb/s.
 
@@ -653,7 +650,7 @@ Default: Not set.
 
 If set, this is the remote fully qualified domain name (FQDN) of the FAS.
 
-The protocol must NOT be prepended to the FQDN (ie http:// or https://).
+The protocol must NOT be prepended to the FQDN (i.e. http:// or https://).
 
 To prevent CPD or browser security errors NDS prepends the required http:// or https:// before redirection, depending upon the fas_secure_enabled option.
 
@@ -719,7 +716,7 @@ In the following examples, replace with your own values for faspath:
 
 		``option faspath '/fas/fas-hid.php'``
 
-	Typical Locally Hosted Example (ie fasremoteip not set):
+	Typical Locally Hosted Example (i.e. fasremoteip not set):
 
 		``option faspath '/fas/fas-hid.php'``
 
@@ -990,7 +987,7 @@ Access Control For Authenticated Users
 * Access can be allowed by openNDS but the final decision will be passed on to the operating system firewall. (Note: passthrough is deprecated: in nftables, ``allow`` is equivalent to the old ``passthrough``
 * All listed rules will be applied in the order present in the list.
 * An ip address or an FQDN may be included in a list entry.
-* If an FQDN resolves to multiple ip addresses, the rule will **NOT** be added. Rules for such FQDNs must be added elsewhere (eg the operating system firewall)
+* If an FQDN resolves to multiple ip addresses, the rule will **NOT** be added. Rules for such FQDNs must be added elsewhere (e.g. the operating system firewall)
 
 Allow Access for Authenticated Users (allow)
 --------------------------------------------
@@ -1027,7 +1024,7 @@ Manual Block List configuration
 
 This requires research to determine the ip addresses of the Block List site(s) and can be problematic as sites can use many dynamic ip addresses.
 
-However, manual configuration does not require any additional dependencies (ie additional installed packages).
+However, manual configuration does not require any additional dependencies (i.e. additional installed packages).
 
 Manual configuration example:
 
@@ -1101,9 +1098,9 @@ You can allow preauthenticated users to access external services
 This is commonly referred to as a Walled Garden.
 
 A Walled Garden can be configured either:
- * Manually for known ip addresses
+ * Manually; for known IP addresses
 
- * Autonomously from a list of FQDNs and ports
+ * Autonomously; from a list of FQDNs and ports
 
 
 Manual Walled Garden configuration
@@ -1180,8 +1177,8 @@ Access is automatically granted to resources required for normal operation of th
 
 By default the user to router access rules are **not** passed through to the system firewall for additional processing.
 
-Users to Router Passthrough
----------------------------
+Users to Router Pass-through
+----------------------------
 
 (Applies to OpenWrt only)
 
@@ -1193,7 +1190,7 @@ To enable pass-through, set to ``1``
 
 **WARNING**: Do not enable unless you know what you are doing.
 
-*Enabling passthrough may well soft brick your router, particularly if openNDS is bound to a guest network.*
+*Enabling pass-through may well soft-brick your router, particularly if openNDS is bound to a guest network.*
 
 Access to the router.
 ---------------------
@@ -1250,16 +1247,16 @@ Example:
 
 ``list trustedmac '00:00:C0:01:D0:1D'``
 
-Pre-emptive Clients
+Preemptive Clients
 *******************
 
-A list of the MAC addresses and access conditions of pre-emptively authenticated client devices.
+A list of the MAC addresses and access conditions of preemptively authenticated client devices.
 
-Unlike Trusted Clients, Pre-emptive clients have their data usage monitored. Quotas and timeouts are applied.
+Unlike Trusted Clients, Preemptive clients have their data usage monitored. Quotas and timeouts are applied.
 
-Pre-emptive clients are logged both locally and in remote fas servers in the same way as normal validated clients.
+Preemptive clients are logged both locally and in remote FAS servers in the same way as normal validated clients.
 
-Pre-emptive Authentication must be enabled (default). See "allow_preemptive_authentication".
+Preemptive Authentication must be enabled (default). See "allow_preemptive_authentication".
 
   Default: Not Set
 
@@ -1270,7 +1267,7 @@ List parameters will be mac, sessiontimeout, uploadrate, downloadrate, uploadquo
 
 List parameters set to ``0`` or omitted are set to the global or default value.
 
-Pre-emptive clients are logged both locally and in remote fas servers in the same way as normal validated clients.
+Preemptive clients are logged both locally and in remote FAS servers in the same way as normal validated clients.
 
 Examples:
 

@@ -654,7 +654,7 @@ The protocol must NOT be prepended to the FQDN (i.e. http:// or https://).
 
 To prevent CPD or browser security errors NDS prepends the required http:// or https:// before redirection, depending upon the fas_secure_enabled option.
 
-If set, DNS MUST resolve fasremotefqdn to be the same ip address as fasremoteip.
+If set, DNS MUST resolve fasremotefqdn to be the same IP address as fasremoteip.
 
 Remote Shared Hosting
 ---------------------
@@ -673,7 +673,7 @@ Set the Fasremoteip
 
 Default: GatewayAddress (the IP of NDS)
 
-If set, this is the remote ip address of the FAS.
+If set, this is the remote IP address of the FAS.
 
 Typical Remote Shared Hosting Example (replace this with your own remote FAS IP):
 
@@ -953,7 +953,7 @@ The image url must begin with ``http://`` ``https://`` or ``file://``
 
 ``[type]`` can be any recognised file extension that can be used to display web content eg txt, htm etc.
 
-URLs using the ``file://`` protocol must point to a valid mountpoint accessible to openNDS, for example a usb storage device.
+URLs using the ``file://`` protocol must point to a valid mountpoint accessible to openNDS, for example a USB storage device.
 
 Configuration for custom files in the installed ThemeSpec Files
 ----------------------------------------------------------------
@@ -986,8 +986,8 @@ Access Control For Authenticated Users
 
 * Access can be allowed by openNDS but the final decision will be passed on to the operating system firewall. (Note: passthrough is deprecated: in nftables, ``allow`` is equivalent to the old ``passthrough``
 * All listed rules will be applied in the order present in the list.
-* An ip address or an FQDN may be included in a list entry.
-* If an FQDN resolves to multiple ip addresses, the rule will **NOT** be added. Rules for such FQDNs must be added elsewhere (e.g. the operating system firewall)
+* An IP address or an FQDN may be included in a list entry.
+* If an FQDN resolves to multiple IP addresses, the rule will **NOT** be added. Rules for such FQDNs must be added elsewhere (e.g. the operating system firewall)
 
 Allow Access for Authenticated Users (allow)
 --------------------------------------------
@@ -1016,13 +1016,13 @@ Block Access For Authenticated Users (Block Lists)
 Deny authenticated users access to external services
 
 A Block List can be configured either:
-    1. Manually for known ip addresses or fqdns with single ip addresses
-    2. Autonomously from a list of FQDNs and ports
+    1. Manually; for known IP addresses or FQDNs with single IP addresses
+    2. Autonomously; from a list of FQDNs and ports
 
 Manual Block List configuration
 ...............................
 
-This requires research to determine the ip addresses of the Block List site(s) and can be problematic as sites can use many dynamic ip addresses.
+This requires research to determine the IP addresses of the Block List site(s) and can be problematic as sites can use many dynamic IP addresses.
 
 However, manual configuration does not require any additional dependencies (i.e. additional installed packages).
 
@@ -1030,14 +1030,14 @@ Manual configuration example:
 
 ``list authenticated_users 'block udp port 8020 to 112.122.123.124'``
 
-An fqdn can be used in place of an ip address (but the fqdn must have only one possible ip address)
+An FQDN can be used in place of an IP address (but the FQDN must have only one possible IP address).
 
 ``list authenticated_users 'block tcp port 443 to mywebsite.com'``
 
 Autonomous Blocklist configuration using a list of FQDNs and Ports
 ..................................................................
 
-This has the advantage of discovering all ip addresses used by the Blocklist sites.
+This has the advantage of discovering all IP addresses used by the Blocklist sites.
 
 It requires the ``dnsmasq-full`` package (and also the ``ipset`` package if dnsmasq does not support nftsets) to be installed.
 
@@ -1106,9 +1106,9 @@ A Walled Garden can be configured either:
 Manual Walled Garden configuration
 ----------------------------------
 
-Manual Walled Garden configuration requires research to determine the ip addresses of the Walled Garden site(s).
+Manual Walled Garden configuration requires research to determine the IP addresses of the Walled Garden site(s).
 
-This can be problematic as sites can use many dynamic ip addresses.
+This can be problematic as sites can use many dynamic IP addresses.
 
 However, manual configuration does not require any additional dependencies (ie additional installed packages).
 
@@ -1125,7 +1125,7 @@ Autonomous Walled Garden configuration
 
 Autonomous Walled Garden configuration is activated using a list of FQDNs and Ports.
 
-This has the advantage of discovering all ip addresses used by the Walled Garden sites.
+This has the advantage of discovering all IP addresses used by the Walled Garden sites.
 
 But it does require the ``dnsmasq-full`` package to be installed and on OpenWrt 22.03.x or earlier the ``ipset`` package is also required. This is achieved by running the following commands (on OpenWrt):
 
@@ -1239,7 +1239,7 @@ Trusted client data usage is not recorded and no quotas or timeouts are applied.
 See "Pre-emptive Clients" for conditional access for "trusted" clients.
 
 .. note::
- Be aware that most mobile devices randomise their mac address for each wireless network encountered.
+ Be aware that most mobile devices randomise their MAC address for each wireless network encountered.
 
 Example:
 
@@ -1261,7 +1261,7 @@ Preemptive Authentication must be enabled (default). See "allow_preemptive_authe
   Default: Not Set
 
 .. note::
- Be aware that most mobile devices randomise their mac address for each wireless network encountered.
+ Be aware that most mobile devices randomise their MAC address for each wireless network encountered.
 
 List parameters will be mac, sessiontimeout, uploadrate, downloadrate, uploadquota, downloadquota and custom. The ";" character is used as a parameter separator.
 
@@ -1278,7 +1278,7 @@ Examples:
 ``list preemptivemac 'mac=00:00:E0:01:D0:03;sessiontimeout=4200;uploadrate=100;downloadrate=0;uploadquota=0;downloadquota=0;custom=custom_string_for_preemptivemac3'``
 
 
-Dhcp option 114 Enable - RFC8910
+DHCP option 114 Enable - RFC8910
 ********************************
 
 Default: ``1`` (enabled)

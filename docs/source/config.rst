@@ -4,7 +4,9 @@ Configuration Options
 Enable openNDS
 **************
 
-Set to 0 to disable opennds
+Default: ``1`` (Enabled)
+
+Set to ``0`` to disable opennds
 
 ``option enabled 1``
 
@@ -18,7 +20,7 @@ Use of this setting is no longer supported and if present is ignored.
 Enable debug output (0-3)
 *************************
 
-Default: 1
+Default: ``1``
 
 Level0
 ------
@@ -41,11 +43,12 @@ debuglevel 2 + LOG_DEBUG
 Firewall Restart hook
 *********************
 
+Default: ``1`` (Enabled)
+
 Specific to OpenWrt only, Firewall 4 (FW4) informs openNDS when it is restarting.
 
 If enabled (Set to 1), openNDS reinserts any nftables it may need in the FW4 ruleset.
 
-Default: 1
 
 ``option fwhook_enabled '1'``
 
@@ -55,7 +58,7 @@ Ndsctl Socket Access
 Set the socket name to use for ndsctl socket access, relative to the tmpfs mountpoint.
 
 Any directory/folder specified must exist.
-Default: ndsctl.sock (Do not add a leading "/")
+Default: ``ndsctl.sock`` (Do not add a leading "/")
 
 Full default socket path would be /tmp/ndsctl.sock in OpenWrt
 In the following example, the socket path would be /tmp/sockets/ndsctl.sock
@@ -81,14 +84,13 @@ Example:
 Maximum number of Local Log Entries
 ***********************************
 
-Set the maximum number of local log entries to be kept.
-Default 100
+Default: ``100``
 
-Minimum value 0 (no limit)
+Set the maximum number of local log entries to be kept.
+
+Minimum value: ``0`` (no limit)
 
 Maximum value - limited only by free storage space on the logging mountpoint
-
-If set to '0' there is no limit
 
 This is the maximum number of local log entries allowed before log rotation begins
 
@@ -107,7 +109,7 @@ Example:
 Login Option
 ************
 
-Default: 1
+Default: ``1``
 
 Integer value sent to PreAuth script as login mode
 
@@ -148,9 +150,9 @@ Use Theme defined in ThemeSpec path (option themespec_path)
 Allow Preemptive Authentication
 *******************************
 
-Default: 1 - Enabled
+Default: ``1`` (Enabled)
 
-Disable by setting to 0
+Disable by setting to ``0``
 
 This allows the ndsctl utility to preemptively authorise **connected** clients that have not entered the preauthenticated state.
 
@@ -199,7 +201,7 @@ Set refresh interval for downloads
 
 Set refresh interval for downloaded remote files (in minutes)
 
-Default 0
+Default: ``0`` (Disabled)
 
 A setting of 0 (zero) means refresh is disabled.
 
@@ -212,7 +214,7 @@ Example, set to twelve hours (720 minutes):
 Use outdated libmicrohttpd (MHD)
 ********************************
 
-Default 0 (Disabled)
+Default: ``0`` (Disabled)
 
 **Warning**: enabling this *may* cause instability or in the worst case total failure - it would be better to upgrade MHD.
 
@@ -232,12 +234,12 @@ If this option is set to 1, NDS will attempt to start and log an error.
 
 ``option use_outdated_mhd '1'``
 
-Maximum Page Size to be served by MHD
-*************************************
+Maximum Page Size (bytes) to be served by MHD
+*********************************************
 
-Default 10240 bytes
+Default: ``10240`` bytes
 
-Minimum value 1024 bytes
+Minimum value: ``1024`` bytes
 
 Maximum - limited only by free RAM in the router
 
@@ -255,7 +257,7 @@ Example:
 Set the MHD WebRoot
 *******************
 
-Default: /etc/opennds/htdocs
+Default: ``/etc/opennds/htdocs``
 
 The local path where the system css file, and other static page content resides.
 
@@ -268,7 +270,7 @@ Example:
 Set the GatewayInterface
 ************************
 
-Default: br-lan
+Default: ``br-lan``
 
 Use this option to set the device opennds will bind to.
 
@@ -283,7 +285,7 @@ In OpenWrt this is normally br-lan, in generic Linux it might be wlan0
 Set the GatewayPort
 *******************
 
-Default: 2050
+Default: ``2050``
 
 openNDS's own http server (MHD) uses the gateway address as its IP address.
 
@@ -296,7 +298,7 @@ Example:
 Set the GatewayName
 *******************
 
-Default: openNDS
+Default: ``openNDS``
 
 gatewayname is used as an identifier for the instance of openNDS
 
@@ -327,9 +329,9 @@ Appends a serial number suffix to the gatewayname string.
 
 openNDS constructs a serial number based on the router mac address and adds it to the gatewayname
 
-Default: 1 (enabled)
+Default: ``1`` (Enabled)
 
-To disable, set to 0
+To disable, set to ``0``.
 
 Example:
 
@@ -338,7 +340,7 @@ Example:
 Set GatewayFQDN
 ***************
 
-Default: status.client
+Default: ``status.client``
 
 This is the simulated FQDN used by a client to access the Client Status Page
 
@@ -361,7 +363,7 @@ Alternate Useful Example:
 Set StatusPath
 **************
 
-Default: /usr/lib/opennds/client_params.sh
+Default: ``/usr/lib/opennds/client_params.sh``
 
 This is the script used to generate the GatewayFQDN client status page.
 
@@ -372,7 +374,7 @@ Example:
 Set MaxClients
 **************
 
-Default 250
+Default: ``250``
 
 The maximum number of clients allowed to connect.
 
@@ -388,7 +390,7 @@ Client timeouts in minutes
 Preauthidletimeout
 ------------------
 
-Default 30
+Default: ``30``
 
 This is the time in minutes after which a client is disconnected if not authenticated.
 
@@ -401,7 +403,7 @@ Example:
 Authidletimeout
 ---------------
 
-Default 120
+Default: ``120``
 
 This is the time in minutes after which an idle client is disconnected
 ie the client has not used the network access for this period
@@ -413,7 +415,7 @@ Example:
 Session Timeout
 ---------------
 
-Default 1440 minutes (24 hours).
+Default: ``1440`` minutes (24 hours).
 
 This is the interval after which clients are forced out (a value of 0 means never).
 
@@ -426,9 +428,9 @@ Example: Set to 20 hours (1200 minutes).
 Set the Checkinterval
 *********************
 
-The interval in seconds at which openNDS checks client timeouts, quota usage and runs watchdog checks.
+Default: ``15`` seconds (one quarter of a minute).
 
-Default: 15 seconds (one quarter of a minute).
+The interval in seconds at which openNDS checks client timeouts, quota usage and runs watchdog checks.
 
 Example: Set to 30 seconds.
 
@@ -437,7 +439,7 @@ Example: Set to 30 seconds.
 Set Rate Quotas
 ***************
 
-Defaults 0
+Default: ``0`` (Unlimited)
 
 Integer values only.
 
@@ -447,8 +449,6 @@ Integer values only.
 If the client average data rate exceeds the value set here, the client will be rate limited.
 
 Values are in kb/s.
-
-If set to 0, there is no limit.
 
 Quotas and rates can also be set by FAS via Authmon Daemon, ThemeSpec scripts, BinAuth, and ndsctl auth. Values set by these methods, will override values set in the config file.
 
@@ -461,7 +461,7 @@ Rates:
 Set Bucket Ratio
 ****************
 
-Default 10
+Default: ``10``
 
 Upload and Download bucket ratios can be defined.
 
@@ -491,13 +491,13 @@ Examples:
 MaxDownloadBucketSize
 *********************
 
-Default: 250
+Default: ``250``
 
 Allows control over download rate limiting packet loss at the expense of increased latency.
 
 ***CAUTION*** Large values may consume large amounts of memory per client.
 
-Allowed Range 5 to 10000
+Allowed Range ``5`` to ``10000``
 
 Example:
 
@@ -506,13 +506,13 @@ Example:
 MaxUploadBucketSize
 *******************
 
-Default 250
+Default: ``250``
 
 Allows control over upload rate limiting packet loss at the expense of increased latency.
 
 ***CAUTION*** Large values may consume large amounts of memory per client.
 
-Allowed Range 5 to 10000
+Allowed Range ``5`` to ``10000``
 
 Example:
 
@@ -521,19 +521,13 @@ Example:
 DownLoadUnrestrictedBursting
 ****************************
 
-Default: 0
+Default: ``0`` (Disabled)
 
 Enables / disables unrestricted bursting
 
-Setting to 0 disables
+``0``: disabled; a client is not allowed unrestricted throughput burst.
 
-Setting to 1 enables
-
-If enabled, a client is allowed unrestricted bursting until its average download rate exceeds the set download rate threshold.
-
-Unrestricted bursting minimises memory consumption at the expense of potential short term bandwidth hogging.
-
-If disabled, a client is not allowed unrestricted bursting.
+``1``: enabled; a client is allowed an unrestricted throughput burst until its average upload rate exceeds the set upload rate threshold. Unrestricted bursting minimises memory consumption at the expense of potential short term bandwidth hogging.
 
 Example:
 
@@ -542,19 +536,13 @@ Example:
 UpLoadUnrestrictedBursting
 **************************
 
-Default: 0
+Default: ``0`` (Disabled)
 
 Enables / disables unrestricted bursting
 
-Setting to 0 disables
+``0``: disabled; a client is not allowed unrestricted throughput burst.
 
-Setting to 1 enables
-
-If enabled, a client is allowed unrestricted bursting until its average upload rate exceeds the set upload rate threshold.
-
-Unrestricted bursting minimises memory consumption at the expense of potential short term bandwidth hogging.
-
-If disabled, a client is not allowed unrestricted bursting.
+``1``: enabled; a client is allowed an unrestricted throughput burst until its average download rate exceeds the set download rate threshold. Unrestricted bursting minimises memory consumption at the expense of potential short term bandwidth hogging.
 
 Example:
 
@@ -563,7 +551,7 @@ Example:
 Set RateCheckWindow
 *******************
 
-Default: 2
+Default: ``2``
 
 The client data rate is calculated using a moving average.
 
@@ -590,14 +578,9 @@ Set Volume Quotas
 If the client data quota exceeds the value set here, the client will be deauthenticated or rate limited as defined by the Fair Usage Policy throttle rate.
 
 The client by default may re-authenticate. It is the responsibility of the FAS (whether Themespec, other local or remote) to restrict further authentication of the client if so desired.
+Default: ``0`` (Unlimited)
 
-Defaults 0
-
-Integer values only
-
-Values are in kB
-
-If set to 0, there is no limit
+Integer values only; values are in kB
 
 ``option uploadquota '0'``
 
@@ -608,11 +591,9 @@ Set Fair Usage Policy Throttle Rate
 
 If Volume quota is set, a download throttle rate can be configured.
 
-Defaults 0
+Default: ``0``
 
-Integer values only
-
-Values are in kb/s
+Integer values only; values are in kB/s
 
 If set to 0, the client will be deauthenticated when the volume quota is exceeded
 
@@ -728,7 +709,7 @@ Typical Locally Hosted example (ie fasremoteip not set):
 Set the Faspath
 ***************
 
-Default: /
+Default: ``/``
 
 This is the path from the FAS Web Root to the FAS login page (not the file system root).
 
@@ -766,7 +747,7 @@ Option faskey must be pre-shared with FAS. (It is automatically pre-shared with 
 Set Security Level: fas_secure_enabled
 **************************************
 
-Default: 1
+Default: ``1``
 
 Level set to "0"
 ----------------
@@ -823,7 +804,7 @@ Define Custom Parameters
 
 Custom parameters are sent as fixed values to FAS
 
-Default None
+Default: None
 
 Custom Parameters listed in the form of param_name=param_value
 
@@ -865,7 +846,7 @@ Define Custom Variables
 
 Custom Variables are used by FAS to dynamically collect information from clients
 
-Default None
+Default: None
 
 Custom Variables are listed in the form of var_name=var_type
 
@@ -920,7 +901,7 @@ Define Custom Images
 
 Custom Images are served by a local FAS where required in dynamic portal pages
 
-Default None
+Default: None
 
 Custom images will be copied from the URL to the openNDS router
 
@@ -962,7 +943,7 @@ Define Custom Files
 
 Custom Files are served by a local FAS where required in dynamic portal pages
 
-Default None
+Default: None
 
 Custom files will be copied from the URL to the openNDS router
 
@@ -998,11 +979,9 @@ Set NAT Traversal Poll Interval
 
 Sets the polling interval for NAT Traversal in seconds
 
-Default 10 seconds
+Default: ``10`` seconds
 
-Allowed values between 1 and 60 seconds inclusive
-
-Defaults to 10 seconds if set outside this range
+Allowed values between 1 and 60 seconds inclusive. Defaults to ``10`` seconds if set outside this range.
 
 Effective only when option fas_secure_enabled is set to 3
 
@@ -1211,9 +1190,9 @@ Users to Router Passthrough
 
 (Applies to OpenWrt only)
 
-Default: 0 (disabled)
+Default: ``0`` (Disabled)
 
-To enable passthrough, set to 1
+To enable pass-through, set to ``1``
 
 ``option users_to_router_passthrough '1'``
 
@@ -1310,13 +1289,11 @@ Examples:
 Dhcp option 114 Enable - RFC8910
 ********************************
 
-Sends "default_url" (dhcp option 114) with all replies to dhcp requests
+Default: ``1`` (enabled)
 
-Required for RFC8910 Captive Portal Identification
+Sends ``default_url`` (DHCP option 114) with all replies to DHCP requests. Required for RFC8910 Captive Portal Identification.
 
-Default 1 (enabled)
-
-To disable, set to 0
+To disable, set to ``0``.
 
 Example:
 
@@ -1336,25 +1313,25 @@ Any values set here are interpreted as in hex format.
 Option: fw_mark_authenticated
 -----------------------------
 
-Default: 30000 (0011|0000|0000|0000|0000 binary)
+Default: 030000 (0011|0000|0000|0000|0000 binary)
 
 Option: fw_mark_trusted
 -----------------------
 
-Default: 20000 (0010|0000|0000|0000|0000 binary)
+Default: 020000 (0010|0000|0000|0000|0000 binary)
 
 Option: fw_mark_blocked (deprecated)
 ------------------------------------
 
-Default: 10000 (0001|0000|0000|0000|0000 binary)
+Default: 010000 (0001|0000|0000|0000|0000 binary)
 
 Examples:
 
-``option fw_mark_authenticated '30000'``
+``option fw_mark_authenticated '030000'``
 
-``option fw_mark_trusted '20000'``
+``option fw_mark_trusted '020000'``
 
-``option fw_mark_blocked '10000'``
+``option fw_mark_blocked '010000'``
 
 
 

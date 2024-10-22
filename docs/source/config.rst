@@ -1087,7 +1087,7 @@ Manual Walled Garden configuration requires research to determine the IP address
 
 This can be problematic as sites can use many dynamic IP addresses.
 
-Manual configuration does not require any additional dependencies (i.e. additional installed packages), however.
+However, manual configuration does not require any additional dependencies (i.e. additional installed packages).
 
 Note that standard unencrypted HTTP port (TCP port 80) is used for captive portal detection (CPD) and access to external websites should use HTTPS (TCP port 443) for security. It is still possible to allow TCP port 80, however, by using the Autonomous Walled Garden approach.
 

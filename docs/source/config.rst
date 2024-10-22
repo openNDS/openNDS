@@ -22,20 +22,20 @@ Enable debug output (0-3)
 
 Default: ``1``
 
-Level0
-------
+Level ``0``
+-----------
 Silent (only initial startup, LOG_ERR and LOG_EMERG messages will be seen, otherwise there will be no logging.)
 
-Level 1
--------
+Level ``1``
+-----------
 LOG_ERR, LOG_EMERG, LOG_WARNING and LOG_NOTICE (this is the default level).
 
-Level 2
--------
+Level ``2``
+-----------
 debuglevel 1  + LOG_INFO
 
-Level 3
--------
+Level ``3``
+-----------
 debuglevel 2 + LOG_DEBUG
 
 ``option debuglevel '1'``
@@ -70,7 +70,7 @@ Example:
 Local Log Mountpoint
 ********************
 
-Default: router's volatile tmpfs storage eg on OpenWrt '/tmp'
+Default: router's volatile tmpfs storage eg on OpenWrt ``/tmp``
 
 Local logging can be directed to any storage accessible to the router eg USB drive, SSD etc
 
@@ -115,37 +115,37 @@ Integer value sent to PreAuth script as login mode
 
 openNDS comes preconfigured for three basic modes of operation
 
-Mode 0
-------
-If FAS is not enabled, then this functions as mode 1
+Mode ``0``
+----------
+If FAS is not enabled, then this functions as mode ``1``
 
 If FAS is configured, FAS is used.
 
-Mode 1
-------
+Mode ``1``
+----------
 Default Dynamic Click to Continue
 
-The pre-installed dynamic login page is enabled by setting option login_option_enabled = '1'
+The pre-installed dynamic login page is enabled by setting ``option login_option_enabled '1'``
 
 It generates a Click to Continue page followed by an info/advertising page.
 
-User clicks on “Continue” are recorded in the log file /[tmpfs_dir]/ndslog/ndslog.log
+User clicks on “Continue” are recorded in the log file ``/[tmpfs_dir]/ndslog/ndslog.log``
 
-Mode 2
-------
+Mode ``2``
+----------
 Username/Emailaddress Dynamic Login
 
-The pre-installed dynamic login page is enabled by setting option login_option_enabled = '2'
+The pre-installed dynamic login page is enabled by setting ``option login_option_enabled '2'``
 
 It generates a login page asking for username and email address followed by an info/advertising page.
 
-User logins are recorded in the log file /[tmpfs_dir]/ndslog/ndslog.log
+User logins are recorded in the log file ``/[tmpfs_dir]/ndslog/ndslog.log``
 
-Mode 3
-------
+Mode ``3``
+----------
 Use Theme defined in ThemeSpec path (option themespec_path)
 
-`option login_option_enabled '1'`
+``option login_option_enabled '1'``
 
 Allow Preemptive Authentication
 *******************************
@@ -171,15 +171,15 @@ Default: None
 
 Required when when login_option_enabled is set to '3'
 
-Note: /usr/lib/opennds/theme_click-to-continue-basic.sh is used for login_option_enabled '1'
+Note: ``/usr/lib/opennds/theme_click-to-continue-basic.sh`` is used for ``login_option_enabled '1'``
 
-and:  /usr/lib/opennds/theme_user-email-login-basic.sh is used for login_option_enabled '2'
+and:  ``/usr/lib/opennds/theme_user-email-login-basic.sh`` is used for ``login_option_enabled '2'``
 
-Sets the ThemeSpec file path to be used when login_option_enabled '3'
+Sets the ThemeSpec file path to be used when ``login_option_enabled '3'``
 
-The ThemeSpec script makes use of lists of custom parameters, custom variables, custom image urls and custom files and is used to generate the dynamic splash page sequence.
+The ThemeSpec script makes use of lists of custom parameters, custom variables, custom image URLs and custom files and is used to generate the dynamic splash page sequence.
 
-The ThemeSpec file will normally reside in /usr/lib/opennds/ but can be anywhere accessible to openNDS.
+The ThemeSpec file will normally reside in ``/usr/lib/opennds/`` but can be anywhere accessible to openNDS.
 
 The file must be flagged as executable and have the correct shebang for the default shell.
 
@@ -188,7 +188,7 @@ The file must be flagged as executable and have the correct shebang for the defa
 DHCP Leases File
 ****************
 
-Default: Try /tmp/dhcp.leases, /var/lib/misc/dnsmasq.lease or /var/db/dnsmasq.leases
+Default: Try ``/tmp/dhcp.leases``, ``/var/lib/misc/dnsmasq.lease`` or ``/var/db/dnsmasq.leases``
 
 The file containing the list of active DHCP leases.
 
@@ -259,9 +259,7 @@ Set the MHD WebRoot
 
 Default: ``/etc/opennds/htdocs``
 
-The local path where the system css file, and other static page content resides.
-
-ie. Serve the file splash.css from this directory
+The local path where the system CSS file, and other static page content resides. i.e. Serve the file ``splash.css`` from this directory
 
 Example:
 
@@ -274,11 +272,11 @@ Default: ``br-lan``
 
 Use this option to set the device opennds will bind to.
 
-The value may be an interface section in /etc/config/network or a device name such as br-lan.
+The value may be an interface section in ``/etc/config/network`` or a device name such as ``br-lan``.
 
 The selected interface must be allocated an IPv4 address.
 
-In OpenWrt this is normally br-lan, in generic Linux it might be wlan0
+In OpenWrt this is normally ``br-lan``, in generic Linux it might be ``wlan0``
 
 ``option gatewayinterface 'br-lan'``
 
@@ -308,7 +306,7 @@ It is particularly useful in the case of a single remote FAS server that serves 
 
 Note: The single quote (or apostrophe) character ('), cannot be used in the gatewayname.
 
-If it is required, use the htmlentity &#39; instead.
+If it is required, use the htmlentity ``&#39;`` instead.
 
 For example:
 
@@ -350,9 +348,7 @@ Warning - if set, services on port 80 of the gateway will no longer be accessibl
 
 By default, the Error511/Status page will be found at http://status.client/ by a redirection of port 80 to http://gatewayaddress:gatewayport/
 
-Disable GatewayFQDN by setting the option to 'disable'
-
-ie:
+Disable GatewayFQDN by setting:
 
 ``option gatewayfqdn 'disable'``
 
@@ -479,13 +475,13 @@ To minimise the number of dropped packets the bucket ratio can be increased whil
 
 If the client's average rate does not exceed its configured value within the ratecheck window interval (See RateCheckWindow option), no memory is consumed.
 
-If the rate is set to 0, the Bucket Ratio setting has no meaning and no memory is consumed.
+If the rate is set to ``0``, the Bucket Ratio setting has no meaning and no memory is consumed.
 
 Examples:
 
-	`option upload_bucket_ratio '1'`
+``option upload_bucket_ratio '1'``
 
-	`option download_bucket_ratio '5'`
+``option download_bucket_ratio '5'``
 
 
 MaxDownloadBucketSize
@@ -501,7 +497,7 @@ Allowed Range ``5`` to ``10000``
 
 Example:
 
-`option max_download_bucket_size '100'`
+``option max_upload_bucket_size '100'``
 
 MaxUploadBucketSize
 *******************
@@ -516,7 +512,7 @@ Allowed Range ``5`` to ``10000``
 
 Example:
 
-`option max_upload_bucket_size '100'`
+``option max_download_bucket_size '100'``
 
 DownLoadUnrestrictedBursting
 ****************************
@@ -531,7 +527,7 @@ Enables / disables unrestricted bursting
 
 Example:
 
-`option download_unrestricted_bursting '1'`
+``option upload_unrestricted_bursting '1'``
 
 UpLoadUnrestrictedBursting
 **************************
@@ -546,7 +542,7 @@ Enables / disables unrestricted bursting
 
 Example:
 
-`option upload_unrestricted_bursting '1'`
+`option download_unrestricted_bursting '1'`
 
 Set RateCheckWindow
 *******************
@@ -559,14 +555,14 @@ This allows clients to burst at maximum possible rate, only rate limiting if the
 
 The moving average window size is equal to ratecheckwindow times checkinterval (seconds).
 
-Example: Set to 3 checkinterval periods:
+Example: Set to ``3`` checkinterval periods:
 
 ``option ratecheckwindow '3'``
 
 Disable Rate Quotas
 -------------------
 
-All rate limits can be globally disabled by setting this option to 0 (zero).
+All rate limits can be globally disabled by setting this option to ``0`` (zero).
 
 Example: Disable all rate quotas for all clients, overriding settings made in FAS via Authmon Daemon, ThemeSpec scripts, BinAuth, and ndsctl auth:
 
@@ -595,7 +591,7 @@ Default: ``0``
 
 Integer values only; values are in kB/s
 
-If set to 0, the client will be deauthenticated when the volume quota is exceeded
+If set to ``0``, the client will be deauthenticated when the volume quota is exceeded
 
 ``option fup_upload_throttle_rate '0'``
 
@@ -735,66 +731,65 @@ Default: A system generated sha256 string
 A key phrase for NDS to encrypt the query string sent to FAS.
 
 Can be any text string with no white space.
+Hint and Example: Choose a secret string and use the ``sha256sum`` utility to generate a hash.
 
-Hint and Example: Choose a secret string and use sha256sum utility to generate a hash.
+e.g. Use the command - ``echo "mysecretopenNDSfaskey" | sha256sum``
 
-eg. Use the command - `echo "mysecretopenNDSfaskey" | sha256sum`
-
-Option faskey must be pre-shared with FAS. (It is automatically pre-shared with Themespec files)
+Option ``faskey`` must be pre-shared with FAS. (It is automatically pre-shared with Themespec files)
 
 ``option faskey '328411b33fe55127421fa394995711658526ed47d0affad3fe56a0b3930c8689'``
 
-Set Security Level: fas_secure_enabled
-**************************************
+Set Security Level: ``fas_secure_enabled``
+******************************************
 
 Default: ``1``
 
-Level set to "0"
-----------------
+Level ``0``
+-----------
 	* The FAS is enforced by NDS to use http protocol.
 
 	* The client token is sent to the FAS in clear text in the query string of the redirect along with authaction and redir.
 
 	Note: This level is insecure and can be easily bypassed
 
-Level set to "1"
-----------------
+Level ``1``
+-----------
 	* The FAS is enforced by NDS to use http protocol.
 	* The client token will be hashed and sent to the FAS along with other relevant information in a base 64 encoded string
 
 	FAS must return the sha256sum of the concatenation of hid (the hashed original token), and faskey to be used by openNDS for client authentication.
 
-Level set to "2"
-----------------
+Level ``2``
+-----------
 	* The FAS is enforced by NDS to use http protocol.
 
 	* The parameters clientip, clientmac, gatewayname, hid(the hashed original token), gatewayaddress, authdir, originurl and clientif
 
-	* are encrypted using faskey and passed to FAS in the query string.
+	* are encrypted using :ref:`faskey` and passed to FAS in the query string.
 
 	* The query string will also contain a randomly generated initialization vector to be used by the FAS for decryption.
 
 	* The cipher used is "AES-256-CBC".
 
-	* The "php-cli" package and the "php-openssl" module must both be installed for fas_secure level 2 and 3. openNDS does not depend on this package and module, but will exit gracefully not installed when this level is set.
+	* The ``php-cli`` package and the ``php-openssl`` module must both be installed for fas_secure level ``2`` and ``3``. openNDS does not depend on this package and module, but will exit gracefully not installed when this level is set.
 
 	* The FAS must use the query string passed initialisation vector and the pre shared fas_key to decrypt the query string.
 
-An example FAS level 2 php script (fas-aes.php) is included in the /etc/opennds directory and also supplied in the source code.
+An example FAS level ``2`` php script (fas-aes.php) is included in the ``/etc/opennds`` directory and also supplied in the source code.
 
-Level set to "3"
-----------------
+Level ``3``
+-----------
 	* The FAS is enforced by NDS to use https protocol.
 
-	* Level 3 is the same as level 2 except the use of https protocol is enforced for FAS.
+	* Level ``3`` is the same as level ``2`` except the use of https protocol is enforced for FAS.
 
 	* In addition, the "authmon" daemon is loaded.
 
-	* Level 3 allows the external FAS, after client verification, to effectively traverse inbound firewalls and address translation to achieve NDS authentication without generating browser security warnings or errors.
+	* Level ``3`` allows the external FAS, after client verification, to effectively traverse inbound firewalls and address translation to achieve NDS authentication without generating browser security warnings or errors.
 
-An example FAS level 3 php script (fas-aes-https.php) is included in the /etc/opennds directory and also supplied in the source code.
+An example FAS level 3 php script (fas-aes-https.php) is included in the ``/etc/opennds`` directory and also supplied in the source code.
 
-Note: Option faskey must be pre shared with the FAS script in use (including any ThemeSpec local file) if fas secure is set to levels 1, 2 and 3.
+Note: Option faskey must be pre shared with the FAS script in use (including any ThemeSpec local file) if fas secure is set to levels ``1``, ``2`` and ``3``.
 
 Example:
 
@@ -806,7 +801,7 @@ Custom parameters are sent as fixed values to FAS
 
 Default: None
 
-Custom Parameters listed in the form of param_name=param_value
+Custom Parameters listed in the form of ``param_name=param_value``
 
 param_name and param_value must be urlencoded if containing white space or single quotes
 
@@ -848,9 +843,9 @@ Custom Variables are used by FAS to dynamically collect information from clients
 
 Default: None
 
-Custom Variables are listed in the form of var_name=var_type
+Custom Variables are listed in the form of ``var_name=var_type``
 
-"var_name" and "var_type" must be urlencoded if containing white space or single quotes
+``var_name`` and ``var_type`` must be urlencoded if containing white space or single quotes
 
 eg replace spaces with %20 - replace single quotes with %27
 
@@ -879,7 +874,7 @@ ThemeSpec Dynamically generated Form Fields
 
 ThemeSpec scripts can dynamically generate Form Field html and inject into the dynamic splash page sequence.
 
-This is achieved using a SINGLE line containing the keyword "input", in the form: fieldname:field-description:fieldtype
+This is achieved using a SINGLE line containing the keyword "input", in the form: ``fieldname:field-description:fieldtype``
 
 Numerous fields can be defined in this single "input=" line, separated by a semicolon (;).
 
@@ -905,11 +900,11 @@ Default: None
 
 Custom images will be copied from the URL to the openNDS router
 
-Custom Images are listed in the form of image_name_type=image_url
+Custom Images are listed in the form of ``image_name_type=image_url``
 
 image_name and image_url must be urlencoded if containing white space or single quotes
 
-The image url must begin with http:// https:// or file://
+The image url must begin with ``http://`` ``https://`` or ``file://``
 
 Images should be configured one per line to prevent possible parsing errors.
 
@@ -919,7 +914,7 @@ Images should be configured one per line to prevent possible parsing errors.
 
 etc.
 
-"type" can be any recognised image file extension eg jpg, png, ico, etc.
+``[type]`` can be any recognised image file extension e.g. jpg, png, ico, etc.
 
 Configuration for custom images in the installed ThemeSpec Files
 ----------------------------------------------------------------
@@ -949,19 +944,19 @@ Custom files will be copied from the URL to the openNDS router
 
 Images should be configured one per line to prevent possible parsing errors.
 
-Custom files are listed in the form of file_name_type=file_url
+Custom files are listed in the form of ``file_name_type=file_url``
 
 file_name and file_url must be urlencoded if containing white space or single quotes
 
-The file url must begin with http:// https:// or file://
+The image url must begin with ``http://`` ``https://`` or ``file://``
 
 ``list fas_custom_files_list '<file_name1_[type]=file_url1>'``
 
 ``list fas_custom_files_list '<file_name2_[type]=file_url2>'``
 
-"type" can be any recognised file extension that can be used to display web content eg txt, htm etc.
+``[type]`` can be any recognised file extension that can be used to display web content eg txt, htm etc.
 
-URLs using the file:// protocol must point to a valid mountpoint accessible to openNDS, for example a usb storage device.
+URLs using the ``file://`` protocol must point to a valid mountpoint accessible to openNDS, for example a usb storage device.
 
 Configuration for custom files in the installed ThemeSpec Files
 ----------------------------------------------------------------
@@ -983,7 +978,7 @@ Default: ``10`` seconds
 
 Allowed values between 1 and 60 seconds inclusive. Defaults to ``10`` seconds if set outside this range.
 
-Effective only when option fas_secure_enabled is set to 3
+Effective only when option ``fas_secure_enabled`` is set to ``3``
 
 Example:
 
@@ -992,7 +987,7 @@ Example:
 Access Control For Authenticated Users
 **************************************
 
-* Access can be allowed by openNDS but the final decision will be passed on to the operating system firewall. (Note: passthrough is deprecated as in nftables "allow" is equivalent to the old "passthrough"
+* Access can be allowed by openNDS but the final decision will be passed on to the operating system firewall. (Note: passthrough is deprecated: in nftables, ``allow`` is equivalent to the old ``passthrough``
 * All listed rules will be applied in the order present in the list.
 * An ip address or an FQDN may be included in a list entry.
 * If an FQDN resolves to multiple ip addresses, the rule will **NOT** be added. Rules for such FQDNs must be added elsewhere (eg the operating system firewall)
@@ -1047,7 +1042,7 @@ Autonomous Blocklist configuration using a list of FQDNs and Ports
 
 This has the advantage of discovering all ip addresses used by the Blocklist sites.
 
-But it does require the dnsmasq-full package (and also the ipset package if dnsmasq does not support nftsets) to be installed.
+It requires the ``dnsmasq-full`` package (and also the ``ipset`` package if dnsmasq does not support nftsets) to be installed.
 
 Configuration is then a simple matter of adding two lists as follows:
 
@@ -1067,12 +1062,12 @@ or
 
 Similarly, ports can be listed on multiple lines
 
-.. Note:: If blocklist_port_list is NOT specified, then blocklist access is denied for all protocols (tcp, udp, icmp) on ALL ports for each fqdn specified in blocklist_fqdn_list.
+.. Note:: If ``blocklist_port_list`` is NOT specified, then blocklist access is denied for all protocols (tcp, udp, icmp) on ALL ports for each FQDN specified in ``blocklist_fqdn_list``.
 
-If blocklist_port_list IS specified, then:
+If ``blocklist_port_list`` IS specified, then:
 
-    1. Specified port numbers apply to ALL FQDN's specified in blocklist_fqdn_list.
-    2. Access is blocked only for specified ports in each blocklist fqdn.
+    1. Specified port numbers apply to ALL FQDN's specified in ``blocklist_fqdn_list``.
+    2. Access is blocked only for specified ports in each blocklist FQDN.
     3. Blocklist only applies to authenticated users.
 
 
@@ -1135,7 +1130,7 @@ Autonomous Walled Garden configuration is activated using a list of FQDNs and Po
 
 This has the advantage of discovering all ip addresses used by the Walled Garden sites.
 
-But it does require the dnsmasq-full package to be installed and on OpenWrt 22.03.x or earlier the ipset package is also required. This is achieved by running the following commands (on OpenWrt):
+But it does require the ``dnsmasq-full`` package to be installed and on OpenWrt 22.03.x or earlier the ``ipset`` package is also required. This is achieved by running the following commands (on OpenWrt):
 
 ``opkg update``
 
@@ -1151,11 +1146,11 @@ Configuration is then a simple matter of adding two lists as follows:
 
 ``list walledgarden_port_list 'port1 port2 port3 .... portN'``
 
-Note: If walledgarden_port_list is NOT specified, then Walled Garden access is granted for all protocols (tcp, udp, icmp) on ALL ports for each fqdn specified in walledgarden_fqdn_list.
+Note: If ``walledgarden_port_list`` is NOT specified, then Walled Garden access is granted for all protocols (tcp, udp, icmp) on ALL ports for each FQDN specified in ``walledgarden_fqdn_list``.
 
-Note: If walledgarden_port_list IS specified, then:
+Note: If ``walledgarden_port_list`` IS specified, then:
 
- * Specified port numbers apply to ALL FQDN's specified in walledgarden_fqdn_list.
+ * Specified port numbers apply to ALL FQDN's specified in ``walledgarden_fqdn_list``.
  * Only tcp protocol Walled Garden access is granted.
 
 
@@ -1273,7 +1268,7 @@ Pre-emptive Authentication must be enabled (default). See "allow_preemptive_auth
 
 List parameters will be mac, sessiontimeout, uploadrate, downloadrate, uploadquota, downloadquota and custom. The ";" character is used as a parameter separator.
 
-List parameters set to "0" or omitted are set to the global or default value.
+List parameters set to ``0`` or omitted are set to the global or default value.
 
 Pre-emptive clients are logged both locally and in remote fas servers in the same way as normal validated clients.
 

@@ -1,6 +1,6 @@
 opennds (10.3.0)
   * Fix - missing exit in library call [bluewavenet]
-  * Add - support for mesh11sd meshnodes and reimplement auth_restore to not use ndsctl -  [bluewavenet]
+  * Add - support for mesh11sd meshnodes and reimplement auth_restore not to use ndsctl -  [bluewavenet]
   * Fix - formatting of ThemeSpec scripts -  [bluewavenet]
   * Fix - move parsing of custom vaiables and fields to libopennds library script -  [bluewavenet]
   * Fix - move custom_variables_list parsing to liboppennds library -  [bluewavenet]

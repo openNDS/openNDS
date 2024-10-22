@@ -42,7 +42,7 @@ The Legacy splash.html Static Web Page
 
 The legacy static splash.html page has been deprecated for some time and in openNDS v9.0.0 support was removed.
 
-A ThemeSpec script that emulates the legacy Static Web page has been provided in th Community area of Github.
+A ThemeSpec script that emulates the legacy Static Web page has been provided in the Community area of Github.
 
 It can be downloaded from here:
 

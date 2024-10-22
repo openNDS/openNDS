@@ -600,7 +600,7 @@ Enable BinAuth Support.
 
 Default: Enabled
 
-BinAuth enables POST AUTHENTICATION PROCESSING and and is useful in particular when a FAS is configured remotely.
+BinAuth enables POST AUTHENTICATION PROCESSING and is useful in particular when a FAS is configured remotely.
 
 The default binauth script is used to generate a client authentication database that is used for pre-emptive re-authentication.
 

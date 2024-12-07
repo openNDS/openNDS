@@ -1972,6 +1972,12 @@ wget_request () {
 	webget
 	retval=$($wret -O - -U "\"$user_agent\"" "$url?auth_get=$action&gatewayhash=$gatewayhash&payload=$payload")
 	status=$?
+ 
+ 	if [ $status -ne 0 ]; then
+   		syslogmessage="$wret failed with status $status on URL $url?auth_get=$action&gatewayhash=$gatewayhash&payload=$payload."
+    	debugtype="warn"
+		write_to_syslog
+	fi
 }
 
 send_post_data () {

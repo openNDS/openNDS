@@ -1973,9 +1973,23 @@ wget_request () {
 	retval=$($wret -O - -U "\"$user_agent\"" "$url?auth_get=$action&gatewayhash=$gatewayhash&payload=$payload")
 	status=$?
  
- 	if [ $status -ne 0 ]; then
-   		syslogmessage="$wret failed with status $status on URL $url?auth_get=$action&gatewayhash=$gatewayhash&payload=$payload."
-    	debugtype="warn"
+	if [ $status -ne 0 ]; then
+		# Warning message for status and URL
+		syslogmessage="$wret failed with status $status on FAS URL $url."
+		debugtype="warn"
+		write_to_syslog
+
+		# Debug messages for additional details
+		syslogmessage="Action: $action"
+		debugtype="debug"
+		write_to_syslog
+
+		syslogmessage="Gateway Hash: $gatewayhash"
+		debugtype="debug"
+		write_to_syslog
+
+		syslogmessage="Payload: $payload"
+		debugtype="debug"
 		write_to_syslog
 	fi
 }

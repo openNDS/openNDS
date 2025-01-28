@@ -360,7 +360,7 @@ Assuming you have installed your web server of choice, configured it for port 20
 
     ``option fas_secure_enabled '2'``
 
-    ``option faskey 'your_secret_hashed_key_string'``
+    ``option faskey 'your_secret_key_hex_string'``
 
  * Restart NDS using the command ``service opennds restart``
 
@@ -388,7 +388,7 @@ Assuming you have access to an Internet based https web server you can do the fo
 
     ``option fas_secure_enabled '3'``
 
-    ``option faskey 'your_secret_hashed_key_string'``
+    ``option faskey 'your_secret_key_hex_string'``
 
     ``option fasremoteip '46.32.240.41'`` (change this to the actual ip address of the remote server)
 
@@ -427,7 +427,7 @@ Assuming you have access to an Internet based http web server you can do the fol
 
     ``option fas_secure_enabled '1'``
 
-    ``option faskey 'your_secret_hashed_key_string'``
+    ``option faskey 'your_secret_key_hex_string'``
 
     ``option fasremoteip '46.32.240.41'`` (change this to the actual ip address of the remote server)
 

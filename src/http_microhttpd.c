@@ -1630,7 +1630,7 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 			"if (in_array($cipher, openssl_get_cipher_methods())) {\n"
 				"$secret_iv = base64_encode(openssl_random_pseudo_bytes(\"8\"));\n"
 				"$iv = substr(openssl_digest($secret_iv, \"sha256\"), 0, 16 );\n"
-				"$string = base64_encode( openssl_encrypt( $string, $cipher, $key, 0, $iv ) );\n"
+				"$string = base64_encode( openssl_encrypt( $string, $cipher, hex2bin( $key ), 0, $iv ) );\n"
 				"echo \"?fas=\".$string.\"&iv=\".$iv;\n"
 			"}\n"
 			" ?>' "

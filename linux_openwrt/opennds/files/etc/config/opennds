@@ -631,9 +631,9 @@ config opennds
 	# Option: faskey
 	# Default: A system generated sha256 string
 	# A key phrase for NDS to encrypt the query string sent to FAS
-	# Can be any text string with no white space
-	# Hint and Example: Choose a secret string and use sha256sum utility to generate a hash.
-	# eg. Use the command - echo "secret key" | sha256sum
+	# Should be a 64-character hexadecimal string
+	# Hint and Example: Generate a 32-byte random number and convert it to a hexadecimal string.
+	# eg. Use the command - `hexdump -v -n32 -e '32/1 "%02x" "\n"' /dev/urandom`
 	# Option faskey must be pre-shared with FAS.
 	#
 	#option faskey '328411b33fe55127421fa394995711658526ed47d0affad3fe56a0b3930c8689'

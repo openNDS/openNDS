@@ -109,7 +109,7 @@ $ndsparamlist=explode(" ", "clientip clientmac client_type gatewayname gatewayur
 if (isset($_GET['fas']) and isset($_GET['iv']))  {
 	$string=$_GET['fas'];
 	$iv=$_GET['iv'];
-	$decrypted=openssl_decrypt( base64_decode( $string ), $cipher, $key, 0, $iv );
+	$decrypted=openssl_decrypt( base64_decode( $string ), $cipher, hex2bin( $key ), 0, $iv );
 	$dec_r=explode(", ",$decrypted);
 
 	foreach ($ndsparamlist as $ndsparm) {

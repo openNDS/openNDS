@@ -234,7 +234,7 @@ function decrypt_parse() {
 	if (isset($_GET['fas']) and isset($_GET['iv']))  {
 		$string=$_GET['fas'];
 		$iv=$_GET['iv'];
-		$decrypted=openssl_decrypt( base64_decode( $string ), $cipher, $GLOBALS["key"], 0, $iv );
+		$decrypted=openssl_decrypt( base64_decode( $string ), $cipher, hex2bin( $GLOBALS["key"] ), 0, $iv );
 		$dec_r=explode(", ",$decrypted);
 
 		foreach ($ndsparamlist as $ndsparm) {

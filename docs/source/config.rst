@@ -929,11 +929,11 @@ Default: A system generated sha256 string
 
 A key phrase for NDS to encrypt the query string sent to FAS.
 
-Can be any text string with no white space.
+Should be a 64-character hexadecimal string
 
-Hint and Example: Choose a secret string and use sha256sum utility to generate a hash.
+Hint and Example: Generate a 32-byte random number and convert it to a hexadecimal string.
 
-eg. Use the command - `echo "mysecretopenNDSfaskey" | sha256sum`
+eg. Use the command - `hexdump -v -n32 -e '32/1 "%02x" "\n"' /dev/urandom`
 
 Option faskey must be pre-shared with FAS. (It is automatically pre-shared with Themespec files)
 

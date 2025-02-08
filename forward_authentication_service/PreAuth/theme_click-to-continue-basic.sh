@@ -81,7 +81,8 @@ continue_form() {
 	# Define a click to Continue form
 
 	echo "
-		<big-red>Welcome!</big-red><br>
+		<big-red>Welcome to Gearhouse!</big-red><br>
+		<big-black>Premium Wifi powered by FOCUS</big-black>
 		<med-blue>You are connected to <br>$client_zone</med-blue><br>
 		<italic-black>
 			To access the Internet you must Accept the Terms of Service.

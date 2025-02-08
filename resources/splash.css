@@ -78,11 +78,19 @@
 		font-style: normal;
 	}
 
+	big-black {
+		font-size: 1.5em;
+		color: black;
+		font-weight: bold;
+		font-style: normal;
+	}
+
 	big-red {
 		font-size: 1.5em;
 		color: #c20801;
 		font-weight: bold;
 	}
+
 
 	italic-black {
 		font-size: 1em;

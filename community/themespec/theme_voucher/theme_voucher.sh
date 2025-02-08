@@ -78,7 +78,7 @@ login_with_voucher() {
 check_voucher() {
 	
 	# Strict Voucher Validation for shell escape prevention - Only alphanumeric (and dash character) allowed.
-	if validation=$(echo -n $voucher | grep -E "^[a-zA-Z0-9-]{9}$"); then
+	if validation=$(echo -n $voucher | grep -E "^[a-zA-Z0-9-]{10}$"); then
 		#echo "Voucher Validation successful, proceeding"
 		: #no-op
 	else

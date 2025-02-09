@@ -231,7 +231,7 @@ voucher_validation() {
 			echo "$auth_fail"
 		fi
 	else
-		echo "<big-red>Voucher is not Valid, click Continue to restart login<br></big-red>"
+		echo "<big-red>Voucher is not Valid, click Continue to restart login... I really want to know why<br></big-red>"
 		echo "
 			<form>
 				<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='$originurl'\" >

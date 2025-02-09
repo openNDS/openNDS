@@ -111,13 +111,13 @@ check_voucher() {
  	if [ $(echo -n $output | wc -w) -ge 1 ]; then 
 		#echo "Voucher Found - Checking Validity <br>"
 		current_time=$(date +%s)
-		voucher_token=$(echo -n $output | sed -r "s#([a-zA-Z0-9-]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+)#\1#")
-		voucher_rate_down=$(echo -n $output | sed -r "s#([a-zA-Z0-9-]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+)#\2#")
-		voucher_rate_up=$(echo -n $output | sed -r "s#([a-zA-Z0-9-]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+)#\3#")
-		voucher_quota_down=$(echo -n $output | sed -r "s#([a-zA-Z0-9-]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+)#\4#")
-		voucher_quota_up=$(echo -n $output | sed -r "s#([a-zA-Z0-9-]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+)#\5#")
-		voucher_time_limit=$(echo -n $output | sed -r "s#([a-zA-Z0-9-]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+)#\6#")
-		voucher_first_punched=$(echo -n $output | sed -r "s#([a-zA-Z0-9-]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+)#\7#")
+		voucher_token=$(echo "$output" | awk -F',' '{print $1}')
+		voucher_rate_down=$(echo "$output" | awk -F',' '{print $2}')
+		voucher_rate_up=$(echo "$output" | awk -F',' '{print $3}')
+		voucher_quota_down=$(echo "$output" | awk -F',' '{print $4}')
+		voucher_quota_up=$(echo "$output" | awk -F',' '{print $5}')
+		voucher_time_limit=$(echo "$output" | awk -F',' '{print $6}')
+		voucher_first_punched=$(echo "$output" | awk -F',' '{print $7}')
 		
 		# Set limits according to voucher
 		upload_rate=$voucher_rate_up

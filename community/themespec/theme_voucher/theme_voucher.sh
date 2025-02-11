@@ -10,6 +10,9 @@
 
 # Title of this theme:
 title="theme_voucher"
+gearhouse_logo="/images/gearhouse.png"
+focus_logo="/images/focus.png"
+css_test="/splash-test.css"
 
 # functions:
 
@@ -29,12 +32,11 @@ header() {
 		<meta charset=\"utf-8\">
 		<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
 		<link rel=\"shortcut icon\" href=\"/images/splash.jpg\" type=\"image/x-icon\">
-		<link rel=\"stylesheet\" type=\"text/css\" href=\"/splash.css\">
-		<title>$gatewayname</title>
+		<link rel=\"stylesheet\" type=\"text/css\" href="$gatewayurl$css_test">
+		<title>Guest Access - Basecamp Cafe</title>
 		</head>
 		<body>
-		<div class=\"offset\">
-		<div class=\"insert\" style=\"max-width:100%;\">
+		<div class="page-root">
 	"
 }
 
@@ -42,16 +44,6 @@ footer() {
 	# Define a common footer html for every page served
 	year=$(date +'%Y')
 	echo "
-		<hr>
-		<div style=\"font-size:0.5em;\">
-			<br>
-			<img style=\"height:60px; width:60px; float:left;\" src=\"$gatewayurl""$imagepath\" alt=\"Splash Page: For access to the Internet.\">
-			&copy; Portal: BlueWave Projects and Services 2015 - $year<br>
-			<br>
-			Portal Version: $version
-			<br><br><br><br>
-		</div>
-		</div>
 		</div>
 		</body>
 		</html>
@@ -78,11 +70,11 @@ login_with_voucher() {
 check_voucher() {
 	
 	# Strict Voucher Validation for shell escape prevention - Only alphanumeric (and dash character) allowed.
-	if validation=$(echo -n $voucher | grep -E "^[a-zA-Z0-9-]{10}$"); then
-		#echo "Voucher Validation successful, proceeding"
+	if validation=$(echo -n $voucher | grep -E "^[a-zA-Z0-9-]{9}$"); then
+		echo "Voucher Validation successful, proceeding"
 		: #no-op
 	else
-		#echo "Invalid Voucher - Voucher must be alphanumeric (and dash) of 9 chars."
+		echo "Invalid Voucher - Voucher must be alphanumeric (and dash) of 9 chars."
 		return 1
 	fi
 
@@ -118,7 +110,24 @@ check_voucher() {
 		voucher_quota_up=$(echo "$output" | awk -F',' '{print $5}')
 		voucher_time_limit=$(echo "$output" | awk -F',' '{print $6}')
 		voucher_first_punched=$(echo "$output" | awk -F',' '{print $7}')
-		
+		echo "</br>"
+		echo "</br>"
+		echo $voucher_token
+		echo "</br>"
+		echo $voucher_rate_down
+		echo "</br>"
+		echo $voucher_rate_up
+		echo "</br>"
+		echo $voucher_quota_down
+		echo "</br>"
+		echo $voucher_quota_up
+		echo "</br>"
+		echo $voucher_time_limit
+		echo "</br>"
+		echo $voucher_first_punched
+		echo "</br>"
+		echo "</br>"
+
 		# Set limits according to voucher
 		upload_rate=$voucher_rate_up
 		download_rate=$voucher_rate_down
@@ -170,11 +179,21 @@ voucher_validation() {
 
 		# Refresh quotas with ones imported from the voucher roll.
 		quotas="$session_length $upload_rate $download_rate $upload_quota $download_quota"
+		echo "</br>"
+		echo $quotas
+		echo "</br>"
 		# Set voucher used (useful if for accounting reasons you track who received which voucher)
 		userinfo="$title - $voucher"
 
+		echo "</br>"
+		echo $userinfo
+		echo "</br>"
+
 		# Authenticate and write to the log - returns with $ndsstatus set
 		auth_log
+
+		echo "</br>"
+		echo $authstat
 
 		# output the landing page - note many CPD implementations will close as soon as Internet access is detected
 		# The client may not see this page, or only see it briefly
@@ -231,8 +250,7 @@ voucher_validation() {
 			echo "$auth_fail"
 		fi
 	else
-		echo "<big-red>Voucher is not Valid, click Continue to restart login... I really want to know why<br></big-red>"
-		echo "<big-red>TEST TEST TEST<br></big-red>"
+		echo "<big-red>Voucher is not Valid, click Continue to restart login.<br></big-red>"
 		echo "
 			<form>
 				<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='$originurl'\" >
@@ -262,23 +280,45 @@ voucher_form() {
 	voucher_code=$(echo "$cpi_query" | awk -F "voucher%3d" '{printf "%s", $2}' | awk -F "%26" '{printf "%s", $1}')
 
 	echo "
-		<med-blue>
-			Welcome!
-		</med-blue><br>
-		<hr>
-		Your IP: $clientip <br>
-		Your MAC: $clientmac <br>
-		<hr>
-		<form action=\"/opennds_preauth/\" method=\"get\">
-			<input type=\"hidden\" name=\"fas\" value=\"$fas\"> 
-			<input type=\"checkbox\" name=\"tos\" value=\"accepted\" required> I accept the Terms of Service<br>
-			Voucher #: <input type=\"text\" name=\"voucher\" value=\"$voucher_code\" required><br>
-			<input type=\"submit\" value=\"Connect\" >
-		</form>
-		<br>
+		<div class="content-root">
+			<img src="$gatewayurl$gearhouse_logo" alt="Basecamp Cafe.">
+			<big-black>Free Wi-Fi</big-black>
+			
+			<form action=\"/opennds_preauth/\" method=\"get\">
+				<input type=\"hidden\" name=\"fas\" value=\"$fas\" />
+				<br />
+				Loyalty Rewards Phone Number 
+				<input type="text" name="voucher" placeholder="2064135555" required />
+				<flex-row>
+					<input type="checkbox" name="tos" value="accepted" required /> 
+					I accept the Terms of Service
+				</flex-row>
+				<br />
+				<input type="submit" value="Connect" />
+			</form>
+
+			<form action=\"/opennds_preauth/\" method=\"get\">
+				<input type=\"hidden\" name=\"fas\" value=$fas />
+				<input type=\"hidden\" name=\"terms\" value=\"yes\" />
+				<input type=\"submit\" value=\"Read Terms of Service\" />
+			</form>
+		"
+
+	#read_terms
+
+	echo "
+		<footer>
+			<hr />
+			<flex-column-center>
+				<img src=\"$gatewayurl$focus_logo\" />
+				<med-black>Thanks for trying us out!</med-black>
+				<med-black>Powered by FOCUS</med-black>
+			</flex-column-center>
+		</footer>
+	</div>
 	"
 
-	read_terms
+	# read_terms
 	footer
 }
 

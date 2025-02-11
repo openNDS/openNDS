@@ -1,0 +1,49 @@
+<div className="splash-container">
+    <head>
+    <meta httpEquiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta httpEquiv="Pragma" content="no-cache" />
+    <meta httpEquiv="Expires" content="0" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="shortcut icon" href="/images/splash.jpg" type="image/x-icon" />
+    <link rel="stylesheet" type="text/css" href="./splash-test.css" />
+    <title>{gatewayname}</title>
+    </head>
+    
+    <body>
+    <div class="page-root">
+    <div class="content-root">
+        <img src="gearhouse.png" alt="Basecamp Cafe.">
+        <big-black>Free Wi-Fi</big-black>
+        
+        <form action="/opennds_preauth/" method="get">
+            <input type="hidden" name="fas" value={fas} />
+            <br />
+            Loyalty Rewards Phone Number 
+            <input type="text" name="voucher" placeholder="2064135555" required />
+            <flex-row>
+                <input type="checkbox" name="tos" value="accepted" required /> 
+                I accept the Terms of Service
+            </flex-row>
+            <br />
+            <input type="submit" value="Connect" />
+        </form>
+
+        <form action="/opennds_preauth/" method="get">
+            <input type="hidden" name="fas" value={fas} />
+            <input type="hidden" name="terms" value="yes" />
+            <input type="submit" value="Read Terms of Service" />
+        </form>
+        
+        <footer>
+            <hr />
+			<flex-column-center>
+				<img src="focus.png" />
+                <med-black>Thanks for trying us out!</med-black>
+                <med-black>Powered by FOCUS</med-black>
+			</flex-column-center>
+        </footer>
+    </div>
+    </div>
+    </body>
+</div>

@@ -8,11 +8,11 @@
 # This must be changed to bash for use on generic Linux
 #
 
-# Title of this theme:
 title="theme_voucher"
 gearhouse_logo="/images/gearhouse.png"
 focus_logo="/images/focus.png"
 css_test="/splash-test.css"
+phone_validation_script="/phone-validation.js"
 
 # functions:
 
@@ -32,7 +32,8 @@ header() {
 		<meta charset=\"utf-8\">
 		<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
 		<link rel=\"shortcut icon\" href=\"/images/splash.jpg\" type=\"image/x-icon\">
-		<link rel=\"stylesheet\" type=\"text/css\" href="$gatewayurl$css_test">
+		<link rel=\"stylesheet\" type=\"text/css\" href=\"$gatewayurl$css_test\">
+		<script type=\"text/javascript\" src=\"$gatewayurl$phone_validation_script\"></script>
 		<title>Guest Access - Basecamp Cafe</title>
 		</head>
 		<body>
@@ -70,11 +71,13 @@ login_with_voucher() {
 check_voucher() {
 	
 	# Strict Voucher Validation for shell escape prevention - Only alphanumeric (and dash character) allowed.
-	if validation=$(echo -n $voucher | grep -E "^[a-zA-Z0-9-]{9}$"); then
-		echo "Voucher Validation successful, proceeding"
+	if validation=$(echo -n $voucher |  grep -oE "^\([0-9]{3}\) [0-9]{3} - [0-9]{4}"); then
+		# echo "Original: $voucher"
+		voucher=$(echo "$voucher" | sed 's/[^0-9+]//g')
+		# echo "Cleaned: $voucher"
+		# echo "Phone Number Validation successful, proceeding"
 		: #no-op
 	else
-		echo "Invalid Voucher - Voucher must be alphanumeric (and dash) of 9 chars."
 		return 1
 	fi
 
@@ -110,23 +113,6 @@ check_voucher() {
 		voucher_quota_up=$(echo "$output" | awk -F',' '{print $5}')
 		voucher_time_limit=$(echo "$output" | awk -F',' '{print $6}')
 		voucher_first_punched=$(echo "$output" | awk -F',' '{print $7}')
-		echo "</br>"
-		echo "</br>"
-		echo $voucher_token
-		echo "</br>"
-		echo $voucher_rate_down
-		echo "</br>"
-		echo $voucher_rate_up
-		echo "</br>"
-		echo $voucher_quota_down
-		echo "</br>"
-		echo $voucher_quota_up
-		echo "</br>"
-		echo $voucher_time_limit
-		echo "</br>"
-		echo $voucher_first_punched
-		echo "</br>"
-		echo "</br>"
 
 		# Set limits according to voucher
 		upload_rate=$voucher_rate_up
@@ -179,21 +165,11 @@ voucher_validation() {
 
 		# Refresh quotas with ones imported from the voucher roll.
 		quotas="$session_length $upload_rate $download_rate $upload_quota $download_quota"
-		echo "</br>"
-		echo $quotas
-		echo "</br>"
 		# Set voucher used (useful if for accounting reasons you track who received which voucher)
 		userinfo="$title - $voucher"
 
-		echo "</br>"
-		echo $userinfo
-		echo "</br>"
-
 		# Authenticate and write to the log - returns with $ndsstatus set
 		auth_log
-
-		echo "</br>"
-		echo $authstat
 
 		# output the landing page - note many CPD implementations will close as soon as Internet access is detected
 		# The client may not see this page, or only see it briefly
@@ -250,7 +226,7 @@ voucher_validation() {
 			echo "$auth_fail"
 		fi
 	else
-		echo "<big-red>Voucher is not Valid, click Continue to restart login.<br></big-red>"
+		echo "<h2>We can't find your phone number. Have you made a purchase in the last 2 hours?<br></h2>"
 		echo "
 			<form>
 				<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='$originurl'\" >
@@ -284,27 +260,21 @@ voucher_form() {
 			<img src="$gatewayurl$gearhouse_logo" alt="Basecamp Cafe.">
 			<big-black>Free Wi-Fi</big-black>
 			
-			<form action=\"/opennds_preauth/\" method=\"get\">
+			<form action=\"/opennds_preauth/\" method=\"get\" id="guestLogin">
 				<input type=\"hidden\" name=\"fas\" value=\"$fas\" />
 				<br />
 				Loyalty Rewards Phone Number 
-				<input type="text" name="voucher" placeholder="2064135555" required />
+				<input type=\"tel\" name=\"voucher\" id=\"phone\" placeholder=\"(206) 413-5555\" maxlength=\"16\" required />
 				<flex-row>
-					<input type="checkbox" name="tos" value="accepted" required /> 
+					<input type=\"checkbox\" name=\"tos\" value=\"accepted\" required /> 
 					I accept the Terms of Service
 				</flex-row>
 				<br />
-				<input type="submit" value="Connect" />
-			</form>
-
-			<form action=\"/opennds_preauth/\" method=\"get\">
-				<input type=\"hidden\" name=\"fas\" value=$fas />
-				<input type=\"hidden\" name=\"terms\" value=\"yes\" />
-				<input type=\"submit\" value=\"Read Terms of Service\" />
+				<input type=\"submit\" value=\"Connect\" />
 			</form>
 		"
 
-	#read_terms
+	read_terms
 
 	echo "
 		<footer>
@@ -328,7 +298,7 @@ read_terms() {
 		<form action=\"/opennds_preauth/\" method=\"get\">
 			<input type=\"hidden\" name=\"fas\" value=\"$fas\">
 			<input type=\"hidden\" name=\"terms\" value=\"yes\">
-			<input type=\"submit\" value=\"Read Terms of Service   \" >
+			<input type=\"submit\" value=\"Read Terms of Service\" >
 		</form>
 	"
 }

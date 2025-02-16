@@ -71,11 +71,4 @@ Each Voucher entry will be on a separate line in the vouchers.txt file
 
 
 # Jacob's Dumping Grounds
-```
-yaakov@DESKTOP-K56G2G3:~$ cd focusNDS/community/themespec/theme_voucher/
-yaakov@DESKTOP-K56G2G3:~/focusNDS/community/themespec/theme_voucher$ scp -O theme_voucher.sh root@10.0.0.2:/usr/lib/opennds
-theme_voucher.sh                                                                                                                                                                                                                                                                    100%   18KB   3.3MB/s   00:00    
-yaakov@DESKTOP-K56G2G3:~/focusNDS/community/themespec/theme_voucher$ scp -O splash-test.css root@10.0.0.2:/etc/opennds/htdocs
-splash-test.css                                                                                                                                                                                                                                                                     100% 3483     1.4MB/s   00:00    
-(reverse-i-search)`scp -O': ^Cp -O gearhouse.png root@10.0.0.2:/tmp
-```
+Use the `send-over.sh` script to send that stuff over!

@@ -60,6 +60,7 @@ login_with_voucher() {
 
 	if [[ "$complete" -eq 0 ]]; then
 		echo "<p>Scenario 3</p>"
+		echo "<p>TOS: $tos</p>"
 		voucher_validation
 		footer
 	elif [[ "$new_guest" -eq 0 ]]; then
@@ -68,6 +69,7 @@ login_with_voucher() {
 		echo "<p>New Guest: $new_guest</p>"
 		echo "<p>Zipcode: $zipcode</p>"
 		echo "<p>Email: $email</p>"
+		echo "<p>TOS: $tos</p>"
 		voucher_form	
 		footer
 		lookup_guest
@@ -183,8 +185,8 @@ voucher_validation() {
 		quotas="$session_length $upload_rate $download_rate $upload_quota $download_quota"
 		# Set voucher used (useful if for accounting reasons you track who received which voucher)
 		userinfo="$title - $voucher"
-		echo "<span>$userinfo</span>"
-		echo "<span>$quotas</span>"
+		echo "<span>UserInfo: $userinfo</span>"
+		echo "<span>Quotas: $quotas</span>"
 
 		# Authenticate and write to the log - returns with $ndsstatus set
 		auth_log
@@ -242,6 +244,7 @@ voucher_validation() {
 			echo "$auth_success"
 		else
 			echo "$auth_fail"
+			echo "<h1>NDSStatus: $ndsstatus</h1>"
 		fi
 	else
 		echo "<h2>We can't find your phone number. Have you made a purchase in the last 2 hours?<br></h2>"

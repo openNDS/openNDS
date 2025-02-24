@@ -45,6 +45,7 @@ footer() {
 	# Define a common footer html for every page served
 	year=$(date +'%Y')
 	echo "
+		<p>test</p>
 		</div>
 		</body>
 		</html>
@@ -57,24 +58,39 @@ login_with_voucher() {
 	# This is the simple click to continue splash page with no client validation.
 	# The client is however required to accept the terms of service.
 
-	if [ "$tos" = "accepted" ]; then
-		#echo "$tos <br>"
-		#echo "$voucher <br>"
+	if [[ "$complete" -eq 0 ]]; then
+		echo "<p>Scenario 3</p>"
 		voucher_validation
 		footer
+	elif [[ "$new_guest" -eq 0 ]]; then
+		echo "<p>Scenario 2</p>"
+		echo "<p>Voucher: $voucher</p>"
+		echo "<p>New Guest: $new_guest</p>"
+		echo "<p>Zipcode: $zipcode</p>"
+		echo "<p>Email: $email</p>"
+		voucher_form	
+		footer
+		lookup_guest
+	else
+		echo "<p>Scenario 1</p>"
+		echo "<p>Voucher: $voucher</p>"
+		echo "<p>New Guest: $new_guest</p>"
+		echo "<p>Zipcode: $zipcode</p>"
+		echo "<p>Email: $email</p>"
+		# fi
+		voucher_form
+		footer
 	fi
-
-	voucher_form
-	footer
 }
 
 check_voucher() {
 	
 	# Strict Voucher Validation for shell escape prevention - Only alphanumeric (and dash character) allowed.
+	echo "<p>Unclean: $voucher</p>"
 	if validation=$(echo -n $voucher |  grep -oE "^\([0-9]{3}\) [0-9]{3} - [0-9]{4}"); then
 		# echo "Original: $voucher"
 		voucher=$(echo "$voucher" | sed 's/[^0-9+]//g')
-		# echo "Cleaned: $voucher"
+		echo "<p>Cleaned: $voucher</p>"
 		# echo "Phone Number Validation successful, proceeding"
 		: #no-op
 	else
@@ -167,6 +183,8 @@ voucher_validation() {
 		quotas="$session_length $upload_rate $download_rate $upload_quota $download_quota"
 		# Set voucher used (useful if for accounting reasons you track who received which voucher)
 		userinfo="$title - $voucher"
+		echo "<span>$userinfo</span>"
+		echo "<span>$quotas</span>"
 
 		# Authenticate and write to the log - returns with $ndsstatus set
 		auth_log
@@ -255,24 +273,14 @@ voucher_form() {
 
 	voucher_code=$(echo "$cpi_query" | awk -F "voucher%3d" '{printf "%s", $2}' | awk -F "%26" '{printf "%s", $1}')
 
-	echo "
-		<div class="content-root">
-			<img src="$gatewayurl$gearhouse_logo" alt="Basecamp Cafe.">
-			<big-black>Free Wi-Fi</big-black>
-			
-			<form action=\"/opennds_preauth/\" method=\"get\" id="guestLogin">
-				<input type=\"hidden\" name=\"fas\" value=\"$fas\" />
-				<br />
-				Loyalty Rewards Phone Number 
-				<input type=\"tel\" name=\"voucher\" id=\"phone\" placeholder=\"(206) 413-5555\" maxlength=\"16\" required />
-				<flex-row>
-					<input type=\"checkbox\" name=\"tos\" value=\"accepted\" required /> 
-					I accept the Terms of Service
-				</flex-row>
-				<br />
-				<input type=\"submit\" value=\"Connect\" />
-			</form>
-		"
+	# echo "<p>New Guest? $new_guest</p>"
+	# echo "<p>TOS Value.. $tos</p>"
+
+	if [[ "$new_guest" -eq 0 ]]; then
+		step_two
+	else
+		step_one
+	fi
 
 	read_terms
 
@@ -291,6 +299,51 @@ voucher_form() {
 	# read_terms
 	footer
 }
+
+step_one() {
+	echo "
+		<div class="content-root">
+			<img src="$gatewayurl$gearhouse_logo" alt="Basecamp Cafe.">
+			<big-black>Free Wi-Fi</big-black>
+			
+			<form action=\"/opennds_preauth/\" method=\"get\" id="guestLogin">
+				<input type=\"hidden\" name=\"fas\" value=\"$fas\" />
+				<br />
+				Loyalty Rewards Phone Number 
+				<input type=\"tel\" name=\"voucher\" id=\"phone\" placeholder=\"(206) 413-5555\" maxlength=\"16\" required />
+				<flex-row>
+					<input type=\"checkbox\" name=\"tos\" value=\"accepted\" required /> 
+					I accept the Terms of Service
+				</flex-row>
+				<br />
+				<input type=\"submit\" value=\"Connect\" />
+			</form>
+		"
+}
+
+step_two() {
+	echo "
+		<div class="content-root">
+			<img src="$gatewayurl$gearhouse_logo" alt="Basecamp Cafe.">
+			<big-black>Just a few more things...</big-black>
+			
+			<form action=\"/opennds_preauth/\" method=\"get\" id="guestLogin">
+				<input type=\"hidden\" name=\"fas\" value=\"$fas\" />
+				<input type=\"hidden\" name=\"complete\" value=\"true\" />
+				<input type=\"hidden\" name=\"tos\" value=\"accepted\" />
+				<input type=\"hidden\" name=\"voucher\" value=\"$voucher\" />
+				<br />
+				Email 
+				<input type=\"text\" name=\"email\" id=\"email\" placeholder=\"example@domain.com\" required />
+				Zipcode
+				<input type=\"number\" name=\"zipcode\" id=\"zipcode\" placeholder=\"55555\" required />
+				<br />
+				<input type=\"submit\" value=\"Connect\" />
+			</form>
+		"
+}
+
+# <input hidden=\"true\" type=\"checkbox\" name=\"tos\" value=\"accepted\"/> 
 
 read_terms() {
 	#terms of service button

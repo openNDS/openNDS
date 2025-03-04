@@ -12,6 +12,10 @@ USE_PROCD=1
 # Run in PROCD (-f)
 OPTIONS="-f"
 
+service_data() {
+	/usr/bin/opennds -v
+}
+
 start_service() {
 	procd_open_instance
 	procd_set_param command /usr/bin/opennds $OPTIONS

@@ -3291,6 +3291,24 @@ elif [ "$1" = "get_next_preemptive_auth" ]; then
 
 	exit 0
 
+elif [ "$1" = "ipv6_routing" ]; then
+
+	is_uci=$(type uci &>/dev/null; echo $?)
+
+	if [ -z "$2" ] || [ "$is_uci" -gt 0 ]; then
+		exit 0
+
+	elif [ "$2" = "block" ]; then
+		uci set network.wan6.proto='none'
+		service network reload
+
+	elif [ "$2" = "allow" ]; then
+		uci revert network
+		service network reload
+	fi
+
+	exit 0
+
 fi
 
 ########################################################################

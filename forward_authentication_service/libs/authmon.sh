@@ -124,19 +124,6 @@ echo "remotecli=\"$3\"" >> $mountpoint/ndscids/authmonargs
 echo "remoterequest=\"$remoterequest\"" >> $mountpoint/ndscids/authmonargs
 echo "user_agent=\"$user_agent\"" >> $mountpoint/ndscids/authmonargs
 
-# If we are on OpenWrt, check if ca-bundle is installed
-owrt=$(type "opkg" 2>/dev/null | grep "/")
-
-if [ ! -z "$owrt" ]; then
-	cabundle=$(opkg list-installed | grep "ca-bundle")
-
-	if [ -z "$cabundle" ]; then
-		echo "authmon - FATAL ERROR: ca-bundle not installed - Terminating" | logger -p "daemon.err" -t "authmon[$ndspid]"
-		ndsctl stop
-		exit 1
-	fi
-fi
-
 # Call remoterequest with action.
 # Action can be "list" (list and delete from FAS auth log), "view" (view and leave in FAS auth log) or "clear" (clear any stale FAS auth log entries)
 

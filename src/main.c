@@ -348,21 +348,25 @@ setup_from_config(void)
 	int major = 0;
 	int minor = 0;
 	int patch = 0;
-	int outdated = 0;
+	int outdated = 1;
 	const char *version = MHD_get_version();
 
 	debug(LOG_NOTICE, "MHD version is %s", version);
 
 	if (sscanf(version, "%d.%d.%d", &major, &minor, &patch) == 3) {
 
-		if (major < MIN_MHD_MAJOR) {
-			outdated = 1;
+		if (major >= MIN_MHD_MAJOR) {
+			outdated = 0;
 
-		} else if (minor < MIN_MHD_MINOR) {
-			outdated = 1;
+		}
 
-		} else if (patch < MIN_MHD_PATCH) {
-			outdated = 1;
+		if (outdated == 0 && minor >= MIN_MHD_MINOR) {
+			outdated = 0;
+
+		}
+
+		if (outdated == 0 && patch >= MIN_MHD_PATCH) {
+			outdated = 0;
 		}
 
 		if (outdated == 1) {

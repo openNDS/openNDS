@@ -274,22 +274,21 @@ if [ "$action" = "auth_client" ] || [ "$action" = "auth" ]; then
 	write_log &> /dev/null
 fi
 
-#Quotas and session length set elsewhere can be overridden here if action=auth_client, otherwise will be ignored.
-# Set length of session in seconds (eg 24 hours is 86400 seconds - if set to 0 then defaults to global or FAS sessiontimeout value):
+# Values for quotas and session length can be overridden here if action=auth_client, and passed in the custom string.
+# The custom string must be parsed in custombinauth.sh script for the required values.
+# exitlevel can also be set in the custonbinauth.sh script (0=allow, 1=deny)
 session_length=0
-
-custom=$8
-custom=$(ndsctl b64decode "$custom")
-session_length=$(echo "$custom" | awk -F"session_length=" '{printf "%d", $2}')
-
-# Set Rate and Quota values for the client
-# The session length, rate and quota values are determined globaly or by FAS/PreAuth on a per client basis.
-# rates are in kb/s, quotas are in kB. Setting to 0 means no limit
 upload_rate=0
 download_rate=0
 upload_quota=0
 download_quota=0
 exitlevel=0
+
+if [ "$action" = "auth_client" ]; then
+	custom=$7
+else
+	custom=$8
+fi
 
 # Include custom binauth script
 custombinauthpath="/usr/lib/opennds/custombinauth.sh"

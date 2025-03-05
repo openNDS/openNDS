@@ -1,5 +1,5 @@
 <?php
-/* (c) Blue Wave Projects and Services 2015-2024. This software is released under the GNU GPL license.
+/* (c) Blue Wave Projects and Services 2015-2025. This software is released under the GNU GPL license.
 
  This is a FAS script designed to provide an http login sequence served from an **Internet hosted** http web server supporting PHP
  It is an example of remote Forward Authentication for openNDS (NDS) that **does not require PHP support on the openNDS router**.

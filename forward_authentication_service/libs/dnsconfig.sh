@@ -1,5 +1,5 @@
 #!/bin/sh
-#Copyright (C) BlueWave Projects and Services 2015-2024
+#Copyright (C) BlueWave Projects and Services 2015-2025
 #This software is released under the GNU GPL license.
 #
 # Warning - shebang sh is for compatibliity with busybox ash (eg on OpenWrt)

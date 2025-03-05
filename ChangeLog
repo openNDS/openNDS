@@ -1,3 +1,17 @@
+opennds (10.3.1)
+  * Fix - correctly process custom string in binauth [bluewavenet]
+  * Fix - remove deprecated opkg test [bluewavenet]
+  * Fix - block ipv6 routing if present [bluewavenet]
+  * Fix - add missing service_data() to procd script [bluewavenet]
+  * Fix - mhd version check [bluewavenet]
+  * Fix - Improve wget_request logging to report errors when contacting FAS server [d1dee]
+  * Fix - Warn if fas server responds with an error [d1dee]
+  * Fix - community theme_click-to-continue-legacy for newer releases of openNDS [bluewavenet]
+  * Fix - use fqdnip when fas_remotefqdn is disabled [bluewavenet]
+  * Fix - resolve_fqdn when fqdn is a cname [bluewavenet]
+
+ -- Rob White <dot@blue-wave.net>  Wed, 05 Mar 2025 13:34:57 +0000
+
 opennds (10.3.0)
   * Fix - missing exit in library call [bluewavenet]
   * Add - support for mesh11sd meshnodes and reimplement auth_restore to not use ndsctl -  [bluewavenet]

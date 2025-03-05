@@ -24,7 +24,7 @@
   @author Copyright (C) 2004 Philippe April <papril777@yahoo.com>
   @author Copyright (C) 2004 Alexandre Carmel-Veilleux <acv@miniguru.ca>
   @author Copyright (C) 2008 Paul Kube <nodogsplash@kokoro.ucsd.edu>
-  @author Copyright (C) 2015-2024 Modifications and additions by BlueWave Projects and Services <opennds@blue-wave.net>
+  @author Copyright (C) 2015-2025 Modifications and additions by BlueWave Projects and Services <opennds@blue-wave.net>
  */
 
 

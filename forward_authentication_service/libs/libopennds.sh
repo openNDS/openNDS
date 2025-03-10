@@ -1237,7 +1237,7 @@ users_to_router () {
 		inputchain=$(nft list table inet fw4 2> /dev/null | grep -w "$gatewayinterface" | grep "jump input"\
 			| awk -F" jump " '{print $2}' | awk -F" " '{print $1}')
 
-		rulehandle=$(nft -a list chain inet fw4 "$inputchain" 2> /dev/null | grep -w "users_to_router" | awk -F" " '{printf "%s" $NF}')
+		rulehandle=$(nft -a list chain inet fw4 "$inputchain" 2> /dev/null | grep -w "users_to_router" | awk -F" " '{printf "%s", $NF}')
 
 		if [ ! -z "$rulehandle" ]; then
 			nft delete rule inet fw4 "$inputchain" handle "$rulehandle" 2> /dev/null

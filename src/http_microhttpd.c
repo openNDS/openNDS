@@ -1079,11 +1079,12 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 	s_config *config = config_get_config();
 
 	if (config->fas_secure_enabled == 0) {
-		snprintf(querystr, QUERYMAXLEN, "?clientip=%s&gatewayname=%s&tok=%s&redir=%s",
+		snprintf(querystr, QUERYMAXLEN, "?clientip=%s&gatewayname=%s&tok=%s&redir=%s&mac=%s",
 			client->ip,
 			config->url_encoded_gw_name,
 			client->token,
-			originurl
+			originurl,
+			client->mac
 		);
 
 	} else if (config->fas_secure_enabled == 1) {

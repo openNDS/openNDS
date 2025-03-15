@@ -10,7 +10,7 @@ PKG_FIXUP:=autoreconf
 PKG_VERSION:=5.2.0
 PKG_RELEASE:=1
 
-PKG_SOURCE_URL:=https://github.com/den4ik86/openNDS.git/tar.gz/v$(PKG_VERSION)?
+PKG_SOURCE_URL:=https://codeload.github.com/opennds/opennds/tar.gz/v$(PKG_VERSION)?
 PKG_SOURCE:=opennds-$(PKG_VERSION).tar.gz
 PKG_HASH:= #shasum -a 256 of tar.gz of source files goes here
 PKG_BUILD_DIR:=$(BUILD_DIR)/openNDS-$(PKG_VERSION)

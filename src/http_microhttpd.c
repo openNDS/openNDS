@@ -953,7 +953,7 @@ static char *construct_querystring(t_client *client, char *originurl, char *quer
 	s_config *config = config_get_config();
 
 	if (config->fas_secure_enabled == 0) {
-		snprintf(querystr, QUERYMAXLEN, "?clientip=%s&gatewayname=%s&tok=%s&mac=%s", client->ip, config->url_encoded_gw_name, client->token, client->mac);
+		snprintf(querystr, QUERYMAXLEN, "?clientip=%s&gatewayname=%s&tok=%s", client->ip, config->url_encoded_gw_name, client->token);
 
 	} else if (config->fas_secure_enabled == 1) {
 

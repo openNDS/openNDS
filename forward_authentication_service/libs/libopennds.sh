@@ -3303,7 +3303,7 @@ elif [ "$1" = "ipv6_routing" ]; then
 		service network reload
 
 	elif [ "$2" = "allow" ]; then
-		uci revert network
+		uci set network.wan6.proto='dhcpv6'
 		service network reload
 	fi
 

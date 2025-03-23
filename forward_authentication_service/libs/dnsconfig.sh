@@ -87,7 +87,11 @@ elif [ "$setconf" = "reload_only" ]; then
 elif [ "$setconf" = "revert" ]; then
 
 	if [ ! -z "$uciconfig" ]; then
-		uci revert dhcp
+		is_mesh11sd=$(type mesh11sd &>/dev/null; echo -n $?)
+
+		if [ "$is_mesh11sd" -gt 0 ]; then
+			uci revert dhcp
+		fi
 	fi
 
 	printf "%s" "done"

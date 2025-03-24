@@ -1193,14 +1193,14 @@ dhcp_check() {
 
 wait_for_interface () {
 	local ifname="$1"
-	local timeout=10
+	local timeout=60
 
 	for i in $(seq $timeout); do
 		if [ $(ip link show $ifname 2> /dev/null | grep -c -w "state UP") -eq 1 ]; then
 			ifstatus="up"
 			break
 		fi
-		sleep 1
+		sleep 2
 		if [ $i == $timeout ] ; then
 			syslogmessage="$ifname is not up - giving up for now."
 			debugtype="warn"

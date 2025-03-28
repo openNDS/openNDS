@@ -30,7 +30,7 @@
 #ifndef _CONF_H_
 #define _CONF_H_
 
-#define VERSION "10.3.1"
+#define VERSION "10.3.2beta"
 
 /*
  * Defines how many times should we try detecting the interface with the default route (in seconds).

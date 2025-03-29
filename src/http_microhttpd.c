@@ -1450,7 +1450,7 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 			if (config->fas_hid) {
 				debug(LOG_DEBUG, "hid=%s", client->hid);
 
-				if (config->login_option_enabled > 0) {
+				if (config->preauth) {
 					clientif = safe_calloc(STATUS_BUF);
 
 					get_client_interface(clientif, STATUS_BUF, client->mac);

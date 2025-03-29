@@ -6,21 +6,14 @@
 # This is changed to bash automatically by Makefile for generic Linux
 #
 
-pid=$(pgrep -f "/bin/sh /usr/lib/opennds/get_client_interface.sh")
+get_client_local_if() {
+	clientlocalif=$(ip -4 neigh | grep "$mac" | awk 'NR==1{printf "%s", $3}')
 
-# This script requires the iw and ip packages (usually available by default)
-
-if [ -z $(command -v ip) ]; then
-	/usr/lib/opennds/libopennds.sh write_to_syslog "ip utility not available - critical error" "err"
-	exit 1
-fi
-
-if [ -z $(command -v iw) ]; then
-	/usr/lib/opennds/libopennds.sh write_to_syslog "unable to detect wireless interface - iw utility not available" "debug"
-	iwstatus=false
-else
-	iwstatus=true
-fi
+	if [ -z "$clientlocalif" ]; then
+		# The client has gone offline eg battery saving or switched to another ssid
+		exit 1
+	fi
+}
 
 # mac address of client is passed as a command line argument
 mac=$1
@@ -46,17 +39,30 @@ if [  $(echo "$mac" | awk -F ':' '{print NF}') -ne 6 ]; then
 	exit 1
 fi
 
-# Get default interface
-# This will be the interface NDS is bound to eg. br-lan
+get_client_local_if
 
-clientlocalif=$(ip -4 neigh | awk -F ' ' 'match($s,"'"$mac"' ")>0 {printf $3}')
+fast_client_scan=$(/usr/lib/opennds/libopennds.sh "get_option_from_config" "fast_client_scan")
 
-if [ -z "$clientlocalif" ]; then
-	# The client has gone offline eg battery saving or switched to another ssid
+if [ -z "$fast_client_scan" ]; then
+	fast_client_scan=0
+fi
+
+# This script requires the iw and ip packages to find the client wifi or mesh interface (usually available by default)
+
+if [ -z $(command -v ip) ]; then
+	/usr/lib/opennds/libopennds.sh write_to_syslog "ip utility not available - critical error" "err"
 	exit 1
 fi
 
-clientmeshif=""
+if [ -z $(command -v iw) ]; then
+	/usr/lib/opennds/libopennds.sh write_to_syslog "unable to detect wireless interface - iw utility not available" "debug"
+	iwstatus=false
+else
+	iwstatus=true
+fi
+
+# Get default interface
+# This will be the interface NDS is bound to eg. br-lan
 
 if [ "$iwstatus" = true ]; then 
 	# Get list of wireless interfaces on this device
@@ -65,21 +71,36 @@ if [ "$iwstatus" = true ]; then
 	interface_list=$(iw dev | awk -F 'Interface ' 'NF>1{printf $2" "}')
 
 	# Scan the wireless interfaces on this device for the client mac
-	for interface in $interface_list; do
-		macscan=$(iw dev $interface station dump | awk -F " " 'match($s, "'"$mac"'")>0{printf $2}')
+	# checking first for a mesh connection
 
-		if [ ! -z "$macscan" ]; then
-			clientlocalif=$interface
+	for interface in $interface_list; do
+		clientmeshif=$(iw dev $interface mpp dump | awk -F "$mac " 'NF>1{printf $2}')
+
+		if [ ! -z "$clientmeshif" ]; then
 			break
-		else
-			clientlocalip=$(ip -4 neigh | awk -F ' ' 'match($s,"'"$mac"' ")>0 {printf $1}')
-			ping=$(ping -W 1 -c 1 $clientlocalip)
-			meshmac=$(iw dev $interface mpp dump | awk -F "$mac " 'NF>1{printf $2}')
-			if [ ! -z "$meshmac" ]; then
-				clientmeshif=$meshmac
-			fi
 		fi
 	done
+
+	if [ -z "$clientmeshif" ] && [ "$fast_client_scan" -eq 0 ]; then
+		# Not mesh, so might be local wireless. We can scan for staions here, but it takes a while..
+		for interface in $interface_list; do
+			stations=$(iw dev $interface station dump | grep -w "$mac")
+
+			if [ ! -z "$stations" ]; then
+				clientlocalif="$interface"
+				ssid=$(iw dev $interface info | grep -w "ssid" | awk '{printf "%s", $2}')
+				zonemac=$(iw dev $interface info | grep -w "addr" | awk '{printf "%s", $2}')
+				clientmeshif="$zonemac $ssid"
+				break
+			fi
+		done
+	fi
+
+	if [ -z "$stations" ] && [ "$fast_client_scan" -eq 0 ]; then
+		# Not local wireless, so check in mesh11sd's vxtun
+		client_vtunif=$(type mesh11sd &>/dev/null && mesh11sd show_ap_data all | grep -w -B 1 "$mac" | grep "@" | awk -F "\"" 'NR==1 {printf "%s", $2}' | awk -F "@" '{printf "%s %s", $3, $1}')
+		clientmeshif="$client_vtunif"
+	fi
 fi
 
 # Return the local interface the client is using, the mesh node mac address and the local mesh interface

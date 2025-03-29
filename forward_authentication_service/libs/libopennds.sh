@@ -703,9 +703,9 @@ get_client_zone () {
 			local_mesh_if=$(echo "$client_if_string" | awk '{printf $3}')
 
 			if [ ! -z "$client_meshnode" ]; then
-				client_zone="MeshZone: $client_meshnode Local-Interface: $local_mesh_if"
+				client_zone="Zone: $client_meshnode - $local_mesh_if"
 			else
-				client_zone="LocalZone: $client_if"
+				client_zone="Zone: $client_if"
 			fi
 		else
 			client_zone=""

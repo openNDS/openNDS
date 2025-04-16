@@ -1970,7 +1970,7 @@ wget_request () {
 	payload=$ndsctlout
 
 	webget
-	retval=$($wret -O - -U "\"$user_agent\"" "$url?auth_get=$action&gatewayhash=$gatewayhash&payload=$payload")
+	retval=$($wret -O - -U "$user_agent" "$url?auth_get=$action&gatewayhash=$gatewayhash&payload=$payload")
 	status=$?
  
 	if [ $status -ne 0 ]; then

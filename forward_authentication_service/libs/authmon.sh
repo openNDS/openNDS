@@ -6,7 +6,7 @@
 
 # Get configured option
 get_option_from_config() {
-	option_value=$(/usr/lib/opennds/libopennds.sh get_option_from_config $option)
+	option_value=$(/usr/lib/opennds/libopennds.sh get_option_from_config $1)
 }
 
 # Function to send commands to openNDS:
@@ -107,7 +107,7 @@ else
 fi
 
 option="nat_traversal_poll_interval"
-get_option_from_config
+get_option_from_config $option
 loop_interval=$option_value
 
 if [ "$loop_interval" = "" ] || [ "$loop_interval" -le 0 ] || [ "$loop_interval" -ge 60 ]; then

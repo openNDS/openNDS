@@ -653,12 +653,14 @@ config opennds
 	# Default: 1
 
 	# ****If set to "0"****
-	##
+	##!!!!!!!!
 	# WARNING This mode is insecure and is not recommended.
-	##
+	# It should be considered as deprecated and will be removed in a future version.
+	#
 	# The FAS is enforced by NDS to use http protocol.
 	# The client token is sent to the FAS in clear text in the query string of the redirect along with authaction and redir.
 	# Note: This level is insecure and can be easily bypassed
+	##!!!!!!!!
 
 	# ****If set to "1"****
 	# The FAS is enforced by NDS to use http protocol.

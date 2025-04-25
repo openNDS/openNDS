@@ -21,7 +21,8 @@ start_service() {
 	procd_set_param command /usr/bin/opennds $OPTIONS
 	procd_set_param respawn 150 10 10
 	procd_set_param term_timeout 60 # wait before sending SIGKILL
-	procd_set_param stdout 1
+	procd_set_param stderr 1
+	procd_set_param stdout 0
 	procd_close_instance
 	/usr/lib/opennds/libopennds.sh ipv6_routing block
 	/usr/lib/opennds/libopennds.sh users_to_router allow

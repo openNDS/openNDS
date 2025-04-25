@@ -3285,7 +3285,7 @@ elif [ "$1" = "get_next_preemptive_auth" ]; then
 
 	for auth_file in $auth_files; do
 
-		if [ -e ""$mountpoint/ndscids/preemptive_auth/$auth_file"" ]; then
+		if [ -e "$mountpoint/ndscids/preemptive_auth/$auth_file" ]; then
 			cat "$mountpoint/ndscids/preemptive_auth/$auth_file"
 			rm "$mountpoint/ndscids/preemptive_auth/$auth_file"
 		fi

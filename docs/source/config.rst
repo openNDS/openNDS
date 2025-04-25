@@ -558,6 +558,24 @@ Example:
 
 ``option maxclients '500'``
 
+Set Fast Client Scan
+********************
+
+Default 0 (disabled)
+
+Enables fast client scanning to find the interface used by the client.
+
+Fast scanning skips search for actual wireless interface used.
+
+Any scan delay effects the display rewrite speed of the splash page sequence.
+
+Useful when a large mesh or other extended network is in use.
+
+Otherwise the Client Scan could, for large networks, take many seconds to complete.
+
+For example, to enable:
+``option fast_client_scan '1'``
+
 Client timeouts in minutes
 **************************
 

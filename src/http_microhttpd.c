@@ -1413,7 +1413,6 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 	char *gw_url_raw;
 	char *gw_url;
 	char *phpcmd;
-	int cidgood = 0;
 
 	s_config *config = config_get_config();
 
@@ -1451,33 +1450,49 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 			if (config->fas_hid) {
 				debug(LOG_DEBUG, "hid=%s", client->hid);
 
-				clientif = safe_calloc(STATUS_BUF);
+				if (config->preauth) {
+					clientif = safe_calloc(STATUS_BUF);
 
-				get_client_interface(clientif, STATUS_BUF, client->mac);
-				debug(LOG_DEBUG, "clientif: [%s] url_encoded_gw_name: [%s]", clientif, config->url_encoded_gw_name);
+					get_client_interface(clientif, STATUS_BUF, client->mac);
+					debug(LOG_DEBUG, "clientif: [%s] url_encoded_gw_name: [%s]", clientif, config->url_encoded_gw_name);
 
-				query_str = safe_calloc(QUERYMAXLEN);
+					query_str = safe_calloc(QUERYMAXLEN);
 
-				snprintf(query_str, QUERYMAXLEN,
-					"hid=%s%sclientip=%s%sclientmac=%s%sclient_type=%s%scpi_query=%s%sgatewayname=%s%sgatewayurl=%s%sversion=%s%sgatewayaddress=%s%sgatewaymac=%s%soriginurl=%s%sclientif=%s%sthemespec=%s%s%s%s%s%s",
-					client->hid, QUERYSEPARATOR,
-					client->ip, QUERYSEPARATOR,
-					client->mac, QUERYSEPARATOR,
-					clienttype, QUERYSEPARATOR,
-					client->cpi_query, QUERYSEPARATOR,
-					config->url_encoded_gw_name, QUERYSEPARATOR,
-					gw_url, QUERYSEPARATOR,
-					VERSION, QUERYSEPARATOR,
-					config->gw_address, QUERYSEPARATOR,
-					config->gw_mac, QUERYSEPARATOR,
-					originurl, QUERYSEPARATOR,
-					clientif, QUERYSEPARATOR,
-					config->themespec_path, QUERYSEPARATOR,
-					config->custom_params,
-					config->custom_vars,
-					config->custom_images,
-					config->custom_files
-				);
+					snprintf(query_str, QUERYMAXLEN,
+						"hid=%s",
+						client->hid
+					);
+
+				} else {
+					clientif = safe_calloc(STATUS_BUF);
+
+					get_client_interface(clientif, STATUS_BUF, client->mac);
+					debug(LOG_DEBUG, "clientif: [%s] url_encoded_gw_name: [%s]", clientif, config->url_encoded_gw_name);
+
+					query_str = safe_calloc(QUERYMAXLEN);
+
+					snprintf(query_str, QUERYMAXLEN,
+						"hid=%s%sclientip=%s%sclientmac=%s%sclient_type=%s%scpi_query=%s%sgatewayname=%s%sgatewayurl=%s%sversion=%s%sgatewayaddress=%s%sgatewaymac=%s%soriginurl=%s%sclientif=%s%sthemespec=%s%s%s%s%s%s",
+						client->hid, QUERYSEPARATOR,
+						client->ip, QUERYSEPARATOR,
+						client->mac, QUERYSEPARATOR,
+						clienttype, QUERYSEPARATOR,
+						client->cpi_query, QUERYSEPARATOR,
+						config->url_encoded_gw_name, QUERYSEPARATOR,
+						gw_url, QUERYSEPARATOR,
+						VERSION, QUERYSEPARATOR,
+						config->gw_address, QUERYSEPARATOR,
+						config->gw_mac, QUERYSEPARATOR,
+						originurl, QUERYSEPARATOR,
+						clientif, QUERYSEPARATOR,
+						config->themespec_path, QUERYSEPARATOR,
+						config->custom_params,
+						config->custom_vars,
+						config->custom_images,
+						config->custom_files
+					);
+				}
+
 
 				query_str_b64 = safe_calloc(ENC_QUERYSTR);
 
@@ -1488,96 +1503,80 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 					query_str_b64
 				);
 
-				if (config->login_option_enabled >=1) {
-					if (client->cid) {
-						cidgood = 1;
-						cidfile = safe_calloc(SMALL_BUF);
-						safe_snprintf(cidfile, SMALL_BUF, "%s/ndscids/%s", config->tmpfsmountpoint, client->cid);
+				strncpy(cid, query_str_b64+5, 86);
+				client->cid = safe_strdup(cid);
 
-						// Check if cidfile exists
-						if(access(cidfile, F_OK) != 0) {
-							// does not exist
-							cidgood=0;
-						}
-						free(cidfile);
-					}
+				// Write the new cidfile:
+				msg = safe_calloc(STATUS_BUF);
+				cidinfo = safe_calloc(SMALL_BUF);
+				debug(LOG_DEBUG, "writing cid file [%s]", cid);
 
-					if (cidgood == 0) {
-						strncpy(cid, query_str_b64+5, 86);
-						client->cid = safe_strdup(cid);
+				safe_snprintf(cidinfo, MID_BUF, "cid=\"%s\"", cid);
+				write_client_info(msg, SMALL_BUF, "rmcid", cid, cidinfo);
 
-						// Write the new cidfile:
-						msg = safe_calloc(STATUS_BUF);
-						cidinfo = safe_calloc(SMALL_BUF);
-						debug(LOG_DEBUG, "writing cid file [%s]", cid);
+				safe_snprintf(cidinfo, SMALL_BUF, "hid=\"%s\"\0", client->hid);
+				write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
-						safe_snprintf(cidinfo, SMALL_BUF, "hid=\"%s\"\0", client->hid);
-						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
+				safe_snprintf(cidinfo, SMALL_BUF, "clientip=\"%s\"\0", client->ip);
+				write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
-						safe_snprintf(cidinfo, SMALL_BUF, "clientip=\"%s\"\0", client->ip);
-						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
+				safe_snprintf(cidinfo, SMALL_BUF, "clientmac=\"%s\"\0", client->mac);
+				write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
-						safe_snprintf(cidinfo, SMALL_BUF, "clientmac=\"%s\"\0", client->mac);
-						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
+				safe_snprintf(cidinfo, SMALL_BUF, "cpi_query=\"%s\"\0", client->cpi_query);
+				write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
-						safe_snprintf(cidinfo, SMALL_BUF, "cpi_query=\"%s\"\0", client->cpi_query);
-						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
+				safe_snprintf(cidinfo, SMALL_BUF, "client_type=\"%s\"\0", clienttype);
+				write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
+				safe_snprintf(cidinfo, SMALL_BUF, "gatewayname=\"%s\"\0", config->http_encoded_gw_name);
+				write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
-						safe_snprintf(cidinfo, SMALL_BUF, "client_type=\"%s\"\0", clienttype);
-						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
+				safe_snprintf(cidinfo, SMALL_BUF, "gatewayurl=\"%s\"\0", gw_url);
+				write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
-						safe_snprintf(cidinfo, SMALL_BUF, "gatewayname=\"%s\"\0", config->http_encoded_gw_name);
-						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
+				safe_snprintf(cidinfo, SMALL_BUF, "version=\"%s\"\0", VERSION);
+				write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
-						safe_snprintf(cidinfo, SMALL_BUF, "gatewayurl=\"%s\"\0", gw_url);
-						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
+				safe_snprintf(cidinfo, SMALL_BUF, "gatewayaddress=\"%s\"\0", config->gw_address);
+				write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
-						safe_snprintf(cidinfo, SMALL_BUF, "version=\"%s\"\0", VERSION);
-						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
+				safe_snprintf(cidinfo, SMALL_BUF, "gatewaymac=\"%s\"\0", config->gw_mac);
+				write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
-						safe_snprintf(cidinfo, SMALL_BUF, "gatewayaddress=\"%s\"\0", config->gw_address);
-						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
+				safe_snprintf(cidinfo, SMALL_BUF, "originurl=\"%s\"\0", originurl);
+				write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
-						safe_snprintf(cidinfo, SMALL_BUF, "gatewaymac=\"%s\"\0", config->gw_mac);
-						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
+				safe_snprintf(cidinfo, SMALL_BUF, "clientif=\"%s\"\0", clientif);
+				write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
-						safe_snprintf(cidinfo, SMALL_BUF, "originurl=\"%s\"\0", originurl);
-						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
-
-						safe_snprintf(cidinfo, SMALL_BUF, "clientif=\"%s\"\0", clientif);
-						write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
-
-						if (config->themespec_path) {
-							safe_snprintf(cidinfo, SMALL_BUF, "themespec=\"%s\"\0", config->themespec_path);
-							write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
-						}
-
-						if (config->custom_params) {
-							safe_snprintf(cidinfo, SMALL_BUF, "%s\0", config->custom_params);
-							write_client_info(msg, STATUS_BUF, "parse", cid, cidinfo);
-						}
-
-						if (config->custom_vars) {
-							safe_snprintf(cidinfo, SMALL_BUF, "%s\0", config->custom_vars);
-							write_client_info(msg, STATUS_BUF, "parse", cid, cidinfo);
-						}
-
-						if (config->custom_images) {
-							safe_snprintf(cidinfo, SMALL_BUF, "%s\0", config->custom_images);
-							write_client_info(msg, STATUS_BUF, "parse", cid, cidinfo);
-						}
-
-						if (config->custom_files) {
-							safe_snprintf(cidinfo, SMALL_BUF, "%s\0", config->custom_files);
-							write_client_info(msg, STATUS_BUF, "parse", cid, cidinfo);
-						}
-
-						free(msg);
-						free(cidinfo);
-					}
+				if (config->themespec_path) {
+					safe_snprintf(cidinfo, SMALL_BUF, "themespec=\"%s\"\0", config->themespec_path);
+					write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 				}
 
+				if (config->custom_params) {
+					safe_snprintf(cidinfo, SMALL_BUF, "%s\0", config->custom_params);
+					write_client_info(msg, STATUS_BUF, "parse", cid, cidinfo);
+				}
+
+				if (config->custom_vars) {
+					safe_snprintf(cidinfo, SMALL_BUF, "%s\0", config->custom_vars);
+					write_client_info(msg, STATUS_BUF, "parse", cid, cidinfo);
+				}
+
+				if (config->custom_images) {
+					safe_snprintf(cidinfo, SMALL_BUF, "%s\0", config->custom_images);
+					write_client_info(msg, STATUS_BUF, "parse", cid, cidinfo);
+				}
+
+				if (config->custom_files) {
+					safe_snprintf(cidinfo, SMALL_BUF, "%s\0", config->custom_files);
+					write_client_info(msg, STATUS_BUF, "parse", cid, cidinfo);
+				}
+
+				free(msg);
+				free(cidinfo);
 				free(query_str);
 				free(query_str_b64);
 				free(clientif);

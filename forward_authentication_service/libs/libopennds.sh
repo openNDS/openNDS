@@ -703,9 +703,9 @@ get_client_zone () {
 			local_mesh_if=$(echo "$client_if_string" | awk '{printf $3}')
 
 			if [ ! -z "$client_meshnode" ]; then
-				client_zone="MeshZone: $client_meshnode Local-Interface: $local_mesh_if"
+				client_zone="Zone: $client_meshnode - $local_mesh_if"
 			else
-				client_zone="LocalZone: $client_if"
+				client_zone="Zone: $client_if"
 			fi
 		else
 			client_zone=""
@@ -1193,14 +1193,14 @@ dhcp_check() {
 
 wait_for_interface () {
 	local ifname="$1"
-	local timeout=10
+	local timeout=60
 
 	for i in $(seq $timeout); do
 		if [ $(ip link show $ifname 2> /dev/null | grep -c -w "state UP") -eq 1 ]; then
 			ifstatus="up"
 			break
 		fi
-		sleep 1
+		sleep 2
 		if [ $i == $timeout ] ; then
 			syslogmessage="$ifname is not up - giving up for now."
 			debugtype="warn"
@@ -3284,8 +3284,12 @@ elif [ "$1" = "get_next_preemptive_auth" ]; then
 	fi
 
 	for auth_file in $auth_files; do
-		cat "$mountpoint/ndscids/preemptive_auth/$auth_file"
-		rm "$mountpoint/ndscids/preemptive_auth/$auth_file"
+
+		if [ -e "$mountpoint/ndscids/preemptive_auth/$auth_file" ]; then
+			cat "$mountpoint/ndscids/preemptive_auth/$auth_file"
+			rm "$mountpoint/ndscids/preemptive_auth/$auth_file"
+		fi
+
 		break
 	done
 
@@ -3303,7 +3307,7 @@ elif [ "$1" = "ipv6_routing" ]; then
 		service network reload
 
 	elif [ "$2" = "allow" ]; then
-		uci revert network
+		uci set network.wan6.proto='dhcpv6'
 		service network reload
 	fi
 

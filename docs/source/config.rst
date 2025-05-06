@@ -194,182 +194,6 @@ Example:
 
 ``option dhcp_leases_file '/tmp/dhcp.leases.special'``
 
-Define Custom Parameters
-************************
-
-Custom parameters are sent as fixed values to FAS
-
-Default None
-
-Custom Parameters listed in the form of param_name=param_value
-
-param_name and param_value must be urlencoded if containing white space or single quotes
-
-eg replace spaces with %20 - replace single quotes with %27
-
-Parameters should be configured one per line to prevent possible parsing errors.
-
-eg:
-
-``list fas_custom_parameters_list '<param_name1=param_value1>'``
-
-``list fas_custom_parameters_list '<param_name2=param_value2>'``
-
-etc.
-
-Configuration for custom parameters in the installed ThemeSpec Files
---------------------------------------------------------------------
-
-The installed ThemeSpec files are:
-
-theme_click-to-continue-custom-placeholders
-
-and
-
-theme_user-email-login-custom-placeholders
-
-``list fas_custom_parameters_list 'logo_message=openNDS:%20Perfect%20on%20OpenWrt!'``
-
-``list fas_custom_parameters_list 'banner1_message=BlueWave%20-%20Wireless%20Network%20Specialists'``
-
-``list fas_custom_parameters_list 'banner2_message=HMS%20Pickle'``
-
-``list fas_custom_parameters_list 'banner3_message=SeaWolf%20Cruiser%20Racer'``
-
-Define Custom Variables
-***********************
-
-Custom Variables are used by FAS to dynamically collect information from clients
-
-Default None
-
-Custom Variables are listed in the form of var_name=var_type
-
-"var_name" and "var_type" must be urlencoded if containing white space or single quotes
-
-eg replace spaces with %20 - replace single quotes with %27
-
-Variables should be configured one per line to prevent possible parsing errors.
-
-eg:
-
-``list fas_custom_variables_list '<var_name1=var_type1>'``
-
-``list fas_custom_variables_list '<var_name2=var_type2>'``
-
-etc.
-
-FAS Generic Variables
----------------------
-A custom FAS or ThemeSpec must be written to make use of FAS Generic Variables
-
-eg:
-
-``list fas_custom_variables_list 'membership_number=number'``
-
-``list fas_custom_variables_list 'access_code=password'``
-
-ThemeSpec Dynamically generated Form Fields
--------------------------------------------
-
-ThemeSpec scripts can dynamically generate Form Field html and inject into the dynamic splash page sequence.
-
-This is achieved using a SINGLE line containing the keyword "input", in the form: fieldname:field-description:fieldtype
-
-Numerous fields can be defined in this single "input=" line, separated by a semicolon (;).
-
-Configuration for custom variables in the installed ThemeSpec Files
--------------------------------------------------------------------
-
-theme_click-to-continue-custom-placeholders
-
-and
-
-theme_user-email-login-custom-placeholders
-
-This example inserts Phone Number and Home Post Code fields:
-
-``list fas_custom_variables_list 'input=phone:Phone%20Number:text;postcode:Home%20Post%20Code:text'``
-
-Define Custom Images
-********************
-
-Custom Images are served by a local FAS where required in dynamic portal pages
-
-Default None
-
-Custom images will be copied from the URL to the openNDS router
-
-Custom Images are listed in the form of image_name_type=image_url
-
-image_name and image_url must be urlencoded if containing white space or single quotes
-
-The image url must begin with http:// https:// or file://
-
-Images should be configured one per line to prevent possible parsing errors.
-
-``list fas_custom_images_list '<image_name1_[type]=image_url1>'``
-
-``list fas_custom_images_list '<image_name2_[type]=image_url2>'``
-
-etc.
-
-"type" can be any recognised image file extension eg jpg, png, ico, etc.
-
-Configuration for custom images in the installed ThemeSpec Files
-----------------------------------------------------------------
-
-theme_click-to-continue-custom-placeholders
-
-and
-
-theme_user-email-login-custom-placeholders
-
-``list fas_custom_images_list 'logo_png=https://openwrt.org/_media/logo.png'``
-
-``list fas_custom_images_list 'banner1_jpg=https://raw.githubusercontent.com/openNDS/openNDS/v9.0.0/resources/bannerbw.jpg'``
-
-``list fas_custom_images_list 'banner2_jpg=https://raw.githubusercontent.com/openNDS/openNDS/v9.0.0/resources/bannerpickle.jpg'``
-
-``list fas_custom_images_list 'banner3_jpg=https://raw.githubusercontent.com/openNDS/openNDS/v9.0.0/resources/bannerseawolf.jpg'``
-
-Define Custom Files
-*******************
-
-Custom Files are served by a local FAS where required in dynamic portal pages
-
-Default None
-
-Custom files will be copied from the URL to the openNDS router
-
-Images should be configured one per line to prevent possible parsing errors.
-
-Custom files are listed in the form of file_name_type=file_url
-
-file_name and file_url must be urlencoded if containing white space or single quotes
-
-The file url must begin with http:// https:// or file://
-
-``list fas_custom_files_list '<file_name1_[type]=file_url1>'``
-
-``list fas_custom_files_list '<file_name2_[type]=file_url2>'``
-
-"type" can be any recognised file extension that can be used to display web content eg txt, htm etc.
-
-URLs using the file:// protocol must point to a valid mountpoint accessible to openNDS, for example a usb storage device.
-
-Configuration for custom files in the installed ThemeSpec Files
-----------------------------------------------------------------
-
-theme_click-to-continue-custom-placeholders
-
-and
-
-theme_user-email-login-custom-placeholders
-
-``list fas_custom_files_list 'advert1_htm=https://raw.githubusercontent.com/openNDS/openNDS/v9.0.0/resources/bannerpickle.htm'``
-
-
 Set refresh interval for downloads
 **********************************
 
@@ -863,26 +687,6 @@ This is enabled by the following option:
 
 ``option binauth '/usr/lib/opennds/binauth_log.sh'``
 
-Set Fasport
-***********
-
-Default: Not set.
-
-This is the Forwarding Authentication Service (FAS) port number.
-
-Redirection is changed to the IP port of a FAS (provided by the system administrator).
-
-.. note::
- If FAS is running locally (ie fasremoteip is NOT set), port 80 cannot be used.
-
-Typical Remote Shared Hosting Example:
-
-``option fasport '80'``
-
-Typical Locally Hosted example (ie fasremoteip not set):
-
-``option fasport '2090'``
-
 Set Fasremotefqdn
 *****************
 
@@ -918,6 +722,26 @@ If set, this is the remote ip address of the FAS.
 Typical Remote Shared Hosting Example (replace this with your own remote FAS IP):
 
 ``option fasremoteip '46.32.240.41'``
+
+Set Fasport
+***********
+
+Default: Not set.
+
+This is the Forwarding Authentication Service (FAS) port number.
+
+Redirection is changed to the IP port of a FAS (provided by the system administrator).
+
+.. note::
+ If FAS is running locally (ie fasremoteip is NOT set), port 80 cannot be used.
+
+Typical Remote Shared Hosting Example:
+
+``option fasport '80'``
+
+Typical Locally Hosted example (ie fasremoteip not set):
+
+``option fasport '2090'``
 
 Set the Faspath
 ***************
@@ -1012,6 +836,180 @@ Note: Option faskey must be pre shared with the FAS script in use (including any
 Example:
 
 ``option fas_secure_enabled '3'``
+Define Custom Parameters
+************************
+
+Custom parameters are sent as fixed values to FAS
+
+Default None
+
+Custom Parameters listed in the form of param_name=param_value
+
+param_name and param_value must be urlencoded if containing white space or single quotes
+
+eg replace spaces with %20 - replace single quotes with %27
+
+Parameters should be configured one per line to prevent possible parsing errors.
+
+eg:
+
+``list fas_custom_parameters_list '<param_name1=param_value1>'``
+
+``list fas_custom_parameters_list '<param_name2=param_value2>'``
+
+etc.
+
+Configuration for custom parameters in the installed ThemeSpec Files
+--------------------------------------------------------------------
+
+The installed ThemeSpec files are:
+
+theme_click-to-continue-custom-placeholders
+
+and
+
+theme_user-email-login-custom-placeholders
+
+``list fas_custom_parameters_list 'logo_message=openNDS:%20Perfect%20on%20OpenWrt!'``
+
+``list fas_custom_parameters_list 'banner1_message=BlueWave%20-%20Wireless%20Network%20Specialists'``
+
+``list fas_custom_parameters_list 'banner2_message=HMS%20Pickle'``
+
+``list fas_custom_parameters_list 'banner3_message=SeaWolf%20Cruiser%20Racer'``
+
+Define Custom Variables
+***********************
+
+Custom Variables are used by FAS to dynamically collect information from clients
+
+Default None
+
+Custom Variables are listed in the form of var_name=var_type
+
+"var_name" and "var_type" must be urlencoded if containing white space or single quotes
+
+eg replace spaces with %20 - replace single quotes with %27
+
+Variables should be configured one per line to prevent possible parsing errors.
+
+eg:
+
+``list fas_custom_variables_list '<var_name1=var_type1>'``
+
+``list fas_custom_variables_list '<var_name2=var_type2>'``
+
+etc.
+
+FAS Generic Variables
+---------------------
+A custom FAS or ThemeSpec must be written to make use of FAS Generic Variables
+
+eg:
+
+``list fas_custom_variables_list 'membership_number=number'``
+
+``list fas_custom_variables_list 'access_code=password'``
+
+ThemeSpec Dynamically generated Form Fields
+-------------------------------------------
+
+ThemeSpec scripts can dynamically generate Form Field html and inject into the dynamic splash page sequence.
+
+This is achieved using a SINGLE line containing the keyword "input", in the form: fieldname:field-description:fieldtype
+
+Numerous fields can be defined in this single "input=" line, separated by a semicolon (;).
+
+Configuration for custom variables in the installed ThemeSpec Files
+-------------------------------------------------------------------
+
+theme_click-to-continue-custom-placeholders
+
+and
+
+theme_user-email-login-custom-placeholders
+
+This example inserts Phone Number and Home Post Code fields:
+
+``list fas_custom_variables_list 'input=phone:Phone%20Number:text;postcode:Home%20Post%20Code:text'``
+
+Define Custom Images
+********************
+
+Custom Images are served by a local FAS where required in dynamic portal pages
+
+Default None
+
+Custom images will be copied from the URL to the openNDS router
+
+Custom Images are listed in the form of image_name_type=image_url
+
+image_name and image_url must be urlencoded if containing white space or single quotes
+
+The image url must begin with http:// https:// or file://
+
+Images should be configured one per line to prevent possible parsing errors.
+
+``list fas_custom_images_list '<image_name1_[type]=image_url1>'``
+
+``list fas_custom_images_list '<image_name2_[type]=image_url2>'``
+
+etc.
+
+"type" can be any recognised image file extension eg jpg, png, ico, etc.
+
+Configuration for custom images in the installed ThemeSpec Files
+----------------------------------------------------------------
+
+theme_click-to-continue-custom-placeholders
+
+and
+
+theme_user-email-login-custom-placeholders
+
+``list fas_custom_images_list 'logo_png=https://openwrt.org/_media/logo.png'``
+
+``list fas_custom_images_list 'banner1_jpg=https://raw.githubusercontent.com/openNDS/openNDS/v9.0.0/resources/bannerbw.jpg'``
+
+``list fas_custom_images_list 'banner2_jpg=https://raw.githubusercontent.com/openNDS/openNDS/v9.0.0/resources/bannerpickle.jpg'``
+
+``list fas_custom_images_list 'banner3_jpg=https://raw.githubusercontent.com/openNDS/openNDS/v9.0.0/resources/bannerseawolf.jpg'``
+
+Define Custom Files
+*******************
+
+Custom Files are served by a local FAS where required in dynamic portal pages
+
+Default None
+
+Custom files will be copied from the URL to the openNDS router
+
+Images should be configured one per line to prevent possible parsing errors.
+
+Custom files are listed in the form of file_name_type=file_url
+
+file_name and file_url must be urlencoded if containing white space or single quotes
+
+The file url must begin with http:// https:// or file://
+
+``list fas_custom_files_list '<file_name1_[type]=file_url1>'``
+
+``list fas_custom_files_list '<file_name2_[type]=file_url2>'``
+
+"type" can be any recognised file extension that can be used to display web content eg txt, htm etc.
+
+URLs using the file:// protocol must point to a valid mountpoint accessible to openNDS, for example a usb storage device.
+
+Configuration for custom files in the installed ThemeSpec Files
+----------------------------------------------------------------
+
+theme_click-to-continue-custom-placeholders
+
+and
+
+theme_user-email-login-custom-placeholders
+
+``list fas_custom_files_list 'advert1_htm=https://raw.githubusercontent.com/openNDS/openNDS/v9.0.0/resources/bannerpickle.htm'``
 
 Set NAT Traversal Poll Interval
 *******************************

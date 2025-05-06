@@ -1131,7 +1131,7 @@ static int preauthenticated(struct MHD_Connection *connection, const char *url, 
 	// check if this is an RFC8910 login request
 	if (strcmp(url, "/login") == 0) {
 		debug(LOG_INFO, "preauthenticated: RFC8910 login request received from client at [%s] [%s]", client->ip, client->mac);
-		client->client_type = "cpi_url";
+		safe_snprintf(client->client_type, STATUS_BUF, "%s", "cpi_url");
 		return redirect_to_splashpage(connection, client, host, "/login");
 	}
 
@@ -1147,7 +1147,7 @@ static int preauthenticated(struct MHD_Connection *connection, const char *url, 
 		debug(LOG_DEBUG, "preauthenticated: Accept header [%s]", accept);
 		debug(LOG_NOTICE, "preauthenticated: RFC 8908 captive+json request received from client at [%s] [%s]", client->ip, client->mac);
 
-		client->client_type = "cpi_api";
+		safe_snprintf(client->client_type, STATUS_BUF, "%s", "cpi_api");
 
 		originurl_raw = safe_calloc(REDIRECT_URL);
 

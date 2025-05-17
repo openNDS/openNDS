@@ -2159,6 +2159,18 @@ convert_from_la() {
 	mac_from_la="$octet:$p2:$p3:$p4:$p5:$p6"
 }
 
+get_quotas_by_mac() {
+	configure_log_location
+	cidfile=$(grep -r "$clientmac" "$mountpoint/ndscids" | tail -n 1 | awk -F 'ndscids/' '{print $2}' | awk -F ':' '{printf $1}')
+	. $mountpoint/ndscids/$cidfile
+
+	if [ ! -z "$binauth_quotas" ] && [ "$binauth_quotas" -eq 1 ]; then
+		quotas="$session_length $upload_rate $download_rate $upload_quota $download_quota"
+	else
+		quotas="0 0 0 0 0"
+	fi
+}
+
 #### end of functions ####
 
 
@@ -3313,6 +3325,11 @@ elif [ "$1" = "ipv6_routing" ]; then
 
 	exit 0
 
+elif [ "$1" = "get_quotas_by_mac" ]; then
+	clientmac="$2"
+	get_quotas_by_mac
+	echo "$quotas"
+	exit 0
 fi
 
 ########################################################################

@@ -140,6 +140,15 @@ write_log () {
 
 configure_log_location
 
+# Default Values for quotas and session length. These can be overridden.
+# exitlevel can also be set in the custonbinauth.sh script (0=allow, 1=deny)
+session_length=0
+upload_rate=0
+download_rate=0
+upload_quota=0
+download_quota=0
+exitlevel=0
+
 #
 # Get the action method from NDS ie the first command line argument.
 #
@@ -190,7 +199,7 @@ else
 	customdata=$8
 
 	# Build the log entry:
-	loginfo="method=$1, clientmac=$2, bytes_incoming=$3, bytes_outgoing=$4, session_start=$5, session_end=$6, token=$7, custom=$customdata"
+	loginfo="method=$1, clientmac=$2, timestamp=$(date +%s), bytes_incoming=$3, bytes_outgoing=$4, session_start=$5, session_end=$6, token=$7, custom=$customdata"
 
 	action=$(echo "$1" | awk -F"_" '{printf("%s", $NF)}')
 
@@ -228,7 +237,7 @@ fi
 # advert1_htm
 
 # Parse the database by client mac ($2):
-cidfile=$(grep -r "$2" "$mountpoint/ndscids" | awk -F 'ndscids/' '{print $2}' | awk -F ':' '{printf $1}')
+cidfile=$(grep -r "$2" "$mountpoint/ndscids" | tail -n 1 | awk -F 'ndscids/' '{print $2}' | awk -F ':' '{printf $1}')
 
 if [ ! -z "$cidfile" ]; then
 	# populate the local variables:
@@ -274,16 +283,6 @@ if [ "$action" = "auth_client" ] || [ "$action" = "auth" ]; then
 	write_log &> /dev/null
 fi
 
-# Values for quotas and session length can be overridden here if action=auth_client, and passed in the custom string.
-# The custom string must be parsed in custombinauth.sh script for the required values.
-# exitlevel can also be set in the custonbinauth.sh script (0=allow, 1=deny)
-session_length=0
-upload_rate=0
-download_rate=0
-upload_quota=0
-download_quota=0
-exitlevel=0
-
 if [ "$action" = "auth_client" ]; then
 	custom=$7
 else
@@ -298,12 +297,23 @@ if [ -e "$custombinauthpath" ]; then
 fi
 
 # Finally before exiting, output the session length, upload rate, download rate, upload quota and download quota (only effective for auth_client).
-# The custom binauth script migh change these values
+# The custom binauth script might change these values
 echo "$session_length $upload_rate $download_rate $upload_quota $download_quota"
 
-# Exit, setting level (only effective for auth_client)
+# For other methods, write the values to the client cid file
+
+if [ -z "$binauth_quotas" ]; then
+	echo "binauth_quotas=1" >> $mountpoint/ndscids/$cidfile
+	echo "session_length=$session_length" >> $mountpoint/ndscids/$cidfile
+	echo "upload_rate=$upload_rate" >> $mountpoint/ndscids/$cidfile
+	echo "download_rate=$download_rate" >> $mountpoint/ndscids/$cidfile
+	echo "upload_quota=$upload_quota" >> $mountpoint/ndscids/$cidfile
+	echo "download_quota=$download_quota" >> $mountpoint/ndscids/$cidfile
+fi
+
+# Exit, setting level
 #
 # exit 0 tells NDS it is ok to allow the client to have access (default).
 # exit 1 would tell NDS to deny access.
-# The custom binauth script might change this value
+# The custom binauth script might have changed this value
 exit $exitlevel

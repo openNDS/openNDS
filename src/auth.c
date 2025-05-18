@@ -446,7 +446,6 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 			// we now delete the client instead of changing state to preauthenticated
 			iptables_fw_deauthenticate(client);
 			binauth_action(client, reason, customdata);
-			client_reset(client);
 			client_list_delete(client);
 
 		} else if (new_state == FW_MARK_AUTH_BLOCKED) {

@@ -110,9 +110,6 @@ t_client *client_list_find_by_mac(const char mac[]); /* needed by ndsctl_thread.
 /** @brief Finds a client by its token */
 t_client *client_list_find_by_token(const char token[]);
 
-/** @brief Reset volatile client fields */
-void client_reset(t_client *client);
-
 /** @brief Deletes a client from the client list */
 void client_list_delete(t_client *client);
 

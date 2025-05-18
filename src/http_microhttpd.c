@@ -209,7 +209,7 @@ static int do_binauth(
 	if (rc != 0) {
 		debug(LOG_DEBUG, "BinAuth script failed to execute");
 		free(msg);
-		return 0;
+		return rc;
 	}
 
 	rc = sscanf(msg, "%d %llu %llu %llu %llu", &seconds, &upload_rate, &download_rate, &upload_quota, &download_quota);

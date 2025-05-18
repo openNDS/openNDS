@@ -215,7 +215,7 @@ client_list_add_client(const char mac[], const char ip[])
 	char *msg;
 
 	if (!check_mac_format(mac)) {
-		// Inappropriate format in IP address
+		// Inappropriate format in MAC address
 		debug(LOG_NOTICE, "Illegal MAC format [%s]", mac);
 		return NULL;
 	}

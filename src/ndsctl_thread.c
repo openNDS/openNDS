@@ -413,7 +413,7 @@ ndsctl_auth(FILE *fp, char *arg)
 						if (client) {
 							id = client ? client->id : 0;
 							debug(LOG_DEBUG, "client id: [%d]", id);
-							client->client_type = "preemptive";
+							client->client_type = safe_strdup("preemptive");
 
 							// log the preemptive authentication
 							safe_asprintf(&libcmd,

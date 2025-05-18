@@ -195,7 +195,7 @@ client_auth(char *arg)
 						if (client) {
 							id = client ? client->id : 0;
 							debug(LOG_DEBUG, "client id: [%d]", id);
-							client->client_type = "preemptive";
+							client->client_type = safe_strdup("preemptive");
 
 							// log the preemptive authentication
 							safe_asprintf(&libcmd,
@@ -407,7 +407,7 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 			if (customdata && strlen(customdata) > 0) {
 				client->custom = safe_strdup(customdata);
 			} else {
-				client->custom = "bmE=";
+				client->custom = safe_strdup("bmE=");
 			}
 
 			debug(LOG_DEBUG, "auth_change_state: client->custom=%s ", client->custom);
@@ -589,6 +589,13 @@ fw_refresh_client_list(void)
 		debug(LOG_DEBUG, "conn_state [%x]", conn_state);
 
 		if (conn_state == FW_MARK_PREAUTHENTICATED) {
+
+			debug(LOG_DEBUG, "last_updated [ %lu ], now [ %lu ], preauth_idle_timeout_secs [ %lu ]",
+				last_updated,
+				now,
+				preauth_idle_timeout_secs
+			);
+
 
 			// Preauthenticated client reached Idle Timeout without authenticating so delete from the client list
 			if (preauth_idle_timeout_secs > 0

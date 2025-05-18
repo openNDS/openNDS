@@ -179,6 +179,8 @@ client_auth(char *arg)
 
 				// check if client ip is on our subnet
 				safe_asprintf(&libcmd, "/usr/lib/opennds/libopennds.sh get_interface_by_ip \"%s\"", ipclient);
+				// Reuse msg
+				free(msg);
 				msg = safe_calloc(64);
 				rc = execute_ret_url_encoded(msg, 64 - 1, libcmd);
 				free(libcmd);
@@ -203,6 +205,8 @@ client_auth(char *arg)
 								client->client_type
 							);
 
+							// Reuse msg
+							free(msg);
 							msg = safe_calloc(64);
 							rc = execute_ret_url_encoded(msg, 64 - 1, libcmd);
 							free(libcmd);
@@ -262,7 +266,7 @@ client_auth(char *arg)
 }
 
 
-static void binauth_action(t_client *client, const char *reason, const char *customdata)
+static int binauth_action(t_client *client, const char *reason, const char *customdata)
 {
 	s_config *config = config_get_config();
 	time_t now = time(NULL);
@@ -273,7 +277,9 @@ static void binauth_action(t_client *client, const char *reason, const char *cus
 	char *client_auth = "client_auth";
 	char *ndsctl_auth = "ndsctl_auth";
 	char *customdata_enc;
+	char *binauthcmd;
 	int ret = 1;
+	int rc = 0;
 
 	if (config->binauth) {
 		debug(LOG_DEBUG, "client->custom=%s", client->custom);
@@ -316,7 +322,8 @@ static void binauth_action(t_client *client, const char *reason, const char *cus
 
 		debug(LOG_DEBUG, "BinAuth %s - client session end time: [ %lu ]", reason, sessionend);
 
-		execute("%s %s %s %llu %llu %lu %lu %s %s",
+		binauthcmd = safe_calloc(STATUS_BUF);
+		safe_snprintf(binauthcmd, STATUS_BUF, "%s %s %s %llu %llu %lu %lu %s %s",
 			config->binauth,
 			reason ? reason : "unknown",
 			client->mac,
@@ -328,7 +335,15 @@ static void binauth_action(t_client *client, const char *reason, const char *cus
 			customdata_enc
 		);
 
+		rc = system(binauthcmd);
+		free(binauthcmd);
 		free(customdata_enc);
+
+		if (WIFEXITED(rc)) {
+			rc = WEXITSTATUS(rc);
+		}
+
+		debug(LOG_DEBUG, "binauth return code %d", rc);
 
 		if (strstr(reason, deauth) == NULL && strstr(reason, ndsctl_auth) == NULL) {
 			// unlock ndsctl
@@ -336,6 +351,7 @@ static void binauth_action(t_client *client, const char *reason, const char *cus
 				ndsctl_unlock();
 			}
 		}
+		return rc;
 	}
 }
 
@@ -344,12 +360,20 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 	const unsigned int state = client->fw_connection_state;
 	const time_t now = time(NULL);
 	int action;
+	int exitcode;
 	s_config *config = config_get_config();
 
 	if (state == new_state) {
 		return -1;
 	} else if (state == FW_MARK_PREAUTHENTICATED) {
 		if (new_state == FW_MARK_AUTHENTICATED) {
+
+			exitcode = binauth_action(client, reason, customdata);
+
+			if (exitcode != 0) {
+				return 1;
+			}
+
 			iptables_fw_authenticate(client);
 
 			if (client->upload_rate == 0) {
@@ -409,7 +433,6 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 				client->rate_exceeded = client->rate_exceeded^2;
 			}
 
-			binauth_action(client, reason, customdata);
 			client->fw_connection_state = new_state;
 
 		} else if (new_state == FW_MARK_TRUSTED) {

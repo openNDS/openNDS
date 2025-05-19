@@ -395,7 +395,7 @@ _client_list_free_node(t_client *client)
 	free(client->custom);
 	free(client->client_type);
 
-	if (strcmp(client->cpi_query, "") == 0) {
+	if (client->cpi_query) {
 		free(client->cpi_query);
 	}
 

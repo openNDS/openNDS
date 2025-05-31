@@ -374,6 +374,8 @@ _client_list_free_node(t_client *client)
 	char *msg;
 	char *cidinfo;
 
+	debug(LOG_DEBUG, "Freeing client node [ %lu ] [ %s ]", client, client->mac);
+
 	if (client->cid) {
 
 		// Remove any existing cidfile:
@@ -399,6 +401,7 @@ _client_list_free_node(t_client *client)
 		free(client->cpi_query);
 	}
 
+	debug(LOG_DEBUG, "Client node [ %lu ] freed", client);
 	free(client);
 }
 

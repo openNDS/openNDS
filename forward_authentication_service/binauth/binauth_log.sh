@@ -302,7 +302,7 @@ echo "$session_length $upload_rate $download_rate $upload_quota $download_quota"
 
 # For other methods, write the values to the client cid file
 
-if [ -z "$binauth_quotas" ]; then
+if [ ! -z "$cidfile" ] && [ -z "$binauth_quotas" ]; then
 	echo "binauth_quotas=1" >> $mountpoint/ndscids/$cidfile
 	echo "session_length=$session_length" >> $mountpoint/ndscids/$cidfile
 	echo "upload_rate=$upload_rate" >> $mountpoint/ndscids/$cidfile

@@ -72,6 +72,7 @@ client_auth(char *arg)
 	unsigned long long int downloadquota = config->download_quota;
 	char *libcmd;
 	char *msg;
+	char *msg2;
 	char *customdata;
 	char *argcopy;
 	const char *arg2;
@@ -179,16 +180,14 @@ client_auth(char *arg)
 
 				// check if client ip is on our subnet
 				safe_asprintf(&libcmd, "/usr/lib/opennds/libopennds.sh get_interface_by_ip \"%s\"", ipclient);
-				// Reuse msg
-				free(msg);
-				msg = safe_calloc(64);
-				rc = execute_ret_url_encoded(msg, 64 - 1, libcmd);
+				msg2 = safe_calloc(64);
+				rc = execute_ret_url_encoded(msg2, 64 - 1, libcmd);
 				free(libcmd);
 
 				if (rc == 0) {
 
-					if (strcmp(config->gw_interface, msg) == 0) {
-						debug(LOG_DEBUG, "Pre-emptive Authentication: Client [%s] is on our subnet using interface [%s]", ipclient, msg);
+					if (strcmp(config->gw_interface, msg2) == 0) {
+						debug(LOG_DEBUG, "Pre-emptive Authentication: Client [%s] is on our subnet using interface [%s]", ipclient, msg2);
 
 						client = client_list_add_client(macclient, ipclient);
 
@@ -205,10 +204,10 @@ client_auth(char *arg)
 								client->client_type
 							);
 
-							// Reuse msg
-							free(msg);
-							msg = safe_calloc(64);
-							rc = execute_ret_url_encoded(msg, 64 - 1, libcmd);
+							// Reuse msg2
+							free(msg2);
+							msg2 = safe_calloc(64);
+							rc = execute_ret_url_encoded(msg2, 64 - 1, libcmd);
 							free(libcmd);
 						}
 
@@ -221,6 +220,7 @@ client_auth(char *arg)
 				}
 			}
 		free(msg);
+		free(msg2);
 
 		} else {
 			debug(LOG_DEBUG, "Client connection not found: Continuing...");
@@ -353,6 +353,8 @@ static int binauth_action(t_client *client, const char *reason, const char *cust
 		}
 		return rc;
 	}
+	// No binauth configured, so good to go
+	return 0;
 }
 
 static int auth_change_state(t_client *client, const unsigned int new_state, const char *reason, const char *customdata)

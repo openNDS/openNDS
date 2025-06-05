@@ -1058,6 +1058,10 @@ get_option_from_config() {
 	type uci &> /dev/null
 	uci_status=$?
 
+	if [ -z "$option" ]; then
+		return 1
+	fi
+
 	if [ $uci_status -eq 0 ]; then
 		param=$(uci export opennds | grep -w "option" | grep -w "$option" | awk -F"'" 'NF > 1 {printf "%s ", $2}')
 	else
@@ -2162,7 +2166,10 @@ convert_from_la() {
 get_quotas_by_mac() {
 	configure_log_location
 	cidfile=$(grep -r "$clientmac" "$mountpoint/ndscids" | tail -n 1 | awk -F 'ndscids/' '{print $2}' | awk -F ':' '{printf $1}')
-	. $mountpoint/ndscids/$cidfile
+
+	if [ -e "$cidfile" ]; then
+		. $mountpoint/ndscids/$cidfile
+	fi
 
 	if [ ! -z "$binauth_quotas" ] && [ "$binauth_quotas" -eq 1 ]; then
 		quotas="$session_length $upload_rate $download_rate $upload_quota $download_quota"
@@ -2330,8 +2337,9 @@ elif [ "$1" = "get_option_from_config" ]; then
 	# $2 contains the option to get
 	option=$2
 	get_option_from_config
+	status=$?
 	printf "%s" "$param"
-	exit 0
+	exit $status
 
 elif [ "$1" = "get_list_from_config" ]; then
 	# Get the config list value(s)

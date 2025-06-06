@@ -1,5 +1,5 @@
 
-config opennds
+config opennds 'setup'
 	# enabled
 	# Default: 1 (enabled)
 	# Set to 0 to disable opennds

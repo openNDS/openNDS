@@ -1409,7 +1409,6 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 	char *query_str_b64;
 	char *msg;
 	char *cidinfo;
-	char *cidfile;
 	char *gw_url_raw;
 	char *gw_url;
 	char *phpcmd;

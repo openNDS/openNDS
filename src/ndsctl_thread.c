@@ -284,7 +284,7 @@ ndsctl_auth(FILE *fp, char *arg)
 	t_client *client;
 	unsigned id;
 	int rc = -1;
-	int seconds = 60 * config->session_timeout;
+	int seconds = 60 * config->sessiontimeout;
 	int custom_seconds;
 	int uploadrate = config->upload_rate;
 	int downloadrate = config->download_rate;

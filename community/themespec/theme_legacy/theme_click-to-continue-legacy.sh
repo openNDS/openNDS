@@ -104,14 +104,14 @@ click_to_continue() {
 #########################################
 # Set length of session in minutes (eg 24 hours is 1440 minutes - if set to 0 then defaults to global sessiontimeout value):
 # eg for 100 mins:
-# session_length="100"
+# sessiontimeout="100"
 #
 # eg for 20 hours:
-# session_length=$((20*60))
+# sessiontimeout=$((20*60))
 #
 # eg for 20 hours and 30 minutes:
-# session_length=$((20*60+30))
-session_length="0"
+# sessiontimeout=$((20*60+30))
+sessiontimeout="0"
 
 # Set Rate and Quota values for the client
 # The session length, rate and quota values could be determined by this script, on a per client basis.
@@ -121,7 +121,7 @@ download_rate="0"
 upload_quota="0"
 download_quota="0"
 
-quotas="$session_length $upload_rate $download_rate $upload_quota $download_quota"
+quotas="$sessiontimeout $upload_rate $download_rate $upload_quota $download_quota"
 
 # Define the list of Parameters we expect to be sent sent from openNDS ($ndsparamlist):
 # Note you can add custom parameters to the config file and to read them you must also add them here.

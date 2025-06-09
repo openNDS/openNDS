@@ -72,7 +72,7 @@
 #define DEFAULT_FASKEY ""
 #define DEFAULT_BINAUTH "/usr/lib/opennds/binauth_log.sh"
 #define DEFAULT_CHECKINTERVAL "15"
-#define DEFAULT_SESSION_TIMEOUT "1440"
+#define DEFAULT_SESSIONTIMEOUT "1440"
 #define DEFAULT_PREAUTH_IDLE_TIMEOUT "30"
 #define DEFAULT_AUTH_IDLE_TIMEOUT "120"
 #define DEFAULT_REMOTES_REFRESH_INTERVAL "0"
@@ -234,7 +234,7 @@ typedef struct {
 	char *authdir;						//@brief Notional relative dir for authentication URL
 	char *denydir;						//@brief Notional relative dir for denial URL
 	char *preauthdir;					//@brief Notional relative dir for preauth URL
-	int session_timeout;					//@brief Minutes of the default session length
+	int sessiontimeout;					//@brief Minutes of the default session length
 	int preauth_idle_timeout;				//@brief Minutes a preauthenticated client will be kept in the system
 	int auth_idle_timeout;					//@brief Minutes an authenticated client will be kept in the system
 	int remotes_refresh_interval;				//@brief Minutes before remote files will be refreshed

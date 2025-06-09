@@ -248,7 +248,7 @@ config_init(int argc, char **argv)
 	free(msg);
 	//
 
-	sscanf(set_option_str("sessiontimeout", DEFAULT_SESSION_TIMEOUT, debug_level), "%u", &config.session_timeout);
+	sscanf(set_option_str("sessiontimeout", DEFAULT_SESSIONTIMEOUT, debug_level), "%u", &config.sessiontimeout);
 	sscanf(set_option_str("preauthidletimeout", DEFAULT_PREAUTH_IDLE_TIMEOUT, debug_level), "%u", &config.preauth_idle_timeout);
 	sscanf(set_option_str("authidletimeout", DEFAULT_AUTH_IDLE_TIMEOUT, debug_level), "%u", &config.auth_idle_timeout);
 	sscanf(set_option_str("maxclients", DEFAULT_MAXCLIENTS, debug_level), "%u", &config.maxclients);

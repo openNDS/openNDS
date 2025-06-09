@@ -274,7 +274,7 @@ body() {
 
 		pagebody="
 			<h1>To login, click or tap the Continue button</h1>
-			<form action=\"$url/login\" method=\"get\" target=\"_blank\">
+			<form action=\"$url/login\" method=\"get\" target=\"_self\">
 			<input type=\"submit\" value=\"Continue\" >
 			</form>
 		"

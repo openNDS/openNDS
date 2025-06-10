@@ -1720,6 +1720,7 @@ auth_restore () {
 		exit 1
 	fi
 
+	# Scan authlog for clients to re-auth:
 	while read -r client; do
 		b64mac="$(echo "$client" | awk -F"=" '{printf("%s", $1)}')""=="
 		client_mac=$(ndsctl b64decode "$b64mac")
@@ -1766,9 +1767,11 @@ auth_restore () {
 		if [ $reauth -eq 1 ]; then
 			mac="$client_mac"
 			custom="auth_restore"
+
 			authstr="$mac, $sessiontimeout, $uploadrate, $downloadrate, $uploadquota, $downloadquota, preemptivemac-$mac"
 			macstr=$(echo "$mac" | awk -F":" '{printf "%s%s%s%s%s%s", $1, $2, $3, $4, $5, $6}')
 
+			# Create a file for OpenNDS to use for pre-emptive logins - gets deleted once processed
 			echo "$authstr" > "$preemptive_auth/$macstr"
 		fi
 
@@ -2003,7 +2006,7 @@ send_post_data () {
 	option="fas_secure_enabled"
 	get_option_from_config
 
-	if [ "$fas_secure_enabled" -ge 3 ] && [ -f "$mountpoint/ndscids/authmonargs" ]; then
+	if [ ! -z "$fas_secure_enabled" ] && [ "$fas_secure_enabled" -ge 3 ] && [ -f "$mountpoint/ndscids/authmonargs" ]; then
 		. $mountpoint/ndscids/ndsinfo
 		. $mountpoint/ndscids/authmonargs
 
@@ -2164,17 +2167,22 @@ convert_from_la() {
 }
 
 get_quotas_by_mac() {
+	quotas="0 0 0 0 0"
 	configure_log_location
 	cidfile=$(grep -r "$clientmac" "$mountpoint/ndscids" | tail -n 1 | awk -F 'ndscids/' '{print $2}' | awk -F ':' '{printf $1}')
 
-	if [ -e "$cidfile" ]; then
-		. $mountpoint/ndscids/$cidfile
-	fi
+	if [ ! -z "$cidfile" ]; then
+		if [ -e "$mountpoint/ndscids/$cidfile" ]; then
+			. $mountpoint/ndscids/$cidfile
+		fi
 
-	if [ ! -z "$binauth_quotas" ] && [ "$binauth_quotas" -eq 1 ]; then
-		quotas="$session_length $upload_rate $download_rate $upload_quota $download_quota"
+		if [ ! -z "$binauth_quotas" ] && [ "$binauth_quotas" -eq 1 ]; then
+			quotas="$sessiontimeout $upload_rate $download_rate $upload_quota $download_quota"
+		fi
 	else
-		quotas="0 0 0 0 0"
+		# Override quotas for the client from the binauth log if client was shutdown_deauth
+		eval $(grep "$clientmac" "$mountpoint/ndslog/binauthlog.log" | awk -F"method=" '{print $2}' | grep "shutdown_deauth" | tail -1 | awk -F ", " '{printf "%s; %s; %s; %s; %s", $11, $12, $13, $14, $15}')
+		quotas="$sessiontimeout $upload_rate $download_rate $upload_quota $download_quota"
 	fi
 }
 
@@ -2227,14 +2235,14 @@ if [ "$query_type" = "%3ffas%3d" ]; then
 	#########################################
 	# Set length of session in minutes (eg 24 hours is 1440 minutes - if set to 0 then defaults to global sessiontimeout value):
 	# eg for 100 mins:
-	# session_length="100"
+	# sessiontimeout="100"
 	#
 	# eg for 20 hours:
-	# session_length=$((20*60))
+	# sessiontimeout=$((20*60))
 	#
 	# eg for 20 hours and 30 minutes:
-	# session_length=$((20*60+30))
-	session_length="0"
+	# sessiontimeout=$((20*60+30))
+	sessiontimeout="0"
 
 	# Set Rate and Quota values for the client
 	# The session length, rate and quota values could be determined by this script, on a per client basis.
@@ -2244,7 +2252,7 @@ if [ "$query_type" = "%3ffas%3d" ]; then
 	upload_quota="0"
 	download_quota="0"
 
-	quotas="$session_length $upload_rate $download_rate $upload_quota $download_quota"
+	quotas="$sessiontimeout $upload_rate $download_rate $upload_quota $download_quota"
 	#########################################
 
 	# The list of Parameters sent from openNDS:
@@ -3336,6 +3344,10 @@ elif [ "$1" = "ipv6_routing" ]; then
 elif [ "$1" = "get_quotas_by_mac" ]; then
 	clientmac="$2"
 	get_quotas_by_mac
+	syslogmessage="quotas for client [ $clientmac ] [ $quotas ]"
+	debugtype=debug
+	write_to_syslog
+
 	echo "$quotas"
 	exit 0
 fi

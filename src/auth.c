@@ -64,7 +64,7 @@ client_auth(char *arg)
 	t_client *client;
 	unsigned id;
 	int rc = -1;
-	int seconds = 60 * config->session_timeout;
+	int seconds = 60 * config->sessiontimeout;
 	int custom_seconds;
 	int uploadrate = config->upload_rate;
 	int downloadrate = config->download_rate;
@@ -270,7 +270,7 @@ static int binauth_action(t_client *client, const char *reason, const char *cust
 {
 	s_config *config = config_get_config();
 	time_t now = time(NULL);
-	int seconds = 60 * config->session_timeout;
+	int seconds = 60 * config->sessiontimeout;
 	unsigned long int sessionstart;
 	unsigned long int sessionend;
 	char *deauth = "deauth";
@@ -359,11 +359,21 @@ static int binauth_action(t_client *client, const char *reason, const char *cust
 
 static int auth_change_state(t_client *client, const unsigned int new_state, const char *reason, const char *customdata)
 {
+	s_config *config = config_get_config();
 	const unsigned int state = client->fw_connection_state;
 	const time_t now = time(NULL);
+	char *libcmd;
+	char *msg;
 	int action;
 	int exitcode;
-	s_config *config = config_get_config();
+	time_t sessionseconds_binauth;
+	time_t sessionseconds_config = 60 * config->sessiontimeout;
+	unsigned long long int upload_rate;		/**< @brief Client Upload rate limit, kb/s */
+	unsigned long long int download_rate;		/**< @brief Client Download rate limit, kb/s */
+	unsigned long long int uprate;			/**< @brief Current Client Upload rate, kb/s */
+	unsigned long long int downrate;		/**< @brief Client Download rate, kb/s */
+	unsigned long long int upload_quota;		/**< @brief Client Upload quota, kB */
+	unsigned long long int download_quota;		/**< @brief Client Download quota, kB */
 
 	if (state == new_state) {
 		return -1;
@@ -378,20 +388,59 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 
 			iptables_fw_authenticate(client);
 
-			if (client->upload_rate == 0) {
+			// Get parameters assigned by binauth, default to 0 if none assigned
+			libcmd = safe_calloc(SMALL_BUF);
+			safe_snprintf(libcmd, SMALL_BUF, "/usr/lib/opennds/libopennds.sh get_quotas_by_mac \"%s\"", client->mac );
+
+			msg = safe_calloc(SMALL_BUF);
+			execute_ret_url_encoded(msg, SMALL_BUF, libcmd);
+			free(libcmd);
+			debug(LOG_DEBUG, "assigned parameters [ %s ]", msg);
+
+			sessionseconds_binauth = 60 * atoi(strtok(msg, " "));
+			debug(LOG_DEBUG, "sessionseconds_binauth [ %d ]", sessionseconds_binauth);
+			client->session_end = now + sessionseconds_config;
+
+			if (sessionseconds_binauth == 0) {
+				client->session_end = sessionseconds_config + now;
+			} else {
+				client->session_end = sessionseconds_binauth + now;
+			}
+
+			//
+			upload_rate = atoi(strtok(NULL, " "));
+
+			if (upload_rate == 0) {
 				client->upload_rate = config->upload_rate;
+			} else {
+				client->upload_rate = upload_rate;
 			}
 
-			if (client->download_rate == 0) {
+			//
+			download_rate = atoi(strtok(NULL, " "));
+
+			if (download_rate == 0) {
 				client->download_rate = config->download_rate;
+			} else {
+				client->download_rate = download_rate;
 			}
 
-			if (client->upload_quota == 0) {
+			//
+			upload_quota = atoi(strtok(NULL, " "));
+
+			if (upload_quota == 0) {
 				client->upload_quota = config->upload_quota;
+			} else {
+				client->upload_quota = upload_quota;
 			}
 
-			if (client->download_quota == 0) {
+			//
+			download_quota = atoi(strtok(NULL, " "));
+
+			if (download_quota == 0) {
 				client->download_quota = config->download_quota;
+			} else {
+				client->download_quota = download_quota;
 			}
 
 			debug(LOG_DEBUG, "auth_change_state > authenticated - download_rate [%llu] upload_rate [%llu] ",
@@ -437,6 +486,8 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 
 			client->fw_connection_state = new_state;
 
+			free(msg);
+
 		} else if (new_state == FW_MARK_TRUSTED) {
 			return -1;
 		} else {
@@ -446,8 +497,10 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 
 		if (new_state == FW_MARK_PREAUTHENTICATED) {
 			// we now delete the client instead of changing state to preauthenticated
+			debug(LOG_DEBUG, "Deleting client [ %s ] [ %s ]", client->cid, reason);
 			iptables_fw_deauthenticate(client);
 			binauth_action(client, reason, customdata);
+
 			client_list_delete(client);
 
 		} else if (new_state == FW_MARK_AUTH_BLOCKED) {

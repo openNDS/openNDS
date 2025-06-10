@@ -41,6 +41,8 @@ ipset_to_nftset () {
 }
 
 delete_114s() {
+	cpidconfig=$(echo "get dhcp.$network_zone.dhcp_option_force" | uci batch 2>/dev/null)
+	dellist="del_list dhcp.$network_zone.dhcp_option_force="
 
 	if [ ! -z "$cpidconfig" ]; then
 
@@ -162,24 +164,15 @@ elif [ "$setconf" = "cpidconf" ]; then
 		network_zone=$(uci show network | grep "device='$gwif'" | awk -F "." '{printf "%s", $2}')
 
 		if [ ! -z "$network_zone" ]; then
-			cpidconfig=$(uci get dhcp.lan.dhcp_option_force 2>/dev/null)
-			dellist="del_list dhcp.$network_zone.dhcp_option_force='114,http://$gatewayfqdn'"
 
 			if [ -z "$gatewayfqdn" ]; then
-				delete_114s
 				printf "%s" "done"
 				exit 0
 			fi
 
+			delete_114s
 			addlist="add_list dhcp.$network_zone.dhcp_option_force='114,http://$gatewayfqdn'"
-
-			if [ -z "$cpidconfig" ]; then
-				echo $addlist | uci batch
-
-			elif [ "$cpidconfig" != "114,http://$gatewayfqdn" ]; then
-				delete_114s
-				echo $addlist | uci batch
-			fi
+			echo $addlist | uci batch
 		fi
 	fi
 

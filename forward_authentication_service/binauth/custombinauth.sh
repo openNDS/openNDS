@@ -7,7 +7,7 @@
 # It is included by the default binauth_log.sh script when it runs
 #
 # This included script can override:
-# exitlevel, session length, upload rate, download rate, upload quota and download quota.
+# exitlevel, sessiontimeout, upload rate, download rate, upload quota and download quota.
 
 # Add custom code after this line:
 

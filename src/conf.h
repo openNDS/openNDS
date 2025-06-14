@@ -71,6 +71,7 @@
 #define DEFAULT_FASPATH "/"
 #define DEFAULT_FASKEY ""
 #define DEFAULT_BINAUTH "/usr/lib/opennds/binauth_log.sh"
+#define DEFAULT_CUSTOMBINAUTH "/usr/lib/opennds/custombinauth.sh"
 #define DEFAULT_CHECKINTERVAL "15"
 #define DEFAULT_SESSIONTIMEOUT "1440"
 #define DEFAULT_PREAUTH_IDLE_TIMEOUT "30"
@@ -272,6 +273,7 @@ typedef struct {
 	unsigned int fw_mark_trusted;				//@brief nftables mark for trusted packets
 	int ip6;						//@brief enable IPv6
 	char *binauth;						//@brief external postauthentication program
+	char *custombinauth;					//@brief external custom postauthentication program
 	char *preauth;						//@brief external preauthentication program
 	int lockfd;						//@brief ndsctl lockfile file descriptor
 } s_config;

@@ -2182,6 +2182,27 @@ get_quotas_by_mac() {
 	else
 		# Override quotas for the client from the binauth log if client was shutdown_deauth
 		eval $(grep "$clientmac" "$mountpoint/ndslog/binauthlog.log" | awk -F"method=" '{print $2}' | grep "shutdown_deauth" | tail -1 | awk -F ", " '{printf "%s; %s; %s; %s; %s", $11, $12, $13, $14, $15}')
+
+		if [ -z "$sessiontimeout" ]; then
+			sessiontimeout=0
+		fi
+
+		if [ -z "$upload_rate" ]; then
+			upload_rate=0
+		fi
+
+		if [ -z "$download_rate" ]; then
+			download_rate=0
+		fi
+
+		if [ -z "$upload_quota" ]; then
+			upload_quota=0
+		fi
+
+		if [ -z "$download_quota" ]; then
+			download_quota=0
+		fi
+
 		quotas="$sessiontimeout $upload_rate $download_rate $upload_quota $download_quota"
 	fi
 }

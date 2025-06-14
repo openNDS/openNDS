@@ -216,7 +216,7 @@ else
 	customdata=$8
 
 	# Build the log entry:
-	loginfo="method=$1, clientmac=$2, timestamp=$(date +%s), bytes_incoming=$3, bytes_outgoing=$4, session_start=$5, session_end=$6, token=$7, custom=$customdata"
+	loginfo="method=\"$1\", clientmac=\"$2\", timestamp=$(date +%s), bytes_incoming=$3, bytes_outgoing=$4, session_start=$5, session_end=$6, token=$7, custom=\"$customdata\""
 
 	action=$(echo "$1" | awk -F"_" '{printf("%s", $NF)}')
 
@@ -261,7 +261,7 @@ if [ ! -z "$cidfile" ]; then
 	. $mountpoint/ndscids/$cidfile
 
 	# Add a selection of client data variables to the log entry
-	loginfo="$loginfo, client_type=$client_type, gatewayname=$gatewayname, ndsversion=$version, originurl=$originurl"
+	loginfo="$loginfo, client_type=\"$client_type\", gatewayname=\"$gatewayname\", ndsversion=\"$version\", originurl=\"$originurl\""
 else
 	clientmac=$2
 fi
@@ -271,7 +271,7 @@ fi
 get_client_zone
 
 # Add client_zone to the log entry
-loginfo="$loginfo, client_zone=$client_zone"
+loginfo="$loginfo, client_zone=\"$client_zone\""
 
 if [ "$action" = "auth_client" ]; then
 	custom=$7
@@ -280,10 +280,13 @@ else
 fi
 
 # Include custom binauth script
-custombinauthpath="/usr/lib/opennds/custombinauth.sh"
+custombinauthpath=$(uci get opennds.setup.custombinauth 2> /dev/null)
 
-if [ -e "$custombinauthpath" ]; then
+
+if [ ! -z "$custombinauthpath" ] && [ -e "$custombinauthpath" ]; then
 	. $custombinauthpath
+elif [ ! -z "$custombinauthpath" ] && [ ! -e "$custombinauthpath" ]; then
+	/usr/lib/opennds/libopennds.sh syslog "custom binauth script [ $custombinauthpath ] not found" "error"
 fi
 
 # Add client quota variables to the log entry

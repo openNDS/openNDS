@@ -2,17 +2,12 @@
 #Copyright (C) The openNDS Contributors 2004-2022
 #Copyright (C) BlueWave Projects and Services 2015-2025
 #This software is released under the GNU GPL license.
-
-# This is a stub for a custom binauth script
-# It is included by the default binauth_log.sh script when it runs
 #
-# This included script can override:
-# exitlevel, session length, upload rate, download rate, upload quota and download quota.
+# A list of variables that are initialised with valid information by the openNDS daemon and can be used in any custom code added below can be seen in the custombinauth.sh stub/template.
 
-# Add custom code after this line:
-
-###########################################################################
-# reauth_interval - Set minimum time between deauthentication and reauthentication
+# BinAuth Descriptors:
+custombinauth_title="reauth_interval"
+custombinauth_description="Set minimum time between deauthentication and reauthentication"
 
 #Define a function
 parse_timestamp() {
@@ -23,39 +18,42 @@ parse_timestamp() {
 	/usr/lib/opennds/libopennds.sh "write_to_syslog" "$syslogmessage" "$debuglevel"
 }
 
-# Set the reauth_interval in seconds
+# Get the reauth_interval in seconds
+option="reauth_interval"
+get_option_from_config
 
-reauth_interval=3600 # Lets hard code it to 1 hour, we can make this a config option later
+If [ -z "$reauth_interval" ] || [ "$reauth_interval" -eq 0 ]; then
+	# Reauth interval checking is disabled.
+	exitlevel=0 #allow
+else
+	syslogmessage="reauth_interval clientmac [$clientmac] action [ $action ]"
+	debuglevel="debug"
+	/usr/lib/opennds/libopennds.sh "write_to_syslog" "$syslogmessage" "$debuglevel"
 
-syslogmessage="reauth_interval clientmac [$clientmac] action [ $action ]"
+	if [ "$action" = "auth" ]; then
+		parse_timestamp "_deauth"
+		last_deauth=$timestamp
 
-debuglevel="debug"
-/usr/lib/opennds/libopennds.sh "write_to_syslog" "$syslogmessage" "$debuglevel"
-
-if [ "$action" = "auth" ]; then
-	parse_timestamp "_deauth"
-	last_deauth=$timestamp
-
-	if [ -z "$last_deauth" ]; then
-		# Client has never been deauthed so we can let them re-auth
-		exitlevel=0 #allow
-	else
-		time_now=$(date +%s)
-		re_auth_min_time=$((last_deauth + reauth_interval))
-
-		syslogmessage="clientmac [$clientmac] re_auth_min_time [ $re_auth_min_time ]"
-		debuglevel="debug"
-		/usr/lib/opennds/libopennds.sh "write_to_syslog" "$syslogmessage" "$debuglevel"
-
-		if [ "$re_auth_min_time" -lt "$time_now" ]; then
+		if [ -z "$last_deauth" ]; then
+			# Client has never been deauthed so we can let them re-auth
 			exitlevel=0 #allow
 		else
-			exitlevel=1 #deny
-			syslogmessage="clientmac [$clientmac] attempted login before reauth interval expired"
+			time_now=$(date +%s)
+			re_auth_min_time=$((last_deauth + reauth_interval))
+
+			syslogmessage="clientmac [$clientmac] re_auth_min_time [ $re_auth_min_time ]"
 			debuglevel="debug"
 			/usr/lib/opennds/libopennds.sh "write_to_syslog" "$syslogmessage" "$debuglevel"
+
+			if [ "$re_auth_min_time" -lt "$time_now" ]; then
+				exitlevel=0 #allow
+			else
+				exitlevel=1 #deny
+				syslogmessage="clientmac [$clientmac] attempted login before reauth interval expired"
+				debuglevel="debug"
+				/usr/lib/opennds/libopennds.sh "write_to_syslog" "$syslogmessage" "$debuglevel"
+			fi
 		fi
 	fi
 fi
-
 

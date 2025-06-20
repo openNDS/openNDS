@@ -137,6 +137,10 @@ write_log () {
 	/usr/lib/opennds/libopennds.sh "write_log" "$loginfo" "$logname" "$date_inhibit"
 }
 
+write_to_syslog () {
+	/usr/lib/opennds/libopennds.sh "write_to_syslog" "$syslogmessage" "$debuglevel"
+}
+
 #### end of functions ####
 
 

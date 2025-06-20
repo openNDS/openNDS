@@ -12,10 +12,10 @@ custombinauth_description="Set minimum time between deauthentication and reauthe
 #Define a function
 parse_timestamp() {
 	local action="$1"
-	eval $(grep "$clientmac" /tmp/ndslog/binauthlog.log | grep "$action" | awk -F", " '{print $4}' | tail -n 1)
+	eval $(grep "$clientmac" "$logdir""binauthlog.log" | grep "$action" | awk -F", " '{print $4}' | tail -n 1)
 	syslogmessage="clientmac [$clientmac] action [$action] timestamp [$timestamp]"
 	debuglevel="debug"
-	/usr/lib/opennds/libopennds.sh "write_to_syslog" "$syslogmessage" "$debuglevel"
+	write_to_syslog
 }
 
 # Get the reauth_interval in seconds
@@ -28,7 +28,7 @@ If [ -z "$reauth_interval" ] || [ "$reauth_interval" -eq 0 ]; then
 else
 	syslogmessage="reauth_interval clientmac [$clientmac] action [ $action ]"
 	debuglevel="debug"
-	/usr/lib/opennds/libopennds.sh "write_to_syslog" "$syslogmessage" "$debuglevel"
+	write_to_syslog
 
 	if [ "$action" = "auth" ]; then
 		parse_timestamp "_deauth"
@@ -43,7 +43,7 @@ else
 
 			syslogmessage="clientmac [$clientmac] re_auth_min_time [ $re_auth_min_time ]"
 			debuglevel="debug"
-			/usr/lib/opennds/libopennds.sh "write_to_syslog" "$syslogmessage" "$debuglevel"
+			write_to_syslog
 
 			if [ "$re_auth_min_time" -lt "$time_now" ]; then
 				exitlevel=0 #allow
@@ -51,7 +51,7 @@ else
 				exitlevel=1 #deny
 				syslogmessage="clientmac [$clientmac] attempted login before reauth interval expired"
 				debuglevel="debug"
-				/usr/lib/opennds/libopennds.sh "write_to_syslog" "$syslogmessage" "$debuglevel"
+				write_to_syslog
 			fi
 		fi
 	fi

@@ -303,6 +303,8 @@ setup_from_config(void)
 	char *preauth_dir = NULL;
 	char *debuglevel = NULL;
 	char libscript[] = "/usr/lib/opennds/libopennds.sh";
+	char themespec1[] = "/usr/lib/opennds/theme_click-to-continue.sh";
+	char themespec2[] = "/usr/lib/opennds/theme_user-email-login-basic.sh";
 	char gw_name_entityencoded[256] = {0};
 	char gw_name_urlencoded[256] = {0};
 	struct stat sb;
@@ -587,9 +589,17 @@ setup_from_config(void)
 	if (config->login_option_enabled >= 1) {
 		debug(LOG_NOTICE, "Login option is Enabled using mode %d.\n", config->login_option_enabled);
 		config->preauth = safe_strdup(libscript);
+
+		if (config->login_option_enabled == 1) {
+			config->themespec_path = safe_strdup(themespec1);
+		} else if (config->login_option_enabled == 2) {
+			config->themespec_path = safe_strdup(themespec2);
+		}
+
 	} else if (config->login_option_enabled == 0 && config->fas_port == 0 && config->preauth == NULL) {
 		debug(LOG_NOTICE, "Click to Continue option is Enabled.\n");
 		config->preauth = safe_strdup(libscript);
+		config->themespec_path = safe_strdup(themespec1);
 	} else if (config->login_option_enabled == 0 && config->fas_port >= 1 ) {
 		debug(LOG_NOTICE, "FAS Enabled.\n");
 		config->preauth = NULL;

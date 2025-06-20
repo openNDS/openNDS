@@ -284,7 +284,7 @@ ndsctl_auth(FILE *fp, char *arg)
 	t_client *client;
 	unsigned id;
 	int rc = -1;
-	int seconds = 60 * config->session_timeout;
+	int seconds = 60 * config->sessiontimeout;
 	int custom_seconds;
 	int uploadrate = config->upload_rate;
 	int downloadrate = config->download_rate;
@@ -292,6 +292,7 @@ ndsctl_auth(FILE *fp, char *arg)
 	unsigned long long int downloadquota = config->download_quota;
 	char *libcmd;
 	char *msg;
+	char *msg2;
 	char *customdata;
 	char *argcopy;
 	const char *arg2;
@@ -399,21 +400,21 @@ ndsctl_auth(FILE *fp, char *arg)
 
 				// check if client ip is on our subnet
 				safe_asprintf(&libcmd, "/usr/lib/opennds/libopennds.sh get_interface_by_ip \"%s\"", ipclient);
-				msg = safe_calloc(64);
-				rc = execute_ret_url_encoded(msg, 64 - 1, libcmd);
+				msg2 = safe_calloc(64);
+				rc = execute_ret_url_encoded(msg2, 64 - 1, libcmd);
 				free(libcmd);
 
 				if (rc == 0) {
 
-					if (strcmp(config->gw_interface, msg) == 0) {
-						debug(LOG_DEBUG, "Pre-emptive Authentication: Client [%s] is on our subnet using interface [%s]", ipclient, msg);
+					if (strcmp(config->gw_interface, msg2) == 0) {
+						debug(LOG_DEBUG, "Pre-emptive Authentication: Client [%s] is on our subnet using interface [%s]", ipclient, msg2);
 
 						client = client_list_add_client(macclient, ipclient);
 
 						if (client) {
 							id = client ? client->id : 0;
 							debug(LOG_DEBUG, "client id: [%d]", id);
-							client->client_type = "preemptive";
+							client->client_type = safe_strdup("preemptive");
 
 							// log the preemptive authentication
 							safe_asprintf(&libcmd,
@@ -423,8 +424,9 @@ ndsctl_auth(FILE *fp, char *arg)
 								client->client_type
 							);
 
-							msg = safe_calloc(64);
-							rc = execute_ret_url_encoded(msg, 64 - 1, libcmd);
+							free(msg2);
+							msg2 = safe_calloc(64);
+							rc = execute_ret_url_encoded(msg2, 64 - 1, libcmd);
 							free(libcmd);
 						}
 
@@ -435,6 +437,7 @@ ndsctl_auth(FILE *fp, char *arg)
 				} else {
 					debug(LOG_DEBUG, "ip subnet test failed: Continuing...");
 				}
+				free(msg2);
 			}
 		free(msg);
 

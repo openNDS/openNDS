@@ -922,10 +922,10 @@ ndsctl_status(FILE *fp)
 		fprintf(fp, "Preemptive Authentication is Disabled\n");
 	}
 
-	if (config->binauth) {
-		fprintf(fp, "Binauth Script: %s\n", config->binauth);
+	if (config->custombinauth) {
+		fprintf(fp, "Custom Binauth Script: %s\n", config->custombinauth);
 	} else {
-		fprintf(fp, "Binauth: Disabled\n");
+		fprintf(fp, "Custom Binauth: Disabled\n");
 	}
 
 	if (config->preauth) {

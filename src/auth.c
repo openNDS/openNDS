@@ -64,7 +64,7 @@ client_auth(char *arg)
 	t_client *client;
 	unsigned id;
 	int rc = -1;
-	int seconds = 60 * config->session_timeout;
+	int seconds = 60 * config->sessiontimeout;
 	int custom_seconds;
 	int uploadrate = config->upload_rate;
 	int downloadrate = config->download_rate;
@@ -72,6 +72,7 @@ client_auth(char *arg)
 	unsigned long long int downloadquota = config->download_quota;
 	char *libcmd;
 	char *msg;
+	char *msg2;
 	char *customdata;
 	char *argcopy;
 	const char *arg2;
@@ -179,21 +180,21 @@ client_auth(char *arg)
 
 				// check if client ip is on our subnet
 				safe_asprintf(&libcmd, "/usr/lib/opennds/libopennds.sh get_interface_by_ip \"%s\"", ipclient);
-				msg = safe_calloc(64);
-				rc = execute_ret_url_encoded(msg, 64 - 1, libcmd);
+				msg2 = safe_calloc(64);
+				rc = execute_ret_url_encoded(msg2, 64 - 1, libcmd);
 				free(libcmd);
 
 				if (rc == 0) {
 
-					if (strcmp(config->gw_interface, msg) == 0) {
-						debug(LOG_DEBUG, "Pre-emptive Authentication: Client [%s] is on our subnet using interface [%s]", ipclient, msg);
+					if (strcmp(config->gw_interface, msg2) == 0) {
+						debug(LOG_DEBUG, "Pre-emptive Authentication: Client [%s] is on our subnet using interface [%s]", ipclient, msg2);
 
 						client = client_list_add_client(macclient, ipclient);
 
 						if (client) {
 							id = client ? client->id : 0;
 							debug(LOG_DEBUG, "client id: [%d]", id);
-							client->client_type = "preemptive";
+							client->client_type = safe_strdup("preemptive");
 
 							// log the preemptive authentication
 							safe_asprintf(&libcmd,
@@ -203,8 +204,10 @@ client_auth(char *arg)
 								client->client_type
 							);
 
-							msg = safe_calloc(64);
-							rc = execute_ret_url_encoded(msg, 64 - 1, libcmd);
+							// Reuse msg2
+							free(msg2);
+							msg2 = safe_calloc(64);
+							rc = execute_ret_url_encoded(msg2, 64 - 1, libcmd);
 							free(libcmd);
 						}
 
@@ -217,6 +220,7 @@ client_auth(char *arg)
 				}
 			}
 		free(msg);
+		free(msg2);
 
 		} else {
 			debug(LOG_DEBUG, "Client connection not found: Continuing...");
@@ -262,18 +266,20 @@ client_auth(char *arg)
 }
 
 
-static void binauth_action(t_client *client, const char *reason, const char *customdata)
+static int binauth_action(t_client *client, const char *reason, const char *customdata)
 {
 	s_config *config = config_get_config();
 	time_t now = time(NULL);
-	int seconds = 60 * config->session_timeout;
+	int seconds = 60 * config->sessiontimeout;
 	unsigned long int sessionstart;
 	unsigned long int sessionend;
 	char *deauth = "deauth";
 	char *client_auth = "client_auth";
 	char *ndsctl_auth = "ndsctl_auth";
 	char *customdata_enc;
+	char *binauthcmd;
 	int ret = 1;
+	int rc = 0;
 
 	if (config->binauth) {
 		debug(LOG_DEBUG, "client->custom=%s", client->custom);
@@ -316,7 +322,8 @@ static void binauth_action(t_client *client, const char *reason, const char *cus
 
 		debug(LOG_DEBUG, "BinAuth %s - client session end time: [ %lu ]", reason, sessionend);
 
-		execute("%s %s %s %llu %llu %lu %lu %s %s",
+		binauthcmd = safe_calloc(STATUS_BUF);
+		safe_snprintf(binauthcmd, STATUS_BUF, "%s %s %s %llu %llu %lu %lu %s %s",
 			config->binauth,
 			reason ? reason : "unknown",
 			client->mac,
@@ -328,7 +335,15 @@ static void binauth_action(t_client *client, const char *reason, const char *cus
 			customdata_enc
 		);
 
+		rc = system(binauthcmd);
+		free(binauthcmd);
 		free(customdata_enc);
+
+		if (WIFEXITED(rc)) {
+			rc = WEXITSTATUS(rc);
+		}
+
+		debug(LOG_DEBUG, "binauth return code %d", rc);
 
 		if (strstr(reason, deauth) == NULL && strstr(reason, ndsctl_auth) == NULL) {
 			// unlock ndsctl
@@ -336,36 +351,96 @@ static void binauth_action(t_client *client, const char *reason, const char *cus
 				ndsctl_unlock();
 			}
 		}
+		return rc;
 	}
+	// No binauth configured, so good to go
+	return 0;
 }
 
 static int auth_change_state(t_client *client, const unsigned int new_state, const char *reason, const char *customdata)
 {
+	s_config *config = config_get_config();
 	const unsigned int state = client->fw_connection_state;
 	const time_t now = time(NULL);
+	char *libcmd;
+	char *msg;
 	int action;
-	s_config *config = config_get_config();
+	int exitcode;
+	time_t sessionseconds_binauth;
+	time_t sessionseconds_config = 60 * config->sessiontimeout;
+	unsigned long long int upload_rate;		/**< @brief Client Upload rate limit, kb/s */
+	unsigned long long int download_rate;		/**< @brief Client Download rate limit, kb/s */
+	unsigned long long int uprate;			/**< @brief Current Client Upload rate, kb/s */
+	unsigned long long int downrate;		/**< @brief Client Download rate, kb/s */
+	unsigned long long int upload_quota;		/**< @brief Client Upload quota, kB */
+	unsigned long long int download_quota;		/**< @brief Client Download quota, kB */
 
 	if (state == new_state) {
 		return -1;
 	} else if (state == FW_MARK_PREAUTHENTICATED) {
 		if (new_state == FW_MARK_AUTHENTICATED) {
+
+			exitcode = binauth_action(client, reason, customdata);
+
+			if (exitcode != 0) {
+				return 1;
+			}
+
 			iptables_fw_authenticate(client);
 
-			if (client->upload_rate == 0) {
+			// Get parameters assigned by binauth, default to 0 if none assigned
+			libcmd = safe_calloc(SMALL_BUF);
+			safe_snprintf(libcmd, SMALL_BUF, "/usr/lib/opennds/libopennds.sh get_quotas_by_mac \"%s\"", client->mac );
+
+			msg = safe_calloc(SMALL_BUF);
+			execute_ret_url_encoded(msg, SMALL_BUF, libcmd);
+			free(libcmd);
+			debug(LOG_DEBUG, "assigned parameters [ %s ]", msg);
+
+			sessionseconds_binauth = 60 * atoi(strtok(msg, " "));
+			debug(LOG_DEBUG, "sessionseconds_binauth [ %d ]", sessionseconds_binauth);
+			client->session_end = now + sessionseconds_config;
+
+			if (sessionseconds_binauth == 0) {
+				client->session_end = sessionseconds_config + now;
+			} else {
+				client->session_end = sessionseconds_binauth + now;
+			}
+
+			//
+			upload_rate = atoi(strtok(NULL, " "));
+
+			if (upload_rate == 0) {
 				client->upload_rate = config->upload_rate;
+			} else {
+				client->upload_rate = upload_rate;
 			}
 
-			if (client->download_rate == 0) {
+			//
+			download_rate = atoi(strtok(NULL, " "));
+
+			if (download_rate == 0) {
 				client->download_rate = config->download_rate;
+			} else {
+				client->download_rate = download_rate;
 			}
 
-			if (client->upload_quota == 0) {
+			//
+			upload_quota = atoi(strtok(NULL, " "));
+
+			if (upload_quota == 0) {
 				client->upload_quota = config->upload_quota;
+			} else {
+				client->upload_quota = upload_quota;
 			}
 
-			if (client->download_quota == 0) {
+			//
+			download_quota = atoi(strtok(NULL, " "));
+
+			if (download_quota == 0) {
 				client->download_quota = config->download_quota;
+			} else {
+				client->download_quota = download_quota;
 			}
 
 			debug(LOG_DEBUG, "auth_change_state > authenticated - download_rate [%llu] upload_rate [%llu] ",
@@ -383,7 +458,7 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 			if (customdata && strlen(customdata) > 0) {
 				client->custom = safe_strdup(customdata);
 			} else {
-				client->custom = "bmE=";
+				client->custom = safe_strdup("bmE=");
 			}
 
 			debug(LOG_DEBUG, "auth_change_state: client->custom=%s ", client->custom);
@@ -409,8 +484,9 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 				client->rate_exceeded = client->rate_exceeded^2;
 			}
 
-			binauth_action(client, reason, customdata);
 			client->fw_connection_state = new_state;
+
+			free(msg);
 
 		} else if (new_state == FW_MARK_TRUSTED) {
 			return -1;
@@ -421,9 +497,10 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 
 		if (new_state == FW_MARK_PREAUTHENTICATED) {
 			// we now delete the client instead of changing state to preauthenticated
+			debug(LOG_DEBUG, "Deleting client [ %s ] [ %s ]", client->cid, reason);
 			iptables_fw_deauthenticate(client);
 			binauth_action(client, reason, customdata);
-			client_reset(client);
+
 			client_list_delete(client);
 
 		} else if (new_state == FW_MARK_AUTH_BLOCKED) {
@@ -567,6 +644,13 @@ fw_refresh_client_list(void)
 		debug(LOG_DEBUG, "conn_state [%x]", conn_state);
 
 		if (conn_state == FW_MARK_PREAUTHENTICATED) {
+
+			debug(LOG_DEBUG, "last_updated [ %lu ], now [ %lu ], preauth_idle_timeout_secs [ %lu ]",
+				last_updated,
+				now,
+				preauth_idle_timeout_secs
+			);
+
 
 			// Preauthenticated client reached Idle Timeout without authenticating so delete from the client list
 			if (preauth_idle_timeout_secs > 0

@@ -215,7 +215,9 @@ config_init(int argc, char **argv)
 	config.preauthdir = safe_strdup(set_option_str("preauthdir", DEFAULT_PREAUTHDIR, debug_level));
 	config.ndsctl_sock = safe_strdup(set_option_str("ndsctl_sock", DEFAULT_NDSCTL_SOCK, debug_level));
 	config.authentication_mark = safe_strdup(set_option_str("authentication_mark", DEFAULT_AUTHENTICATION_MARK, debug_level));
-	config.binauth = safe_strdup(set_option_str("binauth", DEFAULT_BINAUTH, debug_level));
+	// Setting binauth in config is deprecated. Use DEFAULT_BINAUTH only.
+	config.binauth = safe_strdup(set_option_str("binauth_deprecated", DEFAULT_BINAUTH, "0"));
+	config.custombinauth = safe_strdup(set_option_str("custombinauth", DEFAULT_CUSTOMBINAUTH, debug_level));
 	config.fas_path = safe_strdup(set_option_str("faspath", DEFAULT_FASPATH, debug_level));
 	config.themespec_path = safe_strdup(set_option_str("themespec_path", DEFAULT_THEMESPEC_PATH, debug_level));
 	config.fas_remoteip = safe_strdup(set_option_str("fasremoteip", DEFAULT_FAS_REMOTEIP, debug_level));
@@ -248,7 +250,7 @@ config_init(int argc, char **argv)
 	free(msg);
 	//
 
-	sscanf(set_option_str("sessiontimeout", DEFAULT_SESSION_TIMEOUT, debug_level), "%u", &config.session_timeout);
+	sscanf(set_option_str("sessiontimeout", DEFAULT_SESSIONTIMEOUT, debug_level), "%u", &config.sessiontimeout);
 	sscanf(set_option_str("preauthidletimeout", DEFAULT_PREAUTH_IDLE_TIMEOUT, debug_level), "%u", &config.preauth_idle_timeout);
 	sscanf(set_option_str("authidletimeout", DEFAULT_AUTH_IDLE_TIMEOUT, debug_level), "%u", &config.auth_idle_timeout);
 	sscanf(set_option_str("maxclients", DEFAULT_MAXCLIENTS, debug_level), "%u", &config.maxclients);

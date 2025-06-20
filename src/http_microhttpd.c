@@ -209,7 +209,7 @@ static int do_binauth(
 	if (rc != 0) {
 		debug(LOG_DEBUG, "BinAuth script failed to execute");
 		free(msg);
-		return 0;
+		return rc;
 	}
 
 	rc = sscanf(msg, "%d %llu %llu %llu %llu", &seconds, &upload_rate, &download_rate, &upload_quota, &download_quota);
@@ -582,7 +582,7 @@ static int authenticate_client(struct MHD_Connection *connection,
 {
 	s_config *config = config_get_config();
 	time_t now = time(NULL);
-	int seconds = 60 * config->session_timeout;
+	int seconds = 60 * config->sessiontimeout;
 	unsigned long long int uploadrate = 0;
 	unsigned long long int downloadrate = 0;
 	unsigned long long int uploadquota = 0;
@@ -666,12 +666,12 @@ static int authenticate_client(struct MHD_Connection *connection,
 	// override remaining client values that might have been set by binauth
 
 	if (seconds == 0) {
-		seconds = (60 * config->session_timeout);
+		seconds = (60 * config->sessiontimeout);
 	}
 
 	debug(LOG_DEBUG, "timeout seconds: %d", seconds);
 
-	if (seconds != (60 * config->session_timeout)) {
+	if (seconds != (60 * config->sessiontimeout)) {
 		client->session_end = (client->session_start + seconds);
 	}
 
@@ -1131,7 +1131,7 @@ static int preauthenticated(struct MHD_Connection *connection, const char *url, 
 	// check if this is an RFC8910 login request
 	if (strcmp(url, "/login") == 0) {
 		debug(LOG_INFO, "preauthenticated: RFC8910 login request received from client at [%s] [%s]", client->ip, client->mac);
-		client->client_type = "cpi_url";
+		client->client_type = safe_strdup("cpi_url");
 		return redirect_to_splashpage(connection, client, host, "/login");
 	}
 
@@ -1147,7 +1147,7 @@ static int preauthenticated(struct MHD_Connection *connection, const char *url, 
 		debug(LOG_DEBUG, "preauthenticated: Accept header [%s]", accept);
 		debug(LOG_NOTICE, "preauthenticated: RFC 8908 captive+json request received from client at [%s] [%s]", client->ip, client->mac);
 
-		client->client_type = "cpi_api";
+		client->client_type = safe_strdup("cpi_api");
 
 		originurl_raw = safe_calloc(REDIRECT_URL);
 
@@ -1409,7 +1409,6 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 	char *query_str_b64;
 	char *msg;
 	char *cidinfo;
-	char *cidfile;
 	char *gw_url_raw;
 	char *gw_url;
 	char *phpcmd;

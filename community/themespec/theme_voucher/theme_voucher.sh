@@ -29,12 +29,158 @@ header() {
 		<meta charset=\"utf-8\">
 		<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
 		<link rel=\"shortcut icon\" href=\"/images/splash.jpg\" type=\"image/x-icon\">
-		<link rel=\"stylesheet\" type=\"text/css\" href=\"/splash.css\">
+		<style>
+			:root {
+				--primary-color: #4285f4;
+				--secondary-color: #34a853;
+				--accent-color: #ea4335;
+				--background-color: #f8f9fa;
+				--text-color: #202124;
+				--light-text: #5f6368;
+				--border-color: #dadce0;
+			}
+			
+			* {
+				box-sizing: border-box;
+				margin: 0;
+				padding: 0;
+			}
+			
+			body {
+				font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+				line-height: 1.6;
+				color: var(--text-color);
+				background-color: var(--background-color);
+				padding: 0;
+				margin: 0;
+			}
+			
+			.offset {
+				padding: 20px;
+				max-width: 800px;
+				margin: 0 auto;
+			}
+			
+			.insert {
+				background-color: white;
+				border-radius: 8px;
+				box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+				padding: 25px;
+				margin-bottom: 20px;
+			}
+			
+			h1, h2, h3, h4 {
+				color: var(--primary-color);
+				margin-bottom: 15px;
+			}
+			
+			hr {
+				border: none;
+				border-top: 1px solid var(--border-color);
+				margin: 20px 0;
+			}
+			
+			p {
+				margin-bottom: 15px;
+			}
+			
+			input[type=\"text\"], input[type=\"password\"] {
+				width: 100%;
+				padding: 12px;
+				margin: 8px 0;
+				display: inline-block;
+				border: 1px solid var(--border-color);
+				border-radius: 4px;
+				box-sizing: border-box;
+			}
+			
+			input[type=\"button\"], input[type=\"submit\"] {
+				background-color: var(--primary-color);
+				color: white;
+				padding: 12px 20px;
+				margin: 8px 0;
+				border: none;
+				border-radius: 4px;
+				cursor: pointer;
+				font-weight: bold;
+				transition: background-color 0.3s;
+			}
+			
+			input[type=\"button\"]:hover, input[type=\"submit\"]:hover {
+				background-color: #3367d6;
+			}
+			
+			big-red {
+				color: var(--accent-color);
+				font-size: 1.2em;
+				font-weight: bold;
+				display: block;
+				margin: 10px 0;
+			}
+			
+			med-blue {
+				color: var(--primary-color);
+				font-size: 1.5em;
+				font-weight: bold;
+				display: block;
+				margin: 10px 0;
+			}
+			
+			italic-black {
+				font-style: italic;
+				color: var(--light-text);
+				display: block;
+				margin: 10px 0;
+			}
+			
+			.terms-container {
+				max-height: 300px;
+				overflow-y: auto;
+				border: 1px solid var(--border-color);
+				padding: 15px;
+				margin: 15px 0;
+				border-radius: 4px;
+			}
+			
+			.info-box {
+				background-color: rgba(66, 133, 244, 0.1);
+				border-left: 4px solid var(--primary-color);
+				padding: 10px 15px;
+				margin: 15px 0;
+			}
+			
+			.ad-container {
+				background-color: #f1f3f4;
+				border-radius: 4px;
+				padding: 15px;
+				margin-top: 20px;
+				text-align: center;
+			}
+			
+			.footer {
+				font-size: 0.8em;
+				color: var(--light-text);
+				text-align: center;
+				margin-top: 30px;
+				padding-top: 20px;
+				border-top: 1px solid var(--border-color);
+			}
+			
+			@media screen and (max-width: 600px) {
+				.offset {
+					padding: 10px;
+				}
+				
+				.insert {
+					padding: 15px;
+				}
+			}
+		</style>
 		<title>$gatewayname</title>
 		</head>
 		<body>
 		<div class=\"offset\">
-		<div class=\"insert\" style=\"max-width:100%;\">
+		<div class=\"insert\">
 	"
 }
 
@@ -42,14 +188,22 @@ footer() {
 	# Define a common footer html for every page served
 	year=$(date +'%Y')
 	echo "
-		<hr>
-		<div style=\"font-size:0.5em;\">
-			<br>
-			<img style=\"height:60px; width:60px; float:left;\" src=\"$gatewayurl""$imagepath\" alt=\"Splash Page: For access to the Internet.\">
-			&copy; Portal: BlueWave Projects and Services 2015 - $year<br>
-			<br>
-			Portal Version: $version
-			<br><br><br><br>
+		<div class=\"ad-container\">
+			<!-- Ad Placeholder - Replace this with your actual ad code -->
+			<p>Advertisement Space</p>
+			<div style=\"width:100%; height:90px; background:#e0e0e0; display:flex; align-items:center; justify-content:center;\">
+				<p>Your Ad Could Be Here</p>
+			</div>
+		</div>
+		
+		<div class=\"footer\">
+			<div style=\"display:flex; align-items:center; justify-content:center; margin-bottom:15px;\">
+				<img style=\"height:60px; width:60px; margin-right:15px;\" src=\"$gatewayurl""$imagepath\" alt=\"Hotspot Logo\">
+				<div>
+					<p>&copy; Portal: BlueWave Projects and Services 2015 - $year</p>
+					<p>Portal Version: $version</p>
+				</div>
+			</div>
 		</div>
 		</div>
 		</div>
@@ -166,8 +320,6 @@ voucher_validation() {
 
 	check_voucher
 	if [ $? -eq 0 ]; then
-		#echo "Voucher is Valid, click Continue to finish login<br>"
-
 		# Refresh quotas with ones imported from the voucher roll.
 		quotas="$sessiontimeout $upload_rate $download_rate $upload_quota $download_quota"
 		# Set voucher used (useful if for accounting reasons you track who received which voucher)
@@ -179,50 +331,47 @@ voucher_validation() {
 		# output the landing page - note many CPD implementations will close as soon as Internet access is detected
 		# The client may not see this page, or only see it briefly
 		auth_success="
-			<p>
-				<big-red>
-					You are now logged in and have been granted access to the Internet.
-				</big-red>
-				<hr>
+			<div style=\"text-align:center; padding:20px 0;\">
+				<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"64\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#34a853\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">
+					<path d=\"M22 11.08V12a10 10 0 1 1-5.93-9.14\"></path>
+					<polyline points=\"22 4 12 14.01 9 11.01\"></polyline>
+				</svg>
+				<h2 style=\"color:#34a853; margin-top:10px;\">Successfully Connected!</h2>
+			</div>
+			
+			<div class=\"info-box\">
+				<p>Your voucher is valid for <strong>$sessiontimeout minutes</strong>.</p>
+				<p>You can now use your Browser, Email, and other network Apps as you normally would.</p>
+			</div>
+			
+			<p style=\"margin-top:20px;\">
+				Your device originally requested:
+				<a href=\"$originurl\" style=\"word-break:break-all;\">$originurl</a>
 			</p>
-			This voucher is valid for $sessiontimeout minutes.
-			<hr>
-			<p>
-				<italic-black>
-					You can use your Browser, Email and other network Apps as you normally would.
-				</italic-black>
-			</p>
-			<p>
-				Your device originally requested <b>$originurl</b>
-				<br>
-				Click or tap Continue to go to there.
-			</p>
-			<form>
-				<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='$originurl'\" >
-			</form>
-			<hr>
+			
+			<div style=\"text-align:center; margin-top:20px;\">
+				<input type=\"button\" VALUE=\"Continue to Website\" onClick=\"location.href='$originurl'\" >
+			</div>
 		"
+		
 		auth_fail="
-			<p>
-				<big-red>
-					Something went wrong and you have failed to log in.
-				</big-red>
-				<hr>
-			</p>
-			<hr>
-			<p>
-				<italic-black>
-					Your login attempt probably timed out.
-				</italic-black>
-			</p>
-			<p>
-				<br>
-				Click or tap Continue to try again.
-			</p>
-			<form>
-				<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='$originurl'\" >
-			</form>
-			<hr>
+			<div style=\"text-align:center; padding:20px 0;\">
+				<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"64\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#ea4335\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">
+					<circle cx=\"12\" cy=\"12\" r=\"10\"></circle>
+					<line x1=\"15\" y1=\"9\" x2=\"9\" y2=\"15\"></line>
+					<line x1=\"9\" y1=\"9\" x2=\"15\" y2=\"15\"></line>
+				</svg>
+				<h2 style=\"color:#ea4335; margin-top:10px;\">Connection Failed</h2>
+			</div>
+			
+			<div class=\"info-box\">
+				<p>Something went wrong and you have failed to log in.</p>
+				<p>Your login attempt probably timed out.</p>
+			</div>
+			
+			<div style=\"text-align:center; margin-top:20px;\">
+				<input type=\"button\" VALUE=\"Try Again\" onClick=\"location.href='$originurl'\" >
+			</div>
 		"
 
 		if [ "$ndsstatus" = "authenticated" ]; then
@@ -231,11 +380,20 @@ voucher_validation() {
 			echo "$auth_fail"
 		fi
 	else
-		echo "<big-red>Voucher is not Valid, click Continue to restart login<br></big-red>"
 		echo "
-			<form>
-				<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='$originurl'\" >
-			</form>
+			<div style=\"text-align:center; padding:20px 0;\">
+				<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"64\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#ea4335\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">
+					<circle cx=\"12\" cy=\"12\" r=\"10\"></circle>
+					<line x1=\"12\" y1=\"8\" x2=\"12\" y2=\"12\"></line>
+					<line x1=\"12\" y1=\"16\" x2=\"12.01\" y2=\"16\"></line>
+				</svg>
+				<h2 style=\"color:#ea4335; margin-top:10px;\">Invalid Voucher</h2>
+				<p>The voucher you entered is not valid.</p>
+			</div>
+			
+			<div style=\"text-align:center; margin-top:20px;\">
+				<input type=\"button\" VALUE=\"Try Again\" onClick=\"location.href='$originurl'\" >
+			</div>
 		"
 	fi
 
@@ -261,33 +419,44 @@ voucher_form() {
 	voucher_code=$(echo "$cpi_query" | awk -F "voucher%3d" '{printf "%s", $2}' | awk -F "%26" '{printf "%s", $1}')
 
 	echo "
-		<med-blue>
-			Welcome!
-		</med-blue><br>
-		<hr>
-		Your IP: $clientip <br>
-		Your MAC: $clientmac <br>
-		<hr>
-		<form action=\"/opennds_preauth/\" method=\"get\">
-			<input type=\"hidden\" name=\"fas\" value=\"$fas\"> 
-			<input type=\"checkbox\" name=\"tos\" value=\"accepted\" required> I accept the Terms of Service<br>
-			Voucher #: <input type=\"text\" name=\"voucher\" value=\"$voucher_code\" required><br>
-			<input type=\"submit\" value=\"Connect\" >
+		<h1>Welcome to our Hotspot</h1>
+		<div class=\"info-box\">
+			<p><strong>Your IP:</strong> $clientip</p>
+			<p><strong>Your MAC:</strong> $clientmac</p>
+		</div>
+		
+		<form action=\"/opennds_preauth/\" method=\"get\" style=\"margin-top:20px;\">
+			<input type=\"hidden\" name=\"fas\" value=\"$fas\">
+			
+			<div style=\"margin-bottom:15px;\">
+				<label for=\"voucher-input\"><strong>Voucher Code:</strong></label>
+				<input type=\"text\" id=\"voucher-input\" name=\"voucher\" value=\"$voucher_code\" placeholder=\"Enter your voucher code\" required>
+			</div>
+			
+			<div style=\"display:flex; align-items:center; margin-bottom:20px;\">
+				<input type=\"checkbox\" id=\"tos-checkbox\" name=\"tos\" value=\"accepted\" required style=\"width:auto; margin-right:10px;\">
+				<label for=\"tos-checkbox\">I accept the <a href=\"#\" onclick=\"document.getElementById('tos-form').submit(); return false;\">Terms of Service</a></label>
+			</div>
+			
+			<input type=\"submit\" value=\"Connect\" style=\"width:100%;\">
 		</form>
-		<br>
+		
+		<form id=\"tos-form\" action=\"/opennds_preauth/\" method=\"get\" style=\"display:none;\">
+			<input type=\"hidden\" name=\"fas\" value=\"$fas\">
+			<input type=\"hidden\" name=\"terms\" value=\"yes\">
+		</form>
 	"
 
-	read_terms
 	footer
 }
 
 read_terms() {
-	#terms of service button
+	#terms of service button - now hidden, using link in form instead
 	echo "
-		<form action=\"/opennds_preauth/\" method=\"get\">
+		<form action=\"/opennds_preauth/\" method=\"get\" style=\"display:none;\">
 			<input type=\"hidden\" name=\"fas\" value=\"$fas\">
 			<input type=\"hidden\" name=\"terms\" value=\"yes\">
-			<input type=\"submit\" value=\"Read Terms of Service   \" >
+			<input type=\"submit\" value=\"Read Terms of Service\">
 		</form>
 	"
 }
@@ -301,53 +470,52 @@ display_terms() {
 	# In most locations, a Privacy Statement is an essential part of the Terms of Service.
 	####
 
-	#Privacy
 	echo "
-		<b style=\"color:red;\">Privacy.</b><br>
-		<b>
-			By logging in to the system, you grant your permission for this system to store any data you provide for
-			the purposes of logging in, along with the networking parameters of your device that the system requires to function.<br>
-			All information is stored for your convenience and for the protection of both yourself and us.<br>
-			All information collected by this system is stored in a secure manner and is not accessible by third parties.<br>
-		</b><hr>
-	"
-
-	# Terms of Service
-	echo "
-		<b style=\"color:red;\">Terms of Service for this Hotspot.</b> <br>
-		<b>Access is granted on a basis of trust that you will NOT misuse or abuse that access in any way.</b><hr>
-		<b>Please scroll down to read the Terms of Service in full or click the Continue button to return to the Acceptance Page</b>
-		<form>
-			<input type=\"button\" VALUE=\"Continue\" onClick=\"history.go(-1);return true;\">
-		</form>
-	"
-
-	# Proper Use
-	echo "
-		<hr>
-		<b>Proper Use</b>
-		<p>
-			This Hotspot provides a wireless network that allows you to connect to the Internet. <br>
-			<b>Use of this Internet connection is provided in return for your FULL acceptance of these Terms Of Service.</b>
-		</p>
-		<p>
-			<b>You agree</b> that you are responsible for providing security measures that are suited for your intended use of the Service.
-			For example, you shall take full responsibility for taking adequate measures to safeguard your data from loss.
-		</p>
-		<p>
-			While the Hotspot uses commercially reasonable efforts to provide a secure service,
-			the effectiveness of those efforts cannot be guaranteed.
-		</p>
-		<p>
-			<b>You may</b> use the technology provided to you by this Hotspot for the sole purpose
-			of using the Service as described here.
-			You must immediately notify the Owner of any unauthorized use of the Service or any other security breach.<br><br>
-			We will give you an IP address each time you access the Hotspot, and it may change.
-			<br>
-			<b>You shall not</b> program any other IP or MAC address into your device that accesses the Hotspot.
-			You may not use the Service for any other reason, including reselling any aspect of the Service.
-			Other examples of improper activities include, without limitation:
-		</p>
+		<h1>Terms of Service</h1>
+		
+		<div style=\"margin:20px 0; text-align:right;\">
+			<input type=\"button\" VALUE=\"Back to Login\" onClick=\"history.go(-1);return true;\">
+		</div>
+		
+		<div class=\"info-box\">
+			<h3>Privacy Statement</h3>
+			<p>
+				By logging in to the system, you grant your permission for this system to store any data you provide for
+				the purposes of logging in, along with the networking parameters of your device that the system requires to function.
+			</p>
+			<p>
+				All information is stored for your convenience and for the protection of both yourself and us.
+				All information collected by this system is stored in a secure manner and is not accessible by third parties.
+			</p>
+		</div>
+		
+		<div class=\"terms-container\">
+			<h3>Terms of Service</h3>
+			<p><strong>Access is granted on a basis of trust that you will NOT misuse or abuse that access in any way.</strong></p>
+			
+			<h4>Proper Use</h4>
+			<p>
+				This Hotspot provides a wireless network that allows you to connect to the Internet.<br>
+				<strong>Use of this Internet connection is provided in return for your FULL acceptance of these Terms Of Service.</strong>
+			</p>
+			<p>
+				<strong>You agree</strong> that you are responsible for providing security measures that are suited for your intended use of the Service.
+				For example, you shall take full responsibility for taking adequate measures to safeguard your data from loss.
+			</p>
+			<p>
+				While the Hotspot uses commercially reasonable efforts to provide a secure service,
+				the effectiveness of those efforts cannot be guaranteed.
+			</p>
+			<p>
+				<strong>You may</strong> use the technology provided to you by this Hotspot for the sole purpose
+				of using the Service as described here.
+				You must immediately notify the Owner of any unauthorized use of the Service or any other security breach.<br><br>
+				We will give you an IP address each time you access the Hotspot, and it may change.
+				<br>
+				<strong>You shall not</strong> program any other IP or MAC address into your device that accesses the Hotspot.
+				You may not use the Service for any other reason, including reselling any aspect of the Service.
+				Other examples of improper activities include, without limitation:
+			</p>
 			<ol>
 				<li>
 					downloading or uploading such large volumes of data that the performance of the Service becomes
@@ -377,60 +545,54 @@ display_terms() {
 					using the Service for any unlawful, harassing, abusive, criminal or fraudulent purpose.
 				</li>
 			</ol>
-	"
-
-	# Content Disclaimer
-	echo "
-		<hr>
-		<b>Content Disclaimer</b>
-		<p>
-			The Hotspot Owners do not control and are not responsible for data, content, services, or products
-			that are accessed or downloaded through the Service.
-			The Owners may, but are not obliged to, block data transmissions to protect the Owner and the Public.
-		</p>
-		The Owners, their suppliers and their licensors expressly disclaim to the fullest extent permitted by law,
-		all express, implied, and statutary warranties, including, without limitation, the warranties of merchantability
-		or fitness for a particular purpose.
-		<br><br>
-		The Owners, their suppliers and their licensors expressly disclaim to the fullest extent permitted by law
-		any liability for infringement of proprietory rights and/or infringement of Copyright by any user of the system.
-		Login details and device identities may be stored and be used as evidence in a Court of Law against such users.
-		<br>
-	"
-
-	# Limitation of Liability
-	echo "
-		<hr><b>Limitation of Liability</b>
-		<p>
-			Under no circumstances shall the Owners, their suppliers or their licensors be liable to any user or
-			any third party on account of that party's use or misuse of or reliance on the Service.
-		</p>
-		<hr><b>Changes to Terms of Service and Termination</b>
-		<p>
-			We may modify or terminate the Service and these Terms of Service and any accompanying policies,
-			for any reason, and without notice, including the right to terminate with or without notice,
-			without liability to you, any user or any third party. Please review these Terms of Service
-			from time to time so that you will be apprised of any changes.
-		</p>
-		<p>
-			We reserve the right to terminate your use of the Service, for any reason, and without notice.
-			Upon any such termination, any and all rights granted to you by this Hotspot Owner shall terminate.
-		</p>
-	"
-
-	# Indemnity
-	echo "
-		<hr><b>Indemnity</b>
-		<p>
-			<b>You agree</b> to hold harmless and indemnify the Owners of this Hotspot,
-			their suppliers and licensors from and against any third party claim arising from
-			or in any way related to your use of the Service, including any liability or expense arising from all claims,
-			losses, damages (actual and consequential), suits, judgments, litigation costs and legal fees, of every kind and nature.
-		</p>
-		<hr>
-		<form>
-			<input type=\"button\" VALUE=\"Continue\" onClick=\"history.go(-1);return true;\">
-		</form>
+			
+			<h4>Content Disclaimer</h4>
+			<p>
+				The Hotspot Owners do not control and are not responsible for data, content, services, or products
+				that are accessed or downloaded through the Service.
+				The Owners may, but are not obliged to, block data transmissions to protect the Owner and the Public.
+			</p>
+			<p>
+				The Owners, their suppliers and their licensors expressly disclaim to the fullest extent permitted by law,
+				all express, implied, and statutary warranties, including, without limitation, the warranties of merchantability
+				or fitness for a particular purpose.
+			</p>
+			<p>
+				The Owners, their suppliers and their licensors expressly disclaim to the fullest extent permitted by law
+				any liability for infringement of proprietory rights and/or infringement of Copyright by any user of the system.
+				Login details and device identities may be stored and be used as evidence in a Court of Law against such users.
+			</p>
+			
+			<h4>Limitation of Liability</h4>
+			<p>
+				Under no circumstances shall the Owners, their suppliers or their licensors be liable to any user or
+				any third party on account of that party's use or misuse of or reliance on the Service.
+			</p>
+			
+			<h4>Changes to Terms of Service and Termination</h4>
+			<p>
+				We may modify or terminate the Service and these Terms of Service and any accompanying policies,
+				for any reason, and without notice, including the right to terminate with or without notice,
+				without liability to you, any user or any third party. Please review these Terms of Service
+				from time to time so that you will be apprised of any changes.
+			</p>
+			<p>
+				We reserve the right to terminate your use of the Service, for any reason, and without notice.
+				Upon any such termination, any and all rights granted to you by this Hotspot Owner shall terminate.
+			</p>
+			
+			<h4>Indemnity</h4>
+			<p>
+				<strong>You agree</strong> to hold harmless and indemnify the Owners of this Hotspot,
+				their suppliers and licensors from and against any third party claim arising from
+				or in any way related to your use of the Service, including any liability or expense arising from all claims,
+				losses, damages (actual and consequential), suits, judgments, litigation costs and legal fees, of every kind and nature.
+			</p>
+		</div>
+		
+		<div style=\"margin:20px 0; text-align:center;\">
+			<input type=\"button\" VALUE=\"I Understand and Accept\" onClick=\"history.go(-1);return true;\">
+		</div>
 	"
 	footer
 }

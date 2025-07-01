@@ -75,9 +75,7 @@
 /* Check for libmicrohttp version at runtime
  *0.9.69 is the minimum version to prevent loss of special characters in form data (BinAuth and PreAuth) 
  */
-#define MIN_MHD_MAJOR 0
-#define MIN_MHD_MINOR 9
-#define MIN_MHD_PATCH 71
+#define MIN_MHD_VERSION "0.9.71"
 
 /** 
  * Remember the thread IDs of threads that simulate wait with pthread_cond_timedwait
@@ -347,40 +345,19 @@ setup_from_config(void)
 	debug(LOG_INFO, "tmpfs mountpoint is [%s]", config->tmpfsmountpoint);
 
 	// Check for libmicrohttp version at runtime, ie actual installed version
-	int major = 0;
-	int minor = 0;
-	int patch = 0;
-	int outdated = 1;
 	const char *version = MHD_get_version();
 
 	debug(LOG_NOTICE, "MHD version is %s", version);
 
-	if (sscanf(version, "%d.%d.%d", &major, &minor, &patch) == 3) {
+	if (semver_is_outdated(version, MIN_MHD_VERSION)) {
+		debug(LOG_ERR, "libmicrohttpd is out of date, please upgrade to version %s or higher",
+			MIN_MHD_VERSION);
 
-		if (major >= MIN_MHD_MAJOR) {
-			outdated = 0;
-
-		}
-
-		if (outdated == 0 && minor >= MIN_MHD_MINOR) {
-			outdated = 0;
-
-		}
-
-		if (outdated == 0 && patch >= MIN_MHD_PATCH) {
-			outdated = 0;
-		}
-
-		if (outdated == 1) {
-			debug(LOG_ERR, "libmicrohttpd is out of date, please upgrade to version %d.%d.%d or higher",
-				MIN_MHD_MAJOR, MIN_MHD_MINOR, MIN_MHD_PATCH);
-
-			if (config->use_outdated_mhd == 0) {
-				debug(LOG_ERR, "exiting...");
-				exit(1);
-			} else {
-				debug(LOG_ERR, "Attempting use of outdated MHD - Data may be corrupted or openNDS may fail...");
-			}
+		if (config->use_outdated_mhd == 0) {
+			debug(LOG_ERR, "exiting...");
+			exit(1);
+		} else {
+			debug(LOG_ERR, "Attempting use of outdated MHD - Data may be corrupted or openNDS may fail...");
 		}
 	}
 

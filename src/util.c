@@ -1438,3 +1438,26 @@ rand16(void)
 	 */
 	return( (unsigned short) (rand() >> 15) );
 }
+
+int 
+semver_is_outdated(const char *version, const char *min_version)
+{
+	int major, minor, patch;
+	int min_major, min_minor, min_patch;
+
+	if (sscanf(min_version, "%d.%d.%d", &min_major, &min_minor, &min_patch) != 3) {
+		debug(LOG_ERR, "BUG: Invalid minimum version format: %s", min_version);
+		return 1; // assume outdated
+	}
+
+	if (sscanf(version, "%d.%d.%d", &major, &minor, &patch) != 3) {
+		debug(LOG_ERR, "Invalid version format: %s", version);
+		return 1; // assume outdated
+	}
+
+	return (
+			major < min_major ||
+			(major == min_major && minor < min_minor) ||
+			(major == min_major && minor == min_minor && patch < min_patch)
+		);
+}

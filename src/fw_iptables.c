@@ -167,7 +167,7 @@ nftables_do_command(const char *format, ...)
 int
 iptables_trust_mac(const char mac[])
 {
-	return nftables_do_command("add rule ip nds_mangle %s ether saddr %s counter meta mark set mark or 0x%x", CHAIN_TRUSTED, mac, FW_MARK_TRUSTED);
+	return nftables_do_command("add rule inet nds_mangle %s ether saddr %s counter meta mark set mark or 0x%x", CHAIN_TRUSTED, mac, FW_MARK_TRUSTED);
 }
 
 int
@@ -252,17 +252,17 @@ iptables_fw_init(void)
 
 
 	// Create new chains in the mangle table
-	rc |= nftables_do_command("add chain ip nds_mangle " CHAIN_TRUSTED); // for marking trusted packets
-	rc |= nftables_do_command("add chain ip nds_mangle " CHAIN_INCOMING); // for counting incoming packets
-	rc |= nftables_do_command("add chain ip nds_mangle " CHAIN_DOWNLOAD_RATE); // for controlling download rate per client
-	rc |= nftables_do_command("add chain ip nds_mangle " CHAIN_OUTGOING); // for marking authenticated packets, and for counting outgoing packets
+	rc |= nftables_do_command("add chain inet nds_mangle " CHAIN_TRUSTED); // for marking trusted packets
+	rc |= nftables_do_command("add chain inet nds_mangle " CHAIN_INCOMING); // for counting incoming packets
+	rc |= nftables_do_command("add chain inet nds_mangle " CHAIN_DOWNLOAD_RATE); // for controlling download rate per client
+	rc |= nftables_do_command("add chain inet nds_mangle " CHAIN_OUTGOING); // for marking authenticated packets, and for counting outgoing packets
 
 	// Assign jumps to these new chains
-	rc |= nftables_do_command("insert rule ip nds_mangle %s iifname \"%s\" counter jump %s", CHAIN_PREROUTING, gw_interface, CHAIN_OUTGOING);
-	rc |= nftables_do_command("insert rule ip nds_mangle %s iifname \"%s\" counter jump %s", CHAIN_PREROUTING, gw_interface, CHAIN_TRUSTED);
-	rc |= nftables_do_command("insert rule ip nds_mangle %s oifname \"%s\" counter jump %s", CHAIN_POSTROUTING, gw_interface, CHAIN_INCOMING);
-	rc |= nftables_do_command("insert rule ip nds_mangle %s oifname \"%s\" counter jump %s", CHAIN_INCOMING, gw_interface, CHAIN_FT_INC);
-	rc |= nftables_do_command("insert rule ip nds_mangle %s oifname \"%s\" counter jump %s", CHAIN_INCOMING, gw_interface, CHAIN_DOWNLOAD_RATE);
+	rc |= nftables_do_command("insert rule inet nds_mangle %s iifname \"%s\" counter jump %s", CHAIN_PREROUTING, gw_interface, CHAIN_OUTGOING);
+	rc |= nftables_do_command("insert rule inet nds_mangle %s iifname \"%s\" counter jump %s", CHAIN_PREROUTING, gw_interface, CHAIN_TRUSTED);
+	rc |= nftables_do_command("insert rule inet nds_mangle %s oifname \"%s\" counter jump %s", CHAIN_POSTROUTING, gw_interface, CHAIN_INCOMING);
+	rc |= nftables_do_command("insert rule inet nds_mangle %s oifname \"%s\" counter jump %s", CHAIN_INCOMING, gw_interface, CHAIN_FT_INC);
+	rc |= nftables_do_command("insert rule inet nds_mangle %s oifname \"%s\" counter jump %s", CHAIN_INCOMING, gw_interface, CHAIN_DOWNLOAD_RATE);
 
 	// Rules to mark as trusted MAC address packets in mangle PREROUTING
 	for (; pt != NULL; pt = pt->next) {
@@ -284,18 +284,18 @@ iptables_fw_init(void)
 	 
 	if (!config->ip6) {
 		// Create new chains in nat table
-		rc |= nftables_do_command("add chain ip nds_nat " CHAIN_OUTGOING);
+		rc |= nftables_do_command("add chain inet nds_nat " CHAIN_OUTGOING);
 
 		// nat PREROUTING chain
 
 		// packets coming in on gw_interface jump to CHAIN_OUTGOING
-		rc |= nftables_do_command("insert rule ip nds_nat %s iifname \"%s\" counter jump %s", CHAIN_PREROUTING, gw_interface, CHAIN_OUTGOING);
+		rc |= nftables_do_command("insert rule inet nds_nat %s iifname \"%s\" counter jump %s", CHAIN_PREROUTING, gw_interface, CHAIN_OUTGOING);
 
 		// CHAIN_OUTGOING, packets marked TRUSTED  ACCEPT
-		rc |= nftables_do_command("add rule ip nds_nat %s mark and 0x%x == 0x%x counter return", CHAIN_OUTGOING, FW_MARK_MASK, FW_MARK_TRUSTED);
+		rc |= nftables_do_command("add rule inet nds_nat %s mark and 0x%x == 0x%x counter return", CHAIN_OUTGOING, FW_MARK_MASK, FW_MARK_TRUSTED);
 
 		// CHAIN_OUTGOING, packets marked AUTHENTICATED  ACCEPT
-		rc |= nftables_do_command("add rule ip nds_nat %s mark and 0x%x == 0x%x counter return", CHAIN_OUTGOING, FW_MARK_MASK, FW_MARK_AUTHENTICATED);
+		rc |= nftables_do_command("add rule inet nds_nat %s mark and 0x%x == 0x%x counter return", CHAIN_OUTGOING, FW_MARK_MASK, FW_MARK_AUTHENTICATED);
 
 		// Allow access to remote FAS - CHAIN_OUTGOING and CHAIN_TO_INTERNET packets for remote FAS, ACCEPT
 		if (config->fas_port != 0) {
@@ -305,27 +305,27 @@ iptables_fw_init(void)
 				safe_snprintf(fqdncmd, SMALL_BUF, "/usr/lib/opennds/libopennds.sh resolve_fqdn \"%s\"", fas_remotefqdn);
 				fqdnip = safe_calloc(SMALL_BUF);
 				rc = execute_ret_url_encoded(fqdnip, SMALL_BUF, fqdncmd);
-				rc |= nftables_do_command("add rule ip nds_nat %s ip daddr %s tcp dport %d counter accept", CHAIN_OUTGOING, fqdnip, fas_port);
+				rc |= nftables_do_command("add rule inet nds_nat %s ip daddr %s tcp dport %d counter accept", CHAIN_OUTGOING, fqdnip, fas_port);
 				free(fqdncmd);
 				// do not free(fqdnip) just yet, we will need it again shortly
 			} else {
 
 				if (strcmp(config->fas_remoteip, "disabled") != 0) {
-					rc |= nftables_do_command("add rule ip nds_nat %s ip daddr %s tcp dport %d counter accept", CHAIN_OUTGOING, fas_remoteip, fas_port);
+					rc |= nftables_do_command("add rule inet nds_nat %s ip daddr %s tcp dport %d counter accept", CHAIN_OUTGOING, fas_remoteip, fas_port);
 				} else {
-					rc |= nftables_do_command("add rule ip nds_nat %s ip daddr %s tcp dport %d counter accept", CHAIN_OUTGOING, gw_ip, fas_port);
+					rc |= nftables_do_command("add rule inet nds_nat %s ip daddr %s tcp dport %d counter accept", CHAIN_OUTGOING, gw_ip, fas_port);
 				}
 			}
 		}
 
 		// CHAIN_OUTGOING, packets for tcp port 80, redirect to gw_port on primary address for the iface
-		rc |= nftables_do_command("add rule ip nds_nat %s tcp dport 80 counter dnat to %s", CHAIN_OUTGOING, gw_address);
+		rc |= nftables_do_command("add rule inet nds_nat %s tcp dport 80 counter dnat ip to %s", CHAIN_OUTGOING, gw_address);
 
 		// CHAIN_OUTGOING, other packets ACCEPT
-		rc |= nftables_do_command("add rule ip nds_nat %s counter accept", CHAIN_OUTGOING);
+		rc |= nftables_do_command("add rule inet nds_nat %s counter accept", CHAIN_OUTGOING);
 
 		if (strcmp(config->gw_fqdn, "disable") != 0) {
-			rc |= nftables_do_command("insert rule ip nds_nat ndsOUT ip daddr %s tcp dport 80 counter redirect to :%d", config->gw_ip, config->gw_port);
+			rc |= nftables_do_command("insert rule inet nds_nat ndsOUT ip daddr %s tcp dport 80 counter redirect to :%d", config->gw_ip, config->gw_port);
 		}
 	}
 	/*
@@ -341,26 +341,26 @@ iptables_fw_init(void)
 	 */
 
 	// Create new chains in the filter table
-	rc |= nftables_do_command("add chain ip nds_filter " CHAIN_TO_INTERNET);
-	rc |= nftables_do_command("add chain ip nds_filter " CHAIN_TO_ROUTER);
-	rc |= nftables_do_command("add chain ip nds_filter " CHAIN_AUTHENTICATED);
-	rc |= nftables_do_command("add chain ip nds_filter " CHAIN_UPLOAD_RATE);
-	rc |= nftables_do_command("add chain ip nds_filter " CHAIN_FT_OUT); // flowoffload for outgoing packets
+	rc |= nftables_do_command("add chain inet nds_filter " CHAIN_TO_INTERNET);
+	rc |= nftables_do_command("add chain inet nds_filter " CHAIN_TO_ROUTER);
+	rc |= nftables_do_command("add chain inet nds_filter " CHAIN_AUTHENTICATED);
+	rc |= nftables_do_command("add chain inet nds_filter " CHAIN_UPLOAD_RATE);
+	rc |= nftables_do_command("add chain inet nds_filter " CHAIN_FT_OUT); // flowoffload for outgoing packets
 
 	// filter CHAIN_INPUT chain
 
 	// packets coming in on gw_interface jump to CHAIN_TO_ROUTER
-	rc |= nftables_do_command("insert rule ip nds_filter %s iifname \"%s\" counter jump %s", CHAIN_INPUT, gw_interface, CHAIN_TO_ROUTER);
+	rc |= nftables_do_command("insert rule inet nds_filter %s iifname \"%s\" counter jump %s", CHAIN_INPUT, gw_interface, CHAIN_TO_ROUTER);
 
 	// CHAIN_TO_ROUTER, invalid packets DROP
-	rc |= nftables_do_command("add rule ip nds_filter %s ct state invalid counter drop", CHAIN_TO_ROUTER);
+	rc |= nftables_do_command("add rule inet nds_filter %s ct state invalid counter drop", CHAIN_TO_ROUTER);
 
 	// CHAIN_TO_ROUTER, packets to HTTP listening on gw_port on router ACCEPT
-	rc |= nftables_do_command("add rule ip nds_filter %s tcp dport %d counter accept", CHAIN_TO_ROUTER, gw_port);
+	rc |= nftables_do_command("add rule inet nds_filter %s tcp dport %d counter accept", CHAIN_TO_ROUTER, gw_port);
 
 	// CHAIN_TO_ROUTER, packets to HTTP listening on fas_port on router ACCEPT
 	if (fas_port != gw_port && strcmp(fas_remoteip, gw_ip) == 0 && strcmp(fas_remotefqdn, gw_fqdn) == 0) {
-		rc |= nftables_do_command("add rule ip nds_filter %s tcp dport %d counter accept", CHAIN_TO_ROUTER, fas_port);
+		rc |= nftables_do_command("add rule inet nds_filter %s tcp dport %d counter accept", CHAIN_TO_ROUTER, fas_port);
 	}
 
 	/*
@@ -368,30 +368,30 @@ iptables_fw_init(void)
 	 */
 
 	// packets coming in on gw_interface jump to CHAIN_TO_INTERNET
-	rc |= nftables_do_command("insert rule ip nds_filter %s iifname \"%s\" counter jump %s", CHAIN_FORWARD, gw_interface, CHAIN_TO_INTERNET);
+	rc |= nftables_do_command("insert rule inet nds_filter %s iifname \"%s\" counter jump %s", CHAIN_FORWARD, gw_interface, CHAIN_TO_INTERNET);
 
 	// CHAIN_TO_INTERNET, invalid packets DROP
-	rc |= nftables_do_command("add rule ip nds_filter %s ct state invalid counter drop", CHAIN_TO_INTERNET);
+	rc |= nftables_do_command("add rule inet nds_filter %s ct state invalid counter drop", CHAIN_TO_INTERNET);
 
 	// Allow access to remote FAS - CHAIN_TO_INTERNET packets for remote FAS, ACCEPT
 
 	if (config->fas_port != 0) {
 		if (strcmp(config->fas_remotefqdn, "disabled") != 0) {
-			rc |= nftables_do_command("add rule ip nds_filter %s ip daddr %s tcp dport %d counter accept", CHAIN_TO_INTERNET, fqdnip, fas_port);
+			rc |= nftables_do_command("add rule inet nds_filter %s ip daddr %s tcp dport %d counter accept", CHAIN_TO_INTERNET, fqdnip, fas_port);
 			// Now we can free(fqdnip) as we are now finished with it
 			free(fqdnip);
 		} else {
 
 			if (strcmp(config->fas_remoteip, "disabled") != 0) {
-				rc |= nftables_do_command("add rule ip nds_filter %s ip daddr %s tcp dport %d counter accept", CHAIN_TO_INTERNET, fas_remoteip, fas_port);
+				rc |= nftables_do_command("add rule inet nds_filter %s ip daddr %s tcp dport %d counter accept", CHAIN_TO_INTERNET, fas_remoteip, fas_port);
 			} else {
-				rc |= nftables_do_command("add rule ip nds_filter %s ip daddr %s tcp dport %d counter accept", CHAIN_TO_INTERNET, gw_ip, fas_port);
+				rc |= nftables_do_command("add rule inet nds_filter %s ip daddr %s tcp dport %d counter accept", CHAIN_TO_INTERNET, gw_ip, fas_port);
 			}
 		}
 	}
 
 	// CHAIN_TO_INTERNET, packets marked TRUSTED:
-	rc |= nftables_do_command("add rule ip nds_filter %s mark and 0x%x == 0x%x counter accept", CHAIN_TO_INTERNET, FW_MARK_MASK, FW_MARK_TRUSTED);
+	rc |= nftables_do_command("add rule inet nds_filter %s mark and 0x%x == 0x%x counter accept", CHAIN_TO_INTERNET, FW_MARK_MASK, FW_MARK_TRUSTED);
 
 	// CHAIN_TO_INTERNET, packets marked AUTHENTICATED:
 
@@ -401,19 +401,19 @@ iptables_fw_init(void)
 	 *    jump to CHAIN_AUTHENTICATED, and load and use authenticated-users ruleset
 	 */
 
-	rc |= nftables_do_command("add rule ip nds_filter %s mark and 0x%x == 0x%x counter goto %s", CHAIN_TO_INTERNET, FW_MARK_MASK, FW_MARK_AUTHENTICATED, CHAIN_AUTHENTICATED);
+	rc |= nftables_do_command("add rule inet nds_filter %s mark and 0x%x == 0x%x counter goto %s", CHAIN_TO_INTERNET, FW_MARK_MASK, FW_MARK_AUTHENTICATED, CHAIN_AUTHENTICATED);
 
 	// CHAIN_AUTHENTICATED, jump to CHAIN_UPLOAD_RATE to handle upload rate limiting
-	rc |= nftables_do_command("add rule ip nds_filter %s counter jump %s", CHAIN_AUTHENTICATED, CHAIN_UPLOAD_RATE);
+	rc |= nftables_do_command("add rule inet nds_filter %s counter jump %s", CHAIN_AUTHENTICATED, CHAIN_UPLOAD_RATE);
 
 	// CHAIN_AUTHENTICATED, jump to CHAIN_FT_OUT to handle upload flowtable
-	rc |= nftables_do_command("add rule ip nds_filter %s counter jump %s", CHAIN_AUTHENTICATED, CHAIN_FT_OUT);
+	rc |= nftables_do_command("add rule inet nds_filter %s counter jump %s", CHAIN_AUTHENTICATED, CHAIN_FT_OUT);
 
 	// CHAIN_AUTHENTICATED, any packets not matching that ruleset ACCEPT
-	rc |= nftables_do_command("add rule ip nds_filter %s counter accept", CHAIN_AUTHENTICATED);
+	rc |= nftables_do_command("add rule inet nds_filter %s counter accept", CHAIN_AUTHENTICATED);
 
 	// CHAIN_TO_INTERNET, all other packets REJECT
-	rc |= nftables_do_command("add rule ip nds_filter %s counter reject", CHAIN_TO_INTERNET);
+	rc |= nftables_do_command("add rule inet nds_filter %s counter reject", CHAIN_TO_INTERNET);
 
 	/*
 	 * End of filter table chains and rules
@@ -674,14 +674,14 @@ iptables_fw_authenticate(t_client *client)
 	debug(LOG_NOTICE, "Authenticating %s %s", client->ip, client->mac);
 
 	// This rule is for marking upload (outgoing) packets, and for upload byte accounting. Drop all bucket overflow packets
-	rc |= nftables_do_command("insert rule ip nds_mangle %s ip saddr %s ether saddr %s counter meta mark set mark or 0x%x", CHAIN_OUTGOING, client->ip, client->mac, FW_MARK_AUTHENTICATED);
-	rc |= nftables_do_command("add rule ip nds_filter %s ip saddr %s counter return", CHAIN_UPLOAD_RATE, client->ip);
-	rc |= nftables_do_command("add rule ip nds_filter %s ip saddr %s counter drop", CHAIN_UPLOAD_RATE, client->ip);
+	rc |= nftables_do_command("insert rule inet nds_mangle %s ip saddr %s ether saddr %s counter meta mark set mark or 0x%x", CHAIN_OUTGOING, client->ip, client->mac, FW_MARK_AUTHENTICATED);
+	rc |= nftables_do_command("add rule inet nds_filter %s ip saddr %s counter return", CHAIN_UPLOAD_RATE, client->ip);
+	rc |= nftables_do_command("add rule inet nds_filter %s ip saddr %s counter drop", CHAIN_UPLOAD_RATE, client->ip);
 
 	// This rule is just for download (incoming) byte accounting. Drop all bucket overflow packets
-	rc |= nftables_do_command("insert rule ip nds_mangle %s ip daddr %s counter meta mark set mark or 0x%x", CHAIN_INCOMING, client->ip, FW_MARK_AUTHENTICATED);
-	rc |= nftables_do_command("add rule ip nds_mangle %s ip daddr %s counter return", CHAIN_DOWNLOAD_RATE, client->ip);
-	rc |= nftables_do_command("add rule ip nds_mangle %s ip daddr %s counter drop", CHAIN_DOWNLOAD_RATE, client->ip);
+	rc |= nftables_do_command("insert rule inet nds_mangle %s ip daddr %s counter meta mark set mark or 0x%x", CHAIN_INCOMING, client->ip, FW_MARK_AUTHENTICATED);
+	rc |= nftables_do_command("add rule inet nds_mangle %s ip daddr %s counter return", CHAIN_DOWNLOAD_RATE, client->ip);
+	rc |= nftables_do_command("add rule inet nds_mangle %s ip daddr %s counter drop", CHAIN_DOWNLOAD_RATE, client->ip);
 
 	client->counters.incoming = 0;
 	client->counters.incoming_previous = 0;
@@ -723,7 +723,7 @@ iptables_fw_total_upload()
 	unsigned long long int counter;
 
 	// Look for outgoing traffic
-	safe_asprintf(&script, "nft list chain ip nds_mangle %s 2>/dev/null | grep -w %s ", CHAIN_PREROUTING, CHAIN_OUTGOING);
+	safe_asprintf(&script, "nft list chain inet nds_mangle %s 2>/dev/null | grep -w %s ", CHAIN_PREROUTING, CHAIN_OUTGOING);
 	output = popen(script, "r");
 	free (script);
 	
@@ -761,7 +761,7 @@ iptables_fw_total_download()
 	unsigned long long int counter;
 
 	// Look for incoming traffic
-	safe_asprintf(&script, "nft list chain ip nds_mangle %s  2>/dev/null | grep -w %s ", CHAIN_POSTROUTING, CHAIN_INCOMING);
+	safe_asprintf(&script, "nft list chain inet nds_mangle %s  2>/dev/null | grep -w %s ", CHAIN_POSTROUTING, CHAIN_INCOMING);
 	output = popen(script, "r");
 	free (script);
 
@@ -807,7 +807,7 @@ iptables_fw_counters_update(void)
 	af = config->ip6 ? AF_INET6 : AF_INET;
 
 	// Look for outgoing (upload) traffic of authenticated clients.
-	safe_asprintf(&script, "nft list chain ip nds_mangle %s 2>/dev/null", CHAIN_OUTGOING);
+	safe_asprintf(&script, "nft list chain inet nds_mangle %s 2>/dev/null", CHAIN_OUTGOING);
 	output = popen(script, "r");
 	free(script);
 
@@ -863,7 +863,7 @@ iptables_fw_counters_update(void)
 	pclose(output);
 
 	// Look for incoming (download) traffic
-	safe_asprintf(&script, "nft list chain ip nds_mangle %s 2>/dev/null", CHAIN_INCOMING);
+	safe_asprintf(&script, "nft list chain inet nds_mangle %s 2>/dev/null", CHAIN_INCOMING);
 	output = popen(script, "r");
 	free(script);
 

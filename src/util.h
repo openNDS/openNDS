@@ -133,4 +133,9 @@ unsigned short rand16(void);
  **/
 #define MAX_HOSTPORTLEN ( INET6_ADDRSTRLEN + sizeof("[]:65536")-1 )
 
+/*
+ * @brief Is the given semantic version outdated?
+ **/
+int semver_is_outdated(const char *version, const char *min_version);
+
 #endif /* _UTIL_H_ */

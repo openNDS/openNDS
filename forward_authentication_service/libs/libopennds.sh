@@ -1028,7 +1028,7 @@ check_mhd() {
 }
 
 nft_get_status() {
-	nfttest=$(nft -a list chain ip nds_filter ndsNET 2> /dev/null)
+	nfttest=$(nft -a list chain inet nds_filter ndsNET 2> /dev/null)
 
 	if [ ! -z "$nfttest" ]; then
 		nftstatus="1"
@@ -1275,17 +1275,17 @@ delete_chains () {
 	delete_rule
 
 	# now we can delete our chains - the quickest way is to delete our tables:
-	nft delete table ip nds_filter 2> /dev/null
-	nft delete table ip nds_mangle 2> /dev/null
-	nft delete table ip nds_nat 2> /dev/null
+	nft delete table inet nds_filter 2> /dev/null
+	nft delete table inet nds_mangle 2> /dev/null
+	nft delete table inet nds_nat 2> /dev/null
 }
 
 delete_rule () {
 	# Requires table, src_chain and dst_chain variables
-	rule=$(nft -a list table ip "$table" 2> /dev/null | grep -w -A 30 "chain $src_chain" | grep -w "jump $dst_chain" | awk -F "handle " '{printf "%s", $2}')
+	rule=$(nft -a list table inet "$table" 2> /dev/null | grep -w -A 30 "chain $src_chain" | grep -w "jump $dst_chain" | awk -F "handle " '{printf "%s", $2}')
 
 	if [ ! -z "$rule" ]; then
-		nft delete rule ip "$table" "$src_chain" handle "$rule"
+		nft delete rule inet "$table" "$src_chain" handle "$rule"
 	fi
 }
 
@@ -1324,12 +1324,12 @@ pre_setup () {
 	ndstables="nds_filter nds_mangle nds_nat"
 
 	for ndstable in $ndstables; do
-		nft list table ip "$ndstable" &>/dev/null
+		nft list table inet "$ndstable" &>/dev/null
 		ret=$?
 
 		if [ $ret -gt 0 ]; then
 			# Table does not exist
-			nft add table ip $ndstable
+			nft add table inet $ndstable
 			ret=$?
 
 			if [ $ret -gt 0 ]; then
@@ -1339,21 +1339,21 @@ pre_setup () {
 	done
 
 	# add required chains
-	nft add chain ip nds_filter ndsINP "{ type filter hook input priority -100 ; }" 2> /dev/null
-	nft add chain ip nds_filter ndsFWD "{ type filter hook forward priority -100 ; }" 2> /dev/null
-	nft add chain ip nds_nat ndsPRE "{ type nat hook prerouting priority -100 ; }"
-	nft add chain ip nds_mangle ndsPRE "{ type filter hook prerouting priority -100 ; }"
-	nft add chain ip nds_mangle ndsPOST "{ type filter hook forward priority -100 ; }"
-	nft add chain ip nds_mangle ndsINC
-	nft add chain ip nds_mangle nds_ft_INC
-	nft add chain ip nds_filter nds_ft_OUT
-	nft add chain ip nds_filter nds_allow_INP "{ type filter hook input priority 100 ; }"
-	nft add chain ip nds_filter nds_allow_FWD "{ type filter hook forward priority 100 ; }"
+	nft add chain inet nds_filter ndsINP "{ type filter hook input priority -100 ; }" 2> /dev/null
+	nft add chain inet nds_filter ndsFWD "{ type filter hook forward priority -100 ; }" 2> /dev/null
+	nft add chain inet nds_nat ndsPRE "{ type nat hook prerouting priority -100 ; }"
+	nft add chain inet nds_mangle ndsPRE "{ type filter hook prerouting priority -100 ; }"
+	nft add chain inet nds_mangle ndsPOST "{ type filter hook forward priority -100 ; }"
+	nft add chain inet nds_mangle ndsINC
+	nft add chain inet nds_mangle nds_ft_INC
+	nft add chain inet nds_filter nds_ft_OUT
+	nft add chain inet nds_filter nds_allow_INP "{ type filter hook input priority 100 ; }"
+	nft add chain inet nds_filter nds_allow_FWD "{ type filter hook forward priority 100 ; }"
 
 	# add initial rules
-	nft insert rule ip nds_filter nds_allow_INP iifname "\"$gatewayinterface\"" counter accept comment "\"!opennds: allow input\""
-	nft insert rule ip nds_filter nds_allow_FWD iifname "\"$gatewayinterface\"" counter accept comment "\"!opennds: allow forward\""
-	nft insert rule ip nds_mangle ndsINC oifname "\"$gatewayinterface\"" counter jump nds_ft_INC
+	nft insert rule inet nds_filter nds_allow_INP iifname "\"$gatewayinterface\"" counter accept comment "\"!opennds: allow input\""
+	nft insert rule inet nds_filter nds_allow_FWD iifname "\"$gatewayinterface\"" counter accept comment "\"!opennds: allow forward\""
+	nft insert rule inet nds_mangle ndsINC oifname "\"$gatewayinterface\"" counter jump nds_ft_INC
 
 	ret=$?
 
@@ -1371,26 +1371,26 @@ ipt_to_nft () {
 delete_client_rule () {
 
 	if [ "$nds_verdict" = "all" ]; then
-		local handles=$(nft -a list chain ip "$nds_table" "$nds_chain" | grep -w "$client_ip" | awk -F"handle " '{printf "%s ", $2}')
+		local handles=$(nft -a list chain inet "$nds_table" "$nds_chain" | grep -w "$client_ip" | awk -F"handle " '{printf "%s ", $2}')
 	else
-		local handles=$(nft -a list chain ip "$nds_table" "$nds_chain" | grep -w "$client_ip" | grep -w "$nds_verdict" | awk -F"handle " '{printf "%s ", $2}')
+		local handles=$(nft -a list chain inet "$nds_table" "$nds_chain" | grep -w "$client_ip" | grep -w "$nds_verdict" | awk -F"handle " '{printf "%s ", $2}')
 	fi
 
 	for rulehandle in $handles; do
-		nft delete rule ip $nds_table "$nds_chain" handle "$rulehandle" 2> /dev/null
+		nft delete rule inet $nds_table "$nds_chain" handle "$rulehandle" 2> /dev/null
 	done
 }
 
 replace_client_rule () {
 
 	if [ "$nds_verdict" = "all" ]; then
-		local handles=$(nft -a list chain ip "$nds_table" "$nds_chain" | grep -w "$client_ip" | awk -F"handle " '{printf "%s ", $2}')
+		local handles=$(nft -a list chain inet "$nds_table" "$nds_chain" | grep -w "$client_ip" | awk -F"handle " '{printf "%s ", $2}')
 	else
-		local handles=$(nft -a list chain ip "$nds_table" "$nds_chain" | grep -w "$client_ip" | grep -w "$nds_verdict" | awk -F"handle " '{printf "%s ", $2}')
+		local handles=$(nft -a list chain inet "$nds_table" "$nds_chain" | grep -w "$client_ip" | grep -w "$nds_verdict" | awk -F"handle " '{printf "%s ", $2}')
 	fi
 
 	for rulehandle in $handles; do
-		nft replace rule ip $nds_table "$nds_chain" handle "$rulehandle" "$new_rule" 2> /dev/null
+		nft replace rule inet $nds_table "$nds_chain" handle "$rulehandle" "$new_rule" 2> /dev/null
 	done
 }
 
@@ -1507,7 +1507,7 @@ nft_set () {
 			fi
 
 			if [ -z "$ports" ]; then
-				nft $nftsetmode rule ip nds_filter ndsNET counter ip daddr "@$nftsetname" "$nftruletype"
+				nft $nftsetmode rule inet nds_filter ndsNET counter ip daddr "@$nftsetname" "$nftruletype"
 
 			else
 				numports=$(echo $ports | tr -d "'" | awk '{printf NF}')
@@ -1516,7 +1516,7 @@ nft_set () {
 					ports=$(printf "$ports" | tr -d "'" | tr -s " " ",")
 				fi
 
-				nft $nftsetmode rule ip nds_filter ndsNET counter ip daddr "@$nftsetname" tcp dport {"$ports"} "$nftruletype"
+				nft $nftsetmode rule inet nds_filter ndsNET counter ip daddr "@$nftsetname" tcp dport {"$ports"} "$nftruletype"
 			fi
 
 
@@ -1929,17 +1929,17 @@ create_client_ruleset () {
 		fi
 
 		if [ "$ruleset_name" = "authenticated_users" ]; then
-			nft insert rule ip nds_filter $chain index 2 "$ipstr" "$proto" "$sdport" "$portnum" counter "$verdict"
+			nft insert rule inet nds_filter $chain index 2 "$ipstr" "$proto" "$sdport" "$portnum" counter "$verdict"
 			status=$?
 		fi
 
 		if [ "$ruleset_name" = "preauthenticated_users" ]; then
-			nft insert rule ip nds_filter $chain index 2 "$ipstr" "$proto" "$sdport" "$portnum" counter "$verdict"
+			nft insert rule inet nds_filter $chain index 2 "$ipstr" "$proto" "$sdport" "$portnum" counter "$verdict"
 			status=$?
 		fi
 
 		if [ "$ruleset_name" = "users_to_router" ]; then
-			nft add rule ip nds_filter $chain "$ipstr" "$proto" "$sdport" "$portnum" counter "$verdict"
+			nft add rule inet nds_filter $chain "$ipstr" "$proto" "$sdport" "$portnum" counter "$verdict"
 			status=$?
 		fi
 
@@ -1947,10 +1947,10 @@ create_client_ruleset () {
 
 	if [ "$ruleset_name" = "users_to_router" ]; then
 		# allow ping4 max 4 per second
-		nft insert rule ip nds_filter ndsRTR icmp type echo-request counter drop
-		nft insert rule ip nds_filter ndsRTR icmp type echo-request limit rate 4/second counter accept
+		nft insert rule inet nds_filter ndsRTR icmp type echo-request counter drop
+		nft insert rule inet nds_filter ndsRTR icmp type echo-request limit rate 4/second counter accept
 		# Block everything else
-		nft add rule ip nds_filter $chain counter reject
+		nft add rule inet nds_filter $chain counter reject
 	fi
 }
 
@@ -2546,27 +2546,27 @@ elif [ "$1" = "gatewayroute" ]; then
 
 			if [ "$ftdevices" != "{ $wandevices }" ]; then
 
-				rulehandles=$(nft -a list chain ip nds_mangle nds_ft_INC | grep "@ndsftINC"| awk -F "handle " '{printf "%s ", $2}')
+				rulehandles=$(nft -a list chain inet nds_mangle nds_ft_INC | grep "@ndsftINC"| awk -F "handle " '{printf "%s ", $2}')
 
 				for rulehandle in $rulehandles; do
-					nft delete rule ip nds_mangle nds_ft_INC handle "$rulehandle"
+					nft delete rule inet nds_mangle nds_ft_INC handle "$rulehandle"
 				done
 
-				nft delete flowtable ip nds_mangle handle "$handle"
-				nft add flowtable ip nds_mangle ndsftINC "{ hook ingress priority -100 ; devices = { $wandevices } ; }" 2> /dev/null
-				nft add rule ip nds_mangle nds_ft_INC flow offload @ndsftINC counter
-				nft add rule ip nds_mangle nds_ft_INC counter return
+				nft delete flowtable inet nds_mangle handle "$handle"
+				nft add flowtable inet nds_mangle ndsftINC "{ hook ingress priority -100 ; devices = { $wandevices } ; }" 2> /dev/null
+				nft add rule inet nds_mangle nds_ft_INC flow offload @ndsftINC counter
+				nft add rule inet nds_mangle nds_ft_INC counter return
 			fi
 		else
-			nft add flowtable ip nds_mangle ndsftINC "{ hook ingress priority -100 ; devices = { $wandevices } ; }" 2> /dev/null
-			nft add rule ip nds_mangle nds_ft_INC meta l4proto { tcp, udp } flow offload @ndsftINC counter
-			nft add rule ip nds_mangle nds_ft_INC counter return
+			nft add flowtable inet nds_mangle ndsftINC "{ hook ingress priority -100 ; devices = { $wandevices } ; }" 2> /dev/null
+			nft add rule inet nds_mangle nds_ft_INC meta l4proto { tcp, udp } flow offload @ndsftINC counter
+			nft add rule inet nds_mangle nds_ft_INC counter return
 		fi
 	fi
 
 	# add upload flowtable
 
-	fttest=$(nft list flowtable ip nds_filter ndsftOUT &> /dev/null ; echo $?)
+	fttest=$(nft list flowtable inet nds_filter ndsftOUT &> /dev/null ; echo $?)
 
 	if [ $fttest -gt 0 ]; then
 		option="gatewayinterface"
@@ -2576,14 +2576,14 @@ elif [ "$1" = "gatewayroute" ]; then
 			gatewayinterface="br-lan"
 		fi
 
-		nft add flowtable ip nds_filter ndsftOUT "{ hook ingress priority -100 ; devices = { $gatewayinterface } ; }"
+		nft add flowtable inet nds_filter ndsftOUT "{ hook ingress priority -100 ; devices = { $gatewayinterface } ; }"
 	fi
 
-	ftruletest=$(nft list chain ip nds_filter nds_ft_OUT 2> /dev/null | grep -q -w "meta l4proto"; echo $?)
+	ftruletest=$(nft list chain inet nds_filter nds_ft_OUT 2> /dev/null | grep -q -w "meta l4proto"; echo $?)
 
 	if [ $ftruletest -gt 0 ]; then
-		nft add rule ip nds_filter nds_ft_OUT meta l4proto { tcp, udp } flow offload @ndsftOUT counter
-		nft add rule ip nds_filter nds_ft_OUT counter return
+		nft add rule inet nds_filter nds_ft_OUT meta l4proto { tcp, udp } flow offload @ndsftOUT counter
+		nft add rule inet nds_filter nds_ft_OUT counter return
 	fi
 
 	exit 0
@@ -3351,13 +3351,13 @@ elif [ "$1" = "ipv6_routing" ]; then
 	if [ -z "$2" ] || [ "$is_uci" -gt 0 ]; then
 		exit 0
 
-	elif [ "$2" = "block" ]; then
-		uci set network.wan6.proto='none'
-		service network reload
-
-	elif [ "$2" = "allow" ]; then
-		uci set network.wan6.proto='dhcpv6'
-		service network reload
+#	elif [ "$2" = "block" ]; then
+#		uci set network.wan6.proto='none'
+#		service network reload
+#
+#	elif [ "$2" = "allow" ]; then
+#		uci set network.wan6.proto='dhcpv6'
+#		service network reload
 	fi
 
 	exit 0

@@ -218,9 +218,9 @@ client_auth(char *arg)
 				} else {
 					debug(LOG_DEBUG, "ip subnet test failed: Continuing...");
 				}
+			free(msg2);
 			}
 		free(msg);
-		free(msg2);
 
 		} else {
 			debug(LOG_DEBUG, "Client connection not found: Continuing...");

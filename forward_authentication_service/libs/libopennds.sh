@@ -2486,9 +2486,11 @@ elif [ "$1" = "gatewayroute" ]; then
 		# We have a valid route to upstream (WAN) gateway, so:
 		# Check for bad router config
 		for var in $defaultif; do
+
 			if [ "$var" = "$ifname" ]; then
 				defaultif="-"
-				break
+				printf "$defaultif"
+				exit 0
 			fi
 		done
 
@@ -2502,11 +2504,11 @@ elif [ "$1" = "gatewayroute" ]; then
 			else
 				iface=$var
 				idx=0
+
+				# Check arp for the upstream gateway
 				arptest=$(ip -f inet neigh show | grep -w  "$iface" | grep -w  "$ipaddr")
 
-				if [ -z "$arptest" ]; then
-					continue
-				else
+				if [ ! -z "$arptest" ]; then
 
 					for arg in $arptest; do
 
@@ -2516,14 +2518,46 @@ elif [ "$1" = "gatewayroute" ]; then
 							gatewayinterfaces="$gatewayinterfaces$online:$ipaddr,$iface "
 						fi
 					done
+
+					continue
 				fi
+
+				# If we ended up here, the arp check failed, so try pinging the gateway
+				pingtest=$(ping -4 -c 1 -W 1 -I "$iface" "$ipaddr" &> /dev/null; echo $?)
+
+				if [ "$pingtest" -eq 0 ]; then
+					gatewayinterfaces="$gatewayinterfaces$online:$ipaddr,$iface "
+					continue
+				fi
+
+				# And if we ended up here, the upstream gateway did not respond to a ping
+				# If we ping something on the Internet every checkinterval for ever, we might eventually be blocked
+				# So use this test as a last resort
+
+				option="fasremotefqdn"
+				get_option_from_config "$option"
+
+				if [ -z "$fasremotefqdn" ]; then
+					# fasrmotefqdn not defined, so try pinging CloudFlare
+					fasremotefqdn="one.one.one.one"
+				fi
+
+				pingtest=$(ping -4 -c 1 -w 1 -I "$iface" "$fasremotefqdn" &>/dev/null; echo $?)
+
+				if [ "$pingtest" -eq 0 ]; then
+					gatewayinterfaces="$gatewayinterfaces$online:$ipaddr,$iface "
+					continue
+				fi
+
+				# If we failed all tests, we ended up here
+				gatewayinterfaces="$gatewayinterfaces$offline:$ipaddr,$iface "
 			fi
 		done
 	fi
 
 	printf "$gatewayinterfaces"
 
-	if [ "$gatewayinterfaces" != "offline" ]; then
+	if [ ! -z "$gatewayinterfaces" ]; then
 		# check if flowtables exist and create or update them as required
 
 		# configure download flowtable

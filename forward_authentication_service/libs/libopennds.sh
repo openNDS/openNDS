@@ -2509,6 +2509,9 @@ elif [ "$1" = "gatewayroute" ]; then
 				arptest=$(ip -f inet neigh show | grep -w  "$iface" | grep -w  "$ipaddr")
 
 				if [ ! -z "$arptest" ]; then
+					syslogmessage="Upstream link for interface [ $iface ] is in ipv4 arp table"
+					debugtype="debug"
+					write_to_syslog
 
 					for arg in $arptest; do
 
@@ -2523,6 +2526,10 @@ elif [ "$1" = "gatewayroute" ]; then
 				fi
 
 				# If we ended up here, the arp check failed, so try pinging the gateway
+				syslogmessage="Upstream arp test for interface [ $iface ]failed - attempting gateway ping..."
+				debugtype="debug"
+				write_to_syslog
+
 				pingtest=$(ping -4 -c 1 -W 1 -I "$iface" "$ipaddr" &> /dev/null; echo $?)
 
 				if [ "$pingtest" -eq 0 ]; then
@@ -2533,12 +2540,18 @@ elif [ "$1" = "gatewayroute" ]; then
 				# And if we ended up here, the upstream gateway did not respond to a ping
 				# If we ping something on the Internet every checkinterval for ever, we might eventually be blocked
 				# So use this test as a last resort
+				syslogmessage="Upstream gateway ping test for interface [ $iface ] failed - attempting fasremotefqdn ping..."
+				debugtype="debug"
+				write_to_syslog
 
 				option="fasremotefqdn"
 				get_option_from_config "$option"
 
 				if [ -z "$fasremotefqdn" ]; then
-					# fasrmotefqdn not defined, so try pinging CloudFlare
+					syslogmessage="fasrmotefqdn not defined, so try pinging CloudFlare..."
+					debugtype="debug"
+					write_to_syslog
+
 					fasremotefqdn="one.one.one.one"
 				fi
 
@@ -3383,15 +3396,16 @@ elif [ "$1" = "ipv6_routing" ]; then
 	is_uci=$(type uci &>/dev/null; echo $?)
 
 	if [ -z "$2" ] || [ "$is_uci" -gt 0 ]; then
+		# not OpenWrt compatible
 		exit 0
 
-#	elif [ "$2" = "block" ]; then
-#		uci set network.wan6.proto='none'
-#		service network reload
-#
-#	elif [ "$2" = "allow" ]; then
-#		uci set network.wan6.proto='dhcpv6'
-#		service network reload
+	elif [ "$2" = "block" ]; then
+		uci set network.wan6.proto='none'
+		service network reload
+
+	elif [ "$2" = "allow" ]; then
+		uci set network.wan6.proto='dhcpv6'
+		service network reload
 	fi
 
 	exit 0

@@ -1428,8 +1428,6 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 	debug(LOG_DEBUG, "gw_url: %s", gw_url);
 	free (gw_url_raw);
 
-	clienttype = safe_calloc(STATUS_BUF);
-
 	if (!client->client_type || strlen(client->client_type) == 0) {
 		clienttype = safe_strdup("cpd_can");
 	} else {

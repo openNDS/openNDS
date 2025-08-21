@@ -348,13 +348,6 @@ config_init(int argc, char **argv)
 
 	debug(LOG_NOTICE, "Interface %s is at %s (%s)", config.gw_interface, config.gw_ip, config.gw_mac);
 
-	// Make sure fas_remoteip is set. Note: This does not enable FAS.
-	if (strcmp(config.fas_remoteip, "disabled") == 0) {
-		config.fas_remoteip = safe_strdup(config.gw_ip);
-	}
-
-	debug(LOG_DEBUG, "FAS remote ip address is [ %s ]", config.fas_remoteip);
-
 	// Generate a unique faskey if not set in config
 	if (strcmp(config.fas_key, DEFAULT_FASKEY) == 0) {
 		setupcmd = safe_calloc(STATUS_BUF);

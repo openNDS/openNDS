@@ -15,7 +15,13 @@ hosts="/etc/hosts"
 setconf="$1"
 uciconfig=$(uci show dhcp 2>/dev/null)
 
-ipset_to_nftset () {
+ipset_to_nftset() {
+	# Translate a legacy ipset to an nftset
+	# The legacy ipset might be dynamically updated eg by dnsmasq, so loop around for a set time
+	# Note: It loops after a sleep of one second so the call to this library function should probably always be forked into the background to prevent blocking
+	# (hint: use a trailing "&" when calling it)
+	# $ipsetname contains the name of the ipset
+	# $loopcount contains the number of loops to do
 
 	local timeout=$loopcount
 
@@ -32,7 +38,7 @@ ipset_to_nftset () {
 		elements=${elements:2}
 
 		if [ ! -z "$elements" ] && [ "$elements" != "$last_elements" ]; then
-			nft add element ip nds_filter "$ipsetname" {"$elements"}
+			nft add element inet nds_filter "$ipsetname" {"$elements"}
 		fi
 
 		last_elements="$elements"

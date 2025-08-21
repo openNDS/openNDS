@@ -600,13 +600,16 @@ setup_from_config(void)
 	// If FAS is enabled then set it up
 	if (config->fas_port) {
 		debug(LOG_INFO, "fas_secure_enabled is set to level %d", config->fas_secure_enabled);
+		debug(LOG_INFO, "fasremoteip is %s, fasremotefqdn is %s", config->fas_remoteip, config->fas_remotefqdn);
 
 		// Check the FAS remote IP address
-		if ((strcmp(config->fas_remoteip, "disabled") == 0)) {
+		if ((strcmp(config->fas_remoteip, "disabled") == 0) && (strcmp(config->fas_remotefqdn, "disabled") == 0)) {
+		debug(LOG_DEBUG, "Setting undefined fas_remoteip");
 			config->fas_remoteip = safe_strdup(config->gw_ip);
 		}
 
-		if (config->fas_remoteip) {
+		if (strcmp(config->fas_remoteip, "disabled") != 0) {
+
 			if (is_addr(config->fas_remoteip) == 1) {
 				debug(LOG_INFO, "fasremoteip - %s - is a valid IPv4 address...", config->fas_remoteip);
 			} else {

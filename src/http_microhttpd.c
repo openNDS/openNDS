@@ -1465,20 +1465,20 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 			if (config->fas_hid) {
 				debug(LOG_DEBUG, "hid=%s", client->hid);
 
-				//if (config->preauth) {
-				//	clientif = safe_calloc(STATUS_BUF);
+				if (config->preauth) {
+					clientif = safe_calloc(STATUS_BUF);
 
-				//	get_client_interface(clientif, STATUS_BUF, client->mac);
-				//	debug(LOG_DEBUG, "clientif: [%s] url_encoded_gw_name: [%s]", clientif, config->url_encoded_gw_name);
+					get_client_interface(clientif, STATUS_BUF, client->mac);
+					debug(LOG_DEBUG, "clientif: [%s] url_encoded_gw_name: [%s]", clientif, config->url_encoded_gw_name);
 
-				//	query_str = safe_calloc(QUERYMAXLEN);
+					query_str = safe_calloc(QUERYMAXLEN);
 
-				//	snprintf(query_str, QUERYMAXLEN,
-				//		"hid=%s",
-				//		client->hid
-				//	);
+					snprintf(query_str, QUERYMAXLEN,
+						"hid=%s",
+						client->hid
+					);
 
-				//} else {
+				} else {
 					clientif = safe_calloc(STATUS_BUF);
 
 					get_client_interface(clientif, STATUS_BUF, client->mac);
@@ -1506,7 +1506,7 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 						config->custom_images,
 						config->custom_files
 					);
-				//}
+				}
 
 
 				query_str_b64 = safe_calloc(ENC_QUERYSTR);

@@ -930,7 +930,6 @@ ndsctl_status(FILE *fp)
 
 	if (config->preauth) {
 		fprintf(fp, "ThemeSpec Core Library: %s\n", config->preauth);
-		fprintf(fp, "ThemeSpec Mode: %d\n", config->login_option_enabled);
 	} else {
 		fprintf(fp, "ThemeSpec: Disabled\n");
 	}

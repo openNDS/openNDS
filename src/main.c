@@ -279,6 +279,29 @@ init_signals(void)
 	}
 }
 
+void setup_fasurl(char protocol[8], char *fasurl) {
+	// Setup the FAS URL
+	s_config *config;
+
+	config = config_get_config();
+
+	fasurl = safe_calloc(SMALL_BUF);
+
+	if (strcmp(config->fas_remotefqdn, "disable") == 0 || strcmp(config->fas_remotefqdn, "disabled") == 0) {
+		safe_snprintf(fasurl, SMALL_BUF, "%s://%s:%u%s",
+			protocol, config->fas_remoteip, config->fas_port, config->fas_path);
+		config->fas_url = safe_strdup(fasurl);
+		debug(LOG_DEBUG, "fasurl (ip) is %s\n", fasurl);
+	} else {
+		safe_snprintf(fasurl, SMALL_BUF, "%s://%s:%u%s",
+			protocol, config->fas_remotefqdn, config->fas_port, config->fas_path);
+		config->fas_url = safe_strdup(fasurl);
+		debug(LOG_DEBUG, "fasurl (fqdn) is %s\n", fasurl);
+	}
+
+	free(fasurl);
+}
+
 /**@internal
  * Setup from Configuration values
  */
@@ -583,7 +606,7 @@ setup_from_config(void)
 	}
 
 	// If fasport not set, override any FAS configuration
-	if (config->fas_port == 0) {
+	if (config->login_option_enabled != 0) {
 		debug(LOG_NOTICE, "Preauth is Enabled - Overriding FAS configuration.\n");
 		debug(LOG_INFO, "Preauth Script is %s\n", config->preauth);
 
@@ -595,10 +618,10 @@ setup_from_config(void)
 		config->fas_path = safe_strdup(preauth_dir);
 		config->fas_secure_enabled = 1;
 		free(preauth_dir);
-	}
+		snprintf(protocol, sizeof(protocol), "http");
+		setup_fasurl(protocol, fasurl);
 
-	// If FAS is enabled then set it up
-	if (config->fas_port) {
+	} else {
 		debug(LOG_INFO, "fas_secure_enabled is set to level %d", config->fas_secure_enabled);
 		debug(LOG_INFO, "fasremoteip is %s, fasremotefqdn is %s", config->fas_remoteip, config->fas_remotefqdn);
 
@@ -702,22 +725,7 @@ setup_from_config(void)
 			snprintf(protocol, sizeof(protocol), "http");
 		}
 
-		// Setup the FAS URL
-		fasurl = safe_calloc(SMALL_BUF);
-
-		if (strcmp(config->fas_remotefqdn, "disable") == 0 || strcmp(config->fas_remotefqdn, "disabled") == 0) {
-			safe_snprintf(fasurl, SMALL_BUF, "%s://%s:%u%s",
-				protocol, config->fas_remoteip, config->fas_port, config->fas_path);
-			config->fas_url = safe_strdup(fasurl);
-			debug(LOG_DEBUG, "fasurl (ip) is %s\n", fasurl);
-		} else {
-			safe_snprintf(fasurl, SMALL_BUF, "%s://%s:%u%s",
-				protocol, config->fas_remotefqdn, config->fas_port, config->fas_path);
-			config->fas_url = safe_strdup(fasurl);
-			debug(LOG_DEBUG, "fasurl (fqdn) is %s\n", fasurl);
-		}
-
-		free(fasurl);
+		setup_fasurl(protocol, fasurl);
 
 		// Check if authmon is running and if it is, kill it
 		safe_asprintf(&fasssl, "kill $(pgrep -f \"usr/lib/opennds/authmon.sh\") > /dev/null 2>&1");

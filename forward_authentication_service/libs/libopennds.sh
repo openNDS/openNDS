@@ -1539,6 +1539,8 @@ nft_set () {
 
 				else
 					# OpenWrt
+					ucicmd="uci del dhcp.nds_$nftsetname"
+					echo $ucicmd | uci -q batch
 					ucicmd="set dhcp.nds_$nftsetname='ipset'"
 					echo $ucicmd | uci -q batch
 					ucicmd="add_list dhcp.nds_$nftsetname.name='$nftsetname'"

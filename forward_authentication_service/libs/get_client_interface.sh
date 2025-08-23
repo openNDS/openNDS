@@ -98,7 +98,7 @@ if [ "$iwstatus" = true ]; then
 
 	if [ -z "$stations" ] && [ "$fast_client_scan" -eq 0 ]; then
 		# Not local wireless, so check in mesh11sd's vxtun
-		client_vtunif=$(type mesh11sd &>/dev/null && mesh11sd show_ap_data all | grep -w -B 1 "$mac" | grep "@" | awk -F "\"" 'NR==1 {printf "%s", $2}' | awk -F "@" '{printf "%s %s", $3, $1}')
+		client_vtunif=$(type mesh11sd &>/dev/null && mesh11sd show_ap_data all 2>/dev/null | grep -w -B 1 "$mac" | grep "@" | awk -F "\"" 'NR==1 {printf "%s", $2}' | awk -F "@" '{printf "%s %s", $3, $1}')
 		clientmeshif="$client_vtunif"
 	fi
 fi

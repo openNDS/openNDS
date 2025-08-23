@@ -582,6 +582,22 @@ setup_from_config(void)
 		config->preauth = NULL;
 	}
 
+	// Check sha256sum command is available
+	msg = safe_calloc(SMALL_BUF);
+
+	if (execute_ret_url_encoded(msg, SMALL_BUF - 1, "printf 'test' | sha256sum") == 0) {
+		safe_asprintf(&fashid, "sha256sum");
+		debug(LOG_NOTICE, "sha256sum provider is available");
+	} else {
+		debug(LOG_ERR, "sha256sum provider not available - please install package to provide it");
+		debug(LOG_ERR, "Exiting...");
+		exit(1);
+	}
+
+	config->fas_hid = safe_strdup(fashid);
+	free(fashid);
+	free(msg);
+
 	// If fasport not set, override any FAS configuration
 	if (config->fas_port == 0) {
 		debug(LOG_NOTICE, "Preauth is Enabled - Overriding FAS configuration.\n");
@@ -604,8 +620,10 @@ setup_from_config(void)
 
 		// Check the FAS remote IP address
 		if ((strcmp(config->fas_remoteip, "disabled") == 0) && (strcmp(config->fas_remotefqdn, "disabled") == 0)) {
-		debug(LOG_DEBUG, "Setting undefined fas_remoteip");
+			debug(LOG_WARNING, "Remote FAS addressing is undefined, please configure it");
+			debug(LOG_DEBUG, "Setting undefined fas_remoteip");
 			config->fas_remoteip = safe_strdup(config->gw_ip);
+			config->fas_port = config->gw_port;
 		}
 
 		if (strcmp(config->fas_remoteip, "disabled") != 0) {
@@ -626,26 +644,6 @@ setup_from_config(void)
 			debug(LOG_ERR, "Invalid fasport - port 80 is reserved and cannot be used for local FAS...");
 			debug(LOG_ERR, "Exiting...");
 			exit(1);
-		}
-
-		// If FAS key is set, then check the prerequisites
-
-		// FAS secure Level >=1
-		if (config->fas_key && config->fas_secure_enabled >= 1) {
-			// Check sha256sum command is available
-			msg = safe_calloc(SMALL_BUF);
-
-			if (execute_ret_url_encoded(msg, SMALL_BUF - 1, "printf 'test' | sha256sum") == 0) {
-				safe_asprintf(&fashid, "sha256sum");
-				debug(LOG_NOTICE, "sha256sum provider is available");
-			} else {
-				debug(LOG_ERR, "sha256sum provider not available - please install package to provide it");
-				debug(LOG_ERR, "Exiting...");
-				exit(1);
-			}
-			config->fas_hid = safe_strdup(fashid);
-			free(fashid);
-			free(msg);
 		}
 
 		// FAS secure Level 2 and 3

@@ -18,7 +18,7 @@
  * @author Copyright (C) 2015-2025 Modifications and additions by BlueWave Projects and Services <opennds@blue-wave.net>
  */
 
-
+#include <sys/resource.h>
 #include <microhttpd.h>
 #include <syslog.h>
 #include <arpa/inet.h>
@@ -70,10 +70,21 @@ static const char *lookup_mimetype(const char *filename);
 
 struct MHD_Daemon * webserver = NULL;
 
-void stop_mhd(void)
-{
-	debug(LOG_INFO, "Calling MHD_stop_daemon [%lu]", webserver);
-	MHD_stop_daemon(webserver);
+void custom_logger(void *arg, const char *fmt, va_list ap) {
+	char buf[256];
+	vsnprintf(buf, sizeof(buf), fmt, ap);
+	debug(LOG_ERR, "MHD: %s (errno: %s)", buf, strerror(errno));
+}
+
+void stop_mhd(void) {
+    debug(LOG_INFO, "Quiescing MHD daemon [%lu]", webserver);
+    if (webserver) {
+        MHD_quiesce_daemon(webserver);
+        usleep(100000); // Wait 100ms for connections to close
+        debug(LOG_INFO, "Calling MHD_stop_daemon [%lu]", webserver);
+        MHD_stop_daemon(webserver);
+        webserver = NULL; // Prevent reuse of stale pointer
+    }
 }
 
 void start_mhd(void)
@@ -82,13 +93,20 @@ void start_mhd(void)
 	s_config *config;
 	config = config_get_config();
 
+	// Set ulimit to 4096
+	struct rlimit rl;
+	getrlimit(RLIMIT_NOFILE, &rl);
+	rl.rlim_cur = 4096;
+	setrlimit(RLIMIT_NOFILE, &rl);
+
 	if ((webserver = MHD_start_daemon(
-		MHD_USE_INTERNAL_POLLING_THREAD | MHD_USE_THREAD_PER_CONNECTION | MHD_USE_TCP_FASTOPEN,
+		MHD_USE_INTERNAL_POLLING_THREAD | MHD_USE_EPOLL | MHD_USE_TCP_FASTOPEN,
 		config->gw_port,
 		NULL,
 		NULL,
 		libmicrohttpd_cb,
 		NULL,
+		MHD_OPTION_EXTERNAL_LOGGER, custom_logger, NULL,
 		MHD_OPTION_CONNECTION_LIMIT, (unsigned int) 100,
 		MHD_OPTION_CONNECTION_TIMEOUT, (unsigned int) 10,
 		MHD_OPTION_PER_IP_CONNECTION_LIMIT, (unsigned int) 10,
@@ -1428,8 +1446,6 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 	debug(LOG_DEBUG, "gw_url: %s", gw_url);
 	free (gw_url_raw);
 
-	clienttype = safe_calloc(STATUS_BUF);
-
 	if (!client->client_type || strlen(client->client_type) == 0) {
 		clienttype = safe_strdup("cpd_can");
 	} else {
@@ -1595,7 +1611,7 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 
 		clientif = safe_calloc(STATUS_BUF);
 		get_client_interface(clientif, STATUS_BUF, client->mac);
-		debug(LOG_DEBUG, "clientif: [%s]", clientif);
+		debug(LOG_DEBUG, "clientif: [%s], gatewayaddress: [%s], gatewayurl: [%s]", clientif, config->gw_address, gw_url);
 		snprintf(querystr, QUERYMAXLEN,
 			"hid=%s%sclientip=%s%sclientmac=%s%sclient_type=%s%scpi_query=%s%sgatewayname=%s%sgatewayurl=%s%sversion=%s%sgatewayaddress=%s%sgatewaymac=%s%sauthdir=%s%soriginurl=%s%sclientif=%s%sthemespec=%s%s%s%s%s%s",
 			client->hid, QUERYSEPARATOR,

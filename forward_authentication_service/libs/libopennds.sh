@@ -1456,7 +1456,7 @@ nft_set () {
 
 		if [ "$nftsetmode" = "add" ] || [ "$nftsetmode" = "insert" ]; then
 			# Add the set, add/insert the rule and the Dnsmasq config
-			nft add set ip nds_filter "$nftsetname" { type ipv4_addr\; size 128\; }
+			nft add set inet nds_filter "$nftsetname" { type ipv4_addr\; size 128\; }
 			ret=$?
 
 			if [ "$ret" -ne 0 ]; then
@@ -1539,13 +1539,15 @@ nft_set () {
 
 				else
 					# OpenWrt
+					ucicmd="del dhcp.nds_$nftsetname"
+					echo $ucicmd | uci -q batch
 					ucicmd="set dhcp.nds_$nftsetname='ipset'"
 					echo $ucicmd | uci -q batch
 					ucicmd="add_list dhcp.nds_$nftsetname.name='$nftsetname'"
 					echo $ucicmd | uci -q batch
 					ucicmd="set dhcp.nds_$nftsetname.table='nds_filter'"
 					echo $ucicmd | uci -q batch
-					ucicmd="set dhcp.nds_$nftsetname.table_family='ip'"
+					ucicmd="set dhcp.nds_$nftsetname.table_family='inet'"
 					echo $ucicmd | uci -q batch
 
 					domains=$fqdns

@@ -60,7 +60,7 @@ if (ob_get_level()){ob_end_clean();}
 
 #####################################################################################
 // The pre-shared key "faskey" (this must be the same as in the openNDS config):
-$key="c775e7b757ede630cd0aa1113bd102661ab38829ca52a6422ab782862f268646";
+$key="8a749260bfba87ca3706659d9beaabe928f84025a4ff7531a969e96ac4ee7cbc";
 #####################################################################################
 
 // Setup some basics:

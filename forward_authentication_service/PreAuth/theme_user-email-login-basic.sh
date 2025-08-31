@@ -196,7 +196,7 @@ landing_page() {
 			Click or tap Continue to show the status of your account.
 		</p>
 		<form>
-			<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='$gatewayurl'\" >
+			<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='http://$gatewayfqdn/?$randquery'\" >
 		</form>
 		<hr>
 	"
@@ -218,7 +218,7 @@ landing_page() {
 			Click or tap Continue to try again.
 		</p>
 		<form>
-			<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='http://$gatewayfqdn'\" >
+			<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='http://$gatewayfqdn/?$randquery'\" >
 		</form>
 		<hr>
 	"
@@ -423,6 +423,8 @@ display_terms() {
 #  set in libopennds.sh			#
 #						#
 #################################################
+
+randquery="$(date | sha256sum | awk '{printf "%s", $1}')"
 
 # Quotas and Data Rates
 #########################################

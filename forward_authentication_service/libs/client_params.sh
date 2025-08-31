@@ -304,8 +304,9 @@ body() {
 	elif [ "$status" = "err511" ]; then
 		get_option_from_config "fasremoteip"
 		get_option_from_config "fasremotefqdn"
+		get_option_from_config "login_option_enabled"
 
-		if [ -z "$fasremoteip" ] && [ -z "$fasremotefqdn" ]; then
+		if [ -z "$fasremoteip" ] && [ -z "$fasremotefqdn" ] && [ "$login_option_enabled" -eq 0 ]; then
 			pagebody="
 				<h1>ERROR: Remote Portal Not Defined or Not Available.</h1>
 				<form action=\"$url/login\" method=\"get\" target=\"_self\">

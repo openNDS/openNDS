@@ -1465,49 +1465,33 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 			if (config->fas_hid) {
 				debug(LOG_DEBUG, "hid=%s", client->hid);
 
-				if (config->preauth) {
-					clientif = safe_calloc(STATUS_BUF);
+				clientif = safe_calloc(STATUS_BUF);
 
-					get_client_interface(clientif, STATUS_BUF, client->mac);
-					debug(LOG_DEBUG, "clientif: [%s] url_encoded_gw_name: [%s]", clientif, config->url_encoded_gw_name);
+				get_client_interface(clientif, STATUS_BUF, client->mac);
+				debug(LOG_DEBUG, "FAS path [%s], clientif: [%s] url_encoded_gw_name: [%s]", config->fas_path, clientif, config->url_encoded_gw_name);
 
-					query_str = safe_calloc(QUERYMAXLEN);
+				query_str = safe_calloc(QUERYMAXLEN);
 
-					snprintf(query_str, QUERYMAXLEN,
-						"hid=%s",
-						client->hid
-					);
-
-				} else {
-					clientif = safe_calloc(STATUS_BUF);
-
-					get_client_interface(clientif, STATUS_BUF, client->mac);
-					debug(LOG_DEBUG, "clientif: [%s] url_encoded_gw_name: [%s]", clientif, config->url_encoded_gw_name);
-
-					query_str = safe_calloc(QUERYMAXLEN);
-
-					snprintf(query_str, QUERYMAXLEN,
-						"hid=%s%sclientip=%s%sclientmac=%s%sclient_type=%s%scpi_query=%s%sgatewayname=%s%sgatewayurl=%s%sversion=%s%sgatewayaddress=%s%sgatewaymac=%s%soriginurl=%s%sclientif=%s%sthemespec=%s%s%s%s%s%s",
-						client->hid, QUERYSEPARATOR,
-						client->ip, QUERYSEPARATOR,
-						client->mac, QUERYSEPARATOR,
-						clienttype, QUERYSEPARATOR,
-						client->cpi_query, QUERYSEPARATOR,
-						config->url_encoded_gw_name, QUERYSEPARATOR,
-						gw_url, QUERYSEPARATOR,
-						VERSION, QUERYSEPARATOR,
-						config->gw_address, QUERYSEPARATOR,
-						config->gw_mac, QUERYSEPARATOR,
-						originurl, QUERYSEPARATOR,
-						clientif, QUERYSEPARATOR,
-						config->themespec_path, QUERYSEPARATOR,
-						config->custom_params,
-						config->custom_vars,
-						config->custom_images,
-						config->custom_files
-					);
-				}
-
+				snprintf(query_str, QUERYMAXLEN,
+					"hid=%s%sclientip=%s%sclientmac=%s%sclient_type=%s%scpi_query=%s%sgatewayname=%s%sgatewayurl=%s%sversion=%s%sgatewayaddress=%s%sgatewaymac=%s%soriginurl=%s%sclientif=%s%sthemespec=%s%s%s%s%s%s",
+					client->hid, QUERYSEPARATOR,
+					client->ip, QUERYSEPARATOR,
+					client->mac, QUERYSEPARATOR,
+					clienttype, QUERYSEPARATOR,
+					client->cpi_query, QUERYSEPARATOR,
+					config->url_encoded_gw_name, QUERYSEPARATOR,
+					gw_url, QUERYSEPARATOR,
+					VERSION, QUERYSEPARATOR,
+					config->gw_address, QUERYSEPARATOR,
+					config->gw_mac, QUERYSEPARATOR,
+					originurl, QUERYSEPARATOR,
+					clientif, QUERYSEPARATOR,
+					config->themespec_path, QUERYSEPARATOR,
+					config->custom_params,
+					config->custom_vars,
+					config->custom_images,
+					config->custom_files
+				);
 
 				query_str_b64 = safe_calloc(ENC_QUERYSTR);
 

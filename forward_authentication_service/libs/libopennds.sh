@@ -986,14 +986,14 @@ check_mhd() {
 	local timeout=4
 
 	for tic in $(seq $timeout); do
+		timestamp=$(date +%s)
+		echo $timestamp > $heartbeatpath
 		mhd_get_status
 
 		if [ "$mhdstatus" = "2" ]; then
 			# MHD response fail - wait then try again:
 			sleep 1
 		elif [ "$mhdstatus" = "1" ]; then
-			timestamp=$(date +%s)
-			echo $timestamp > $heartbeatpath
 			break
 		fi
 	done

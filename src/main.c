@@ -599,7 +599,7 @@ setup_from_config(void)
 	free(msg);
 
 	// If fasport not set, override any FAS configuration
-	if (config->fas_port == 0) {
+	if (config->fas_port == 443 && config->login_option_enabled > 0) {
 		debug(LOG_NOTICE, "Preauth is Enabled - Overriding FAS configuration.\n");
 		debug(LOG_INFO, "Preauth Script is %s\n", config->preauth);
 

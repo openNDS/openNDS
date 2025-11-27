@@ -1785,7 +1785,7 @@ create_client_ruleset () {
 
 	# Check for user_to_router essentials and append if missing
 	if [ "$ruleset_name" = "users_to_router" ]; then
-		essentials="allow%20udp%20port%2053 allow%20udp%20port%2067 allow%20tcp%20port%2022 allow%20tcp%20port%20443"
+		essentials="allow%20udp%20port%2053 allow%20tcp%20port%2053 allow%20udp%20port%2067 allow%20tcp%20port%2022 allow%20tcp%20port%20443"
 		newrules=""
 
 		for rule in $ruleset; do

@@ -102,11 +102,8 @@ char *set_list_str(char *list, const char *default_list, char *debug_level)
 char *set_option_str(char *option, const char *default_option, char *debug_level)
 {
 	char msg[SMALL_BUF];
-	char debuglevel[STATUS_BUF];
 
 	memset(msg, 0, SMALL_BUF);
-	memset(debuglevel, 0, STATUS_BUF);
-
 	get_option_from_config(msg, SMALL_BUF, option);
 
 	if (strcmp(msg, "") == 0) {
@@ -150,7 +147,6 @@ config_init(int argc, char **argv)
 
 	safe_snprintf(libcmd, STATUS_BUF, "/usr/lib/opennds/libopennds.sh \"is_nodog\"");
 
-
 	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, libcmd) == 0) {
 		debug(LOG_DEBUG, "NoDogSplash is installed, to continue please uninstall it and restart openNDS, exiting.....");
 		exit (1);
@@ -191,9 +187,8 @@ config_init(int argc, char **argv)
 
 	// Special handling for gatewayname as library call returns a url-encoded response
 	gatewayname_raw = safe_calloc(SMALL_BUF);
-
-	gatewayname = safe_strdup(set_option_str("gatewayname", DEFAULT_GATEWAYNAME, debug_level));
-	uh_urldecode(gatewayname_raw, SMALL_BUF, gatewayname, SMALL_BUF);
+	gatewayname = set_option_str("gatewayname", DEFAULT_GATEWAYNAME, debug_level);
+	uh_urldecode(gatewayname_raw, SMALL_BUF, gatewayname, strlen(gatewayname));
 	config.gw_name = safe_strdup(gatewayname_raw);
 
 	openlog ("opennds", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_DAEMON);
@@ -203,26 +198,26 @@ config_init(int argc, char **argv)
 	free(gatewayname_raw);
 	//
 
-	config.gw_fqdn = safe_strdup(set_option_str("gatewayfqdn", DEFAULT_GATEWAYFQDN, debug_level));
-	config.status_path = safe_strdup(set_option_str("statuspath", DEFAULT_STATUSPATH, debug_level));
-	config.gw_interface = safe_strdup(set_option_str("gatewayinterface", DEFAULT_GATEWAYINTERFACE, debug_level));
-	config.gw_iprange = safe_strdup(set_option_str("gateway_iprange", DEFAULT_GATEWAY_IPRANGE, debug_level));
-	config.fas_key = safe_strdup(set_option_str("faskey", DEFAULT_FASKEY, debug_level));
-	config.log_mountpoint = safe_strdup(set_option_str("log_mountpoint", DEFAULT_LOG_MOUNTPOINT, debug_level));
-	config.webroot = safe_strdup(set_option_str("webroot", DEFAULT_WEBROOT, debug_level));
-	config.authdir = safe_strdup(set_option_str("authdir", DEFAULT_AUTHDIR, debug_level));
-	config.denydir = safe_strdup(set_option_str("denydir", DEFAULT_DENYDIR, debug_level));
-	config.preauthdir = safe_strdup(set_option_str("preauthdir", DEFAULT_PREAUTHDIR, debug_level));
-	config.ndsctl_sock = safe_strdup(set_option_str("ndsctl_sock", DEFAULT_NDSCTL_SOCK, debug_level));
-	config.authentication_mark = safe_strdup(set_option_str("authentication_mark", DEFAULT_AUTHENTICATION_MARK, debug_level));
+	config.gw_fqdn = set_option_str("gatewayfqdn", DEFAULT_GATEWAYFQDN, debug_level);
+	config.status_path = set_option_str("statuspath", DEFAULT_STATUSPATH, debug_level);
+	config.gw_interface = set_option_str("gatewayinterface", DEFAULT_GATEWAYINTERFACE, debug_level);
+	config.gw_iprange = set_option_str("gateway_iprange", DEFAULT_GATEWAY_IPRANGE, debug_level);
+	config.fas_key = set_option_str("faskey", DEFAULT_FASKEY, debug_level);
+	config.log_mountpoint = set_option_str("log_mountpoint", DEFAULT_LOG_MOUNTPOINT, debug_level);
+	config.webroot = set_option_str("webroot", DEFAULT_WEBROOT, debug_level);
+	config.authdir = set_option_str("authdir", DEFAULT_AUTHDIR, debug_level);
+	config.denydir = set_option_str("denydir", DEFAULT_DENYDIR, debug_level);
+	config.preauthdir = set_option_str("preauthdir", DEFAULT_PREAUTHDIR, debug_level);
+	config.ndsctl_sock = set_option_str("ndsctl_sock", DEFAULT_NDSCTL_SOCK, debug_level);
+	config.authentication_mark = set_option_str("authentication_mark", DEFAULT_AUTHENTICATION_MARK, debug_level);
 	// Setting binauth in config is deprecated. Use DEFAULT_BINAUTH only.
-	config.binauth = safe_strdup(set_option_str("binauth_deprecated", DEFAULT_BINAUTH, "0"));
-	config.custombinauth = safe_strdup(set_option_str("custombinauth", DEFAULT_CUSTOMBINAUTH, debug_level));
-	config.fas_path = safe_strdup(set_option_str("faspath", DEFAULT_FASPATH, debug_level));
-	config.themespec_path = safe_strdup(set_option_str("themespec_path", DEFAULT_THEMESPEC_PATH, debug_level));
-	config.fas_remoteip = safe_strdup(set_option_str("fasremoteip", DEFAULT_FAS_REMOTEIP, debug_level));
-	config.fas_remotefqdn = safe_strdup(set_option_str("fasremotefqdn", DEFAULT_FAS_REMOTEFQDN, debug_level));
-	config.fas_ssl = safe_strdup(set_option_str("fas_ssl", DEFAULT_FAS_SSL, debug_level));
+	config.binauth = set_option_str("binauth_deprecated", DEFAULT_BINAUTH, "0");
+	config.custombinauth = set_option_str("custombinauth", DEFAULT_CUSTOMBINAUTH, debug_level);
+	config.fas_path = set_option_str("faspath", DEFAULT_FASPATH, debug_level);
+	config.themespec_path = set_option_str("themespec_path", DEFAULT_THEMESPEC_PATH, debug_level);
+	config.fas_remoteip = set_option_str("fasremoteip", DEFAULT_FAS_REMOTEIP, debug_level);
+	config.fas_remotefqdn = set_option_str("fasremotefqdn", DEFAULT_FAS_REMOTEFQDN, debug_level);
+	config.fas_ssl = set_option_str("fas_ssl", DEFAULT_FAS_SSL, debug_level);
 
 	/*
 	********** Integer config parameters **********

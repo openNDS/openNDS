@@ -465,11 +465,16 @@ setup_from_config(void)
 		free(msg);
 	}
 
+	if (strcmp(config->gw_fqdn, "status.client") == 0) {
+		free(config->gw_fqdn);
+		config->gw_fqdn = safe_strdup(config->gw_ip);
+	}
+
 	if (config->dhcp_default_url_enable == 1) {
 		debug(LOG_DEBUG, "Enabling RFC8910 support");
 		dnscmd = safe_calloc(STATUS_BUF);
 
-		if (strcmp(config->gw_fqdn, "disable") != 0 && strcmp(config->gw_fqdn, "disabled") != 0) {
+		if (strcmp(config->gw_fqdn, "disable") != 0 && strcmp(config->gw_fqdn, "disabled") != 0 && strcmp(config->gw_fqdn, "status.client") != 0) {
 			safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"cpidconf\" \"%s\"", config->gw_fqdn);
 		} else {
 			safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"cpidconf\" \"%s\"", config->gw_address);

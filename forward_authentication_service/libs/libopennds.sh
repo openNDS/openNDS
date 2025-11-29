@@ -1353,7 +1353,6 @@ pre_setup () {
 	# add initial rules
 	nft insert rule inet nds_filter nds_allow_INP iifname "\"$gatewayinterface\"" counter accept comment "\"!opennds: allow input\""
 	nft insert rule inet nds_filter nds_allow_FWD iifname "\"$gatewayinterface\"" counter accept comment "\"!opennds: allow forward\""
-	nft insert rule inet nds_mangle ndsINC oifname "\"$gatewayinterface\"" counter jump nds_ft_INC
 
 	ret=$?
 
@@ -1785,7 +1784,7 @@ create_client_ruleset () {
 
 	# Check for user_to_router essentials and append if missing
 	if [ "$ruleset_name" = "users_to_router" ]; then
-		essentials="allow%20udp%20port%2053 allow%20udp%20port%2067 allow%20tcp%20port%2022 allow%20tcp%20port%20443"
+		essentials="allow%20udp%20port%2053 allow%20tcp%20port%2053 allow%20udp%20port%2067 allow%20tcp%20port%2022 allow%20tcp%20port%20443"
 		newrules=""
 
 		for rule in $ruleset; do
@@ -2591,7 +2590,7 @@ elif [ "$1" = "gatewayroute" ]; then
 		handle=$(nft -a list flowtables | grep -w "ndsftINC" | awk -F "handle " '{printf "%s", $2}')
 
 		if [ ! -z "$handle" ]; then
-			ftdevices=$(nft -a list flowtables | grep -w -A 4 "ndsftINC" | awk -F "devices = " 'NF>1 {printf "%s", $2}')
+			ftdevices=$(nft -a list flowtables | grep -w -A 4 "ndsftINC" | awk -F "devices = " 'NF>1 {printf "%s", $2}' | tr -d "\"")
 
 			if [ "$ftdevices" != "{ $wandevices }" ]; then
 

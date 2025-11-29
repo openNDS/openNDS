@@ -787,7 +787,7 @@ static int authenticated(struct MHD_Connection *connection,
 		originurl_raw = safe_calloc(SMALL_BUF);
 		captive_json = safe_calloc(SMALL_BUF);
 
-		if (strcmp(config->gw_fqdn, "disable") == 0 || strcmp(config->gw_fqdn, "disabled") == 0) {
+		if (strcmp(config->gw_fqdn, "disable") == 0 || strcmp(config->gw_fqdn, "disabled") == 0  || strcmp(config->gw_fqdn, "status.client") == 0) {
 			safe_snprintf(originurl_raw, SMALL_BUF, "http://%s", config->gw_ip);
 		} else {
 			safe_snprintf(originurl_raw, SMALL_BUF, "http://%s", config->gw_fqdn);
@@ -1169,7 +1169,7 @@ static int preauthenticated(struct MHD_Connection *connection, const char *url, 
 
 		originurl_raw = safe_calloc(REDIRECT_URL);
 
-		if (strcmp(config->gw_fqdn, "disable") == 0 || strcmp(config->gw_fqdn, "disabled") == 0) {
+		if (strcmp(config->gw_fqdn, "disable") == 0 || strcmp(config->gw_fqdn, "disabled") == 0  || strcmp(config->gw_fqdn, "status.client") == 0) {
 			safe_snprintf(originurl_raw, REDIRECT_URL, "http://%s", config->gw_ip);
 		} else {
 			safe_snprintf(originurl_raw, REDIRECT_URL, "http://%s", config->gw_fqdn);
@@ -1435,7 +1435,7 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 
 	gw_url_raw = safe_calloc(REDIRECT_URL);
 
-	if (strcmp(config->gw_fqdn, "disable") == 0 || strcmp(config->gw_fqdn, "disabled") == 0) {
+	if (strcmp(config->gw_fqdn, "disable") == 0 || strcmp(config->gw_fqdn, "disabled") == 0  || strcmp(config->gw_fqdn, "status.client") == 0) {
 		safe_snprintf(gw_url_raw, REDIRECT_URL, "http://%s", config->gw_ip);
 	} else {
 		safe_snprintf(gw_url_raw, REDIRECT_URL, "http://%s", config->gw_fqdn);

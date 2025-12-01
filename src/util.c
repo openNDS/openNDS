@@ -504,11 +504,16 @@ int get_option_from_config(char* msg, int msg_len, const char *option)
 	safe_snprintf(cmd, SMALL_BUF, "/usr/lib/opennds/libopennds.sh get_option_from_config '%s'", option);
 
 	if (execute_ret_url_encoded(msg, msg_len - 1, cmd) != 0) {
-		debug(LOG_INFO, "Failed to get option [%s] - retrying", option);
+		openlog ("opennds", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_DAEMON);
+		syslog (LOG_ERR, "Failed to get option [%s] - retrying\n", VERSION);
+		closelog ();
 		sleep(1);
 
 		if (execute_ret_url_encoded(msg, msg_len - 1, cmd) != 0) {
-			debug(LOG_INFO, "Failed to get option [%s] - giving up", option);
+			openlog ("opennds", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_DAEMON);
+			syslog (LOG_CRIT, "Failed to get option [%s] Bad library or invalid config format - exiting\n", VERSION);
+			closelog ();
+			exit(1);
 		}
 	}
 

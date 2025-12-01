@@ -2220,6 +2220,12 @@ get_quotas_by_mac() {
 #					#
 #########################################
 
+formatcheck=$(cat /etc/config/opennds | grep -q -w "config opennds 'setup'"; echo $?)
+
+if [ "$formatcheck" -eq 1 ]; then
+	exit 1
+fi
+
 querystr="$1"
 
 query_type=${querystr:0:9}

@@ -53,7 +53,7 @@
 
 
 /** Used to mark packets, and characterize client state.  Unmarked packets are considered 'preauthenticated' */
-extern unsigned int  FW_MARK_PREAUTHENTICATED;	/**< @brief 0: Actually not used as a packet mark */
+extern unsigned int  FW_MARK_PREAUTHENTICATED;	/**< @brief The client is preauthenticated (post-CPD, pre-auth) */
 extern unsigned int  FW_MARK_AUTHENTICATED;	/**< @brief The client is authenticated */
 extern unsigned int  FW_MARK_AUTH_BLOCKED;	/**< @brief The client is authenticated but blocked */
 extern unsigned int  FW_MARK_TRUSTED;		/**< @brief The client is trusted */
@@ -71,6 +71,7 @@ int create_client_ruleset(char rulesetname[], char ruleset[]);
 
 /** @brief Define the access of a specific client */
 int iptables_fw_authenticate(t_client *client);
+int iptables_fw_preauthenticate(t_client *client);
 int iptables_fw_deauthenticate(t_client *client);
 
 /** @brief Enable/Disable Upload Rate Limiting of a specific client */

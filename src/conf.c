@@ -277,6 +277,7 @@ config_init(int argc, char **argv)
 	sscanf(set_option_str("fw_mark_authenticated", DEFAULT_FW_MARK_AUTHENTICATED, debug_level), "%x", &config.fw_mark_authenticated);
 	sscanf(set_option_str("fw_mark_auth_blocked", DEFAULT_FW_MARK_AUTH_BLOCKED, debug_level), "%x", &config.fw_mark_auth_blocked);
 	sscanf(set_option_str("fw_mark_trusted", DEFAULT_FW_MARK_TRUSTED, debug_level), "%x", &config.fw_mark_trusted);
+	sscanf(set_option_str("fw_mark_preauthenticated", DEFAULT_FW_MARK_PREAUTHENTICATED, debug_level), "%x", &config.fw_mark_preauthenticated);
 
 	// config.ip6 = DEFAULT_IP6;
 

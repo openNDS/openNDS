@@ -52,7 +52,7 @@
 static int _iptables_init_marks(void);
 
 // Used to mark packets, and characterize client state.  Unmarked packets are considered 'preauthenticated'
-unsigned int FW_MARK_PREAUTHENTICATED;	// @brief 0: Actually not used as a packet mark
+unsigned int FW_MARK_PREAUTHENTICATED;	// @brief The client is preauthenticated (post-CPD, pre-auth)
 unsigned int FW_MARK_AUTHENTICATED;	// @brief The client is authenticated
 unsigned int FW_MARK_AUTH_BLOCKED;	// @brief The client is authenticated
 unsigned int FW_MARK_TRUSTED;		// @brief The client is trusted
@@ -101,8 +101,10 @@ _iptables_init_marks()
 		return -1;
 	}
 
-	FW_MARK_PREAUTHENTICATED = 0;  // always 0
-	// FW_MARK_MASK is bitwise OR of other marks
+	FW_MARK_PREAUTHENTICATED = config->fw_mark_preauthenticated;
+	// FW_MARK_MASK is bitwise OR of other marks (does NOT include preauthenticated)
+	// Preauthenticated mark uses an independent bit position so existing
+	// trusted/authenticated checks are unaffected
 	FW_MARK_MASK = FW_MARK_TRUSTED | FW_MARK_AUTHENTICATED;
 
 	debug(LOG_DEBUG,"nftables mark %s: 0x%x",
@@ -667,11 +669,34 @@ iptables_upload_ratelimit_enable(t_client *client, int enable)
 
 // Insert or delete firewall mangle rules marking a client's packets.
 int
+iptables_fw_preauthenticate(t_client *client)
+{
+	int rc = 0;
+
+	if (FW_MARK_PREAUTHENTICATED == 0) {
+		return 0;  // Preauthenticated marking disabled (legacy behavior)
+	}
+
+	debug(LOG_NOTICE, "Preauthenticating %s %s", client->ip, client->mac);
+
+	// Set the preauthenticated mark on outgoing packets from this client.
+	// This allows mark-conditional preauthenticated nftset rules to match.
+	rc |= nftables_do_command("insert rule inet nds_mangle %s ip saddr %s ether saddr %s counter meta mark set mark or 0x%x", CHAIN_OUTGOING, client->ip, client->mac, FW_MARK_PREAUTHENTICATED);
+
+	return rc;
+}
+
+int
 iptables_fw_authenticate(t_client *client)
 {
 	int rc = 0;
 
 	debug(LOG_NOTICE, "Authenticating %s %s", client->ip, client->mac);
+
+	// Remove preauthenticated mark rule if present (client is upgrading to authenticated)
+	if (FW_MARK_PREAUTHENTICATED != 0) {
+		execute("/usr/lib/opennds/libopennds.sh delete_client_rule nds_mangle \"%s\" all \"%s\"", CHAIN_OUTGOING, client->ip);
+	}
 
 	// This rule is for marking upload (outgoing) packets, and for upload byte accounting. Drop all bucket overflow packets
 	rc |= nftables_do_command("insert rule inet nds_mangle %s ip saddr %s ether saddr %s counter meta mark set mark or 0x%x", CHAIN_OUTGOING, client->ip, client->mac, FW_MARK_AUTHENTICATED);

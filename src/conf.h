@@ -102,6 +102,7 @@
 #define DEFAULT_FW_MARK_AUTH_BLOCKED "0x30001"
 #define DEFAULT_AUTHENTICATION_MARK "0x00030000"
 #define DEFAULT_FW_MARK_TRUSTED "0x20000"
+#define DEFAULT_FW_MARK_PREAUTHENTICATED "0x10000"
 #define DEFAULT_THEMESPEC_PATH ""
 #define DEFAULT_FAS_REMOTEFQDN "disabled"
 #define DEFAULT_FAS_REMOTEIP "disabled"
@@ -271,6 +272,7 @@ typedef struct {
 	unsigned int fw_mark_auth_blocked;			//@brief nftables mark for auth_blocked packets
 	char *authentication_mark;				//@brief Padded authentication mark
 	unsigned int fw_mark_trusted;				//@brief nftables mark for trusted packets
+	unsigned int fw_mark_preauthenticated;			//@brief nftables mark for preauthenticated packets (post-CPD, pre-auth)
 	int ip6;						//@brief enable IPv6
 	char *binauth;						//@brief external postauthentication program
 	char *custombinauth;					//@brief external custom postauthentication program

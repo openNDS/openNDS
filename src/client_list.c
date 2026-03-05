@@ -132,6 +132,8 @@ _client_list_append(const char mac[], const char ip[])
 		client->fw_connection_state = FW_MARK_TRUSTED;
 	} else {
 		client->fw_connection_state = FW_MARK_PREAUTHENTICATED;
+		// Set preauthenticated mark in nftables for conditional FQDN access
+		iptables_fw_preauthenticate(client);
 	}
 
 	client->id = client_id;

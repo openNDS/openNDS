@@ -1,4 +1,10 @@
 opennds (11.0.0)
+  * Add - preauthenticated_fqdn_list: mark-conditional FQDN access for preauthenticated clients
+  * Add - preauthenticated_port_list: port restriction for preauthenticated FQDN access
+  * Add - FW_MARK_PREAUTHENTICATED (0x10000): activate unused mark for preauthenticated state
+  * Add - iptables_fw_preauthenticate(): set mark when client enters preauthenticated state
+  * Add - mark-conditional nftset rule in libopennds.sh for preauthenticated nftset
+  * Fix - walledgarden CPD interference: preauthenticated domains no longer break Android CPD
   * Add - ipv6 support [bluewavenet]
   * Fix - MHD version check rework [mcassaniti]
   * Add - use library function to write to syslog [bluewavenet]

@@ -855,6 +855,53 @@ config opennds 'setup'
 	###########################################################################################
 
 	#####
+	# Preauthenticated FQDN List
+	# Allow preauthenticated users to access external services using FQDN-based access control
+	#
+	# This is similar to the Walled Garden but with an important distinction:
+	#
+	# Walled Garden domains are accessible to ALL clients, including those that have not yet
+	# triggered Captive Portal Detection (CPD). This means adding domains like google.com to
+	# the Walled Garden can defeat CPD on Android and other devices.
+	#
+	# The Preauthenticated FQDN List uses the same nftset/dnsmasq infrastructure as the Walled
+	# Garden, but its ndsNET rule is MARK-CONDITIONAL. Access is only granted to clients that
+	# have entered the preauthenticated state (i.e. CPD has already triggered and the client
+	# has been assigned the preauthenticated packet mark 0x10000).
+	#
+	# This ensures that pre-CPD connectivity checks (e.g. www.google.com/generate_204) are
+	# still blocked, so captive portal detection works correctly.
+	#
+	# Use Case Example:
+	# A captive portal with advertisement pages containing Google Maps embeds. The Walled Garden
+	# cannot be used because whitelisting Google domains would defeat Android CPD. Instead, use
+	# preauthenticated_fqdn_list to allow maps access only after CPD has already triggered.
+	#
+	# This requires the dnsmasq-full package to be installed.
+	#
+	# Configuration format is the same as walledgarden:
+	#
+	# list preauthenticated_fqdn_list 'fqdn1 fqdn2 fqdn3 .... fqdnN'
+	# list preauthenticated_port_list 'port1 port2 port3 .... portN'
+	#
+	# Note: If preauthenticated_port_list is NOT specified, then access is granted
+	# for all protocols (tcp, udp) on ALL ports for each fqdn specified in preauthenticated_fqdn_list.
+	#
+	# Note: If preauthenticated_port_list IS specified, then:
+	#  1. Specified port numbers apply to ALL FQDN's specified in preauthenticated_fqdn_list.
+	#  2. Only tcp protocol access is granted for specified ports.
+	#
+	# Example - Allow Google Maps access for preauthenticated users:
+	# 	list preauthenticated_fqdn_list 'maps.google.com maps.googleapis.com maps.gstatic.com www.google.com'
+	# 	list preauthenticated_port_list '443'
+	#
+	# WARNING: Do not add CPD detection domains (connectivitycheck.gstatic.com,
+	# connectivitycheck.android.com, captive.apple.com, www.msftconnecttest.com) as this
+	# would defeat captive portal detection for preauthenticated clients.
+
+	###########################################################################################
+
+	#####
 	# Block Lists
 	# Deny authenticated users access to external services
 	# This is commonly referred to as a Block List.

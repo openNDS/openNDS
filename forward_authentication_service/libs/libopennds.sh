@@ -1506,7 +1506,12 @@ nft_set () {
 			fi
 
 			if [ -z "$ports" ]; then
-				nft $nftsetmode rule inet nds_filter ndsNET counter ip daddr "@$nftsetname" "$nftruletype"
+				if [ "$nftsetname" = "preauthenticated" ]; then
+					# Mark-conditional rule: only matches clients with preauthenticated mark (0x10000)
+					nft $nftsetmode rule inet nds_filter ndsNET meta mark and 0x00010000 == 0x00010000 counter ip daddr "@$nftsetname" "$nftruletype"
+				else
+					nft $nftsetmode rule inet nds_filter ndsNET counter ip daddr "@$nftsetname" "$nftruletype"
+				fi
 
 			else
 				numports=$(echo $ports | tr -d "'" | awk '{printf NF}')
@@ -1515,7 +1520,12 @@ nft_set () {
 					ports=$(printf "$ports" | tr -d "'" | tr -s " " ",")
 				fi
 
-				nft $nftsetmode rule inet nds_filter ndsNET counter ip daddr "@$nftsetname" tcp dport {"$ports"} "$nftruletype"
+				if [ "$nftsetname" = "preauthenticated" ]; then
+					# Mark-conditional rule: only matches clients with preauthenticated mark (0x10000)
+					nft $nftsetmode rule inet nds_filter ndsNET meta mark and 0x00010000 == 0x00010000 counter ip daddr "@$nftsetname" tcp dport {"$ports"} "$nftruletype"
+				else
+					nft $nftsetmode rule inet nds_filter ndsNET counter ip daddr "@$nftsetname" tcp dport {"$ports"} "$nftruletype"
+				fi
 			fi
 
 
@@ -3190,9 +3200,9 @@ elif [ "$1" = "ipt_to_nft" ]; then
 	exit $ret
 
 elif [ "$1" = "nftset" ]; then
-	# Creates walledgarden or blocklist nftset
+	# Creates walledgarden, preauthenticated or blocklist nftset
 	# $2 is add, insert or delete the rule
-	# $3 is the nftset name
+	# $3 is the nftset name (walledgarden, preauthenticated or blocklist)
 	# $4 is the rule type (accept, drop or reject)
 
 	if [ -z "$2" ]; then
@@ -3218,6 +3228,8 @@ elif [ "$1" = "nftset" ]; then
 
 	if [ "$3" = "walledgarden" ] && [ "$nftruletype" = "accept" ]; then
 		nftsetname="walledgarden"
+	elif [ "$3" = "preauthenticated" ] && [ "$nftruletype" = "accept" ]; then
+		nftsetname="preauthenticated"
 	elif [ "$3" = "blocklist" ]; then
 		nftsetname="blocklist"
 

@@ -197,6 +197,11 @@ termination_handler(int s)
 	execute_ret_url_encoded(msg, SMALL_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset delete walledgarden");
 	free(msg);
 
+	// If Preauthenticated nftset exists, destroy it.
+	msg = safe_calloc(SMALL_BUF);
+	execute_ret_url_encoded(msg, SMALL_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset delete preauthenticated");
+	free(msg);
+
 	// If Block List nftset exists, destroy it.
 	msg = safe_calloc(SMALL_BUF);
 	execute_ret_url_encoded(msg, SMALL_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset delete blocklist");
@@ -862,6 +867,10 @@ setup_from_config(void)
 	free(msg);
 
 	msg = safe_calloc(SMALL_BUF);
+	execute_ret_url_encoded(msg, SMALL_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset delete preauthenticated");
+	free(msg);
+
+	msg = safe_calloc(SMALL_BUF);
 	execute_ret_url_encoded(msg, SMALL_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset delete blocklist");
 	free(msg);
 
@@ -871,6 +880,15 @@ setup_from_config(void)
 
 	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset insert walledgarden") == 0) {
 		debug(LOG_INFO, "Walled Garden Setup Request sent");
+	}
+
+	free(msg);
+
+	// Set up the Preauthenticated FQDN list
+	msg = safe_calloc(SMALL_BUF);
+
+	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset insert preauthenticated") == 0) {
+		debug(LOG_INFO, "Preauthenticated FQDN List Setup Request sent");
 	}
 
 	free(msg);

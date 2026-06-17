@@ -669,7 +669,7 @@ static int authenticate_client(struct MHD_Connection *connection,
 			debug(LOG_DEBUG, "redirect_url after binauth deny: %s", redirect_url);
 			debug(LOG_DEBUG, "redirect_url_enc after binauth deny: %s", redirect_url_enc);
 
-			querystr = safe_calloc(QUERYMAXLEN);
+			querystr = safe_calloc(ENC_QUERYSTR);
 			querystr=construct_querystring(connection, client, redirect_url_enc, querystr);
 			ret = encode_and_redirect_to_splashpage(connection, client, redirect_url_enc, querystr);
 			free(querystr);
@@ -1179,7 +1179,7 @@ static int preauthenticated(struct MHD_Connection *connection, const char *url, 
 		uh_urlencode(originurl, REDIRECT_URL_ENC_BUF, originurl_raw, strlen(originurl_raw));
 		debug(LOG_DEBUG, "originurl: %s", originurl);
 
-		querystr = safe_calloc(QUERYMAXLEN);
+		querystr = safe_calloc(ENC_QUERYSTR);
 
 		if (!querystr) {
 			ret = send_error(connection, 503);
@@ -1271,7 +1271,7 @@ static int preauthenticated(struct MHD_Connection *connection, const char *url, 
 			originurl = safe_calloc(REDIRECT_URL_ENC_BUF);
 			uh_urlencode(originurl, REDIRECT_URL_ENC_BUF, redirect_url, strlen(redirect_url));
 
-			querystr = safe_calloc(QUERYMAXLEN);
+			querystr = safe_calloc(ENC_QUERYSTR);
 
 			if (!querystr) {
 				ret = send_error(connection, 503);

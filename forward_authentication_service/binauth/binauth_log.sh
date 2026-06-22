@@ -263,7 +263,7 @@ else
 fi
 
 # Include the check_reauth_interval script
-checkreauthintervalpath="/usr/check_reauth_interval.sh"
+	checkreauthintervalpath="/usr/lib/opennds/check_reauth_interval.sh"
 
 if [ -e "$checkreauthintervalpath" ]; then
 	. $checkreauthintervalpath

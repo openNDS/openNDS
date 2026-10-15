@@ -36,6 +36,9 @@
 #include <sys/types.h>
 
 #include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/random.h>
 
 #include "safe.h"
 #include "debug.h"
@@ -81,6 +84,41 @@ client_list_init(void)
 	client_count = 0;
 }
 
+/* Authentication token. getrandom is safe across the MHD threads; rand() is not. */
+static int
+fill_client_token(char *token, size_t token_len)
+{
+	unsigned char bytes[4];
+	ssize_t got;
+	int fd;
+
+	got = getrandom(bytes, sizeof(bytes), 0);
+
+	if (got != (ssize_t)sizeof(bytes)) {
+		fd = open("/dev/urandom", O_RDONLY);
+
+		if (fd < 0) {
+			debug(LOG_ERR, "Cannot read a client token");
+			return -1;
+		}
+
+		got = read(fd, bytes, sizeof(bytes));
+		close(fd);
+
+		if (got != (ssize_t)sizeof(bytes)) {
+			debug(LOG_ERR, "Cannot read a client token");
+			return -1;
+		}
+	}
+
+	if (safe_snprintf(token, token_len, "%02x%02x%02x%02x",
+		bytes[0], bytes[1], bytes[2], bytes[3]) < 1) {
+		return -1;
+	}
+
+	return 0;
+}
+
 /** @internal
  * Given IP, MAC, and client token, appends a new entry
  * to the end of the client list and returns a pointer to the new entry.
@@ -122,7 +160,16 @@ _client_list_append(const char mac[], const char ip[])
 	// Create new token and hid
 	hash = safe_calloc(STATUS_BUF);
 	client->token = safe_calloc(STATUS_BUF);
-	safe_snprintf(client->token, STATUS_BUF, "%04hx%04hx", rand16(), rand16());
+
+	if (fill_client_token(client->token, STATUS_BUF) != 0) {
+		free(hash);
+		free(client->token);
+		free(client->mac);
+		free(client->ip);
+		free(client);
+		return NULL;
+	}
+
 	hash_str(hash, STATUS_BUF, client->token);
 	client->hid = safe_strdup(hash);
 	free(hash);

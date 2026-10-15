@@ -308,6 +308,10 @@ config_init(int argc, char **argv)
 		parse_fas_custom_parameters_list(liststr);
 		free(liststr);
 
+		liststr = set_list_str("fas_custom_variables_list", DEFAULT_FAS_CUSTOM_VARIABLES_LIST, debug_level);
+		parse_fas_custom_variables_list(liststr);
+		free(liststr);
+
 		liststr = set_list_str("fas_custom_images_list", DEFAULT_FAS_CUSTOM_IMAGES_LIST, debug_level);
 		parse_fas_custom_images_list(liststr);
 		free(liststr);

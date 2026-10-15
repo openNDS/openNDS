@@ -1743,17 +1743,22 @@ int send_redirect_temp(struct MHD_Connection *connection, t_client *client, cons
 }
 
 // save the query or empty string into **query.
+// *query is QUERYMAXLEN bytes. The result is "?" plus the arguments joined by
+// separator, or an empty string when there are none or they do not fit.
 static int get_query(struct MHD_Connection *connection, char **query, const char *separator)
 {
 	int element_counter;
 	char **elements;
-	char *query_str;
+	char *out;
 	struct collect_query collect_query;
 	int i;
-	int j = 4;
-	int length = 0;
+	size_t separator_len;
+	size_t used = 0;
+	int too_long = 0;
 
 	debug(LOG_DEBUG, " Getting query, separator is [%s].", separator);
+
+	separator_len = strlen(separator);
 
 	element_counter = MHD_get_connection_values(connection, MHD_GET_ARGUMENT_KIND, counter_iterator, NULL);
 	if (element_counter < 0) {
@@ -1770,17 +1775,6 @@ static int get_query(struct MHD_Connection *connection, char **query, const char
 	// Collect the arguments of the query string from MHD
 	MHD_get_connection_values(connection, MHD_GET_ARGUMENT_KIND, collect_query_string, &collect_query);
 
-	for (i = 0; i < element_counter; i++) {
-		if (!elements[i])
-			continue;
-		length += strlen(elements[i]);
-
-		if (i > 0) // q=foo&o=bar the '&' need also some space
-			length++;
-
-		debug(LOG_DEBUG, " cumulative element length is [%d]", length);
-	}
-
 	// don't miss the zero terminator
 	if (*query == NULL) {
 		for (i = 0; i < element_counter; i++) {
@@ -1790,39 +1784,62 @@ static int get_query(struct MHD_Connection *connection, char **query, const char
 		return 0;
 	}
 
-	query_str = safe_calloc(QUERYMAXLEN);
+	out = *query;
+	out[0] = '\0';
 
-	for (i = 0, j = 0; i < element_counter; i++) {
+	for (i = 0; i < element_counter; i++) {
+		size_t element_len;
+		size_t need;
+		size_t room;
+
 		if (!elements[i]) {
 			continue;
 		}
 
+		element_len = strlen(elements[i]);
 		debug(LOG_DEBUG, " element [%d] is [%s]", i, elements[i]);
 
-		if (length + j < QUERYMAXLEN) {
-
-			strncpy(*query + j, elements[i], length - j);
-
-			if (i == 0) {
-				// query_str is empty when i = 0 so safe to copy a single char into it
-				strcpy(query_str, "?");
-			} else {
-				if (QUERYMAXLEN - strlen(query_str) > length - j + 1) {
-					strncat(query_str, separator, QUERYMAXLEN - strlen(query_str));
-				}
-			}
-
-			strncat(query_str, *query, QUERYMAXLEN - strlen(query_str));
-		} else {
-			debug(LOG_WARNING, " Query string is too long, invalid or corrupt so is ignored.");
+		// A single argument can be longer than QUERYMAXLEN. Reject that before
+		// adding, or the size check wraps and the copy runs off the buffer.
+		if (element_len >= QUERYMAXLEN || separator_len >= QUERYMAXLEN) {
+			too_long = 1;
+			break;
 		}
 
+		// First MHD slot is prefixed with '?'. Later slots take separator, which
+		// is ", " (2 bytes) or "&" (1 byte). Reserve one byte for the NUL.
+		need = (i == 0) ? (1 + element_len) : (separator_len + element_len);
+		room = (QUERYMAXLEN - 1) - used;
+
+		if (need > room) {
+			too_long = 1;
+			break;
+		}
+
+		if (i == 0) {
+			out[used++] = '?';
+		} else {
+			memcpy(out + used, separator, separator_len);
+			used += separator_len;
+		}
+
+		memcpy(out + used, elements[i], element_len);
+		used += element_len;
+		out[used] = '\0';
+
+		debug(LOG_DEBUG, " cumulative element length is [%d]", (int)used);
+	}
+
+	if (too_long) {
+		debug(LOG_WARNING, " Query string is too long, invalid or corrupt so is ignored.");
+		out[0] = '\0';
+	}
+
+	for (i = 0; i < element_counter; i++) {
 		free(elements[i]);
 	}
 
-	debug(LOG_DEBUG, " query is [%s]", query_str);
-	strncpy(*query, query_str, QUERYMAXLEN);
-	free(query_str);
+	debug(LOG_DEBUG, " query is [%s]", out);
 	free(elements);
 	return 0;
 }

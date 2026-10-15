@@ -268,7 +268,7 @@ landing_page() {
 				Something went wrong and you have failed to log in.
 			</big-red>
 			<hr>
-			<img style=\"width:100%; max-width: 100%;\" src=\"$banner3\" alt=\"Placeholder: Banner3.\"><br>
+			<img style=\"width:100%; max-width: 100%;\" src=\"$gatewayurl""$banner3\" alt=\"Placeholder: Banner3.\"><br>
 			<b>$banner3_message</b><br>
 		</p>
 

@@ -682,7 +682,7 @@ htmlentitydecode() {
 
 	buffer=$(echo "$buffer" | awk '{ gsub(/&#36;/, "\\$"); print }')
 	buffer=$(echo "$buffer" | awk '{ gsub(/&#47;/, "\/"); print }')
-	buffer=$(echo "$buffer" | awk '{ gsub(/&#92;/, "\\`"); print }')
+	buffer=$(echo "$buffer" | awk '{ gsub(/&#92;/, "\\"); print }')
 	entitydecoded="$buffer"
 }
 

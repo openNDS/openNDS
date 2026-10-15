@@ -206,6 +206,7 @@ client_auth(char *arg)
 						if (client) {
 							id = client ? client->id : 0;
 							debug(LOG_DEBUG, "client id: [%d]", id);
+							free(client->client_type);
 							client->client_type = safe_strdup("preemptive");
 
 							// log the preemptive authentication
@@ -312,6 +313,7 @@ static int binauth_action(t_client *client, const char *reason, const char *cust
 		}
 
 		debug(LOG_DEBUG, "customdata=%s", custom_arg);
+		free(client->custom);
 		client->custom = safe_strdup(custom_arg);
 		debug(LOG_DEBUG, "binauth_action: client->custom [%s]", client->custom);
 
@@ -528,6 +530,8 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 			client->counters.in_window_start = client->counters.incoming;
 			client->counters.out_window_start = client->counters.outgoing;
 
+
+			free(client->custom);
 
 			if (customdata && strlen(customdata) > 0) {
 				client->custom = safe_strdup(customdata);

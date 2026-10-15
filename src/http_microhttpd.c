@@ -1154,6 +1154,7 @@ static int preauthenticated(struct MHD_Connection *connection, const char *url, 
 	// check if this is an RFC8910 login request
 	if (strcmp(url, "/login") == 0) {
 		debug(LOG_INFO, "preauthenticated: RFC8910 login request received from client at [%s] [%s]", client->ip, client->mac);
+		free(client->client_type);
 		client->client_type = safe_strdup("cpi_url");
 		return redirect_to_splashpage(connection, client, host, "/login");
 	}
@@ -1170,6 +1171,7 @@ static int preauthenticated(struct MHD_Connection *connection, const char *url, 
 		debug(LOG_DEBUG, "preauthenticated: Accept header [%s]", accept);
 		debug(LOG_NOTICE, "preauthenticated: RFC 8908 captive+json request received from client at [%s] [%s]", client->ip, client->mac);
 
+		free(client->client_type);
 		client->client_type = safe_strdup("cpi_api");
 
 		originurl_raw = safe_calloc(REDIRECT_URL);
@@ -1401,6 +1403,7 @@ static int redirect_to_splashpage(struct MHD_Connection *connection, t_client *c
 	uh_urlencode(originurl, CUSTOM_ENC, originurl_raw, strlen(originurl_raw));
 
 	if (strcmp(url, "/login") == 0) {
+		free(client->cpi_query);
 		client->cpi_query = safe_strdup(originurl);
 		debug(LOG_DEBUG, "RFC8910 request: %s", client->cpi_query);
 	}
@@ -1518,11 +1521,18 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 				);
 
 				strncpy(cid, query_str_b64+5, 86);
-				client->cid = safe_strdup(cid);
 
 				// Write the new cidfile:
 				msg = safe_calloc(STATUS_BUF);
 				cidinfo = safe_calloc(SMALL_BUF);
+
+				if (client->cid && client->cid[0] != '\0') {
+					debug(LOG_DEBUG, "removing previous cid file [%s]", client->cid);
+					write_client_info(msg, SMALL_BUF, "rmcid", client->cid, "");
+				}
+
+				free(client->cid);
+				client->cid = safe_strdup(cid);
 				debug(LOG_DEBUG, "writing cid file [%s]", cid);
 
 				safe_snprintf(cidinfo, MID_BUF, "cid=\"%s\"", cid);

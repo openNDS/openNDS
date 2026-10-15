@@ -547,9 +547,12 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 
 			action = ENABLE;
 
-			// Update all the counters
+			// Update all the counters. The allow rules are already installed.
+			// If this fails, remove them before the client stays preauthenticated.
 			if (-1 == iptables_fw_counters_update()) {
 				debug(LOG_ERR, "Could not get counters from firewall!");
+				iptables_fw_deauthenticate(client);
+				free(msg);
 				return -1;
 			}
 

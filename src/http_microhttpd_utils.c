@@ -109,8 +109,8 @@ int htmlentityencode(char *buf, int blen, const char *src, int slen)
 }
 
 
-/* blen is the size of buf; slen is the length of src. The input-string need
-** not be, and the output string will not be, null-terminated. Returns the
+/* blen is the size of buf; slen is the length of src. The input string need
+** not be null-terminated. The output is null-terminated. Returns the
 ** length of the decoded string, -1 on buffer overflow, -2 on malformed string. */
 int uh_urldecode(char *buf, int blen, const char *src, int slen)
 {
@@ -122,23 +122,35 @@ int uh_urldecode(char *buf, int blen, const char *src, int slen)
 		(((x) <= 'F') ? ((x) - 'A' + 10) : \
 			((x) - 'a' + 10)))
 
-	for (i = 0; (i < slen) && (len < blen); i++) {
+	if (buf == NULL || blen < 1) {
+		return -1;
+	}
+
+	for (i = 0; i < slen; i++) {
+
+		/* Keep one byte for the terminating NUL. */
+		if (len + 1 >= blen) {
+			buf[len] = '\0';
+			return -1;
+		}
 
 		if (src[i] != '%') {
 			buf[len++] = src[i];
 			continue;
 		}
 
-		if (i + 2 >= slen || !isxdigit(src[i + 1]) || !isxdigit(src[i + 2]))
+		if (i + 2 >= slen || !isxdigit(src[i + 1]) || !isxdigit(src[i + 2])) {
+			buf[len] = '\0';
 			return -2;
+		}
 
 		buf[len++] = (char)(16 * hex(src[i+1]) + hex(src[i+2]));
 		i += 2;
 	}
 
-	buf[len] = 0;
+	buf[len] = '\0';
 
-	return (i == slen) ? len : -1;
+	return len;
 }
 
 /* blen is the size of buf; slen is the length of src. The input string need

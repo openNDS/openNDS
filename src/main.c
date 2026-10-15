@@ -491,20 +491,30 @@ setup_from_config(void)
 
 	// For Client status Page - configure the hosts file
 	if (strcmp(config->gw_fqdn, "disable") != 0 && strcmp(config->gw_fqdn, "disabled") != 0) {
-		dnscmd = safe_calloc(STATUS_BUF);
-		safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"hostconf\" \"%s\" \"%s\"",
+		/* Fixed text is 46 bytes. An IPv6 address is up to 45, a FQDN up to 253, plus NUL. */
+		size_t hostconf_len = sizeof("/usr/lib/opennds/dnsconfig.sh \"hostconf\" \"\" \"\"")
+			+ (INET6_ADDRSTRLEN - 1) + 253;
+
+		dnscmd = safe_calloc(hostconf_len);
+
+		if (safe_snprintf(dnscmd, hostconf_len, "/usr/lib/opennds/dnsconfig.sh \"hostconf\" \"%s\" \"%s\"",
 			config->gw_ip,
 			config->gw_fqdn
-		);
-		msg = safe_calloc(SMALL_BUF);
-
-		if (execute_ret_url_encoded(msg, SMALL_BUF - 1, dnscmd) == 0) {
-			debug(LOG_INFO, "Client status Page: Configured");
+		) < 1) {
+			debug(LOG_ERR, "Client Status Page: Hosts setup command does not fit");
+			free(dnscmd);
 		} else {
-			debug(LOG_ERR, "Client Status Page: Hosts setup script failed to execute");
+			msg = safe_calloc(SMALL_BUF);
+
+			if (execute_ret_url_encoded(msg, SMALL_BUF - 1, dnscmd) == 0) {
+				debug(LOG_INFO, "Client status Page: Configured");
+			} else {
+				debug(LOG_ERR, "Client Status Page: Hosts setup script failed to execute");
+			}
+
+			free(dnscmd);
+			free(msg);
 		}
-		free(dnscmd);
-		free(msg);
 	}
 
 	if (strcmp(config->gw_fqdn, "status.client") == 0) {

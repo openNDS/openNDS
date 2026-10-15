@@ -90,6 +90,13 @@ int safe_snprintf(char *strp, size_t size, const char *fmt, ...)
 
 	debug(LOG_DEBUG, "safe_snprintf: [ %d ]", retval);
 
+	/* vsnprintf returns the length it would have written, excluding the NUL.
+	 * A negative result is an encoding error. A result >= size was truncated. */
+	if (retval < 0 || (size_t)retval >= size) {
+		debug(LOG_CRIT, "safe_snprintf: Failed");
+		return -1;
+	}
+
 	if (retval < 1) {
 		debug(LOG_CRIT, "safe_snprintf: Failed");
 		return (retval);

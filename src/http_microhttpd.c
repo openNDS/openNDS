@@ -1719,15 +1719,16 @@ int send_redirect_temp(struct MHD_Connection *connection, t_client *client, cons
 
 	redirect = safe_calloc(SMALL_BUF);
 
-	safe_snprintf(redirect, SMALL_BUF, "<html><head></head><body><a href='%s'>Click here to continue to<br>%s</a></body></html", url, url);
+	safe_snprintf(redirect, SMALL_BUF, "<html><head></head><body><a href='%s'>Click here to continue to<br>%s</a></body></html>", url, url);
 
 	debug(LOG_DEBUG, "send_redirect_temp: MHD_create_response_from_buffer. url [%s]", url);
 	debug(LOG_DEBUG, "send_redirect_temp: Redirect to [%s]", redirect);
 
-	response = MHD_create_response_from_buffer(SMALL_BUF, redirect, MHD_RESPMEM_MUST_FREE);
+	response = MHD_create_response_from_buffer(strlen(redirect), redirect, MHD_RESPMEM_MUST_FREE);
 
 	if (!response) {
 		debug(LOG_DEBUG, "send_redirect_temp: Failed to create response....");
+		free(redirect);
 		return send_error(connection, 503);
 	} else {
 		debug(LOG_DEBUG, "send_redirect_temp: Response created");

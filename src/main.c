@@ -487,6 +487,15 @@ setup_from_config(void)
 		debug(LOG_DEBUG, "Custom FAS files string [%s]", config->custom_files);
 	}
 
+	/* Empty lists stay NULL. Download and the FAS query must not format that as %s. */
+	if (!config->custom_images) {
+		config->custom_images = safe_strdup("");
+	}
+
+	if (!config->custom_files) {
+		config->custom_files = safe_strdup("");
+	}
+
 	// Do any required dnsmasq configurations and restart it
 
 	// For Client status Page - configure the hosts file

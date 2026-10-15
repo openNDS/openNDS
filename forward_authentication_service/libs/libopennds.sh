@@ -715,6 +715,38 @@ get_client_zone () {
 	fi
 }
 
+assign_config_list () {
+	# $1 is "name=value, name=value". Assign each value without evaluating it.
+	local rest item name value
+
+	rest="$1"
+
+	while [ -n "$rest" ]; do
+		case "$rest" in
+			*', '*)
+				item=${rest%%', '*}
+				rest=${rest#*', '}
+				;;
+			*)
+				item=$rest
+				rest=""
+				;;
+		esac
+
+		name=${item%%=*}
+		value=${item#*=}
+
+		case "$name" in
+			""|*[!A-Za-z0-9_]*)
+				continue
+				;;
+		esac
+
+		# The value is expanded as data. It is not parsed as shell syntax.
+		eval "$name=\$value"
+	done
+}
+
 auth_log () {
 	# We are ready to authenticate the client
 
@@ -2765,29 +2797,19 @@ elif [ "$1" = "download" ]; then
 	if [ -z "$6" ]; then
 		webroot="/etc/opennds/htdocs"
 	else
-		webroot=$6
+		webroot="$6"
 	fi
 
-	refresh=$5
+	refresh="$5"
 	configure_log_location
 
-	list="$3"
-	if [ ! -z "$list" ]; then
-		list=${list//', '/'"; '}
-		list=${list//'='/'="'}
-		eval $list
-	fi
-
-	list="$4"
-	if [ ! -z "$list" ]; then
-		list=${list//', '/'"; '}
-		list=${list//'='/'="'}
-		eval $list
-	fi
+	# name=value pairs separated by ", ". The name is an identifier; the value is not evaluated.
+	assign_config_list "$3"
+	assign_config_list "$4"
 
 	# Include the Theme:
-	themespecpath=$2
-	. $themespecpath
+	themespecpath="$2"
+	. "$themespecpath"
 
 	type download_image_files &>/dev/null && download_image_files
 	type download_data_files &>/dev/null && download_data_files

@@ -44,6 +44,8 @@
 #include <sys/time.h>
 #include <ifaddrs.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <spawn.h>
 
 #if defined(__NetBSD__)
 #include <sys/socket.h>
@@ -411,14 +413,20 @@ void ndsctl_unlock()
 
 int download_remotes(int refresh)
 {
-	char *cmd = NULL;
-	int daemonpid = 0;
 	s_config *config = config_get_config();
+	const char *images;
+	const char *files;
+	const char *webroot;
+	char refresh_arg[16];
+	char *argv[8];
+	pid_t pid;
+	posix_spawn_file_actions_t actions;
+	int rc;
 
 	// If themespec is not set then we do not need to download remotes
 	// client_params.sh does its own downloads for the 511 status pages
 
-	if (strcmp(config->themespec_path, "") == 0) {
+	if (config->themespec_path == NULL || strcmp(config->themespec_path, "") == 0) {
 		return 0;
 	}
 
@@ -428,31 +436,42 @@ int download_remotes(int refresh)
 		debug(LOG_DEBUG, "Background Refreshing of remotes for: %s\n", config->themespec_path);
 	}
 
-	safe_asprintf(&cmd,
-		"/usr/lib/opennds/libopennds.sh download \"%s\" \"%s\" \"%s\" \"%d\" \"%s\"",
-		config->themespec_path,
-		config->custom_images,
-		config->custom_files,
-		refresh,
-		config->webroot
-	);
+	images = config->custom_images ? config->custom_images : "";
+	files = config->custom_files ? config->custom_files : "";
+	webroot = config->webroot ? config->webroot : "";
 
 	if (config->online_status > 0) {
-		debug(LOG_DEBUG, "Starting daemon: %s\n", cmd);
+		snprintf(refresh_arg, sizeof(refresh_arg), "%d", refresh);
+		argv[0] = "libopennds.sh";
+		argv[1] = "download";
+		argv[2] = config->themespec_path;
+		argv[3] = (char *)images;
+		argv[4] = (char *)files;
+		argv[5] = refresh_arg;
+		argv[6] = (char *)webroot;
+		argv[7] = NULL;
 
-		if (startdaemon(cmd, daemonpid) == 0) {
+		/* Arguments stay out of the shell, so quotes and $() in the lists are data. */
+		rc = posix_spawn_file_actions_init(&actions);
 
-			if (daemonpid != 0) {
-				debug(LOG_DEBUG, "daemon(%s) pid is [%d]", cmd, daemonpid);
+		if (rc == 0) {
+			if (posix_spawn_file_actions_addopen(&actions, STDIN_FILENO, "/dev/null", O_RDONLY, 0) != 0
+					|| posix_spawn_file_actions_addopen(&actions, STDOUT_FILENO, "/dev/null", O_WRONLY, 0) != 0
+					|| posix_spawn_file_actions_addopen(&actions, STDERR_FILENO, "/dev/null", O_WRONLY, 0) != 0
+					|| posix_spawn(&pid, "/usr/lib/opennds/libopennds.sh", &actions, NULL, argv, environ) != 0) {
+				rc = -1;
 			}
-		} else {
-			debug(LOG_DEBUG, "Cannot download remotes - daemon failed to start");
+
+			posix_spawn_file_actions_destroy(&actions);
+		}
+
+		if (rc != 0) {
+			debug(LOG_DEBUG, "Cannot download remotes - failed to start");
 		}
 	} else {
 		debug(LOG_DEBUG, "Cannot download remotes - upstream gateway(s) are offline");
 	}
 
-	free(cmd);
 	return 0;
 }
 

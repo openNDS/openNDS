@@ -1103,7 +1103,12 @@ thread_client_timeout_check(void *arg)
 
 	while (1) {
 		// check gateway mac
-		config->gw_mac = get_iface_mac(config->gw_interface);
+		{
+			char *new_mac = get_iface_mac(config->gw_interface);
+
+			free(config->gw_mac);
+			config->gw_mac = new_mac;
+		}
 		debug(LOG_DEBUG, "Watchdog: Gateway Interface [%s], mac [%s]", config->gw_interface, config->gw_mac);
 
 		// check MHD

@@ -738,21 +738,21 @@ get_iface_mac(const char ifname[])
 {
 	char addrbuf[STATUS_BUF] = {0};
 	char *cmd;
+	const char *current_mac;
 	s_config *config;
 
 	config = config_get_config();
 
 	debug(LOG_DEBUG, "Attempting to get mac of interface: %s", ifname);
 
-	if (config->gw_mac == NULL) {
-		config->gw_mac = safe_strdup("00:00:00:00:00:00");
-	}
+	/* Keep the placeholder local. Publishing it into config is leaked by the caller. */
+	current_mac = config->gw_mac ? config->gw_mac : "00:00:00:00:00:00";
 
 	cmd = safe_calloc(STATUS_BUF);
 
 	snprintf(cmd, STATUS_BUF, "/usr/lib/opennds/libopennds.sh \"gatewaymac\" \"%s\" \"%s\"",
 		ifname,
-		config->gw_mac
+		current_mac
 	);
 
 

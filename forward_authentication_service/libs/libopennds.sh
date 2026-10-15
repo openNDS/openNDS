@@ -2868,7 +2868,6 @@ elif [ "$1" = "startdaemon" ]; then
 			syslogmessage="daemon ran to termination"
 			debugtype="debug"
 			write_to_syslog
-			printf "%s" "0"
 		else
 			syslogmessage="daemonpid is [$daemonpid]"
 			debugtype="debug"
@@ -2886,12 +2885,19 @@ elif [ "$1" = "stopdaemon" ]; then
 	# Stop a daemon process
 	# $2 contains the pid of the daemon to stop
 
-	if [ ! -z "$2" ] || [ "$2" -ne 0 ]; then
-		kill $2
-		status=$?
-	else
-		status=1
-	fi
+	status=1
+
+	case "$2" in
+		""|*[!0-9]*)
+			status=1
+			;;
+		*)
+			if [ "$2" -ne 0 ]; then
+				kill "$2"
+				status=$?
+			fi
+			;;
+	esac
 
 	if [ "$status" = "0" ]; then
 		printf "%s" "done"
@@ -3004,7 +3010,7 @@ elif [ "$1" = "daemon_auth" ]; then
 
 		if [ -z "$3" ]; then
 			# return the daemon pid
-			printf "%s" "$daemonpid"
+			printf "%s" "$daemon_pid"
 		fi
 	fi
 

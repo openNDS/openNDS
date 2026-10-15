@@ -201,7 +201,7 @@ termination_handler(int s)
 	s_config *config;
 	config = config_get_config();
 
-	debug(LOG_INFO, "Handler for termination caught signal %d", s);
+	debug(LOG_INFO, "Terminating with status %d", s);
 
 	// Makes sure we only call iptables_fw_destroy() once.
 	if (pthread_mutex_trylock(&sigterm_mutex)) {
@@ -261,7 +261,7 @@ termination_handler(int s)
 	iptables_fw_destroy();
 
 	debug(LOG_NOTICE, "Exiting...");
-	exit(s == 0 ? 1 : 0);
+	exit(s == 0 ? 0 : 1);
 }
 
 
@@ -978,14 +978,15 @@ main_loop(int argc, char **argv)
 	ignore_sigpipe();
 
 	if (shutdown_requested) {
-		termination_handler(shutdown_signal);
+		debug(LOG_INFO, "Caught termination signal %d", (int)shutdown_signal);
+		termination_handler(0);
 	}
 
 	// Start watchdog, client statistics and timeout clean-up thread
 	result = pthread_create(&tid_client_check, NULL, thread_client_timeout_check, NULL);
 	if (result != 0) {
 		debug(LOG_ERR, "FATAL: Failed to create thread_client_timeout_check - exiting");
-		termination_handler(0);
+		termination_handler(1);
 	}
 	pthread_detach(tid_client_check);
 
@@ -1013,10 +1014,12 @@ main_loop(int argc, char **argv)
 	stop_mhd();
 
 	if (shutdown_requested) {
-		termination_handler(shutdown_signal);
+		debug(LOG_INFO, "Caught termination signal %d", (int)shutdown_signal);
+		termination_handler(0);
 	}
 
-	termination_handler(result);
+	/* pthread_join returns 0 after ndsctl stop. A non-zero result failed to wait. */
+	termination_handler(result == 0 ? 0 : 1);
 }
 
 /** Main entry point for opennds.

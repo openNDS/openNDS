@@ -933,7 +933,7 @@ setup_from_config(void)
 	// Set up the Walled Garden
 	msg = safe_calloc(SMALL_BUF);
 
-	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset insert walledgarden") == 0) {
+	if (execute_ret_url_encoded(msg, SMALL_BUF, "/usr/lib/opennds/libopennds.sh nftset insert walledgarden") == 0) {
 		debug(LOG_INFO, "Walled Garden Setup Request sent");
 	}
 
@@ -942,7 +942,7 @@ setup_from_config(void)
 	// Set up the Block List
 	msg = safe_calloc(SMALL_BUF);
 
-	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset insert blocklist reject") == 0) {
+	if (execute_ret_url_encoded(msg, SMALL_BUF, "/usr/lib/opennds/libopennds.sh nftset insert blocklist reject") == 0) {
 		debug(LOG_INFO, "Block List Setup Request sent");
 	}
 

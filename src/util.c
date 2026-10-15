@@ -1121,7 +1121,7 @@ ndsctl_status(FILE *fp)
 
 	msg = safe_calloc(SMALL_BUF);
 
-	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, "/usr/lib/opennds/libopennds.sh get_list_from_config walledgarden_fqdn_list newlines") == 0) {
+	if (execute_ret_url_encoded(msg, SMALL_BUF, "/usr/lib/opennds/libopennds.sh get_list_from_config walledgarden_fqdn_list newlines") == 0) {
 
 		if (strcmp(msg, "") == 0) {
 			fprintf(fp, "none");
@@ -1139,7 +1139,7 @@ ndsctl_status(FILE *fp)
 
 	msg = safe_calloc(SMALL_BUF);
 
-	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, "/usr/lib/opennds/libopennds.sh get_list_from_config walledgarden_port_list newlines") == 0) {
+	if (execute_ret_url_encoded(msg, SMALL_BUF, "/usr/lib/opennds/libopennds.sh get_list_from_config walledgarden_port_list newlines") == 0) {
 
 		if (strcmp(msg, "") == 0) {
 			fprintf(fp, "all");
@@ -1157,7 +1157,7 @@ ndsctl_status(FILE *fp)
 
 	msg = safe_calloc(SMALL_BUF);
 
-	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, "/usr/lib/opennds/libopennds.sh get_list_from_config blocklist_fqdn_list newlines") == 0) {
+	if (execute_ret_url_encoded(msg, SMALL_BUF, "/usr/lib/opennds/libopennds.sh get_list_from_config blocklist_fqdn_list newlines") == 0) {
 
 		if (strcmp(msg, "") == 0) {
 			fprintf(fp, "none");
@@ -1175,7 +1175,7 @@ ndsctl_status(FILE *fp)
 
 	msg = safe_calloc(SMALL_BUF);
 
-	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, "/usr/lib/opennds/libopennds.sh get_list_from_config blocklist_port_list newlines") == 0) {
+	if (execute_ret_url_encoded(msg, SMALL_BUF, "/usr/lib/opennds/libopennds.sh get_list_from_config blocklist_port_list newlines") == 0) {
 
 		if (strcmp(msg, "") == 0) {
 			fprintf(fp, "all\n");

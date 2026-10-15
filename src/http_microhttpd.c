@@ -1106,7 +1106,8 @@ static int send_json(struct MHD_Connection *connection, const char *json)
 	MHD_add_response_header(response, "Content-Type", "application/captive+json");
 	ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
 	MHD_destroy_response(response);
-	free(msg);
+
+	// MHD will free(msg) when it has finished with it ( ie MHD_RESPMEM_MUST_FREE). Do not free here or MHD will page fault.
 	return ret;
 
 }

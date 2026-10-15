@@ -50,7 +50,7 @@ usage(void)
 		"\n"
 		"  -f          Run in foreground\n"
 		"  -b          Run in background\n"
-		"  -s          Log to syslog\n"
+		"  -s          Log to syslog (always on)\n"
 		"  -h          Print this help\n"
 		"  -v          Print version\n"
 		"\n"
@@ -91,6 +91,18 @@ void parse_commandline(int argc, char **argv)
 		}
 
 		config->daemon = -1;
+
+	} else if (strcmp(argv[i], "-s") == 0) {
+
+		/* Logging already goes to syslog. Accept the flag so existing scripts still start. */
+		ret = check_heartbeat();
+
+		if (ret == 0) {
+			printf("openNDS is already running, status [ %d ]. Retry later... \n", 1);
+			exit(1);
+		}
+
+		config->daemon = 0;
 
 	} else	if (strcmp(argv[i], "-h") == 0) {
 		usage();

@@ -2261,13 +2261,16 @@ query_type=${querystr:0:9}
 
 if [ "$query_type" = "%3ffas%3d" ]; then
 
-	# Check for a valid b64encoded query string
-	querystrlen=$((${#querystr}))
-	query_frag=${querystr:10:($querystrlen - 2)}
+	# %3ffas%3d is 9 characters, so the fas payload starts at offset 9.
+	# Percent-decode first. A real level 1/4 login encodes '+' '/' '=' as
+	# %2b %2f %3d, and '%' is outside the base64 alphabet.
+	query_frag=${querystr:9}
+	query_frag=$(printf "${query_frag//%/\\x}")
 
-	query_frag=$(echo "$query_frag" | awk -F "%3d" '{printf "%s", $1}')
+	# Form fields and an encrypted "&iv=" tail are not part of the fas value.
+	query_frag_b64=${query_frag%%,*}
+	query_frag_b64=${query_frag_b64%%&*}
 
-	query_frag_b64=$(echo "$query_frag" | awk -F "%2c" '{printf "%s", $1}')
 	syslogmessage="query_frag_b64 [ $query_frag_b64 ]"
 	debugtype="debug"
 	write_to_syslog
@@ -2275,8 +2278,8 @@ if [ "$query_type" = "%3ffas%3d" ]; then
 	syslogmessage="Probable attempted code injection detected"
 	debugtype="warn"
 
-	case $query_frag_b64 in
-		*[!A-Za-z0-9+/=]*) write_to_syslog; exit 1 ;;   # contains invalid character → reject
+	case "$query_frag_b64" in
+		*[!A-Za-z0-9+/=]*) write_to_syslog; exit 1 ;;
 	esac
 
 	#Display a splash page sequence using a Themespec

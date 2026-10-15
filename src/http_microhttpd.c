@@ -1345,57 +1345,55 @@ static int encode_and_redirect_to_splashpage(struct MHD_Connection *connection, 
  */
 static int redirect_to_splashpage(struct MHD_Connection *connection, t_client *client, const char *host, const char *url)
 {
-	char *originurl_raw;
-	char *originurl;
-	char *query;
+	char *originurl_raw = NULL;
+	char *originurl = NULL;
+	char *query = NULL;
 	int ret = 0;
 	const char *separator = "&";
-	char *querystr;
+	char *querystr = NULL;
 
 	query = safe_calloc(QUERYMAXLEN);
 
 	if (!query) {
-		ret = send_error(connection, 503);
-		free(query);
-		return ret;
+		return send_error(connection, 503);
 	}
 
 	querystr = safe_calloc(ENC_QUERYSTR);
 
 	if (!querystr) {
-		ret = send_error(connection, 503);
-		free(querystr);
-		return ret;
-	}
-
-	originurl_raw = safe_calloc(MID_BUF);
-
-	if (!originurl_raw) {
-		ret = send_error(connection, 503);
-		free(originurl_raw);
-		return ret;
+		free(query);
+		return send_error(connection, 503);
 	}
 
 	originurl = safe_calloc(CUSTOM_ENC);
 
 	if (!originurl) {
-		ret = send_error(connection, 503);
-		free(originurl);
-		return ret;
+		free(query);
+		free(querystr);
+		return send_error(connection, 503);
 	}
 
 	get_query(connection, &query, separator);
 
 	if (!query) {
 		debug(LOG_DEBUG, "Unable to get query string - error 503");
-		free(query);
-		// probably no mem
+		free(querystr);
+		free(originurl);
 		return send_error(connection, 503);
 	}
 
 	debug(LOG_DEBUG, "Query string is [ %s ]", query);
 
-	safe_asprintf(&originurl_raw, "http://%s%s%s", host, url, query);
+	// asprintf allocates its own buffer. A calloc here would be leaked,
+	// and a failed vasprintf leaves the pointer undefined.
+	if (safe_asprintf(&originurl_raw, "http://%s%s%s", host, url, query) < 0) {
+		debug(LOG_ERR, "Failed to build origin url");
+		free(query);
+		free(querystr);
+		free(originurl);
+		return send_error(connection, 503);
+	}
+
 	uh_urlencode(originurl, CUSTOM_ENC, originurl_raw, strlen(originurl_raw));
 
 	if (strcmp(url, "/login") == 0) {

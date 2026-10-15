@@ -508,13 +508,13 @@ int get_option_from_config(char* msg, int msg_len, const char *option)
 
 	if (execute_ret_url_encoded(msg, msg_len - 1, cmd) != 0) {
 		openlog ("opennds", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_DAEMON);
-		syslog (LOG_ERR, "Failed to get option [%s] - retrying\n", VERSION);
+		syslog (LOG_ERR, "Failed to get option [%s] - retrying\n", option);
 		closelog ();
 		sleep(1);
 
 		if (execute_ret_url_encoded(msg, msg_len - 1, cmd) != 0) {
 			openlog ("opennds", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_DAEMON);
-			syslog (LOG_CRIT, "Failed to get option [%s] Bad library or invalid config format - exiting\n", VERSION);
+			syslog (LOG_CRIT, "Failed to get option [%s] Bad library or invalid config format - exiting\n", option);
 			closelog ();
 			exit(1);
 		}

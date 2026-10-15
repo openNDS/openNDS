@@ -448,8 +448,27 @@ int add_to_fas_custom_parameters_list(const char possibleparam[])
 {
 	char param[512];
 	t_FASPARAM *p = NULL;
+	const char *rest;
 
-	sscanf(possibleparam, "%s", param);
+	if (possibleparam == NULL || sscanf(possibleparam, "%511s", param) != 1) {
+		debug(LOG_WARNING, "Custom Parameter is empty or invalid");
+		return 1;
+	}
+
+	if (strlen(param) == sizeof(param) - 1) {
+		rest = possibleparam;
+
+		while (*rest == ' ' || *rest == '\t') {
+			rest++;
+		}
+
+		rest += sizeof(param) - 1;
+
+		if (*rest != '\0' && !isspace((unsigned char)*rest)) {
+			debug(LOG_WARNING, "Custom Parameter does not fit");
+			return 1;
+		}
+	}
 
 	// Add Parameter to head of list
 	p = safe_calloc(sizeof(t_FASPARAM));
@@ -465,8 +484,27 @@ int add_to_fas_custom_variables_list(const char possiblevar[])
 {
 	char var[512];
 	t_FASVAR *p = NULL;
+	const char *rest;
 
-	sscanf(possiblevar, "%s", var);
+	if (possiblevar == NULL || sscanf(possiblevar, "%511s", var) != 1) {
+		debug(LOG_WARNING, "Custom Variable is empty or invalid");
+		return 1;
+	}
+
+	if (strlen(var) == sizeof(var) - 1) {
+		rest = possiblevar;
+
+		while (*rest == ' ' || *rest == '\t') {
+			rest++;
+		}
+
+		rest += sizeof(var) - 1;
+
+		if (*rest != '\0' && !isspace((unsigned char)*rest)) {
+			debug(LOG_WARNING, "Custom Variable does not fit");
+			return 1;
+		}
+	}
 
 	// Add Variable to head of list
 	p = safe_calloc(sizeof(t_FASVAR));
@@ -482,8 +520,27 @@ int add_to_fas_custom_images_list(const char possibleimage[])
 {
 	char image[512];
 	t_FASIMG *p = NULL;
+	const char *rest;
 
-	sscanf(possibleimage, "%s", image);
+	if (possibleimage == NULL || sscanf(possibleimage, "%511s", image) != 1) {
+		debug(LOG_WARNING, "Custom Image is empty or invalid");
+		return 1;
+	}
+
+	if (strlen(image) == sizeof(image) - 1) {
+		rest = possibleimage;
+
+		while (*rest == ' ' || *rest == '\t') {
+			rest++;
+		}
+
+		rest += sizeof(image) - 1;
+
+		if (*rest != '\0' && !isspace((unsigned char)*rest)) {
+			debug(LOG_WARNING, "Custom Image does not fit");
+			return 1;
+		}
+	}
 
 	// Add Image to head of list
 	p = safe_calloc(sizeof(t_FASIMG));
@@ -499,8 +556,27 @@ int add_to_fas_custom_files_list(const char possiblefile[])
 {
 	char file[512];
 	t_FASFILE *p = NULL;
+	const char *rest;
 
-	sscanf(possiblefile, "%s", file);
+	if (possiblefile == NULL || sscanf(possiblefile, "%511s", file) != 1) {
+		debug(LOG_WARNING, "Custom File is empty or invalid");
+		return 1;
+	}
+
+	if (strlen(file) == sizeof(file) - 1) {
+		rest = possiblefile;
+
+		while (*rest == ' ' || *rest == '\t') {
+			rest++;
+		}
+
+		rest += sizeof(file) - 1;
+
+		if (*rest != '\0' && !isspace((unsigned char)*rest)) {
+			debug(LOG_WARNING, "Custom File does not fit");
+			return 1;
+		}
+	}
 
 	// Add File to head of list
 	p = safe_calloc(sizeof(t_FASFILE));

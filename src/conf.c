@@ -696,16 +696,23 @@ int is_trusted_mac(const char *mac)
 	s_config *config;
 	t_MAC *trust_mac;
 
+	int found = 0;
+
 	config = config_get_config();
 
-	// Is a client even recognized here?
+	/* Callers may already hold the client-list lock. Do not take that lock here. */
+	LOCK_CONFIG();
+
 	for (trust_mac = config->trustedmaclist; trust_mac != NULL; trust_mac = trust_mac->next) {
 		if (!strcasecmp(trust_mac->mac, mac)) {
-			return 1;
+			found = 1;
+			break;
 		}
 	}
 
-	return 0;
+	UNLOCK_CONFIG();
+
+	return found;
 }
 
 /* Given a pointer to a comma or whitespace delimited sequence of

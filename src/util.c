@@ -1107,6 +1107,8 @@ ndsctl_status(FILE *fp)
 	fprintf(fp, "====\n");
 	fprintf(fp, "Trusted MAC addresses:\n");
 
+	LOCK_CONFIG();
+
 	if (config->trustedmaclist != NULL) {
 
 		for (trust_mac = config->trustedmaclist; trust_mac != NULL; trust_mac = trust_mac->next) {
@@ -1115,6 +1117,8 @@ ndsctl_status(FILE *fp)
 	} else {
 		fprintf(fp, "none\n");
 	}
+
+	UNLOCK_CONFIG();
 
 	fprintf(fp, "====\n");
 	fprintf(fp, "Walledgarden FQDNs:\n");
@@ -1373,7 +1377,9 @@ ndsctl_json_all(FILE *fp, char *indent)
 
 	UNLOCK_CLIENT_LIST();
 
-	// Trusted mac list
+	// Trusted mac list. The client-list lock was released above.
+	LOCK_CONFIG();
+
 	if (config->trustedmaclist != NULL) {
 		fprintf(fp, "  },\n");
 		// count the number of trusted mac addresses
@@ -1399,6 +1405,8 @@ ndsctl_json_all(FILE *fp, char *indent)
 	} else {
 		fprintf(fp, "  }\n");
 	}
+
+	UNLOCK_CONFIG();
 	fprintf(fp, "}\n");
 }
 

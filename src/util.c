@@ -370,25 +370,28 @@ int ndsctl_lock()
 	// Open or create the lock file
 	safe_asprintf(&lockfile, "%s/ndsctl.lock", config->tmpfsmountpoint);
 	config->lockfd = open(lockfile, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-	free(lockfile);
 
 	if (config->lockfd < 0) {
 		debug(LOG_ERR, "CRITICAL ERROR - Unable to open [%s]", lockfile);
+		free(lockfile);
 		return 5;
 	}
 
 	if (lockf(config->lockfd, F_TLOCK, 0) == 0) {
+		free(lockfile);
 		return 0;
 	} else {
 
 		if (errno != EACCES && errno != EAGAIN) {
 			// persistent error
 			debug(LOG_ERR, "CRITICAL ERROR - Unable to create lock on [%s]", lockfile);
+			free(lockfile);
 			close(config->lockfd);
 			return 6;
 		}
 
 		debug(LOG_ERR, "ndsctl is locked by another process");
+		free(lockfile);
 		close(config->lockfd);
 		return 4;
 	}

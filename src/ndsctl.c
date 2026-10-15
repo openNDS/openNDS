@@ -348,18 +348,19 @@ int ndsctl_lock(char *mountpoint, int *lockfd)
 	// Open or create the lock file
 	safe_asprintf(&lockfile, "%s/ndsctl.lock", mountpoint);
 	*lockfd = open(lockfile, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-	free(lockfile);
 
 	if (*lockfd < 0) {
 		// Critical error - must report to syslog
 		openlog ("ndsctl", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
 		syslog (LOG_ERR, "CRITICAL ERROR - Unable to open [%s]", lockfile);
 		closelog ();
+		free(lockfile);
 		return 5;
 	}
 
 
 	if (lockf(*lockfd, F_TLOCK, 0) == 0) {
+		free(lockfile);
 		return 0;
 	} else {
 
@@ -369,9 +370,12 @@ int ndsctl_lock(char *mountpoint, int *lockfd)
 			openlog ("ndsctl", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
 			syslog (LOG_ERR, "CRITICAL ERROR - Unable to create lock on [%s]", lockfile);
 			closelog ();
+			free(lockfile);
 			close(*lockfd);
 			return 6;
 		}
+
+		free(lockfile);
 
 		// This is a normal operating state, no need to report to syslog
 		// It is the responsibility of the caller to check return code and retry if required

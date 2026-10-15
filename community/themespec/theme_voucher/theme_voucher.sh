@@ -78,7 +78,7 @@ login_with_voucher() {
 check_voucher() {
 	
 	# Strict Voucher Validation for shell escape prevention - Only alphanumeric (and dash character) allowed.
-	if validation=$(echo -n $voucher | grep -E "^[a-zA-Z0-9-]{9}$"); then
+	if printf '%s\n' "$voucher" | grep -E -q "^[a-zA-Z0-9-]{9}$"; then
 		#echo "Voucher Validation successful, proceeding"
 		: #no-op
 	else
@@ -106,18 +106,18 @@ check_voucher() {
 	#
 	##############################################################################################################################
 
-	output=$(grep $voucher $voucher_roll | head -n 1) # Store first occurence of voucher as variable
+	output=$(grep -F -e "$voucher" -- "$voucher_roll" | head -n 1) # Store first occurence of voucher as variable
 	#echo "$output <br>" #Matched line
- 	if [ $(echo -n $output | wc -w) -ge 1 ]; then 
+ 	if [ "$(printf '%s' "$output" | wc -w)" -ge 1 ]; then 
 		#echo "Voucher Found - Checking Validity <br>"
 		current_time=$(date +%s)
-		voucher_token=$(echo -n $output | sed -r "s#([a-zA-Z0-9-]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+)#\1#")
-		voucher_rate_down=$(echo -n $output | sed -r "s#([a-zA-Z0-9-]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+)#\2#")
-		voucher_rate_up=$(echo -n $output | sed -r "s#([a-zA-Z0-9-]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+)#\3#")
-		voucher_quota_down=$(echo -n $output | sed -r "s#([a-zA-Z0-9-]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+)#\4#")
-		voucher_quota_up=$(echo -n $output | sed -r "s#([a-zA-Z0-9-]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+)#\5#")
-		voucher_time_limit=$(echo -n $output | sed -r "s#([a-zA-Z0-9-]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+)#\6#")
-		voucher_first_punched=$(echo -n $output | sed -r "s#([a-zA-Z0-9-]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+)#\7#")
+		voucher_token=$(printf '%s' "$output" | sed -r "s#([a-zA-Z0-9-]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+)#\1#")
+		voucher_rate_down=$(printf '%s' "$output" | sed -r "s#([a-zA-Z0-9-]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+)#\2#")
+		voucher_rate_up=$(printf '%s' "$output" | sed -r "s#([a-zA-Z0-9-]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+)#\3#")
+		voucher_quota_down=$(printf '%s' "$output" | sed -r "s#([a-zA-Z0-9-]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+)#\4#")
+		voucher_quota_up=$(printf '%s' "$output" | sed -r "s#([a-zA-Z0-9-]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+)#\5#")
+		voucher_time_limit=$(printf '%s' "$output" | sed -r "s#([a-zA-Z0-9-]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+)#\6#")
+		voucher_first_punched=$(printf '%s' "$output" | sed -r "s#([a-zA-Z0-9-]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+)#\7#")
 		
 		# Set limits according to voucher
 		upload_rate=$voucher_rate_up
@@ -125,22 +125,26 @@ check_voucher() {
 		upload_quota=$voucher_quota_up
 		download_quota=$voucher_quota_down
 
-		if [ $voucher_first_punched -eq 0 ]; then
+		if [ "$voucher_first_punched" -eq 0 ]; then
 			#echo "First Voucher Use"
 			# "Punch" the voucher by setting the timestamp to now
 			voucher_expiration=$(($current_time + $voucher_time_limit * 60))
 			# Override session length according to voucher
 			sessiontimeout=$voucher_time_limit
-			sed -i -r "s/($voucher.*,)(0)/\1$current_time/" $voucher_roll
+			sed -i -r "s/($voucher.*,)(0)/\1$current_time/" "$voucher_roll"
 			return 0
 		else
 			#echo "Voucher Already Used, Checking validity <br>"
 			# Current timestamp <= than Punch Timestamp + Validity (minutes) * 60 secs/minute
 			voucher_expiration=$(($voucher_first_punched + $voucher_time_limit * 60))
 
-			if [ $current_time -le $voucher_expiration ]; then
+			if [ "$current_time" -le "$voucher_expiration" ]; then
 				time_remaining=$(( ($voucher_expiration - $current_time) / 60 ))
 				#echo "Voucher is still valid - You have $time_remaining minutes left <br>"
+				# sessiontimeout 0 is the full global session, so reject a voucher with under a minute left.
+				if [ "$time_remaining" -lt 1 ]; then
+					return 1
+				fi
 				# Override session length according to voucher
 				sessiontimeout=$time_remaining
 				# Nothing to change in the roll
@@ -148,7 +152,7 @@ check_voucher() {
 			else
 				#echo "Voucher has expired, please try another one <br>"
 				# Delete expired voucher from roll
-				sed -i "/$voucher/"d $voucher_roll
+				sed -i "/$voucher/d" "$voucher_roll"
 				return 1
 			fi
 		fi

@@ -36,6 +36,10 @@
 #include <unistd.h>
 #include <syslog.h>
 #include <time.h>
+#include <errno.h>
+#include <signal.h>
+#include <sys/wait.h>
+#include <spawn.h>
 
 #include "safe.h"
 #include "conf.h"
@@ -276,18 +280,31 @@ static int binauth_action(t_client *client, const char *reason, const char *cust
 	char *deauth = "deauth";
 	char *client_auth = "client_auth";
 	char *ndsctl_auth = "ndsctl_auth";
-	char *binauthcmd;
+	const char *custom_arg;
+	char *binauth_argv[10];
+	char incoming[32];
+	char outgoing[32];
+	char session_start_arg[32];
+	char session_end_arg[32];
+	pid_t pid;
+	pid_t waited;
+	int status = 0;
+	struct sigaction sa;
+	struct sigaction oldsa;
+	int have_oldsa = 0;
 	int ret = 1;
 	int rc = 0;
 
 	if (config->binauth) {
 
-		if (!customdata || strlen(customdata) == 0) {
-			customdata = safe_strdup("ZW1wdHk=");
+		custom_arg = customdata;
+
+		if (!custom_arg || custom_arg[0] == '\0') {
+			custom_arg = "ZW1wdHk=";
 		}
 
-		debug(LOG_DEBUG, "customdata=%s", customdata);
-		client->custom = safe_strdup(customdata);
+		debug(LOG_DEBUG, "customdata=%s", custom_arg);
+		client->custom = safe_strdup(custom_arg);
 		debug(LOG_DEBUG, "binauth_action: client->custom [%s]", client->custom);
 
 		// get client's current session start and end
@@ -318,25 +335,61 @@ static int binauth_action(t_client *client, const char *reason, const char *cust
 
 		debug(LOG_DEBUG, "BinAuth %s - client session end time: [ %lu ]", reason, sessionend);
 
-		binauthcmd = safe_calloc(STATUS_BUF);
-		safe_snprintf(binauthcmd, STATUS_BUF, "%s %s %s %llu %llu %lu %lu %s %s",
-			config->binauth,
-			reason ? reason : "unknown",
-			client->mac,
-			client->counters.incoming,
-			client->counters.outgoing,
-			sessionstart,
-			sessionend,
-			client->token,
-			client->custom
-		);
+		// Run the script directly. system() would interpret custom data as shell.
+		safe_snprintf(incoming, sizeof(incoming), "%llu", client->counters.incoming);
+		safe_snprintf(outgoing, sizeof(outgoing), "%llu", client->counters.outgoing);
+		safe_snprintf(session_start_arg, sizeof(session_start_arg), "%lu", sessionstart);
+		safe_snprintf(session_end_arg, sizeof(session_end_arg), "%lu", sessionend);
 
-		debug(LOG_DEBUG, "BinAuth Command [ %s ]", binauthcmd);
-		rc = system(binauthcmd);
-		free(binauthcmd);
+		binauth_argv[0] = config->binauth;
+		binauth_argv[1] = (char *)(reason ? reason : "unknown");
+		binauth_argv[2] = client->mac ? client->mac : (char *)"";
+		binauth_argv[3] = incoming;
+		binauth_argv[4] = outgoing;
+		binauth_argv[5] = session_start_arg;
+		binauth_argv[6] = session_end_arg;
+		binauth_argv[7] = client->token ? client->token : (char *)"";
+		binauth_argv[8] = (char *)custom_arg;
+		binauth_argv[9] = NULL;
 
-		if (WIFEXITED(rc)) {
-			rc = WEXITSTATUS(rc);
+		debug(LOG_DEBUG, "BinAuth arguments: [%s] [%s] [%s] [%s] [%s] [%s] [%s] [%s] [%s]",
+			binauth_argv[0], binauth_argv[1], binauth_argv[2], binauth_argv[3],
+			binauth_argv[4], binauth_argv[5], binauth_argv[6], binauth_argv[7],
+			binauth_argv[8]);
+
+		memset(&sa, 0, sizeof(sa));
+		sa.sa_handler = SIG_DFL;
+		sigemptyset(&sa.sa_mask);
+		sa.sa_flags = SA_NOCLDSTOP | SA_RESTART;
+
+		if (sigaction(SIGCHLD, &sa, &oldsa) == -1) {
+			debug(LOG_ERR, "sigaction() failed to set default SIGCHLD handler: %s", strerror(errno));
+		} else {
+			have_oldsa = 1;
+		}
+
+		rc = posix_spawn(&pid, binauth_argv[0], NULL, NULL, binauth_argv, environ);
+
+		if (rc != 0) {
+			debug(LOG_ERR, "BinAuth posix_spawn failed: %s", strerror(rc));
+			rc = -1;
+		} else {
+			do {
+				waited = waitpid(pid, &status, 0);
+			} while (waited < 0 && errno == EINTR);
+
+			if (waited < 0) {
+				debug(LOG_ERR, "BinAuth waitpid failed: %s", strerror(errno));
+				rc = -1;
+			} else if (WIFEXITED(status)) {
+				rc = WEXITSTATUS(status);
+			} else {
+				rc = status;
+			}
+		}
+
+		if (have_oldsa && sigaction(SIGCHLD, &oldsa, NULL) == -1) {
+			debug(LOG_ERR, "sigaction() failed to restore SIGCHLD handler: %s", strerror(errno));
 		}
 
 		debug(LOG_DEBUG, "binauth return code %d", rc);

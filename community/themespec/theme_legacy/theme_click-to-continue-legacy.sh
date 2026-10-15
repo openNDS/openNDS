@@ -40,17 +40,20 @@ click_to_continue() {
 	if [ -e "$legacy" ]; then
 		cp $legacy $legacysplash
 
-		get_option_from_config gatewayport
+		option="gatewayport"
+		get_option_from_config
 
-		if [ -z "$gatewayport"]; then
+		if [ -z "$gatewayport" ]; then
 			gatewayport="2050"
 		fi
 
-		sedstr="s|\$gatewayname|$gatewayname|"
+		# gatewayname is already entity-encoded, and & is the whole match in a sed replacement.
+		gatewayname_sed=$(printf '%s' "$gatewayname" | sed 's/&/\\&/g')
+		sedstr="s|\$gatewayname|$gatewayname_sed|"
 		sed -i "$sedstr" "$legacysplash"
 
-		htmlentitydecode $gatewayurl
-		gatewayurl=$entitydecoded
+		# gatewayurl in the cid file is percent-encoded.
+		gatewayurl=$(printf "${gatewayurl//%/\\x}")
 		authaction="$gatewayurl/opennds_auth/"
 		sedstr="s|\$authaction|$authaction|"
 		sed -i "$sedstr" "$legacysplash"

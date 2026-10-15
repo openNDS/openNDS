@@ -443,12 +443,40 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 			safe_snprintf(libcmd, SMALL_BUF, "/usr/lib/opennds/libopennds.sh get_quotas_by_mac \"%s\"", client->mac );
 
 			msg = safe_calloc(SMALL_BUF);
-			execute_ret_url_encoded(msg, SMALL_BUF, libcmd);
-			free(libcmd);
-			debug(LOG_DEBUG, "assigned parameters [ %s ]", msg);
 
-			sessionseconds_binauth = 60 * atoi(strtok(msg, " "));
-			debug(LOG_DEBUG, "sessionseconds_binauth [ %d ]", sessionseconds_binauth);
+			{
+				long long q_session = 0;
+				long long q_uprate = 0;
+				long long q_downrate = 0;
+				long long q_upquota = 0;
+				long long q_downquota = 0;
+				int q_fields = 0;
+
+				if (execute_ret_url_encoded(msg, SMALL_BUF, libcmd) == 0) {
+					q_fields = sscanf(msg, "%lld %lld %lld %lld %lld",
+						&q_session, &q_uprate, &q_downrate, &q_upquota, &q_downquota);
+				}
+
+				free(libcmd);
+				debug(LOG_DEBUG, "assigned parameters [ %s ]", msg);
+
+				if (q_fields != 5) {
+					debug(LOG_WARNING, "Quota reply is incomplete, using default limits");
+					q_session = 0;
+					q_uprate = 0;
+					q_downrate = 0;
+					q_upquota = 0;
+					q_downquota = 0;
+				}
+
+				sessionseconds_binauth = q_session > 0 ? 60 * q_session : 0;
+				upload_rate = q_uprate > 0 ? (unsigned long long)q_uprate : 0;
+				download_rate = q_downrate > 0 ? (unsigned long long)q_downrate : 0;
+				upload_quota = q_upquota > 0 ? (unsigned long long)q_upquota : 0;
+				download_quota = q_downquota > 0 ? (unsigned long long)q_downquota : 0;
+			}
+
+			debug(LOG_DEBUG, "sessionseconds_binauth [ %ld ]", (long)sessionseconds_binauth);
 			client->session_end = now + sessionseconds_config;
 
 			if (sessionseconds_binauth == 0) {
@@ -457,17 +485,11 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 				client->session_end = sessionseconds_binauth + now;
 			}
 
-			//
-			upload_rate = atoi(strtok(NULL, " "));
-
 			if (upload_rate == 0) {
 				client->upload_rate = config->upload_rate;
 			} else {
 				client->upload_rate = upload_rate;
 			}
-
-			//
-			download_rate = atoi(strtok(NULL, " "));
 
 			if (download_rate == 0) {
 				client->download_rate = config->download_rate;
@@ -475,17 +497,11 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 				client->download_rate = download_rate;
 			}
 
-			//
-			upload_quota = atoi(strtok(NULL, " "));
-
 			if (upload_quota == 0) {
 				client->upload_quota = config->upload_quota;
 			} else {
 				client->upload_quota = upload_quota;
 			}
-
-			//
-			download_quota = atoi(strtok(NULL, " "));
 
 			if (download_quota == 0) {
 				client->download_quota = config->download_quota;

@@ -162,6 +162,12 @@ landing_page() {
 	configure_log_location
 	. $mountpoint/ndscids/ndsinfo
 
+	# landing=yes skips click_to_continue, which requires the acceptance field.
+	if [ "$continue" != "clicked" ]; then
+		continue_form
+		footer
+	fi
+
 	# authenticate and write to the log - returns with $ndsstatus set
 	auth_log
 

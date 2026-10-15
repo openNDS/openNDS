@@ -172,6 +172,12 @@ landing_page() {
 	configure_log_location
 	. $mountpoint/ndscids/ndsinfo
 
+	# landing=yes skips name_email_login, which is where these fields are checked.
+	if [ -z "$username" ] || [ -z "$emailaddress" ]; then
+		login_form
+		footer
+	fi
+
 	# Add the user credentials to $userinfo for the log
 	userinfo="$userinfo, user=$username, email=$emailaddress"
 

@@ -40,6 +40,7 @@
 #include <errno.h>
 #include <sys/epoll.h>
 #include <fcntl.h>
+#include <sys/stat.h>
 #include <arpa/inet.h>
 
 #include "common.h"
@@ -115,6 +116,7 @@ thread_ndsctl(void *arg)
 	int accepting;
 	int dead;
 	int i;
+	mode_t old_umask;
 
 	debug(LOG_DEBUG, "Starting ndsctl thread");
 
@@ -138,10 +140,22 @@ thread_ndsctl(void *arg)
 
 	debug(LOG_DEBUG, "Binding socket [%s] Socket descriptor [%d]", sa_un.sun_path, sock);
 
+	// Owner-only. The previous mode followed the daemon umask.
+	old_umask = umask(S_IRWXG | S_IRWXO);
+
 	if (bind(sock, (struct sockaddr *)&sa_un, strlen(sock_name) + sizeof(sa_un.sun_family))) {
+		umask(old_umask);
 		debug(LOG_ERR, "Could not bind control socket: [%s] Terminating...", strerror(errno));
 		pthread_exit(NULL);
 	}
+
+	if (chmod(sock_name, S_IRUSR | S_IWUSR) != 0) {
+		umask(old_umask);
+		debug(LOG_ERR, "Could not restrict control socket: [%s] Terminating...", strerror(errno));
+		pthread_exit(NULL);
+	}
+
+	umask(old_umask);
 
 	if (listen(sock, 5)) {
 		debug(LOG_ERR, "Could not listen on control socket: [%s] Terminating...", strerror(errno));

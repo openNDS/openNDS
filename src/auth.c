@@ -1190,11 +1190,19 @@ auth_client_auth(const unsigned id, const char *reason, const char *customdata)
 int
 auth_client_trust(const char *mac)
 {
+	char canonical[18];
 	int rc = -1;
+
+	if (!check_mac_format(mac)) {
+		return -1;
+	}
+
+	memcpy(canonical, mac, 17);
+	canonical[17] = '\0';
 
 	LOCK_CONFIG();
 
-	if (!add_to_trusted_mac_list(mac) && !iptables_trust_mac(mac)) {
+	if (!add_to_trusted_mac_list(canonical) && !iptables_trust_mac(canonical)) {
 		rc = 0;
 	}
 
@@ -1206,11 +1214,19 @@ auth_client_trust(const char *mac)
 int
 auth_client_untrust(const char *mac)
 {
+	char canonical[18];
 	int rc = -1;
+
+	if (!check_mac_format(mac)) {
+		return -1;
+	}
+
+	memcpy(canonical, mac, 17);
+	canonical[17] = '\0';
 
 	LOCK_CONFIG();
 
-	if (!remove_from_trusted_mac_list(mac) && !iptables_untrust_mac(mac)) {
+	if (!remove_from_trusted_mac_list(canonical) && !iptables_untrust_mac(canonical)) {
 		rc = 0;
 	}
 

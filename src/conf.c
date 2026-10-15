@@ -403,10 +403,26 @@ int check_ip_format(const char *possibleip)
 	return inet_pton(AF_INET, possibleip, buf) > 0;
 }
 
-// Parse a string to see if it is valid MAC address format
+// The whole argument must be a MAC. ether_aton() accepts trailing junk.
 int check_mac_format(const char possiblemac[])
 {
-	return ether_aton(possiblemac) != NULL;
+	int i;
+
+	if (possiblemac == NULL || strlen(possiblemac) != 17) {
+		return 0;
+	}
+
+	for (i = 0; i < 17; i++) {
+		if ((i % 3) == 2) {
+			if (possiblemac[i] != ':') {
+				return 0;
+			}
+		} else if (!isxdigit((unsigned char)possiblemac[i])) {
+			return 0;
+		}
+	}
+
+	return 1;
 }
 
 int add_to_fas_custom_parameters_list(const char possibleparam[])

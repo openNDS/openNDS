@@ -607,15 +607,17 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 
 			if (config->download_unrestricted_bursting == 0 && config->download_bucket_ratio > 0) {
 				iptables_download_ratelimit_enable(client, action);
-				//bit 0 is not set so toggle it to signify rate limiting is on
-				client->rate_exceeded = client->rate_exceeded^1;
+				/* Bit 0 matches the download limit rule. It may already be set. */
+				client->rate_exceeded |= 1;
 			}
 
 			if (config->upload_unrestricted_bursting == 0 && config->upload_bucket_ratio > 0) {
 				iptables_upload_ratelimit_enable(client, action);
-				//bit 1 is not set so toggle it to signify rate limiting is on
-				client->rate_exceeded = client->rate_exceeded^2;
+				/* Bit 1 matches the upload limit rule. It may already be set. */
+				client->rate_exceeded |= 2;
 			}
+
+			client->fw_connection_state = new_state;
 
 			binauth_action(client, reason, customdata);
 

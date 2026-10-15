@@ -214,8 +214,8 @@ ndsctl_handler(int fd)
 {
 	int done, i, ret = 0;
 	char request[MAX_BUF];
-	//ssize_t read_bytes, len;
-	int read_bytes, len;
+	int read_bytes;
+	ssize_t len;
 	FILE* fp;
 
 	debug(LOG_DEBUG, "Entering thread_ndsctl_handler....");
@@ -229,11 +229,25 @@ ndsctl_handler(int fd)
 	debug(LOG_DEBUG, "Read bytes and stuff from socket descriptor [%d], pointer [%lu]", fd, fp);
 
 	// Read....
-	while (!done && read_bytes < (sizeof(request) - 1)) {
-		len = read(fd, request + read_bytes, sizeof(request) - read_bytes);
+	// The accepted socket is non-blocking. read() returns -1 on EAGAIN and 0
+	// on EOF. Neither is a byte count: adding it walks off the front of
+	// request, and a 0 return spins this thread so later ndsctl commands stall.
+	while (!done && read_bytes < (int)sizeof(request) - 1) {
+		len = read(fd, request + read_bytes, sizeof(request) - (size_t)read_bytes - 1);
+
+		if (len < 0) {
+			if (errno == EINTR) {
+				continue;
+			}
+			break;
+		}
+
+		if (len == 0) {
+			break;
+		}
 
 		// Have we gotten a command yet?
-		for (i = read_bytes; i < (read_bytes + len); i++) {
+		for (i = read_bytes; i < read_bytes + (int)len; i++) {
 			if (request[i] == '\r' || request[i] == '\n') {
 				request[i] = '\0';
 				done = 1;
@@ -241,7 +255,7 @@ ndsctl_handler(int fd)
 		}
 
 		// Increment position
-		read_bytes += len;
+		read_bytes += (int)len;
 	}
 
 	debug(LOG_DEBUG, "ndsctl request received: [%s]", request);

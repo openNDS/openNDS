@@ -879,7 +879,7 @@ ndsctl_status(FILE *fp)
 		uploadburst = config->checkinterval * config->rate_check_window;
 	}
 
-	if (config->upload_bucket_ratio > 0) {
+	if (config->download_bucket_ratio > 0) {
 		downloadburst = config->checkinterval * config->rate_check_window;
 	}
 

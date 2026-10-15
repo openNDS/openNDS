@@ -69,6 +69,32 @@ static void ndsctl_deauth(FILE *fp, char *arg);
 static void ndsctl_debuglevel(FILE *fp, char *arg);
 
 static int socket_set_non_blocking(int sockfd);
+static int ndsctl_resume_accept(int epoll_fd, int sock);
+
+/* Put the listen socket back into the epoll set once a client slot is free.
+ * It is removed while the set is full so epoll_wait cannot write past events.
+ */
+static int
+ndsctl_resume_accept(int epoll_fd, int sock)
+{
+	struct epoll_event ev;
+
+	memset(&ev, 0, sizeof(ev));
+	ev.events = EPOLLIN | EPOLLET;
+	ev.data.fd = sock;
+
+	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, sock, &ev) < 0) {
+
+		if (errno == EEXIST) {
+			return 0;
+		}
+
+		debug(LOG_ERR, "Could not resume accepting ndsctl connections: %s", strerror(errno));
+		return -1;
+	}
+
+	return 0;
+}
 
 /* Launches a thread that monitors the control socket for request
  @param arg Must contain a pointer to a string containing the Unix domain socket to open
@@ -85,6 +111,9 @@ thread_ndsctl(void *arg)
 	struct epoll_event *events;
 	int current_fd_count;
 	int number_of_count;
+	int maxevents;
+	int accepting;
+	int dead;
 	int i;
 
 	debug(LOG_DEBUG, "Starting ndsctl thread");
@@ -138,6 +167,7 @@ thread_ndsctl(void *arg)
 	}
 
 	current_fd_count = 1;
+	accepting = 1;
 
 	debug(LOG_DEBUG, "Entering ndsctl thread loop");
 
@@ -145,7 +175,20 @@ thread_ndsctl(void *arg)
 		memset(&sa_un, 0, sizeof(sa_un));
 		len = (socklen_t) sizeof(sa_un);
 
-		number_of_count = epoll_wait(epoll_fd, events, current_fd_count, -1);
+		// events has MAX_EVENT_SIZE slots. current_fd_count grows with every
+		// accepted client that has not yet completed a command, so it must
+		// not be passed to epoll_wait once it is larger than the array.
+		maxevents = current_fd_count;
+
+		if (maxevents > MAX_EVENT_SIZE) {
+			maxevents = MAX_EVENT_SIZE;
+		}
+
+		if (maxevents < 1) {
+			maxevents = 1;
+		}
+
+		number_of_count = epoll_wait(epoll_fd, events, maxevents, -1);
 
 		if (number_of_count == -1) {
 			// interupted is not an error
@@ -163,15 +206,49 @@ thread_ndsctl(void *arg)
 					(!(events[i].events & EPOLLIN))) {
 				debug(LOG_ERR, "Socket is not ready for communication : %s", strerror(errno));
 
-				if (events[i].data.fd > 0) {
-					shutdown(events[i].data.fd, 2);
-					close(events[i].data.fd);
+				dead = events[i].data.fd;
+
+				if (dead > 0) {
+					shutdown(dead, 2);
+					close(dead);
 					events[i].data.fd = 0;
 				}
+
+				// close() drops the fd from the epoll set. A client that never
+				// sent a command must not keep its slot, or the cap stays full.
+				if (dead > 0 && dead != sock && current_fd_count > 1) {
+					current_fd_count -= 1;
+
+					if (!accepting && current_fd_count < MAX_EVENT_SIZE) {
+						if (ndsctl_resume_accept(epoll_fd, sock) == 0) {
+							accepting = 1;
+						} else {
+							free(events);
+							pthread_exit(NULL);
+						}
+					}
+				}
+
 				continue;
 			}
 
 			if (events[i].data.fd == sock) {
+				// The event array is full. Leave this connection in the listen
+				// backlog and stop watching the listen socket until a slot frees.
+				if (current_fd_count >= MAX_EVENT_SIZE) {
+					if (accepting) {
+						debug(LOG_WARNING, "Too many ndsctl connections, not accepting more");
+
+						if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, sock, NULL) < 0) {
+							debug(LOG_ERR, "Could not stop accepting ndsctl connections: %s", strerror(errno));
+						}
+
+						accepting = 0;
+					}
+
+					continue;
+				}
+
 				if ((fd = accept(events[i].data.fd, (struct sockaddr *)&sa_un, &len)) == -1) {
 					debug(LOG_ERR, "Accept failed on control socket: %s", strerror(errno));
 					free(events);
@@ -188,6 +265,16 @@ thread_ndsctl(void *arg)
 					}
 
 					current_fd_count += 1;
+
+					if (current_fd_count >= MAX_EVENT_SIZE) {
+						debug(LOG_WARNING, "Too many ndsctl connections, not accepting more");
+
+						if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, sock, NULL) < 0) {
+							debug(LOG_ERR, "Could not stop accepting ndsctl connections: %s", strerror(errno));
+						}
+
+						accepting = 0;
+					}
 				}
 
 			} else {
@@ -201,6 +288,15 @@ thread_ndsctl(void *arg)
 				// socket was closed on 'ndsctl_handler'
 				if (events[i].data.fd > 0) {
 					events[i].data.fd = 0;
+				}
+
+				if (!accepting && current_fd_count < MAX_EVENT_SIZE) {
+					if (ndsctl_resume_accept(epoll_fd, sock) == 0) {
+						accepting = 1;
+					} else {
+						free(events);
+						pthread_exit(NULL);
+					}
 				}
 			}
 		}

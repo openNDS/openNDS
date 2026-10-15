@@ -37,6 +37,8 @@
 #include <signal.h>
 #include <errno.h>
 #include <time.h>
+#include <unistd.h>
+#include <fcntl.h>
 #include <sys/stat.h>
 #include <arpa/inet.h>
 
@@ -86,6 +88,63 @@ static pthread_t tid_client_check = 0;
 // Time when opennds started
 time_t started_time = 0;
 
+/* Set by the termination signal handler. Cleanup runs on the main thread. */
+static volatile sig_atomic_t shutdown_requested = 0;
+static volatile sig_atomic_t shutdown_signal = 0;
+static int shutdown_pipe[2] = {-1, -1};
+
+static void open_shutdown_pipe(void)
+{
+	int flags;
+
+	if (pipe(shutdown_pipe) != 0) {
+		shutdown_pipe[0] = -1;
+		shutdown_pipe[1] = -1;
+		return;
+	}
+
+	flags = fcntl(shutdown_pipe[0], F_GETFL, 0);
+
+	if (flags >= 0) {
+		fcntl(shutdown_pipe[0], F_SETFL, flags | O_NONBLOCK);
+	}
+
+	flags = fcntl(shutdown_pipe[1], F_GETFL, 0);
+
+	if (flags >= 0) {
+		fcntl(shutdown_pipe[1], F_SETFL, flags | O_NONBLOCK);
+	}
+}
+
+int main_shutdown_fd(void)
+{
+	return shutdown_pipe[0];
+}
+
+int opennds_shutdown_requested(void)
+{
+	return shutdown_requested != 0;
+}
+
+/** Async-signal-safe. The main thread performs logging and firewall cleanup. */
+static void request_termination(int s)
+{
+	int saved_errno;
+	char byte = 1;
+	ssize_t written;
+
+	saved_errno = errno;
+	shutdown_signal = s;
+	shutdown_requested = 1;
+
+	if (shutdown_pipe[1] >= 0) {
+		written = write(shutdown_pipe[1], &byte, 1);
+		(void)written;
+	}
+
+	errno = saved_errno;
+}
+
 static void catcher(int sig) {
 }
 
@@ -117,33 +176,16 @@ static void ignore_sigpipe(void) {
 void
 sigchld_handler(int s)
 {
-	int	status;
-	pid_t rc;
+	int saved_errno;
 
-	rc = waitpid(-1, &status, WNOHANG | WUNTRACED);
+	(void)s;
+	saved_errno = errno;
 
-	if (rc == -1) {
-		if (errno != ECHILD) {
-			debug(LOG_ERR, "SIGCHLD handler: Error reaping child process (waitpid() returned -1): %s", strerror(errno));
-		}
-		return;
+	/* Reap every exited child. debug() is not async-signal-safe. */
+	while (waitpid(-1, NULL, WNOHANG) > 0) {
 	}
 
-	if (WIFEXITED(status)) {
-
-		if (rc != 0) {
-			debug(LOG_DEBUG, "SIGCHLD handler: Process PID %d exited normally, status %d", (int)rc, WEXITSTATUS(status));
-		}
-		return;
-	}
-
-	if (WIFSIGNALED(status)) {
-		debug(LOG_DEBUG, "SIGCHLD handler: Process PID %d exited due to signal %d", (int)rc, WTERMSIG(status));
-		return;
-	}
-
-	debug(LOG_DEBUG, "SIGCHLD handler: Process PID %d changed state, status %d not exited, ignoring", (int)rc, status);
-	return;
+	errno = saved_errno;
 }
 
 /** Exits cleanly after cleaning up the firewall.
@@ -255,8 +297,8 @@ init_signals(void)
 		exit(1);
 	}
 
-	debug(LOG_DEBUG, "Setting SIGTERM, SIGQUIT, SIGINT  handlers to termination_handler()");
-	sa.sa_handler = termination_handler;
+	debug(LOG_DEBUG, "Setting SIGTERM, SIGQUIT, SIGINT  handlers to request_termination()");
+	sa.sa_handler = request_termination;
 	sigemptyset(&sa.sa_mask);
 	sa.sa_flags = SA_RESTART;
 
@@ -935,6 +977,10 @@ main_loop(int argc, char **argv)
 
 	ignore_sigpipe();
 
+	if (shutdown_requested) {
+		termination_handler(shutdown_signal);
+	}
+
 	// Start watchdog, client statistics and timeout clean-up thread
 	result = pthread_create(&tid_client_check, NULL, thread_client_timeout_check, NULL);
 	if (result != 0) {
@@ -966,6 +1012,10 @@ main_loop(int argc, char **argv)
 	//MHD_stop_daemon(webserver);
 	stop_mhd();
 
+	if (shutdown_requested) {
+		termination_handler(shutdown_signal);
+	}
+
 	termination_handler(result);
 }
 
@@ -975,6 +1025,9 @@ main_loop(int argc, char **argv)
 int main(int argc, char **argv)
 {
 	s_config *config = config_get_config();
+
+	// The signal handler writes this pipe. Open it before the handler is installed.
+	open_shutdown_pipe();
 
 	// Init the signals to catch chld/quit/etc
 	init_signals();

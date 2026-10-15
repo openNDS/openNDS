@@ -116,6 +116,7 @@ thread_ndsctl(void *arg)
 	int accepting;
 	int dead;
 	int i;
+	int watch_shutdown;
 	mode_t old_umask;
 
 	debug(LOG_DEBUG, "Starting ndsctl thread");
@@ -173,6 +174,20 @@ thread_ndsctl(void *arg)
 		pthread_exit(NULL);
 	}
 
+	/* Level-triggered, so a shutdown write is seen even if other fds are ready. */
+	watch_shutdown = 0;
+
+	if (main_shutdown_fd() >= 0) {
+		ev.events = EPOLLIN;
+		ev.data.fd = main_shutdown_fd();
+
+		if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, main_shutdown_fd(), &ev) < 0) {
+			debug(LOG_ERR, "Could not watch shutdown pipe: [%s]", strerror(errno));
+		} else {
+			watch_shutdown = 1;
+		}
+	}
+
 	events = (struct epoll_event*) calloc(MAX_EVENT_SIZE, sizeof(struct epoll_event));
 
 	if (!events) {
@@ -186,6 +201,17 @@ thread_ndsctl(void *arg)
 	debug(LOG_DEBUG, "Entering ndsctl thread loop");
 
 	while (1) {
+		int wait_ms = -1;
+
+		if (opennds_shutdown_requested()) {
+			free(events);
+			pthread_exit(NULL);
+		}
+
+		/* Without the pipe, a signal only sets the flag. Wake up to notice it. */
+		if (!watch_shutdown) {
+			wait_ms = 1000;
+		}
 		memset(&sa_un, 0, sizeof(sa_un));
 		len = (socklen_t) sizeof(sa_un);
 
@@ -202,7 +228,7 @@ thread_ndsctl(void *arg)
 			maxevents = 1;
 		}
 
-		number_of_count = epoll_wait(epoll_fd, events, maxevents, -1);
+		number_of_count = epoll_wait(epoll_fd, events, maxevents, wait_ms);
 
 		if (number_of_count == -1) {
 			// interupted is not an error
@@ -215,6 +241,11 @@ thread_ndsctl(void *arg)
 		}
 
 		for (i = 0; i < number_of_count; i++) {
+
+			if (events[i].data.fd == main_shutdown_fd()) {
+				free(events);
+				pthread_exit(NULL);
+			}
 
 			if ((events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP) ||
 					(!(events[i].events & EPOLLIN))) {

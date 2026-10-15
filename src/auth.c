@@ -487,36 +487,40 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 			}
 
 			debug(LOG_DEBUG, "sessionseconds_binauth [ %ld ]", (long)sessionseconds_binauth);
-			client->session_end = now + sessionseconds_config;
 
-			if (sessionseconds_binauth == 0) {
-				client->session_end = sessionseconds_config + now;
+			/* Zero is unlimited. Storing "now" makes the next refresh deauthenticate the client. */
+			if (sessionseconds_binauth > 0) {
+				client->session_end = now + sessionseconds_binauth;
+			} else if (sessionseconds_config > 0) {
+				client->session_end = now + sessionseconds_config;
 			} else {
-				client->session_end = sessionseconds_binauth + now;
+				client->session_end = 0;
 			}
 
-			if (upload_rate == 0) {
-				client->upload_rate = config->upload_rate;
-			} else {
+			/* A zero from the quota script is "no override", not "replace with the global".
+			   Apply the global only when this client does not already have a value. */
+			if (upload_rate != 0) {
 				client->upload_rate = upload_rate;
+			} else if (client->upload_rate == 0) {
+				client->upload_rate = config->upload_rate;
 			}
 
-			if (download_rate == 0) {
-				client->download_rate = config->download_rate;
-			} else {
+			if (download_rate != 0) {
 				client->download_rate = download_rate;
+			} else if (client->download_rate == 0) {
+				client->download_rate = config->download_rate;
 			}
 
-			if (upload_quota == 0) {
-				client->upload_quota = config->upload_quota;
-			} else {
+			if (upload_quota != 0) {
 				client->upload_quota = upload_quota;
+			} else if (client->upload_quota == 0) {
+				client->upload_quota = config->upload_quota;
 			}
 
-			if (download_quota == 0) {
-				client->download_quota = config->download_quota;
-			} else {
+			if (download_quota != 0) {
 				client->download_quota = download_quota;
+			} else if (client->download_quota == 0) {
+				client->download_quota = config->download_quota;
 			}
 
 			debug(LOG_DEBUG, "auth_change_state > authenticated - download_rate [%llu] upload_rate [%llu] ",

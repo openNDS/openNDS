@@ -793,7 +793,7 @@ write_log () {
 					echo "Log file too big, please archive contents and reduce max_log_entries" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 				fi
 			else
-				if [ "$available" > 10 ];then
+				if [ "$available" -gt 10 ]; then
 					echo "$datetime""$loginfo" >> $logfile
 				else
 					echo "Log file too big, please archive contents and reduce max_log_entries" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "

@@ -358,8 +358,10 @@ iptables_fw_init(void)
 	// CHAIN_TO_ROUTER, packets to HTTP listening on gw_port on router ACCEPT
 	rc |= nftables_do_command("add rule inet nds_filter %s tcp dport %d counter accept", CHAIN_TO_ROUTER, gw_port);
 
-	// CHAIN_TO_ROUTER, packets to HTTP listening on fas_port on router ACCEPT
-	if (fas_port != gw_port && strcmp(fas_remoteip, gw_ip) == 0 && strcmp(fas_remotefqdn, gw_fqdn) == 0) {
+	// CHAIN_TO_ROUTER, packets to HTTP listening on fas_port on router ACCEPT.
+	// fas_remoteip is copied only when fas_port is non-zero. fasport 0 is local
+	// click-to-continue and has no fas port to accept.
+	if (fas_port != 0 && fas_port != gw_port && strcmp(fas_remoteip, gw_ip) == 0 && strcmp(fas_remotefqdn, gw_fqdn) == 0) {
 		rc |= nftables_do_command("add rule inet nds_filter %s tcp dport %d counter accept", CHAIN_TO_ROUTER, fas_port);
 	}
 

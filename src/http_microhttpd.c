@@ -1429,8 +1429,20 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 	char *gw_url_raw;
 	char *gw_url;
 	char *phpcmd;
+	const char *cpi_query;
+	const char *custom_params;
+	const char *custom_vars;
+	const char *custom_images;
+	const char *custom_files;
 
 	s_config *config = config_get_config();
+
+	// These stay NULL until set. Passing NULL to %s is undefined.
+	cpi_query = client->cpi_query ? client->cpi_query : "";
+	custom_params = config->custom_params ? config->custom_params : "";
+	custom_vars = config->custom_vars ? config->custom_vars : "";
+	custom_images = config->custom_images ? config->custom_images : "";
+	custom_files = config->custom_files ? config->custom_files : "";
 
 	gw_url_raw = safe_calloc(REDIRECT_URL);
 
@@ -1477,7 +1489,7 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 					client->ip, QUERYSEPARATOR,
 					client->mac, QUERYSEPARATOR,
 					clienttype, QUERYSEPARATOR,
-					client->cpi_query, QUERYSEPARATOR,
+					cpi_query, QUERYSEPARATOR,
 					config->url_encoded_gw_name, QUERYSEPARATOR,
 					gw_url, QUERYSEPARATOR,
 					VERSION, QUERYSEPARATOR,
@@ -1486,10 +1498,10 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 					originurl, QUERYSEPARATOR,
 					clientif, QUERYSEPARATOR,
 					config->themespec_path, QUERYSEPARATOR,
-					config->custom_params,
-					config->custom_vars,
-					config->custom_images,
-					config->custom_files
+					custom_params,
+					custom_vars,
+					custom_images,
+					custom_files
 				);
 
 				query_str_b64 = safe_calloc(ENC_QUERYSTR);
@@ -1521,7 +1533,7 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 				safe_snprintf(cidinfo, SMALL_BUF, "clientmac=\"%s\"\0", client->mac);
 				write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
-				safe_snprintf(cidinfo, SMALL_BUF, "cpi_query=\"%s\"\0", client->cpi_query);
+				safe_snprintf(cidinfo, SMALL_BUF, "cpi_query=\"%s\"\0", cpi_query);
 				write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
 				safe_snprintf(cidinfo, SMALL_BUF, "client_type=\"%s\"\0", clienttype);
@@ -1601,7 +1613,7 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 			client->ip, QUERYSEPARATOR,
 			client->mac, QUERYSEPARATOR,
 			clienttype, QUERYSEPARATOR,
-			client->cpi_query, QUERYSEPARATOR,
+			cpi_query, QUERYSEPARATOR,
 			config->url_encoded_gw_name, QUERYSEPARATOR,
 			gw_url, QUERYSEPARATOR,
 			VERSION, QUERYSEPARATOR,
@@ -1611,10 +1623,10 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 			originurl, QUERYSEPARATOR,
 			clientif, QUERYSEPARATOR,
 			config->themespec_path, QUERYSEPARATOR,
-			config->custom_params,
-			config->custom_vars,
-			config->custom_images,
-			config->custom_files
+			custom_params,
+			custom_vars,
+			custom_images,
+			custom_files
 		);
 
 		phpcmd = safe_calloc(QUERYMAXLEN);

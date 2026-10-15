@@ -2210,28 +2210,20 @@ get_quotas_by_mac() {
 			quotas="$sessiontimeout $upload_rate $download_rate $upload_quota $download_quota"
 		fi
 	else
-		# Override quotas for the client from the binauth log if client was shutdown_deauth
-		eval $(grep "$clientmac" "$mountpoint/ndslog/binauthlog.log" | awk -F"method=" '{print $2}' | grep "shutdown_deauth" | tail -1 | awk -F ", " '{printf "%s; %s; %s; %s; %s", $11, $12, $13, $14, $15}')
+		# Last shutdown_deauth line for this client. Read named fields only.
+		quoteline=$(grep -F -e "$clientmac" -- "${logdir}binauthlog.log" 2>/dev/null | grep "shutdown_deauth" | tail -n 1)
 
-		if [ -z "$sessiontimeout" ]; then
-			sessiontimeout=0
-		fi
+		sessiontimeout=$(printf '%s\n' "$quoteline" | sed -n 's/.*sessiontimeout=\([^,]*\).*/\1/p' | tr -d ' ')
+		upload_rate=$(printf '%s\n' "$quoteline" | sed -n 's/.*upload_rate=\([^,]*\).*/\1/p' | tr -d ' ')
+		download_rate=$(printf '%s\n' "$quoteline" | sed -n 's/.*download_rate=\([^,]*\).*/\1/p' | tr -d ' ')
+		upload_quota=$(printf '%s\n' "$quoteline" | sed -n 's/.*upload_quota=\([^,]*\).*/\1/p' | tr -d ' ')
+		download_quota=$(printf '%s\n' "$quoteline" | sed -n 's/.*download_quota=\([^,]*\).*/\1/p' | tr -d ' ')
 
-		if [ -z "$upload_rate" ]; then
-			upload_rate=0
-		fi
-
-		if [ -z "$download_rate" ]; then
-			download_rate=0
-		fi
-
-		if [ -z "$upload_quota" ]; then
-			upload_quota=0
-		fi
-
-		if [ -z "$download_quota" ]; then
-			download_quota=0
-		fi
+		case "$sessiontimeout" in *[!0-9]*|"") sessiontimeout=0 ;; esac
+		case "$upload_rate" in *[!0-9]*|"") upload_rate=0 ;; esac
+		case "$download_rate" in *[!0-9]*|"") download_rate=0 ;; esac
+		case "$upload_quota" in *[!0-9]*|"") upload_quota=0 ;; esac
+		case "$download_quota" in *[!0-9]*|"") download_quota=0 ;; esac
 
 		quotas="$sessiontimeout $upload_rate $download_rate $upload_quota $download_quota"
 	fi

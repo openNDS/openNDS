@@ -498,6 +498,7 @@ int add_to_trusted_mac_list(const char possiblemac[])
 {
 	char mac[18];
 	t_MAC *p = NULL;
+	int i;
 
 	// check for valid format
 	if (!check_mac_format(possiblemac)) {
@@ -507,6 +508,10 @@ int add_to_trusted_mac_list(const char possiblemac[])
 	}
 
 	sscanf(possiblemac, "%17[A-Fa-f0-9:]", mac);
+
+	for (i = 0; mac[i] != '\0'; i++) {
+		mac[i] = (char)tolower((unsigned char)mac[i]);
+	}
 
 	// See if MAC is already on the list; don't add duplicates
 	for (p = config.trustedmaclist; p != NULL; p = p->next) {
@@ -599,7 +604,7 @@ int is_trusted_mac(const char *mac)
 
 	// Is a client even recognized here?
 	for (trust_mac = config->trustedmaclist; trust_mac != NULL; trust_mac = trust_mac->next) {
-		if (!strcmp(trust_mac->mac, mac)) {
+		if (!strcasecmp(trust_mac->mac, mac)) {
 			return 1;
 		}
 	}

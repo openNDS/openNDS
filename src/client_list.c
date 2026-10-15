@@ -239,7 +239,7 @@ client_list_find(const char mac[], const char ip[])
 
 	ptr = firstclient;
 	while (ptr) {
-		if (!strcmp(ptr->mac, mac) && !strcmp(ptr->ip, ip)) {
+		if (!strcasecmp(ptr->mac, mac) && !strcmp(ptr->ip, ip)) {
 			return ptr;
 		}
 		ptr = ptr->next;
@@ -302,7 +302,7 @@ client_list_find_by_mac(const char mac[])
 
 	ptr = firstclient;
 	while (ptr) {
-		if (!strcmp(ptr->mac, mac)) {
+		if (!strcasecmp(ptr->mac, mac)) {
 			return ptr;
 		}
 		ptr = ptr->next;

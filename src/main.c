@@ -850,9 +850,21 @@ setup_from_config(void)
 	}
 
 	// Add rulesets
-	create_client_ruleset ("users_to_router", set_list_str("users_to_router", DEFAULT_USERS_TO_ROUTER, "2"));
-	create_client_ruleset ("preauthenticated_users", set_list_str("preauthenticated_users", DEFAULT_PREAUTHENTICATED_USERS, "2"));
-	create_client_ruleset ("authenticated_users", set_list_str("authenticated_users", DEFAULT_AUTHENTICATED_USERS, "2"));
+	{
+		char *ruleset;
+
+		ruleset = set_list_str("users_to_router", DEFAULT_USERS_TO_ROUTER, "2");
+		create_client_ruleset("users_to_router", ruleset);
+		free(ruleset);
+
+		ruleset = set_list_str("preauthenticated_users", DEFAULT_PREAUTHENTICATED_USERS, "2");
+		create_client_ruleset("preauthenticated_users", ruleset);
+		free(ruleset);
+
+		ruleset = set_list_str("authenticated_users", DEFAULT_AUTHENTICATED_USERS, "2");
+		create_client_ruleset("authenticated_users", ruleset);
+		free(ruleset);
+	}
 
 	// nft sets
 

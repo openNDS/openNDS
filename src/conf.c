@@ -297,10 +297,25 @@ config_init(int argc, char **argv)
 	config.online_status = 0;
 
 	// Lists
-	parse_trusted_mac_list(set_list_str("trustedmac", DEFAULT_TRUSTEDMACLIST, debug_level));
-	parse_fas_custom_parameters_list(set_list_str("fas_custom_parameters_list", DEFAULT_FAS_CUSTOM_PARAMETERS_LIST, debug_level));
-	parse_fas_custom_images_list(set_list_str("fas_custom_images_list", DEFAULT_FAS_CUSTOM_IMAGES_LIST, debug_level));
-	parse_fas_custom_files_list(set_list_str("fas_custom_files_list", DEFAULT_FAS_CUSTOM_FILES_LIST, debug_level));
+	{
+		char *liststr;
+
+		liststr = set_list_str("trustedmac", DEFAULT_TRUSTEDMACLIST, debug_level);
+		parse_trusted_mac_list(liststr);
+		free(liststr);
+
+		liststr = set_list_str("fas_custom_parameters_list", DEFAULT_FAS_CUSTOM_PARAMETERS_LIST, debug_level);
+		parse_fas_custom_parameters_list(liststr);
+		free(liststr);
+
+		liststr = set_list_str("fas_custom_images_list", DEFAULT_FAS_CUSTOM_IMAGES_LIST, debug_level);
+		parse_fas_custom_images_list(liststr);
+		free(liststr);
+
+		liststr = set_list_str("fas_custom_files_list", DEFAULT_FAS_CUSTOM_FILES_LIST, debug_level);
+		parse_fas_custom_files_list(liststr);
+		free(liststr);
+	}
 
 	// Before we do anything else, reset the firewall (cleans it, in case we are restarting or after an opennds crash)
 	iptables_fw_destroy();
@@ -561,6 +576,7 @@ int remove_from_trusted_mac_list(const char possiblemac[])
 			del = *p;
 			*p = del->next;
 			debug(LOG_INFO, "Removed MAC address [%s] from trusted list", mac);
+			free(del->mac);
 			free(del);
 			return 0;
 		}
@@ -618,13 +634,14 @@ int is_trusted_mac(const char *mac)
 void parse_fas_custom_parameters_list(const char ptr[])
 {
 	char *ptrcopy = NULL;
+	char *ptrcopyptr;
 	char *possibleparam = NULL;
 	char msg[512] = {0};
 	char *cmd = NULL;
 	char possibleparam_urlencoded[512] = {0};
 
 	// strsep modifies original, so let's make a copy
-	ptrcopy = safe_strdup(ptr);
+	ptrcopyptr = ptrcopy = safe_strdup(ptr);
 
 	while ((possibleparam = strsep(&ptrcopy, ", \t"))) {
 		if (strlen(possibleparam) > 0) {
@@ -652,6 +669,9 @@ void parse_fas_custom_parameters_list(const char ptr[])
 			}
 		}
 	}
+
+	free(ptrcopy);
+	free(ptrcopyptr);
 }
 
 /* Given a pointer to a comma or whitespace delimited sequence of
@@ -660,6 +680,7 @@ void parse_fas_custom_parameters_list(const char ptr[])
 void parse_fas_custom_variables_list(const char ptr[])
 {
 	char *ptrcopy = NULL;
+	char *ptrcopyptr;
 	char *possiblevar = NULL;
 	char msg[512] = {0};
 	char *cmd = NULL;
@@ -668,7 +689,7 @@ void parse_fas_custom_variables_list(const char ptr[])
 	debug(LOG_INFO, "Parsing list [%s] for Custom FAS Variables", ptr);
 
 	// strsep modifies original, so let's make a copy
-	ptrcopy = safe_strdup(ptr);
+	ptrcopyptr = ptrcopy = safe_strdup(ptr);
 
 	while ((possiblevar = strsep(&ptrcopy, ", \t"))) {
 		if (strlen(possiblevar) > 0) {
@@ -696,6 +717,9 @@ void parse_fas_custom_variables_list(const char ptr[])
 			}
 		}
 	}
+
+	free(ptrcopy);
+	free(ptrcopyptr);
 }
 
 /* Given a pointer to a comma or whitespace delimited sequence of
@@ -704,6 +728,7 @@ void parse_fas_custom_variables_list(const char ptr[])
 void parse_fas_custom_images_list(const char ptr[])
 {
 	char *ptrcopy = NULL;
+	char *ptrcopyptr;
 	char *possibleimage = NULL;
 	char msg[512] = {0};
 	char *cmd = NULL;
@@ -712,7 +737,7 @@ void parse_fas_custom_images_list(const char ptr[])
 	debug(LOG_INFO, "Parsing list [%s] for Custom FAS Images", ptr);
 
 	// strsep modifies original, so let's make a copy
-	ptrcopy = safe_strdup(ptr);
+	ptrcopyptr = ptrcopy = safe_strdup(ptr);
 
 	while ((possibleimage = strsep(&ptrcopy, ", \t"))) {
 		if (strlen(possibleimage) > 0) {
@@ -740,6 +765,9 @@ void parse_fas_custom_images_list(const char ptr[])
 			}
 		}
 	}
+
+	free(ptrcopy);
+	free(ptrcopyptr);
 }
 
 /* Given a pointer to a comma or whitespace delimited sequence of
@@ -748,6 +776,7 @@ void parse_fas_custom_images_list(const char ptr[])
 void parse_fas_custom_files_list(const char ptr[])
 {
 	char *ptrcopy = NULL;
+	char *ptrcopyptr;
 	char *possiblefile = NULL;
 	char msg[512] = {0};
 	char *cmd = NULL;
@@ -756,7 +785,7 @@ void parse_fas_custom_files_list(const char ptr[])
 	debug(LOG_INFO, "Parsing list [%s] for Custom FAS Files", ptr);
 
 	// strsep modifies original, so let's make a copy
-	ptrcopy = safe_strdup(ptr);
+	ptrcopyptr = ptrcopy = safe_strdup(ptr);
 
 	while ((possiblefile = strsep(&ptrcopy, ", \t"))) {
 		if (strlen(possiblefile) > 0) {
@@ -784,6 +813,9 @@ void parse_fas_custom_files_list(const char ptr[])
 			}
 		}
 	}
+
+	free(ptrcopy);
+	free(ptrcopyptr);
 }
 
 /** Set the debug log level.  See syslog.h

@@ -748,7 +748,7 @@ static int authenticated(struct MHD_Connection *connection,
 	char *query;
 	char *msg;
 	char *clientif;
-	const char *accept;
+	const char *accept = NULL;
 	char *originurl_raw = NULL;
 	char *captive_json = NULL;
 	char *buff;
@@ -771,8 +771,7 @@ static int authenticated(struct MHD_Connection *connection,
 	}
 
 	// Is it an RFC8908 type request? - check Accept: header
-
-	accept = safe_calloc(SMALL_BUF);
+	// The callback stores MHD's header pointer. Do not allocate a buffer for it.
 	ret = MHD_get_connection_values(connection, MHD_HEADER_KIND, get_accept_callback, &accept);
 
 	if (ret < 1) {
@@ -937,8 +936,8 @@ static int authenticated(struct MHD_Connection *connection,
 		buff = safe_calloc(MID_BUF);
 
 		if (!buff) {
+			free(query);
 			ret = send_error(connection, 503);
-			free(buff);
 			return ret;
 		}
 
@@ -949,17 +948,21 @@ static int authenticated(struct MHD_Connection *connection,
 		msg = safe_calloc(HTMLMAXSIZE);
 
 		if (!msg) {
+			free(query);
+			free(buff);
 			ret = send_error(connection, 503);
-			free(msg);
 			return ret;
 		}
 
 		rc = execute_ret(msg, HTMLMAXSIZE - 1, "%s status '%s' '%s'", config->status_path, client->ip, buff);
 
+		free(query);
+		free(buff);
+
 		if (rc != 0) {
 			debug(LOG_WARNING, "Script: %s - failed to execute", config->status_path);
-			ret = send_error(connection, 503);
 			free(msg);
+			ret = send_error(connection, 503);
 			return ret;
 		}
 
@@ -967,6 +970,7 @@ static int authenticated(struct MHD_Connection *connection,
 		response = MHD_create_response_from_buffer(strlen(msg), (char *)msg, MHD_RESPMEM_MUST_FREE);
 
 		if (!response) {
+			free(msg);
 			return send_error(connection, 503);
 		}
 

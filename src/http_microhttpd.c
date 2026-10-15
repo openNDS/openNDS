@@ -149,7 +149,7 @@ static int do_binauth(
 	char *custom_enc;
 	char *msg;
 	char *argv = NULL;
-	const char *user_agent;
+	const char *user_agent = NULL;
 	char *enc_user_agent;
 	int seconds;
 	unsigned long long int upload_rate;
@@ -158,9 +158,7 @@ static int do_binauth(
 	unsigned long long int download_quota;
 	int rc =1;
 
-	// Get the client user agent
-	user_agent = safe_calloc(USER_AGENT);
-
+	// Get the client user agent. The callback stores MHD's header pointer.
 	MHD_get_connection_values(connection, MHD_HEADER_KIND, get_user_agent_callback, &user_agent);
 
 	if (user_agent == NULL) {
@@ -992,7 +990,7 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 	s_config *config = config_get_config();
 
 	char *msg;
-	const char *user_agent;
+	const char *user_agent = NULL;
 	char *enc_user_agent;
 	char *preauthpath;
 	char *cmd;

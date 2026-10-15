@@ -288,7 +288,7 @@ get_data_file() {
 				fi
 
 			elif [ "$protocol" = "file" ]; then
-				sourcefile=$(echo "$imageurl" | awk -F'://' '{printf("%s", $2)}')
+				sourcefile=$(echo "$dataurl" | awk -F'://' '{printf("%s", $2)}')
 				destinationfile="$mountpoint/ndsdata/$filename"
 				cp "$sourcefile" "$destinationfile"
 			else

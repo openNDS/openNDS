@@ -419,6 +419,7 @@ ndsctl_auth(FILE *fp, char *arg)
 	char *msg2;
 	char *customdata;
 	char *argcopy;
+	char *argbase;
 	const char *arg2;
 	const char *arg3;
 	const char *arg4;
@@ -433,7 +434,15 @@ ndsctl_auth(FILE *fp, char *arg)
 
 	debug(LOG_DEBUG, "Entering ndsctl_auth [%s]", arg);
 
-	argcopy=strdup(arg);
+	argbase = strdup(arg);
+
+	if (argbase == NULL) {
+		debug(LOG_ERR, "ndsctl_auth: out of memory");
+		fprintf(fp, "No");
+		return;
+	}
+
+	argcopy = argbase;
 
 	// arg2 = ip|mac|tok
 	arg2 = strsep(&argcopy, ",");
@@ -567,6 +576,7 @@ ndsctl_auth(FILE *fp, char *arg)
 
 		} else {
 			debug(LOG_DEBUG, "Client connection not found: Continuing...");
+			free(msg);
 			rc = -1;
 		}
 	}
@@ -593,8 +603,6 @@ ndsctl_auth(FILE *fp, char *arg)
 			rc = auth_client_auth_nolock(id, "ndsctl_auth", customdata);
 		}
 
-	free(argcopy);
-
 	} else {
 		// Client is neither preauthenticated nor authenticated
 		// If Preemptive authentication is enabled we should have tried to auth by mac
@@ -603,6 +611,8 @@ ndsctl_auth(FILE *fp, char *arg)
 	}
 
 	UNLOCK_CLIENT_LIST();
+
+	free(argbase);
 
 	if (rc == 0) {
 		fprintf(fp, "Yes");

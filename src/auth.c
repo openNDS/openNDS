@@ -79,6 +79,7 @@ client_auth(char *arg)
 	char *msg2;
 	char *customdata;
 	char *argcopy;
+	char *argbase;
 	const char *arg2;
 	const char *arg3;
 	const char *arg4;
@@ -93,7 +94,14 @@ client_auth(char *arg)
 
 	debug(LOG_DEBUG, "Entering client_auth [%s]", arg);
 
-	argcopy=strdup(arg);
+	argbase = strdup(arg);
+
+	if (argbase == NULL) {
+		debug(LOG_ERR, "client_auth: out of memory");
+		return;
+	}
+
+	argcopy = argbase;
 
 	// arg2 = ip|mac|tok
 	arg2 = strsep(&argcopy, ",");
@@ -228,6 +236,7 @@ client_auth(char *arg)
 
 		} else {
 			debug(LOG_DEBUG, "Client connection not found: Continuing...");
+			free(msg);
 			rc = -1;
 		}
 	}
@@ -254,8 +263,6 @@ client_auth(char *arg)
 			rc = auth_client_auth_nolock(id, "preemptive_auth", customdata);
 		}
 
-	free(argcopy);
-
 	} else {
 		// Client is neither preauthenticated nor authenticated
 		// If Preemptive authentication is enabled we should have tried to auth by mac
@@ -265,6 +272,7 @@ client_auth(char *arg)
 
 	UNLOCK_CLIENT_LIST();
 
+	free(argbase);
 	free(customdata);
 	debug(LOG_DEBUG, "Exiting client_auth...");
 }

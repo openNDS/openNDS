@@ -3471,18 +3471,32 @@ elif [ "$1" = "get_next_preemptive_auth" ]; then
 elif [ "$1" = "ipv6_routing" ]; then
 
 	is_uci=$(type uci &>/dev/null; echo $?)
+	wan6_save="/tmp/opennds.wan6.proto"
 
 	if [ -z "$2" ] || [ "$is_uci" -gt 0 ]; then
 		# not OpenWrt compatible
 		exit 0
 
 	elif [ "$2" = "block" ]; then
+		# Keep the first saved proto so a second block does not record "none".
+		if [ ! -f "$wan6_save" ]; then
+			wan6_proto=$(uci -q get network.wan6.proto)
+			printf '%s\n' "${wan6_proto:-none}" > "$wan6_save"
+		fi
+
 		uci set network.wan6.proto='none'
 		service network reload
 
 	elif [ "$2" = "allow" ]; then
-		uci set network.wan6.proto='dhcpv6'
-		service network reload
+		if [ -f "$wan6_save" ]; then
+			wan6_proto=$(cat "$wan6_save")
+			rm -f "$wan6_save"
+
+			if [ -n "$wan6_proto" ]; then
+				uci set network.wan6.proto="$wan6_proto"
+				service network reload
+			fi
+		fi
 	fi
 
 	exit 0

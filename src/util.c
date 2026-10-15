@@ -991,10 +991,9 @@ ndsctl_status(FILE *fp)
 	fprintf(fp, "====\n");
 	fprintf(fp, "Client authentications since start: %u\n", authenticated_since_start);
 
-	// Update the client's counters so info is current
-	iptables_fw_counters_update();
-
+	// Update the client's counters so info is current. Hold the list lock for the walk.
 	LOCK_CLIENT_LIST();
+	iptables_fw_counters_update();
 
 	fprintf(fp, "Current clients: %d\n", get_client_list_length());
 
@@ -1320,10 +1319,9 @@ ndsctl_json_one(FILE *fp, const char *arg, char *indent)
 	time_t now;
 	now = time(NULL);
 
-	// Update the client's counters so info is current
-	iptables_fw_counters_update();
-
+	// Update the client's counters so info is current. Hold the list lock for the walk.
 	LOCK_CLIENT_LIST();
+	iptables_fw_counters_update();
 
 	client = client_list_find_by_any(arg, arg, arg);
 
@@ -1351,10 +1349,9 @@ ndsctl_json_all(FILE *fp, char *indent)
 
 	config = config_get_config();
 
-	// Update the client's counters so info is current
-	iptables_fw_counters_update();
-
+	// Update the client's counters so info is current. Hold the list lock for the walk.
 	LOCK_CLIENT_LIST();
+	iptables_fw_counters_update();
 
 	fprintf(fp, "{\n  \"client_list_length\":\"%d\",\n", get_client_list_length());
 

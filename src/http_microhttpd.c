@@ -483,7 +483,15 @@ enum MHD_Result libmicrohttpd_cb(
 		return send_error(connection, 503);
 	}
 
+	LOCK_CLIENT_LIST();
 	client = client_list_find(mac, ip);
+
+	if (client) {
+		client->refcount++;
+	}
+
+	UNLOCK_CLIENT_LIST();
+
 	if (!client) {
 		client = add_client(mac, ip);
 		if (!client) {
@@ -491,13 +499,16 @@ enum MHD_Result libmicrohttpd_cb(
 		}
 	}
 
-	if (client && (client->fw_connection_state == FW_MARK_AUTHENTICATED ||
-			client->fw_connection_state == FW_MARK_TRUSTED)) {
+	if (client->fw_connection_state == FW_MARK_AUTHENTICATED ||
+			client->fw_connection_state == FW_MARK_TRUSTED) {
 		// client is already authenticated, maybe they clicked/tapped "back" on the CPD browser or maybe they want the info page.
-		return authenticated(connection, url, client);
+		rc = authenticated(connection, url, client);
+	} else {
+		rc = preauthenticated(connection, url, client);
 	}
 
-	return preauthenticated(connection, url, client);
+	client_list_unpin(client);
+	return rc;
 }
 
 /**
@@ -1701,13 +1712,8 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 static t_client *
 add_client(const char *mac, const char *ip)
 {
-	t_client *client;
-
-	LOCK_CLIENT_LIST();
-	client = client_list_add_client(mac, ip);
-	UNLOCK_CLIENT_LIST();
-
-	return client;
+	/* Pins the node. The dhcp check runs before the list lock is taken. */
+	return client_list_add_client_pinned(mac, ip);
 }
 
 int send_redirect_temp(struct MHD_Connection *connection, t_client *client, const char *url)

@@ -703,13 +703,14 @@ fw_refresh_client_list(void)
 
 	debug(LOG_DEBUG, "Rate Check Window is set to %u period(s) of checkinterval", config->rate_check_window);
 
-	// Update all the counters
+	// Update all the counters while the list cannot be freed underneath us.
+	LOCK_CLIENT_LIST();
+
 	if (-1 == iptables_fw_counters_update()) {
 		debug(LOG_ERR, "Could not get counters from firewall!");
+		UNLOCK_CLIENT_LIST();
 		return;
 	}
-
-	LOCK_CLIENT_LIST();
 
 	for (cp1 = cp2 = client_get_first_client(); NULL != cp1; cp1 = cp2) {
 		cp2 = cp1->next;

@@ -159,15 +159,47 @@ _client_list_append(const char mac[], const char ip[])
  *  if one with the given IP already exists.
  *  Return NULL if no new client entry can be created.
  */
-t_client *
-client_list_add_client(const char mac[], const char ip[])
+static int
+client_dhcp_allocated(const char *ip)
 {
-	t_client *client;
-
 	int rc = -1;
 	char *libcmd;
 	char *msg;
 
+	libcmd = safe_calloc(SMALL_BUF);
+	safe_snprintf(libcmd, SMALL_BUF, "/usr/lib/opennds/libopennds.sh dhcpcheck \"%s\"", ip);
+	msg = safe_calloc(SMALL_BUF);
+	rc = execute_ret_url_encoded(msg, SMALL_BUF, libcmd);
+	free(libcmd);
+	free(msg);
+
+	if (rc > 0) {
+		debug(LOG_NOTICE, "IP not allocated by dhcp [%s]", ip);
+		return 0;
+	}
+
+	return 1;
+}
+
+static t_client *
+client_list_find_or_append(const char mac[], const char ip[])
+{
+	t_client *client;
+
+	client = client_list_find(mac, ip);
+
+	if (!client) {
+		client = _client_list_append(mac, ip);
+	} else {
+		debug(LOG_INFO, "Client %s %s token %s already on client list", ip, mac, client->token);
+	}
+
+	return client;
+}
+
+t_client *
+client_list_add_client(const char mac[], const char ip[])
+{
 	if (!check_mac_format(mac)) {
 		// Inappropriate format in MAC address
 		debug(LOG_NOTICE, "Illegal MAC format [%s]", mac);
@@ -180,29 +212,42 @@ client_list_add_client(const char mac[], const char ip[])
 		return NULL;
 	}
 
-	// check if client ip was allocated by dhcp
-	libcmd = safe_calloc(SMALL_BUF);
-	safe_snprintf(libcmd, SMALL_BUF, "/usr/lib/opennds/libopennds.sh dhcpcheck \"%s\"", ip);
-	msg = safe_calloc(SMALL_BUF);
-	rc = execute_ret_url_encoded(msg, SMALL_BUF, libcmd);
-	free(libcmd);
-	free(msg);
-
-	if (rc > 0) {
-		// IP address is not in the dhcp database
-		debug(LOG_NOTICE, "IP not allocated by dhcp [%s]", ip);
+	// Caller holds the list lock. The dhcp check is a popen under that lock.
+	if (!client_dhcp_allocated(ip)) {
 		return NULL;
 	}
 
-	client = client_list_find(mac, ip);
+	return client_list_find_or_append(mac, ip);
+}
 
-	if (!client) {
-		// add the client
-		client = _client_list_append(mac, ip);
-	} else {
-		debug(LOG_INFO, "Client %s %s token %s already on client list", ip, mac, client->token);
+t_client *
+client_list_add_client_pinned(const char mac[], const char ip[])
+{
+	t_client *client;
+
+	if (!check_mac_format(mac)) {
+		debug(LOG_NOTICE, "Illegal MAC format [%s]", mac);
+		return NULL;
 	}
 
+	if (!check_ip_format(ip)) {
+		debug(LOG_NOTICE, "Illegal IP format [%s]", ip);
+		return NULL;
+	}
+
+	/* The dhcp script must run before the list lock is taken. */
+	if (!client_dhcp_allocated(ip)) {
+		return NULL;
+	}
+
+	LOCK_CLIENT_LIST();
+	client = client_list_find_or_append(mac, ip);
+
+	if (client) {
+		client->refcount++;
+	}
+
+	UNLOCK_CLIENT_LIST();
 	return client;
 }
 
@@ -421,27 +466,56 @@ client_list_delete(t_client *client)
 
 	if (ptr == NULL) {
 		debug(LOG_ERR, "Node list empty!");
-	} else if (ptr == client) {
-		debug(LOG_NOTICE, "Deleting %s %s token %s from client list",
-			  client->ip, client->mac, client->token ? client->token : "none");
+		return;
+	}
+
+	if (ptr == client) {
 		firstclient = ptr->next;
-		_client_list_free_node(client);
-		client_count--;
 	} else {
 		// Loop forward until we reach our point in the list.
 		while (ptr->next != NULL && ptr->next != client) {
 			ptr = ptr->next;
 		}
-		// If we reach the end before finding out element, complain.
+
 		if (ptr->next == NULL) {
 			debug(LOG_ERR, "Node to delete could not be found.");
-		} else {
-			// Free element.
-			debug(LOG_NOTICE, "Deleting %s %s token %s from client list",
-				  client->ip, client->mac, client->token ? client->token : "none");
-			ptr->next = client->next;
-			_client_list_free_node(client);
-			client_count--;
+			return;
 		}
+
+		ptr->next = client->next;
 	}
+
+	client->next = NULL;
+	client_count--;
+	debug(LOG_NOTICE, "Deleting %s %s token %s from client list",
+		client->ip, client->mac, client->token ? client->token : "none");
+
+	/* An HTTP request may still be reading this node. Free it on unpin. */
+	if (client->refcount > 0) {
+		client->dead = 1;
+		debug(LOG_DEBUG, "Client %s is in use; freeing it when the request finishes", client->ip);
+		return;
+	}
+
+	_client_list_free_node(client);
+}
+
+void
+client_list_unpin(t_client *client)
+{
+	if (client == NULL) {
+		return;
+	}
+
+	LOCK_CLIENT_LIST();
+
+	if (client->refcount > 0) {
+		client->refcount--;
+	}
+
+	if (client->dead && client->refcount == 0) {
+		_client_list_free_node(client);
+	}
+
+	UNLOCK_CLIENT_LIST();
 }

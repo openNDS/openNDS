@@ -404,8 +404,8 @@ main(int argc, char **argv)
 	char *socket;
 	int i = 1;
 	int counter;
+	size_t used;
 	char args[256] = {0};
-	char argi[128] = {0};
 	char str_b64[QUERYMAXLEN] = {0};
 	char mountpoint[128] = {0};
 	char socket_file[128] = {0};
@@ -463,9 +463,9 @@ main(int argc, char **argv)
 	safe_asprintf(&cmd, "/usr/lib/opennds/libopennds.sh tmpfs");
 	fd = popen(cmd, "r");
 	if (fd == NULL) {
-		printf("Unable to open library - Terminating");
-		pclose(fd);
-		exit(1);
+		printf("Unable to open library - Terminating\n");
+		free(cmd);
+		return 1;
 	}
 	free(cmd);
 
@@ -513,11 +513,30 @@ main(int argc, char **argv)
 
 	// Collect command line arguments then send the command
 	if (argc > i+1) {
-		snprintf(args, sizeof(args), "%s", argv[i+1]);
+		int n;
 
-		for (counter=i+2; counter < argc; counter++) {
-			snprintf(argi, sizeof(argi), ",%s", argv[counter]);
-			strncat(args, argi, sizeof(args)-1);
+		n = snprintf(args, sizeof(args), "%s", argv[i+1]);
+
+		if (n < 0 || (size_t)n >= sizeof(args)) {
+			fprintf(stderr, "Argument list does not fit\n");
+			ndsctl_unlock(&lockfd);
+			free(socket);
+			return 1;
+		}
+
+		used = (size_t)n;
+
+		for (counter = i + 2; counter < argc; counter++) {
+			n = snprintf(args + used, sizeof(args) - used, ",%s", argv[counter]);
+
+			if (n < 0 || (size_t)n >= sizeof(args) - used) {
+				fprintf(stderr, "Argument list does not fit\n");
+				ndsctl_unlock(&lockfd);
+				free(socket);
+				return 1;
+			}
+
+			used += (size_t)n;
 		}
 	}
 

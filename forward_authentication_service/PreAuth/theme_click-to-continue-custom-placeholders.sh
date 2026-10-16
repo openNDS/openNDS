@@ -181,12 +181,14 @@ thankyou_page () {
 		customhtml="<input type=\"hidden\" name=\"custom\" value=\"$custom\">"
 	fi
 
-	# Continue to the landing page, the client is authenticated there
+	# Continue to the landing page, the client is authenticated there.
+	# landing_page requires the acceptance field, which this request would otherwise drop.
 	echo "
 		<form action=\"/opennds_preauth/\" method=\"get\">
 			<input type=\"hidden\" name=\"fas\" value=\"$fas\">
 			$customhtml
 			$custom_passthrough
+			<input type=\"hidden\" name=\"continue\" value=\"clicked\">
 			<input type=\"hidden\" name=\"landing\" value=\"yes\">
 			<input type=\"submit\" value=\"Continue\" >
 		</form>

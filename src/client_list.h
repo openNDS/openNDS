@@ -77,6 +77,8 @@ typedef struct _t_client {
 	unsigned long long int inc_packet_limit;	/**< @brief Incoming packet limit */
 	unsigned long long int out_packet_limit;	/**< @brief Outgoing packet limit */
 	unsigned id;
+	unsigned int refcount;				/**< @brief Requests currently using this node */
+	int dead;					/**< @brief Unlinked; free when refcount reaches 0 */
 } t_client;
 
 /** @brief Get the first element of the list of connected clients
@@ -112,6 +114,12 @@ t_client *client_list_find_by_token(const char token[]);
 
 /** @brief Deletes a client from the client list */
 void client_list_delete(t_client *client);
+
+/** @brief Drop one request reference. Frees the node if it was deleted while in use. */
+void client_list_unpin(t_client *client);
+
+/** @brief Add a client, taking the list lock only around the insert. The returned node is pinned. */
+t_client *client_list_add_client_pinned(const char mac[], const char ip[]);
 
 #define LOCK_CLIENT_LIST() do { \
 	debug(LOG_DEBUG, "Locking client list"); \

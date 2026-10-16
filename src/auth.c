@@ -36,6 +36,10 @@
 #include <unistd.h>
 #include <syslog.h>
 #include <time.h>
+#include <errno.h>
+#include <signal.h>
+#include <sys/wait.h>
+#include <spawn.h>
 
 #include "safe.h"
 #include "conf.h"
@@ -75,6 +79,7 @@ client_auth(char *arg)
 	char *msg2;
 	char *customdata;
 	char *argcopy;
+	char *argbase;
 	const char *arg2;
 	const char *arg3;
 	const char *arg4;
@@ -89,7 +94,14 @@ client_auth(char *arg)
 
 	debug(LOG_DEBUG, "Entering client_auth [%s]", arg);
 
-	argcopy=strdup(arg);
+	argbase = strdup(arg);
+
+	if (argbase == NULL) {
+		debug(LOG_ERR, "client_auth: out of memory");
+		return;
+	}
+
+	argcopy = argbase;
 
 	// arg2 = ip|mac|tok
 	arg2 = strsep(&argcopy, ",");
@@ -194,6 +206,7 @@ client_auth(char *arg)
 						if (client) {
 							id = client ? client->id : 0;
 							debug(LOG_DEBUG, "client id: [%d]", id);
+							free(client->client_type);
 							client->client_type = safe_strdup("preemptive");
 
 							// log the preemptive authentication
@@ -224,6 +237,7 @@ client_auth(char *arg)
 
 		} else {
 			debug(LOG_DEBUG, "Client connection not found: Continuing...");
+			free(msg);
 			rc = -1;
 		}
 	}
@@ -250,8 +264,6 @@ client_auth(char *arg)
 			rc = auth_client_auth_nolock(id, "preemptive_auth", customdata);
 		}
 
-	free(argcopy);
-
 	} else {
 		// Client is neither preauthenticated nor authenticated
 		// If Preemptive authentication is enabled we should have tried to auth by mac
@@ -261,6 +273,7 @@ client_auth(char *arg)
 
 	UNLOCK_CLIENT_LIST();
 
+	free(argbase);
 	free(customdata);
 	debug(LOG_DEBUG, "Exiting client_auth...");
 }
@@ -276,18 +289,32 @@ static int binauth_action(t_client *client, const char *reason, const char *cust
 	char *deauth = "deauth";
 	char *client_auth = "client_auth";
 	char *ndsctl_auth = "ndsctl_auth";
-	char *binauthcmd;
+	const char *custom_arg;
+	char *binauth_argv[10];
+	char incoming[32];
+	char outgoing[32];
+	char session_start_arg[32];
+	char session_end_arg[32];
+	pid_t pid;
+	pid_t waited;
+	int status = 0;
+	struct sigaction sa;
+	struct sigaction oldsa;
+	int have_oldsa = 0;
 	int ret = 1;
 	int rc = 0;
 
 	if (config->binauth) {
 
-		if (!customdata || strlen(customdata) == 0) {
-			customdata = safe_strdup("ZW1wdHk=");
+		custom_arg = customdata;
+
+		if (!custom_arg || custom_arg[0] == '\0') {
+			custom_arg = "ZW1wdHk=";
 		}
 
-		debug(LOG_DEBUG, "customdata=%s", customdata);
-		client->custom = safe_strdup(customdata);
+		debug(LOG_DEBUG, "customdata=%s", custom_arg);
+		free(client->custom);
+		client->custom = safe_strdup(custom_arg);
 		debug(LOG_DEBUG, "binauth_action: client->custom [%s]", client->custom);
 
 		// get client's current session start and end
@@ -318,25 +345,61 @@ static int binauth_action(t_client *client, const char *reason, const char *cust
 
 		debug(LOG_DEBUG, "BinAuth %s - client session end time: [ %lu ]", reason, sessionend);
 
-		binauthcmd = safe_calloc(STATUS_BUF);
-		safe_snprintf(binauthcmd, STATUS_BUF, "%s %s %s %llu %llu %lu %lu %s %s",
-			config->binauth,
-			reason ? reason : "unknown",
-			client->mac,
-			client->counters.incoming,
-			client->counters.outgoing,
-			sessionstart,
-			sessionend,
-			client->token,
-			client->custom
-		);
+		// Run the script directly. system() would interpret custom data as shell.
+		safe_snprintf(incoming, sizeof(incoming), "%llu", client->counters.incoming);
+		safe_snprintf(outgoing, sizeof(outgoing), "%llu", client->counters.outgoing);
+		safe_snprintf(session_start_arg, sizeof(session_start_arg), "%lu", sessionstart);
+		safe_snprintf(session_end_arg, sizeof(session_end_arg), "%lu", sessionend);
 
-		debug(LOG_DEBUG, "BinAuth Command [ %s ]", binauthcmd);
-		rc = system(binauthcmd);
-		free(binauthcmd);
+		binauth_argv[0] = config->binauth;
+		binauth_argv[1] = (char *)(reason ? reason : "unknown");
+		binauth_argv[2] = client->mac ? client->mac : (char *)"";
+		binauth_argv[3] = incoming;
+		binauth_argv[4] = outgoing;
+		binauth_argv[5] = session_start_arg;
+		binauth_argv[6] = session_end_arg;
+		binauth_argv[7] = client->token ? client->token : (char *)"";
+		binauth_argv[8] = (char *)custom_arg;
+		binauth_argv[9] = NULL;
 
-		if (WIFEXITED(rc)) {
-			rc = WEXITSTATUS(rc);
+		debug(LOG_DEBUG, "BinAuth arguments: [%s] [%s] [%s] [%s] [%s] [%s] [%s] [%s] [%s]",
+			binauth_argv[0], binauth_argv[1], binauth_argv[2], binauth_argv[3],
+			binauth_argv[4], binauth_argv[5], binauth_argv[6], binauth_argv[7],
+			binauth_argv[8]);
+
+		memset(&sa, 0, sizeof(sa));
+		sa.sa_handler = SIG_DFL;
+		sigemptyset(&sa.sa_mask);
+		sa.sa_flags = SA_NOCLDSTOP | SA_RESTART;
+
+		if (sigaction(SIGCHLD, &sa, &oldsa) == -1) {
+			debug(LOG_ERR, "sigaction() failed to set default SIGCHLD handler: %s", strerror(errno));
+		} else {
+			have_oldsa = 1;
+		}
+
+		rc = posix_spawn(&pid, binauth_argv[0], NULL, NULL, binauth_argv, environ);
+
+		if (rc != 0) {
+			debug(LOG_ERR, "BinAuth posix_spawn failed: %s", strerror(rc));
+			rc = -1;
+		} else {
+			do {
+				waited = waitpid(pid, &status, 0);
+			} while (waited < 0 && errno == EINTR);
+
+			if (waited < 0) {
+				debug(LOG_ERR, "BinAuth waitpid failed: %s", strerror(errno));
+				rc = -1;
+			} else if (WIFEXITED(status)) {
+				rc = WEXITSTATUS(status);
+			} else {
+				rc = status;
+			}
+		}
+
+		if (have_oldsa && sigaction(SIGCHLD, &oldsa, NULL) == -1) {
+			debug(LOG_ERR, "sigaction() failed to restore SIGCHLD handler: %s", strerror(errno));
 		}
 
 		debug(LOG_DEBUG, "binauth return code %d", rc);
@@ -390,54 +453,74 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 			safe_snprintf(libcmd, SMALL_BUF, "/usr/lib/opennds/libopennds.sh get_quotas_by_mac \"%s\"", client->mac );
 
 			msg = safe_calloc(SMALL_BUF);
-			execute_ret_url_encoded(msg, SMALL_BUF, libcmd);
-			free(libcmd);
-			debug(LOG_DEBUG, "assigned parameters [ %s ]", msg);
 
-			sessionseconds_binauth = 60 * atoi(strtok(msg, " "));
-			debug(LOG_DEBUG, "sessionseconds_binauth [ %d ]", sessionseconds_binauth);
-			client->session_end = now + sessionseconds_config;
+			{
+				long long q_session = 0;
+				long long q_uprate = 0;
+				long long q_downrate = 0;
+				long long q_upquota = 0;
+				long long q_downquota = 0;
+				int q_fields = 0;
 
-			if (sessionseconds_binauth == 0) {
-				client->session_end = sessionseconds_config + now;
-			} else {
-				client->session_end = sessionseconds_binauth + now;
+				if (execute_ret_url_encoded(msg, SMALL_BUF, libcmd) == 0) {
+					q_fields = sscanf(msg, "%lld %lld %lld %lld %lld",
+						&q_session, &q_uprate, &q_downrate, &q_upquota, &q_downquota);
+				}
+
+				free(libcmd);
+				debug(LOG_DEBUG, "assigned parameters [ %s ]", msg);
+
+				if (q_fields != 5) {
+					debug(LOG_WARNING, "Quota reply is incomplete, using default limits");
+					q_session = 0;
+					q_uprate = 0;
+					q_downrate = 0;
+					q_upquota = 0;
+					q_downquota = 0;
+				}
+
+				sessionseconds_binauth = q_session > 0 ? 60 * q_session : 0;
+				upload_rate = q_uprate > 0 ? (unsigned long long)q_uprate : 0;
+				download_rate = q_downrate > 0 ? (unsigned long long)q_downrate : 0;
+				upload_quota = q_upquota > 0 ? (unsigned long long)q_upquota : 0;
+				download_quota = q_downquota > 0 ? (unsigned long long)q_downquota : 0;
 			}
 
-			//
-			upload_rate = atoi(strtok(NULL, " "));
+			debug(LOG_DEBUG, "sessionseconds_binauth [ %ld ]", (long)sessionseconds_binauth);
 
-			if (upload_rate == 0) {
-				client->upload_rate = config->upload_rate;
+			/* Zero is unlimited. Storing "now" makes the next refresh deauthenticate the client. */
+			if (sessionseconds_binauth > 0) {
+				client->session_end = now + sessionseconds_binauth;
+			} else if (sessionseconds_config > 0) {
+				client->session_end = now + sessionseconds_config;
 			} else {
+				client->session_end = 0;
+			}
+
+			/* A zero from the quota script is "no override", not "replace with the global".
+			   Apply the global only when this client does not already have a value. */
+			if (upload_rate != 0) {
 				client->upload_rate = upload_rate;
+			} else if (client->upload_rate == 0) {
+				client->upload_rate = config->upload_rate;
 			}
 
-			//
-			download_rate = atoi(strtok(NULL, " "));
-
-			if (download_rate == 0) {
-				client->download_rate = config->download_rate;
-			} else {
+			if (download_rate != 0) {
 				client->download_rate = download_rate;
+			} else if (client->download_rate == 0) {
+				client->download_rate = config->download_rate;
 			}
 
-			//
-			upload_quota = atoi(strtok(NULL, " "));
-
-			if (upload_quota == 0) {
-				client->upload_quota = config->upload_quota;
-			} else {
+			if (upload_quota != 0) {
 				client->upload_quota = upload_quota;
+			} else if (client->upload_quota == 0) {
+				client->upload_quota = config->upload_quota;
 			}
 
-			//
-			download_quota = atoi(strtok(NULL, " "));
-
-			if (download_quota == 0) {
-				client->download_quota = config->download_quota;
-			} else {
+			if (download_quota != 0) {
 				client->download_quota = download_quota;
+			} else if (client->download_quota == 0) {
+				client->download_quota = config->download_quota;
 			}
 
 			debug(LOG_DEBUG, "auth_change_state > authenticated - download_rate [%llu] upload_rate [%llu] ",
@@ -452,6 +535,8 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 			client->counters.out_window_start = client->counters.outgoing;
 
 
+			free(client->custom);
+
 			if (customdata && strlen(customdata) > 0) {
 				client->custom = safe_strdup(customdata);
 			} else {
@@ -462,9 +547,12 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 
 			action = ENABLE;
 
-			// Update all the counters
+			// Update all the counters. The allow rules are already installed.
+			// If this fails, remove them before the client stays preauthenticated.
 			if (-1 == iptables_fw_counters_update()) {
 				debug(LOG_ERR, "Could not get counters from firewall!");
+				iptables_fw_deauthenticate(client);
+				free(msg);
 				return -1;
 			}
 
@@ -519,15 +607,17 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 
 			if (config->download_unrestricted_bursting == 0 && config->download_bucket_ratio > 0) {
 				iptables_download_ratelimit_enable(client, action);
-				//bit 0 is not set so toggle it to signify rate limiting is on
-				client->rate_exceeded = client->rate_exceeded^1;
+				/* Bit 0 matches the download limit rule. It may already be set. */
+				client->rate_exceeded |= 1;
 			}
 
 			if (config->upload_unrestricted_bursting == 0 && config->upload_bucket_ratio > 0) {
 				iptables_upload_ratelimit_enable(client, action);
-				//bit 1 is not set so toggle it to signify rate limiting is on
-				client->rate_exceeded = client->rate_exceeded^2;
+				/* Bit 1 matches the upload limit rule. It may already be set. */
+				client->rate_exceeded |= 2;
 			}
+
+			client->fw_connection_state = new_state;
 
 			binauth_action(client, reason, customdata);
 
@@ -613,13 +703,14 @@ fw_refresh_client_list(void)
 
 	debug(LOG_DEBUG, "Rate Check Window is set to %u period(s) of checkinterval", config->rate_check_window);
 
-	// Update all the counters
+	// Update all the counters while the list cannot be freed underneath us.
+	LOCK_CLIENT_LIST();
+
 	if (-1 == iptables_fw_counters_update()) {
 		debug(LOG_ERR, "Could not get counters from firewall!");
+		UNLOCK_CLIENT_LIST();
 		return;
 	}
-
-	LOCK_CLIENT_LIST();
 
 	for (cp1 = cp2 = client_get_first_client(); NULL != cp1; cp1 = cp2) {
 		cp2 = cp1->next;
@@ -1022,7 +1113,12 @@ thread_client_timeout_check(void *arg)
 
 	while (1) {
 		// check gateway mac
-		config->gw_mac = get_iface_mac(config->gw_interface);
+		{
+			char *new_mac = get_iface_mac(config->gw_interface);
+
+			free(config->gw_mac);
+			config->gw_mac = new_mac;
+		}
 		debug(LOG_DEBUG, "Watchdog: Gateway Interface [%s], mac [%s]", config->gw_interface, config->gw_mac);
 
 		// check MHD
@@ -1137,11 +1233,19 @@ auth_client_auth(const unsigned id, const char *reason, const char *customdata)
 int
 auth_client_trust(const char *mac)
 {
+	char canonical[18];
 	int rc = -1;
+
+	if (!check_mac_format(mac)) {
+		return -1;
+	}
+
+	memcpy(canonical, mac, 17);
+	canonical[17] = '\0';
 
 	LOCK_CONFIG();
 
-	if (!add_to_trusted_mac_list(mac) && !iptables_trust_mac(mac)) {
+	if (!add_to_trusted_mac_list(canonical) && !iptables_trust_mac(canonical)) {
 		rc = 0;
 	}
 
@@ -1153,11 +1257,19 @@ auth_client_trust(const char *mac)
 int
 auth_client_untrust(const char *mac)
 {
+	char canonical[18];
 	int rc = -1;
+
+	if (!check_mac_format(mac)) {
+		return -1;
+	}
+
+	memcpy(canonical, mac, 17);
+	canonical[17] = '\0';
 
 	LOCK_CONFIG();
 
-	if (!remove_from_trusted_mac_list(mac) && !iptables_untrust_mac(mac)) {
+	if (!remove_from_trusted_mac_list(canonical) && !iptables_untrust_mac(canonical)) {
 		rc = 0;
 	}
 

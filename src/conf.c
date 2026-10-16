@@ -297,10 +297,29 @@ config_init(int argc, char **argv)
 	config.online_status = 0;
 
 	// Lists
-	parse_trusted_mac_list(set_list_str("trustedmac", DEFAULT_TRUSTEDMACLIST, debug_level));
-	parse_fas_custom_parameters_list(set_list_str("fas_custom_parameters_list", DEFAULT_FAS_CUSTOM_PARAMETERS_LIST, debug_level));
-	parse_fas_custom_images_list(set_list_str("fas_custom_images_list", DEFAULT_FAS_CUSTOM_IMAGES_LIST, debug_level));
-	parse_fas_custom_files_list(set_list_str("fas_custom_files_list", DEFAULT_FAS_CUSTOM_FILES_LIST, debug_level));
+	{
+		char *liststr;
+
+		liststr = set_list_str("trustedmac", DEFAULT_TRUSTEDMACLIST, debug_level);
+		parse_trusted_mac_list(liststr);
+		free(liststr);
+
+		liststr = set_list_str("fas_custom_parameters_list", DEFAULT_FAS_CUSTOM_PARAMETERS_LIST, debug_level);
+		parse_fas_custom_parameters_list(liststr);
+		free(liststr);
+
+		liststr = set_list_str("fas_custom_variables_list", DEFAULT_FAS_CUSTOM_VARIABLES_LIST, debug_level);
+		parse_fas_custom_variables_list(liststr);
+		free(liststr);
+
+		liststr = set_list_str("fas_custom_images_list", DEFAULT_FAS_CUSTOM_IMAGES_LIST, debug_level);
+		parse_fas_custom_images_list(liststr);
+		free(liststr);
+
+		liststr = set_list_str("fas_custom_files_list", DEFAULT_FAS_CUSTOM_FILES_LIST, debug_level);
+		parse_fas_custom_files_list(liststr);
+		free(liststr);
+	}
 
 	// Before we do anything else, reset the firewall (cleans it, in case we are restarting or after an opennds crash)
 	iptables_fw_destroy();
@@ -403,18 +422,53 @@ int check_ip_format(const char *possibleip)
 	return inet_pton(AF_INET, possibleip, buf) > 0;
 }
 
-// Parse a string to see if it is valid MAC address format
+// The whole argument must be a MAC. ether_aton() accepts trailing junk.
 int check_mac_format(const char possiblemac[])
 {
-	return ether_aton(possiblemac) != NULL;
+	int i;
+
+	if (possiblemac == NULL || strlen(possiblemac) != 17) {
+		return 0;
+	}
+
+	for (i = 0; i < 17; i++) {
+		if ((i % 3) == 2) {
+			if (possiblemac[i] != ':') {
+				return 0;
+			}
+		} else if (!isxdigit((unsigned char)possiblemac[i])) {
+			return 0;
+		}
+	}
+
+	return 1;
 }
 
 int add_to_fas_custom_parameters_list(const char possibleparam[])
 {
 	char param[512];
 	t_FASPARAM *p = NULL;
+	const char *rest;
 
-	sscanf(possibleparam, "%s", param);
+	if (possibleparam == NULL || sscanf(possibleparam, "%511s", param) != 1) {
+		debug(LOG_WARNING, "Custom Parameter is empty or invalid");
+		return 1;
+	}
+
+	if (strlen(param) == sizeof(param) - 1) {
+		rest = possibleparam;
+
+		while (*rest == ' ' || *rest == '\t') {
+			rest++;
+		}
+
+		rest += sizeof(param) - 1;
+
+		if (*rest != '\0' && !isspace((unsigned char)*rest)) {
+			debug(LOG_WARNING, "Custom Parameter does not fit");
+			return 1;
+		}
+	}
 
 	// Add Parameter to head of list
 	p = safe_calloc(sizeof(t_FASPARAM));
@@ -430,8 +484,27 @@ int add_to_fas_custom_variables_list(const char possiblevar[])
 {
 	char var[512];
 	t_FASVAR *p = NULL;
+	const char *rest;
 
-	sscanf(possiblevar, "%s", var);
+	if (possiblevar == NULL || sscanf(possiblevar, "%511s", var) != 1) {
+		debug(LOG_WARNING, "Custom Variable is empty or invalid");
+		return 1;
+	}
+
+	if (strlen(var) == sizeof(var) - 1) {
+		rest = possiblevar;
+
+		while (*rest == ' ' || *rest == '\t') {
+			rest++;
+		}
+
+		rest += sizeof(var) - 1;
+
+		if (*rest != '\0' && !isspace((unsigned char)*rest)) {
+			debug(LOG_WARNING, "Custom Variable does not fit");
+			return 1;
+		}
+	}
 
 	// Add Variable to head of list
 	p = safe_calloc(sizeof(t_FASVAR));
@@ -447,8 +520,27 @@ int add_to_fas_custom_images_list(const char possibleimage[])
 {
 	char image[512];
 	t_FASIMG *p = NULL;
+	const char *rest;
 
-	sscanf(possibleimage, "%s", image);
+	if (possibleimage == NULL || sscanf(possibleimage, "%511s", image) != 1) {
+		debug(LOG_WARNING, "Custom Image is empty or invalid");
+		return 1;
+	}
+
+	if (strlen(image) == sizeof(image) - 1) {
+		rest = possibleimage;
+
+		while (*rest == ' ' || *rest == '\t') {
+			rest++;
+		}
+
+		rest += sizeof(image) - 1;
+
+		if (*rest != '\0' && !isspace((unsigned char)*rest)) {
+			debug(LOG_WARNING, "Custom Image does not fit");
+			return 1;
+		}
+	}
 
 	// Add Image to head of list
 	p = safe_calloc(sizeof(t_FASIMG));
@@ -464,8 +556,27 @@ int add_to_fas_custom_files_list(const char possiblefile[])
 {
 	char file[512];
 	t_FASFILE *p = NULL;
+	const char *rest;
 
-	sscanf(possiblefile, "%s", file);
+	if (possiblefile == NULL || sscanf(possiblefile, "%511s", file) != 1) {
+		debug(LOG_WARNING, "Custom File is empty or invalid");
+		return 1;
+	}
+
+	if (strlen(file) == sizeof(file) - 1) {
+		rest = possiblefile;
+
+		while (*rest == ' ' || *rest == '\t') {
+			rest++;
+		}
+
+		rest += sizeof(file) - 1;
+
+		if (*rest != '\0' && !isspace((unsigned char)*rest)) {
+			debug(LOG_WARNING, "Custom File does not fit");
+			return 1;
+		}
+	}
 
 	// Add File to head of list
 	p = safe_calloc(sizeof(t_FASFILE));
@@ -482,6 +593,7 @@ int add_to_trusted_mac_list(const char possiblemac[])
 {
 	char mac[18];
 	t_MAC *p = NULL;
+	int i;
 
 	// check for valid format
 	if (!check_mac_format(possiblemac)) {
@@ -491,6 +603,10 @@ int add_to_trusted_mac_list(const char possiblemac[])
 	}
 
 	sscanf(possiblemac, "%17[A-Fa-f0-9:]", mac);
+
+	for (i = 0; mac[i] != '\0'; i++) {
+		mac[i] = (char)tolower((unsigned char)mac[i]);
+	}
 
 	// See if MAC is already on the list; don't add duplicates
 	for (p = config.trustedmaclist; p != NULL; p = p->next) {
@@ -540,6 +656,7 @@ int remove_from_trusted_mac_list(const char possiblemac[])
 			del = *p;
 			*p = del->next;
 			debug(LOG_INFO, "Removed MAC address [%s] from trusted list", mac);
+			free(del->mac);
 			free(del);
 			return 0;
 		}
@@ -579,16 +696,23 @@ int is_trusted_mac(const char *mac)
 	s_config *config;
 	t_MAC *trust_mac;
 
+	int found = 0;
+
 	config = config_get_config();
 
-	// Is a client even recognized here?
+	/* Callers may already hold the client-list lock. Do not take that lock here. */
+	LOCK_CONFIG();
+
 	for (trust_mac = config->trustedmaclist; trust_mac != NULL; trust_mac = trust_mac->next) {
-		if (!strcmp(trust_mac->mac, mac)) {
-			return 1;
+		if (!strcasecmp(trust_mac->mac, mac)) {
+			found = 1;
+			break;
 		}
 	}
 
-	return 0;
+	UNLOCK_CONFIG();
+
+	return found;
 }
 
 /* Given a pointer to a comma or whitespace delimited sequence of
@@ -597,13 +721,14 @@ int is_trusted_mac(const char *mac)
 void parse_fas_custom_parameters_list(const char ptr[])
 {
 	char *ptrcopy = NULL;
+	char *ptrcopyptr;
 	char *possibleparam = NULL;
 	char msg[512] = {0};
 	char *cmd = NULL;
 	char possibleparam_urlencoded[512] = {0};
 
 	// strsep modifies original, so let's make a copy
-	ptrcopy = safe_strdup(ptr);
+	ptrcopyptr = ptrcopy = safe_strdup(ptr);
 
 	while ((possibleparam = strsep(&ptrcopy, ", \t"))) {
 		if (strlen(possibleparam) > 0) {
@@ -631,6 +756,9 @@ void parse_fas_custom_parameters_list(const char ptr[])
 			}
 		}
 	}
+
+	free(ptrcopy);
+	free(ptrcopyptr);
 }
 
 /* Given a pointer to a comma or whitespace delimited sequence of
@@ -639,6 +767,7 @@ void parse_fas_custom_parameters_list(const char ptr[])
 void parse_fas_custom_variables_list(const char ptr[])
 {
 	char *ptrcopy = NULL;
+	char *ptrcopyptr;
 	char *possiblevar = NULL;
 	char msg[512] = {0};
 	char *cmd = NULL;
@@ -647,7 +776,7 @@ void parse_fas_custom_variables_list(const char ptr[])
 	debug(LOG_INFO, "Parsing list [%s] for Custom FAS Variables", ptr);
 
 	// strsep modifies original, so let's make a copy
-	ptrcopy = safe_strdup(ptr);
+	ptrcopyptr = ptrcopy = safe_strdup(ptr);
 
 	while ((possiblevar = strsep(&ptrcopy, ", \t"))) {
 		if (strlen(possiblevar) > 0) {
@@ -675,6 +804,9 @@ void parse_fas_custom_variables_list(const char ptr[])
 			}
 		}
 	}
+
+	free(ptrcopy);
+	free(ptrcopyptr);
 }
 
 /* Given a pointer to a comma or whitespace delimited sequence of
@@ -683,6 +815,7 @@ void parse_fas_custom_variables_list(const char ptr[])
 void parse_fas_custom_images_list(const char ptr[])
 {
 	char *ptrcopy = NULL;
+	char *ptrcopyptr;
 	char *possibleimage = NULL;
 	char msg[512] = {0};
 	char *cmd = NULL;
@@ -691,7 +824,7 @@ void parse_fas_custom_images_list(const char ptr[])
 	debug(LOG_INFO, "Parsing list [%s] for Custom FAS Images", ptr);
 
 	// strsep modifies original, so let's make a copy
-	ptrcopy = safe_strdup(ptr);
+	ptrcopyptr = ptrcopy = safe_strdup(ptr);
 
 	while ((possibleimage = strsep(&ptrcopy, ", \t"))) {
 		if (strlen(possibleimage) > 0) {
@@ -719,6 +852,9 @@ void parse_fas_custom_images_list(const char ptr[])
 			}
 		}
 	}
+
+	free(ptrcopy);
+	free(ptrcopyptr);
 }
 
 /* Given a pointer to a comma or whitespace delimited sequence of
@@ -727,6 +863,7 @@ void parse_fas_custom_images_list(const char ptr[])
 void parse_fas_custom_files_list(const char ptr[])
 {
 	char *ptrcopy = NULL;
+	char *ptrcopyptr;
 	char *possiblefile = NULL;
 	char msg[512] = {0};
 	char *cmd = NULL;
@@ -735,7 +872,7 @@ void parse_fas_custom_files_list(const char ptr[])
 	debug(LOG_INFO, "Parsing list [%s] for Custom FAS Files", ptr);
 
 	// strsep modifies original, so let's make a copy
-	ptrcopy = safe_strdup(ptr);
+	ptrcopyptr = ptrcopy = safe_strdup(ptr);
 
 	while ((possiblefile = strsep(&ptrcopy, ", \t"))) {
 		if (strlen(possiblefile) > 0) {
@@ -763,6 +900,9 @@ void parse_fas_custom_files_list(const char ptr[])
 			}
 		}
 	}
+
+	free(ptrcopy);
+	free(ptrcopyptr);
 }
 
 /** Set the debug log level.  See syslog.h

@@ -69,6 +69,7 @@ _debug(const char filename[], int line, int level, const char *format, ...)
 	s_config *config;
 	time_t ts;
 	sigset_t block_chld;
+	sigset_t oldset;
 
 	time(&ts);
 
@@ -77,7 +78,7 @@ _debug(const char filename[], int line, int level, const char *format, ...)
 	if (do_log(level, config->debuglevel)) {
 		sigemptyset(&block_chld);
 		sigaddset(&block_chld, SIGCHLD);
-		sigprocmask(SIG_BLOCK, &block_chld, NULL);
+		sigprocmask(SIG_BLOCK, &block_chld, &oldset);
 
 		openlog("opennds", LOG_PID, LOG_DAEMON);
 		va_start(vlist, format);
@@ -85,6 +86,6 @@ _debug(const char filename[], int line, int level, const char *format, ...)
 		va_end(vlist);
 		closelog();
 
-		sigprocmask(SIG_UNBLOCK, &block_chld, NULL);
+		sigprocmask(SIG_SETMASK, &oldset, NULL);
 	}
 }

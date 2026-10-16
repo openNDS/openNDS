@@ -37,6 +37,8 @@
 #include <signal.h>
 #include <errno.h>
 #include <time.h>
+#include <unistd.h>
+#include <fcntl.h>
 #include <sys/stat.h>
 #include <arpa/inet.h>
 
@@ -86,6 +88,63 @@ static pthread_t tid_client_check = 0;
 // Time when opennds started
 time_t started_time = 0;
 
+/* Set by the termination signal handler. Cleanup runs on the main thread. */
+static volatile sig_atomic_t shutdown_requested = 0;
+static volatile sig_atomic_t shutdown_signal = 0;
+static int shutdown_pipe[2] = {-1, -1};
+
+static void open_shutdown_pipe(void)
+{
+	int flags;
+
+	if (pipe(shutdown_pipe) != 0) {
+		shutdown_pipe[0] = -1;
+		shutdown_pipe[1] = -1;
+		return;
+	}
+
+	flags = fcntl(shutdown_pipe[0], F_GETFL, 0);
+
+	if (flags >= 0) {
+		fcntl(shutdown_pipe[0], F_SETFL, flags | O_NONBLOCK);
+	}
+
+	flags = fcntl(shutdown_pipe[1], F_GETFL, 0);
+
+	if (flags >= 0) {
+		fcntl(shutdown_pipe[1], F_SETFL, flags | O_NONBLOCK);
+	}
+}
+
+int main_shutdown_fd(void)
+{
+	return shutdown_pipe[0];
+}
+
+int opennds_shutdown_requested(void)
+{
+	return shutdown_requested != 0;
+}
+
+/** Async-signal-safe. The main thread performs logging and firewall cleanup. */
+static void request_termination(int s)
+{
+	int saved_errno;
+	char byte = 1;
+	ssize_t written;
+
+	saved_errno = errno;
+	shutdown_signal = s;
+	shutdown_requested = 1;
+
+	if (shutdown_pipe[1] >= 0) {
+		written = write(shutdown_pipe[1], &byte, 1);
+		(void)written;
+	}
+
+	errno = saved_errno;
+}
+
 static void catcher(int sig) {
 }
 
@@ -117,33 +176,16 @@ static void ignore_sigpipe(void) {
 void
 sigchld_handler(int s)
 {
-	int	status;
-	pid_t rc;
+	int saved_errno;
 
-	rc = waitpid(-1, &status, WNOHANG | WUNTRACED);
+	(void)s;
+	saved_errno = errno;
 
-	if (rc == -1) {
-		if (errno != ECHILD) {
-			debug(LOG_ERR, "SIGCHLD handler: Error reaping child process (waitpid() returned -1): %s", strerror(errno));
-		}
-		return;
+	/* Reap every exited child. debug() is not async-signal-safe. */
+	while (waitpid(-1, NULL, WNOHANG) > 0) {
 	}
 
-	if (WIFEXITED(status)) {
-
-		if (rc != 0) {
-			debug(LOG_DEBUG, "SIGCHLD handler: Process PID %d exited normally, status %d", (int)rc, WEXITSTATUS(status));
-		}
-		return;
-	}
-
-	if (WIFSIGNALED(status)) {
-		debug(LOG_DEBUG, "SIGCHLD handler: Process PID %d exited due to signal %d", (int)rc, WTERMSIG(status));
-		return;
-	}
-
-	debug(LOG_DEBUG, "SIGCHLD handler: Process PID %d changed state, status %d not exited, ignoring", (int)rc, status);
-	return;
+	errno = saved_errno;
 }
 
 /** Exits cleanly after cleaning up the firewall.
@@ -159,7 +201,7 @@ termination_handler(int s)
 	s_config *config;
 	config = config_get_config();
 
-	debug(LOG_INFO, "Handler for termination caught signal %d", s);
+	debug(LOG_INFO, "Terminating with status %d", s);
 
 	// Makes sure we only call iptables_fw_destroy() once.
 	if (pthread_mutex_trylock(&sigterm_mutex)) {
@@ -219,7 +261,7 @@ termination_handler(int s)
 	iptables_fw_destroy();
 
 	debug(LOG_NOTICE, "Exiting...");
-	exit(s == 0 ? 1 : 0);
+	exit(s == 0 ? 0 : 1);
 }
 
 
@@ -255,8 +297,8 @@ init_signals(void)
 		exit(1);
 	}
 
-	debug(LOG_DEBUG, "Setting SIGTERM, SIGQUIT, SIGINT  handlers to termination_handler()");
-	sa.sa_handler = termination_handler;
+	debug(LOG_DEBUG, "Setting SIGTERM, SIGQUIT, SIGINT  handlers to request_termination()");
+	sa.sa_handler = request_termination;
 	sigemptyset(&sa.sa_mask);
 	sa.sa_flags = SA_RESTART;
 
@@ -394,7 +436,7 @@ setup_from_config(void)
 	// Setup custom FAS variables if configured
 	char fasvar[MAX_BUF] = {0};
 	t_FASVAR *fas_fasvar;
-	if (config->fas_custom_parameters_list) {
+	if (config->fas_custom_variables_list) {
 		for (fas_fasvar = config->fas_custom_variables_list; fas_fasvar != NULL; fas_fasvar = fas_fasvar->next) {
 
 			// Make sure we don't have a buffer overflow
@@ -445,24 +487,43 @@ setup_from_config(void)
 		debug(LOG_DEBUG, "Custom FAS files string [%s]", config->custom_files);
 	}
 
+	/* Empty lists stay NULL. Download and the FAS query must not format that as %s. */
+	if (!config->custom_images) {
+		config->custom_images = safe_strdup("");
+	}
+
+	if (!config->custom_files) {
+		config->custom_files = safe_strdup("");
+	}
+
 	// Do any required dnsmasq configurations and restart it
 
 	// For Client status Page - configure the hosts file
 	if (strcmp(config->gw_fqdn, "disable") != 0 && strcmp(config->gw_fqdn, "disabled") != 0) {
-		dnscmd = safe_calloc(STATUS_BUF);
-		safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"hostconf\" \"%s\" \"%s\"",
+		/* Fixed text is 46 bytes. An IPv6 address is up to 45, a FQDN up to 253, plus NUL. */
+		size_t hostconf_len = sizeof("/usr/lib/opennds/dnsconfig.sh \"hostconf\" \"\" \"\"")
+			+ (INET6_ADDRSTRLEN - 1) + 253;
+
+		dnscmd = safe_calloc(hostconf_len);
+
+		if (safe_snprintf(dnscmd, hostconf_len, "/usr/lib/opennds/dnsconfig.sh \"hostconf\" \"%s\" \"%s\"",
 			config->gw_ip,
 			config->gw_fqdn
-		);
-		msg = safe_calloc(SMALL_BUF);
-
-		if (execute_ret_url_encoded(msg, SMALL_BUF - 1, dnscmd) == 0) {
-			debug(LOG_INFO, "Client status Page: Configured");
+		) < 1) {
+			debug(LOG_ERR, "Client Status Page: Hosts setup command does not fit");
+			free(dnscmd);
 		} else {
-			debug(LOG_ERR, "Client Status Page: Hosts setup script failed to execute");
+			msg = safe_calloc(SMALL_BUF);
+
+			if (execute_ret_url_encoded(msg, SMALL_BUF - 1, dnscmd) == 0) {
+				debug(LOG_INFO, "Client status Page: Configured");
+			} else {
+				debug(LOG_ERR, "Client Status Page: Hosts setup script failed to execute");
+			}
+
+			free(dnscmd);
+			free(msg);
 		}
-		free(dnscmd);
-		free(msg);
 	}
 
 	if (strcmp(config->gw_fqdn, "status.client") == 0) {
@@ -850,9 +911,21 @@ setup_from_config(void)
 	}
 
 	// Add rulesets
-	create_client_ruleset ("users_to_router", set_list_str("users_to_router", DEFAULT_USERS_TO_ROUTER, "2"));
-	create_client_ruleset ("preauthenticated_users", set_list_str("preauthenticated_users", DEFAULT_PREAUTHENTICATED_USERS, "2"));
-	create_client_ruleset ("authenticated_users", set_list_str("authenticated_users", DEFAULT_AUTHENTICATED_USERS, "2"));
+	{
+		char *ruleset;
+
+		ruleset = set_list_str("users_to_router", DEFAULT_USERS_TO_ROUTER, "2");
+		create_client_ruleset("users_to_router", ruleset);
+		free(ruleset);
+
+		ruleset = set_list_str("preauthenticated_users", DEFAULT_PREAUTHENTICATED_USERS, "2");
+		create_client_ruleset("preauthenticated_users", ruleset);
+		free(ruleset);
+
+		ruleset = set_list_str("authenticated_users", DEFAULT_AUTHENTICATED_USERS, "2");
+		create_client_ruleset("authenticated_users", ruleset);
+		free(ruleset);
+	}
 
 	// nft sets
 
@@ -869,7 +942,7 @@ setup_from_config(void)
 	// Set up the Walled Garden
 	msg = safe_calloc(SMALL_BUF);
 
-	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset insert walledgarden") == 0) {
+	if (execute_ret_url_encoded(msg, SMALL_BUF, "/usr/lib/opennds/libopennds.sh nftset insert walledgarden") == 0) {
 		debug(LOG_INFO, "Walled Garden Setup Request sent");
 	}
 
@@ -878,7 +951,7 @@ setup_from_config(void)
 	// Set up the Block List
 	msg = safe_calloc(SMALL_BUF);
 
-	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, "/usr/lib/opennds/libopennds.sh nftset insert blocklist reject") == 0) {
+	if (execute_ret_url_encoded(msg, SMALL_BUF, "/usr/lib/opennds/libopennds.sh nftset insert blocklist reject") == 0) {
 		debug(LOG_INFO, "Block List Setup Request sent");
 	}
 
@@ -923,11 +996,16 @@ main_loop(int argc, char **argv)
 
 	ignore_sigpipe();
 
+	if (shutdown_requested) {
+		debug(LOG_INFO, "Caught termination signal %d", (int)shutdown_signal);
+		termination_handler(0);
+	}
+
 	// Start watchdog, client statistics and timeout clean-up thread
 	result = pthread_create(&tid_client_check, NULL, thread_client_timeout_check, NULL);
 	if (result != 0) {
 		debug(LOG_ERR, "FATAL: Failed to create thread_client_timeout_check - exiting");
-		termination_handler(0);
+		termination_handler(1);
 	}
 	pthread_detach(tid_client_check);
 
@@ -954,7 +1032,13 @@ main_loop(int argc, char **argv)
 	//MHD_stop_daemon(webserver);
 	stop_mhd();
 
-	termination_handler(result);
+	if (shutdown_requested) {
+		debug(LOG_INFO, "Caught termination signal %d", (int)shutdown_signal);
+		termination_handler(0);
+	}
+
+	/* pthread_join returns 0 after ndsctl stop. A non-zero result failed to wait. */
+	termination_handler(result == 0 ? 0 : 1);
 }
 
 /** Main entry point for opennds.
@@ -963,6 +1047,9 @@ main_loop(int argc, char **argv)
 int main(int argc, char **argv)
 {
 	s_config *config = config_get_config();
+
+	// The signal handler writes this pipe. Open it before the handler is installed.
+	open_shutdown_pipe();
 
 	// Init the signals to catch chld/quit/etc
 	init_signals();

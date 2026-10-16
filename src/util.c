@@ -44,6 +44,8 @@
 #include <sys/time.h>
 #include <ifaddrs.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <spawn.h>
 
 #if defined(__NetBSD__)
 #include <sys/socket.h>
@@ -370,25 +372,28 @@ int ndsctl_lock()
 	// Open or create the lock file
 	safe_asprintf(&lockfile, "%s/ndsctl.lock", config->tmpfsmountpoint);
 	config->lockfd = open(lockfile, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-	free(lockfile);
 
 	if (config->lockfd < 0) {
 		debug(LOG_ERR, "CRITICAL ERROR - Unable to open [%s]", lockfile);
+		free(lockfile);
 		return 5;
 	}
 
 	if (lockf(config->lockfd, F_TLOCK, 0) == 0) {
+		free(lockfile);
 		return 0;
 	} else {
 
 		if (errno != EACCES && errno != EAGAIN) {
 			// persistent error
 			debug(LOG_ERR, "CRITICAL ERROR - Unable to create lock on [%s]", lockfile);
+			free(lockfile);
 			close(config->lockfd);
 			return 6;
 		}
 
 		debug(LOG_ERR, "ndsctl is locked by another process");
+		free(lockfile);
 		close(config->lockfd);
 		return 4;
 	}
@@ -408,14 +413,20 @@ void ndsctl_unlock()
 
 int download_remotes(int refresh)
 {
-	char *cmd = NULL;
-	int daemonpid = 0;
 	s_config *config = config_get_config();
+	const char *images;
+	const char *files;
+	const char *webroot;
+	char refresh_arg[16];
+	char *argv[8];
+	pid_t pid;
+	posix_spawn_file_actions_t actions;
+	int rc;
 
 	// If themespec is not set then we do not need to download remotes
 	// client_params.sh does its own downloads for the 511 status pages
 
-	if (strcmp(config->themespec_path, "") == 0) {
+	if (config->themespec_path == NULL || strcmp(config->themespec_path, "") == 0) {
 		return 0;
 	}
 
@@ -425,31 +436,42 @@ int download_remotes(int refresh)
 		debug(LOG_DEBUG, "Background Refreshing of remotes for: %s\n", config->themespec_path);
 	}
 
-	safe_asprintf(&cmd,
-		"/usr/lib/opennds/libopennds.sh download \"%s\" \"%s\" \"%s\" \"%d\" \"%s\"",
-		config->themespec_path,
-		config->custom_images,
-		config->custom_files,
-		refresh,
-		config->webroot
-	);
+	images = config->custom_images ? config->custom_images : "";
+	files = config->custom_files ? config->custom_files : "";
+	webroot = config->webroot ? config->webroot : "";
 
 	if (config->online_status > 0) {
-		debug(LOG_DEBUG, "Starting daemon: %s\n", cmd);
+		snprintf(refresh_arg, sizeof(refresh_arg), "%d", refresh);
+		argv[0] = "libopennds.sh";
+		argv[1] = "download";
+		argv[2] = config->themespec_path;
+		argv[3] = (char *)images;
+		argv[4] = (char *)files;
+		argv[5] = refresh_arg;
+		argv[6] = (char *)webroot;
+		argv[7] = NULL;
 
-		if (startdaemon(cmd, daemonpid) == 0) {
+		/* Arguments stay out of the shell, so quotes and $() in the lists are data. */
+		rc = posix_spawn_file_actions_init(&actions);
 
-			if (daemonpid != 0) {
-				debug(LOG_DEBUG, "daemon(%s) pid is [%d]", cmd, daemonpid);
+		if (rc == 0) {
+			if (posix_spawn_file_actions_addopen(&actions, STDIN_FILENO, "/dev/null", O_RDONLY, 0) != 0
+					|| posix_spawn_file_actions_addopen(&actions, STDOUT_FILENO, "/dev/null", O_WRONLY, 0) != 0
+					|| posix_spawn_file_actions_addopen(&actions, STDERR_FILENO, "/dev/null", O_WRONLY, 0) != 0
+					|| posix_spawn(&pid, "/usr/lib/opennds/libopennds.sh", &actions, NULL, argv, environ) != 0) {
+				rc = -1;
 			}
-		} else {
-			debug(LOG_DEBUG, "Cannot download remotes - daemon failed to start");
+
+			posix_spawn_file_actions_destroy(&actions);
+		}
+
+		if (rc != 0) {
+			debug(LOG_DEBUG, "Cannot download remotes - failed to start");
 		}
 	} else {
 		debug(LOG_DEBUG, "Cannot download remotes - upstream gateway(s) are offline");
 	}
 
-	free(cmd);
 	return 0;
 }
 
@@ -505,13 +527,13 @@ int get_option_from_config(char* msg, int msg_len, const char *option)
 
 	if (execute_ret_url_encoded(msg, msg_len - 1, cmd) != 0) {
 		openlog ("opennds", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_DAEMON);
-		syslog (LOG_ERR, "Failed to get option [%s] - retrying\n", VERSION);
+		syslog (LOG_ERR, "Failed to get option [%s] - retrying\n", option);
 		closelog ();
 		sleep(1);
 
 		if (execute_ret_url_encoded(msg, msg_len - 1, cmd) != 0) {
 			openlog ("opennds", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_DAEMON);
-			syslog (LOG_CRIT, "Failed to get option [%s] Bad library or invalid config format - exiting\n", VERSION);
+			syslog (LOG_CRIT, "Failed to get option [%s] Bad library or invalid config format - exiting\n", option);
 			closelog ();
 			exit(1);
 		}
@@ -735,21 +757,21 @@ get_iface_mac(const char ifname[])
 {
 	char addrbuf[STATUS_BUF] = {0};
 	char *cmd;
+	const char *current_mac;
 	s_config *config;
 
 	config = config_get_config();
 
 	debug(LOG_DEBUG, "Attempting to get mac of interface: %s", ifname);
 
-	if (config->gw_mac == NULL) {
-		config->gw_mac = safe_strdup("00:00:00:00:00:00");
-	}
+	/* Keep the placeholder local. Publishing it into config is leaked by the caller. */
+	current_mac = config->gw_mac ? config->gw_mac : "00:00:00:00:00:00";
 
 	cmd = safe_calloc(STATUS_BUF);
 
 	snprintf(cmd, STATUS_BUF, "/usr/lib/opennds/libopennds.sh \"gatewaymac\" \"%s\" \"%s\"",
 		ifname,
-		config->gw_mac
+		current_mac
 	);
 
 
@@ -876,7 +898,7 @@ ndsctl_status(FILE *fp)
 		uploadburst = config->checkinterval * config->rate_check_window;
 	}
 
-	if (config->upload_bucket_ratio > 0) {
+	if (config->download_bucket_ratio > 0) {
 		downloadburst = config->checkinterval * config->rate_check_window;
 	}
 
@@ -988,10 +1010,9 @@ ndsctl_status(FILE *fp)
 	fprintf(fp, "====\n");
 	fprintf(fp, "Client authentications since start: %u\n", authenticated_since_start);
 
-	// Update the client's counters so info is current
-	iptables_fw_counters_update();
-
+	// Update the client's counters so info is current. Hold the list lock for the walk.
 	LOCK_CLIENT_LIST();
+	iptables_fw_counters_update();
 
 	fprintf(fp, "Current clients: %d\n", get_client_list_length());
 
@@ -1105,6 +1126,8 @@ ndsctl_status(FILE *fp)
 	fprintf(fp, "====\n");
 	fprintf(fp, "Trusted MAC addresses:\n");
 
+	LOCK_CONFIG();
+
 	if (config->trustedmaclist != NULL) {
 
 		for (trust_mac = config->trustedmaclist; trust_mac != NULL; trust_mac = trust_mac->next) {
@@ -1114,12 +1137,14 @@ ndsctl_status(FILE *fp)
 		fprintf(fp, "none\n");
 	}
 
+	UNLOCK_CONFIG();
+
 	fprintf(fp, "====\n");
 	fprintf(fp, "Walledgarden FQDNs:\n");
 
 	msg = safe_calloc(SMALL_BUF);
 
-	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, "/usr/lib/opennds/libopennds.sh get_list_from_config walledgarden_fqdn_list newlines") == 0) {
+	if (execute_ret_url_encoded(msg, SMALL_BUF, "/usr/lib/opennds/libopennds.sh get_list_from_config walledgarden_fqdn_list newlines") == 0) {
 
 		if (strcmp(msg, "") == 0) {
 			fprintf(fp, "none");
@@ -1137,7 +1162,7 @@ ndsctl_status(FILE *fp)
 
 	msg = safe_calloc(SMALL_BUF);
 
-	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, "/usr/lib/opennds/libopennds.sh get_list_from_config walledgarden_port_list newlines") == 0) {
+	if (execute_ret_url_encoded(msg, SMALL_BUF, "/usr/lib/opennds/libopennds.sh get_list_from_config walledgarden_port_list newlines") == 0) {
 
 		if (strcmp(msg, "") == 0) {
 			fprintf(fp, "all");
@@ -1155,7 +1180,7 @@ ndsctl_status(FILE *fp)
 
 	msg = safe_calloc(SMALL_BUF);
 
-	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, "/usr/lib/opennds/libopennds.sh get_list_from_config blocklist_fqdn_list newlines") == 0) {
+	if (execute_ret_url_encoded(msg, SMALL_BUF, "/usr/lib/opennds/libopennds.sh get_list_from_config blocklist_fqdn_list newlines") == 0) {
 
 		if (strcmp(msg, "") == 0) {
 			fprintf(fp, "none");
@@ -1173,7 +1198,7 @@ ndsctl_status(FILE *fp)
 
 	msg = safe_calloc(SMALL_BUF);
 
-	if (execute_ret_url_encoded(msg, STATUS_BUF - 1, "/usr/lib/opennds/libopennds.sh get_list_from_config blocklist_port_list newlines") == 0) {
+	if (execute_ret_url_encoded(msg, SMALL_BUF, "/usr/lib/opennds/libopennds.sh get_list_from_config blocklist_port_list newlines") == 0) {
 
 		if (strcmp(msg, "") == 0) {
 			fprintf(fp, "all\n");
@@ -1317,10 +1342,9 @@ ndsctl_json_one(FILE *fp, const char *arg, char *indent)
 	time_t now;
 	now = time(NULL);
 
-	// Update the client's counters so info is current
-	iptables_fw_counters_update();
-
+	// Update the client's counters so info is current. Hold the list lock for the walk.
 	LOCK_CLIENT_LIST();
+	iptables_fw_counters_update();
 
 	client = client_list_find_by_any(arg, arg, arg);
 
@@ -1348,10 +1372,9 @@ ndsctl_json_all(FILE *fp, char *indent)
 
 	config = config_get_config();
 
-	// Update the client's counters so info is current
-	iptables_fw_counters_update();
-
+	// Update the client's counters so info is current. Hold the list lock for the walk.
 	LOCK_CLIENT_LIST();
+	iptables_fw_counters_update();
 
 	fprintf(fp, "{\n  \"client_list_length\":\"%d\",\n", get_client_list_length());
 
@@ -1373,7 +1396,9 @@ ndsctl_json_all(FILE *fp, char *indent)
 
 	UNLOCK_CLIENT_LIST();
 
-	// Trusted mac list
+	// Trusted mac list. The client-list lock was released above.
+	LOCK_CONFIG();
+
 	if (config->trustedmaclist != NULL) {
 		fprintf(fp, "  },\n");
 		// count the number of trusted mac addresses
@@ -1399,6 +1424,8 @@ ndsctl_json_all(FILE *fp, char *indent)
 	} else {
 		fprintf(fp, "  }\n");
 	}
+
+	UNLOCK_CONFIG();
 	fprintf(fp, "}\n");
 }
 

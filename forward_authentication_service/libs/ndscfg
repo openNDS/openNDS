@@ -8,12 +8,87 @@
 # This is a wrapper for calling OpenNDS libraries
 # Mostly calls to libopennds.sh, but others also
 
-# === Pipe has priority — parsed exactly like command-line arguments (quotes/spaces work) ===
-if [ ! -t 0 ]; then
+# A pipe may supply arguments when none were given on the command line.
+# Read it only then. /dev/null is not a pipe, so a daemon call keeps its
+# arguments. Do not eval the buffer: a pipe can carry command substitutions.
+if [ -z "$1" ] && [ -p /proc/self/fd/0 ]; then
 	input=$(cat)
-	eval "set -- $input"
+	input=$(printf '%s' "$input" | tr '\n\r\t' '   ')
+	set --
+	token=
+	in_single=0
+	in_double=0
+	escaped=0
+	started=0
+
+	while [ -n "$input" ]; do
+		c=${input%"${input#?}"}
+		input=${input#?}
+
+		if [ "$escaped" -eq 1 ]; then
+			token=$token$c
+			escaped=0
+			started=1
+			continue
+		fi
+
+		if [ "$in_single" -eq 1 ]; then
+			started=1
+
+			if [ "$c" = "'" ]; then
+				in_single=0
+			else
+				token=$token$c
+			fi
+
+			continue
+		fi
+
+		if [ "$in_double" -eq 1 ]; then
+			started=1
+
+			if [ "$c" = "\\" ]; then
+				escaped=1
+			elif [ "$c" = "\"" ]; then
+				in_double=0
+			else
+				token=$token$c
+			fi
+
+			continue
+		fi
+
+		case "$c" in
+			\\)
+				escaped=1
+				started=1
+				;;
+			\')
+				in_single=1
+				started=1
+				;;
+			\")
+				in_double=1
+				started=1
+				;;
+			" " | "	")
+				if [ "$started" -eq 1 ]; then
+					set -- "$@" "$token"
+					token=
+					started=0
+				fi
+				;;
+			*)
+				token=$token$c
+				started=1
+				;;
+		esac
+	done
+
+	if [ "$started" -eq 1 ]; then
+		set -- "$@" "$token"
+	fi
 fi
-# =============================================================================
 
 if [ -z "$1" ]; then
 	exit 1

@@ -348,18 +348,19 @@ int ndsctl_lock(char *mountpoint, int *lockfd)
 	// Open or create the lock file
 	safe_asprintf(&lockfile, "%s/ndsctl.lock", mountpoint);
 	*lockfd = open(lockfile, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-	free(lockfile);
 
 	if (*lockfd < 0) {
 		// Critical error - must report to syslog
 		openlog ("ndsctl", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
 		syslog (LOG_ERR, "CRITICAL ERROR - Unable to open [%s]", lockfile);
 		closelog ();
+		free(lockfile);
 		return 5;
 	}
 
 
 	if (lockf(*lockfd, F_TLOCK, 0) == 0) {
+		free(lockfile);
 		return 0;
 	} else {
 
@@ -369,9 +370,12 @@ int ndsctl_lock(char *mountpoint, int *lockfd)
 			openlog ("ndsctl", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
 			syslog (LOG_ERR, "CRITICAL ERROR - Unable to create lock on [%s]", lockfile);
 			closelog ();
+			free(lockfile);
 			close(*lockfd);
 			return 6;
 		}
+
+		free(lockfile);
 
 		// This is a normal operating state, no need to report to syslog
 		// It is the responsibility of the caller to check return code and retry if required
@@ -386,7 +390,7 @@ int ndsctl_lock(char *mountpoint, int *lockfd)
 void ndsctl_unlock(int *lockfd)
 {
 	if (lockf(*lockfd, F_ULOCK, 0) < 0) {
-		printf(" Error - Unable to Unlock ndsctl/n");
+		printf(" Error - Unable to Unlock ndsctl\n");
 	}
 
 	close(*lockfd);
@@ -400,8 +404,8 @@ main(int argc, char **argv)
 	char *socket;
 	int i = 1;
 	int counter;
+	size_t used;
 	char args[256] = {0};
-	char argi[128] = {0};
 	char str_b64[QUERYMAXLEN] = {0};
 	char mountpoint[128] = {0};
 	char socket_file[128] = {0};
@@ -459,9 +463,9 @@ main(int argc, char **argv)
 	safe_asprintf(&cmd, "/usr/lib/opennds/libopennds.sh tmpfs");
 	fd = popen(cmd, "r");
 	if (fd == NULL) {
-		printf("Unable to open library - Terminating");
-		pclose(fd);
-		exit(1);
+		printf("Unable to open library - Terminating\n");
+		free(cmd);
+		return 1;
 	}
 	free(cmd);
 
@@ -509,11 +513,30 @@ main(int argc, char **argv)
 
 	// Collect command line arguments then send the command
 	if (argc > i+1) {
-		snprintf(args, sizeof(args), "%s", argv[i+1]);
+		int n;
 
-		for (counter=i+2; counter < argc; counter++) {
-			snprintf(argi, sizeof(argi), ",%s", argv[counter]);
-			strncat(args, argi, sizeof(args)-1);
+		n = snprintf(args, sizeof(args), "%s", argv[i+1]);
+
+		if (n < 0 || (size_t)n >= sizeof(args)) {
+			fprintf(stderr, "Argument list does not fit\n");
+			ndsctl_unlock(&lockfd);
+			free(socket);
+			return 1;
+		}
+
+		used = (size_t)n;
+
+		for (counter = i + 2; counter < argc; counter++) {
+			n = snprintf(args + used, sizeof(args) - used, ",%s", argv[counter]);
+
+			if (n < 0 || (size_t)n >= sizeof(args) - used) {
+				fprintf(stderr, "Argument list does not fit\n");
+				ndsctl_unlock(&lockfd);
+				free(socket);
+				return 1;
+			}
+
+			used += (size_t)n;
 		}
 	}
 

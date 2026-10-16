@@ -288,7 +288,7 @@ get_data_file() {
 				fi
 
 			elif [ "$protocol" = "file" ]; then
-				sourcefile=$(echo "$imageurl" | awk -F'://' '{printf("%s", $2)}')
+				sourcefile=$(echo "$dataurl" | awk -F'://' '{printf("%s", $2)}')
 				destinationfile="$mountpoint/ndsdata/$filename"
 				cp "$sourcefile" "$destinationfile"
 			else
@@ -682,7 +682,7 @@ htmlentitydecode() {
 
 	buffer=$(echo "$buffer" | awk '{ gsub(/&#36;/, "\\$"); print }')
 	buffer=$(echo "$buffer" | awk '{ gsub(/&#47;/, "\/"); print }')
-	buffer=$(echo "$buffer" | awk '{ gsub(/&#92;/, "\\`"); print }')
+	buffer=$(echo "$buffer" | awk '{ gsub(/&#92;/, "\\"); print }')
 	entitydecoded="$buffer"
 }
 
@@ -713,6 +713,38 @@ get_client_zone () {
 	else
 		client_zone=$(printf "${client_zone//%/\\x}")
 	fi
+}
+
+assign_config_list () {
+	# $1 is "name=value, name=value". Assign each value without evaluating it.
+	local rest item name value
+
+	rest="$1"
+
+	while [ -n "$rest" ]; do
+		case "$rest" in
+			*', '*)
+				item=${rest%%', '*}
+				rest=${rest#*', '}
+				;;
+			*)
+				item=$rest
+				rest=""
+				;;
+		esac
+
+		name=${item%%=*}
+		value=${item#*=}
+
+		case "$name" in
+			""|*[!A-Za-z0-9_]*)
+				continue
+				;;
+		esac
+
+		# The value is expanded as data. It is not parsed as shell syntax.
+		eval "$name=\$value"
+	done
 }
 
 auth_log () {
@@ -793,7 +825,7 @@ write_log () {
 					echo "Log file too big, please archive contents and reduce max_log_entries" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
 				fi
 			else
-				if [ "$available" > 10 ];then
+				if [ "$available" -gt 10 ]; then
 					echo "$datetime""$loginfo" >> $logfile
 				else
 					echo "Log file too big, please archive contents and reduce max_log_entries" | logger -p "daemon.err" -s -t "opennds[$ndspid]: "
@@ -2210,28 +2242,20 @@ get_quotas_by_mac() {
 			quotas="$sessiontimeout $upload_rate $download_rate $upload_quota $download_quota"
 		fi
 	else
-		# Override quotas for the client from the binauth log if client was shutdown_deauth
-		eval $(grep "$clientmac" "$mountpoint/ndslog/binauthlog.log" | awk -F"method=" '{print $2}' | grep "shutdown_deauth" | tail -1 | awk -F ", " '{printf "%s; %s; %s; %s; %s", $11, $12, $13, $14, $15}')
+		# Last shutdown_deauth line for this client. Read named fields only.
+		quoteline=$(grep -F -e "$clientmac" -- "${logdir}binauthlog.log" 2>/dev/null | grep "shutdown_deauth" | tail -n 1)
 
-		if [ -z "$sessiontimeout" ]; then
-			sessiontimeout=0
-		fi
+		sessiontimeout=$(printf '%s\n' "$quoteline" | sed -n 's/.*sessiontimeout=\([^,]*\).*/\1/p' | tr -d ' ')
+		upload_rate=$(printf '%s\n' "$quoteline" | sed -n 's/.*upload_rate=\([^,]*\).*/\1/p' | tr -d ' ')
+		download_rate=$(printf '%s\n' "$quoteline" | sed -n 's/.*download_rate=\([^,]*\).*/\1/p' | tr -d ' ')
+		upload_quota=$(printf '%s\n' "$quoteline" | sed -n 's/.*upload_quota=\([^,]*\).*/\1/p' | tr -d ' ')
+		download_quota=$(printf '%s\n' "$quoteline" | sed -n 's/.*download_quota=\([^,]*\).*/\1/p' | tr -d ' ')
 
-		if [ -z "$upload_rate" ]; then
-			upload_rate=0
-		fi
-
-		if [ -z "$download_rate" ]; then
-			download_rate=0
-		fi
-
-		if [ -z "$upload_quota" ]; then
-			upload_quota=0
-		fi
-
-		if [ -z "$download_quota" ]; then
-			download_quota=0
-		fi
+		case "$sessiontimeout" in *[!0-9]*|"") sessiontimeout=0 ;; esac
+		case "$upload_rate" in *[!0-9]*|"") upload_rate=0 ;; esac
+		case "$download_rate" in *[!0-9]*|"") download_rate=0 ;; esac
+		case "$upload_quota" in *[!0-9]*|"") upload_quota=0 ;; esac
+		case "$download_quota" in *[!0-9]*|"") download_quota=0 ;; esac
 
 		quotas="$sessiontimeout $upload_rate $download_rate $upload_quota $download_quota"
 	fi
@@ -2261,13 +2285,16 @@ query_type=${querystr:0:9}
 
 if [ "$query_type" = "%3ffas%3d" ]; then
 
-	# Check for a valid b64encoded query string
-	querystrlen=$((${#querystr}))
-	query_frag=${querystr:10:($querystrlen - 2)}
+	# %3ffas%3d is 9 characters, so the fas payload starts at offset 9.
+	# Percent-decode first. A real level 1/4 login encodes '+' '/' '=' as
+	# %2b %2f %3d, and '%' is outside the base64 alphabet.
+	query_frag=${querystr:9}
+	query_frag=$(printf "${query_frag//%/\\x}")
 
-	query_frag=$(echo "$query_frag" | awk -F "%3d" '{printf "%s", $1}')
+	# Form fields and an encrypted "&iv=" tail are not part of the fas value.
+	query_frag_b64=${query_frag%%,*}
+	query_frag_b64=${query_frag_b64%%&*}
 
-	query_frag_b64=$(echo "$query_frag" | awk -F "%2c" '{printf "%s", $1}')
 	syslogmessage="query_frag_b64 [ $query_frag_b64 ]"
 	debugtype="debug"
 	write_to_syslog
@@ -2275,8 +2302,8 @@ if [ "$query_type" = "%3ffas%3d" ]; then
 	syslogmessage="Probable attempted code injection detected"
 	debugtype="warn"
 
-	case $query_frag_b64 in
-		*[!A-Za-z0-9+/=]*) write_to_syslog; exit 1 ;;   # contains invalid character → reject
+	case "$query_frag_b64" in
+		*[!A-Za-z0-9+/=]*) write_to_syslog; exit 1 ;;
 	esac
 
 	#Display a splash page sequence using a Themespec
@@ -2770,29 +2797,19 @@ elif [ "$1" = "download" ]; then
 	if [ -z "$6" ]; then
 		webroot="/etc/opennds/htdocs"
 	else
-		webroot=$6
+		webroot="$6"
 	fi
 
-	refresh=$5
+	refresh="$5"
 	configure_log_location
 
-	list="$3"
-	if [ ! -z "$list" ]; then
-		list=${list//', '/'"; '}
-		list=${list//'='/'="'}
-		eval $list
-	fi
-
-	list="$4"
-	if [ ! -z "$list" ]; then
-		list=${list//', '/'"; '}
-		list=${list//'='/'="'}
-		eval $list
-	fi
+	# name=value pairs separated by ", ". The name is an identifier; the value is not evaluated.
+	assign_config_list "$3"
+	assign_config_list "$4"
 
 	# Include the Theme:
-	themespecpath=$2
-	. $themespecpath
+	themespecpath="$2"
+	. "$themespecpath"
 
 	type download_image_files &>/dev/null && download_image_files
 	type download_data_files &>/dev/null && download_data_files
@@ -2865,7 +2882,6 @@ elif [ "$1" = "startdaemon" ]; then
 			syslogmessage="daemon ran to termination"
 			debugtype="debug"
 			write_to_syslog
-			printf "%s" "0"
 		else
 			syslogmessage="daemonpid is [$daemonpid]"
 			debugtype="debug"
@@ -2883,12 +2899,19 @@ elif [ "$1" = "stopdaemon" ]; then
 	# Stop a daemon process
 	# $2 contains the pid of the daemon to stop
 
-	if [ ! -z "$2" ] || [ "$2" -ne 0 ]; then
-		kill $2
-		status=$?
-	else
-		status=1
-	fi
+	status=1
+
+	case "$2" in
+		""|*[!0-9]*)
+			status=1
+			;;
+		*)
+			if [ "$2" -ne 0 ]; then
+				kill "$2"
+				status=$?
+			fi
+			;;
+	esac
 
 	if [ "$status" = "0" ]; then
 		printf "%s" "done"
@@ -3001,7 +3024,7 @@ elif [ "$1" = "daemon_auth" ]; then
 
 		if [ -z "$3" ]; then
 			# return the daemon pid
-			printf "%s" "$daemonpid"
+			printf "%s" "$daemon_pid"
 		fi
 	fi
 
@@ -3468,18 +3491,32 @@ elif [ "$1" = "get_next_preemptive_auth" ]; then
 elif [ "$1" = "ipv6_routing" ]; then
 
 	is_uci=$(type uci &>/dev/null; echo $?)
+	wan6_save="/tmp/opennds.wan6.proto"
 
 	if [ -z "$2" ] || [ "$is_uci" -gt 0 ]; then
 		# not OpenWrt compatible
 		exit 0
 
 	elif [ "$2" = "block" ]; then
+		# Keep the first saved proto so a second block does not record "none".
+		if [ ! -f "$wan6_save" ]; then
+			wan6_proto=$(uci -q get network.wan6.proto)
+			printf '%s\n' "${wan6_proto:-none}" > "$wan6_save"
+		fi
+
 		uci set network.wan6.proto='none'
 		service network reload
 
 	elif [ "$2" = "allow" ]; then
-		uci set network.wan6.proto='dhcpv6'
-		service network reload
+		if [ -f "$wan6_save" ]; then
+			wan6_proto=$(cat "$wan6_save")
+			rm -f "$wan6_save"
+
+			if [ -n "$wan6_proto" ]; then
+				uci set network.wan6.proto="$wan6_proto"
+				service network reload
+			fi
+		fi
 	fi
 
 	exit 0

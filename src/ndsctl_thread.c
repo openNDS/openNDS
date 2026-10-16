@@ -40,6 +40,7 @@
 #include <errno.h>
 #include <sys/epoll.h>
 #include <fcntl.h>
+#include <sys/stat.h>
 #include <arpa/inet.h>
 
 #include "common.h"
@@ -69,6 +70,32 @@ static void ndsctl_deauth(FILE *fp, char *arg);
 static void ndsctl_debuglevel(FILE *fp, char *arg);
 
 static int socket_set_non_blocking(int sockfd);
+static int ndsctl_resume_accept(int epoll_fd, int sock);
+
+/* Put the listen socket back into the epoll set once a client slot is free.
+ * It is removed while the set is full so epoll_wait cannot write past events.
+ */
+static int
+ndsctl_resume_accept(int epoll_fd, int sock)
+{
+	struct epoll_event ev;
+
+	memset(&ev, 0, sizeof(ev));
+	ev.events = EPOLLIN | EPOLLET;
+	ev.data.fd = sock;
+
+	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, sock, &ev) < 0) {
+
+		if (errno == EEXIST) {
+			return 0;
+		}
+
+		debug(LOG_ERR, "Could not resume accepting ndsctl connections: %s", strerror(errno));
+		return -1;
+	}
+
+	return 0;
+}
 
 /* Launches a thread that monitors the control socket for request
  @param arg Must contain a pointer to a string containing the Unix domain socket to open
@@ -85,7 +112,12 @@ thread_ndsctl(void *arg)
 	struct epoll_event *events;
 	int current_fd_count;
 	int number_of_count;
+	int maxevents;
+	int accepting;
+	int dead;
 	int i;
+	int watch_shutdown;
+	mode_t old_umask;
 
 	debug(LOG_DEBUG, "Starting ndsctl thread");
 
@@ -109,10 +141,22 @@ thread_ndsctl(void *arg)
 
 	debug(LOG_DEBUG, "Binding socket [%s] Socket descriptor [%d]", sa_un.sun_path, sock);
 
+	// Owner-only. The previous mode followed the daemon umask.
+	old_umask = umask(S_IRWXG | S_IRWXO);
+
 	if (bind(sock, (struct sockaddr *)&sa_un, strlen(sock_name) + sizeof(sa_un.sun_family))) {
+		umask(old_umask);
 		debug(LOG_ERR, "Could not bind control socket: [%s] Terminating...", strerror(errno));
 		pthread_exit(NULL);
 	}
+
+	if (chmod(sock_name, S_IRUSR | S_IWUSR) != 0) {
+		umask(old_umask);
+		debug(LOG_ERR, "Could not restrict control socket: [%s] Terminating...", strerror(errno));
+		pthread_exit(NULL);
+	}
+
+	umask(old_umask);
 
 	if (listen(sock, 5)) {
 		debug(LOG_ERR, "Could not listen on control socket: [%s] Terminating...", strerror(errno));
@@ -130,6 +174,20 @@ thread_ndsctl(void *arg)
 		pthread_exit(NULL);
 	}
 
+	/* Level-triggered, so a shutdown write is seen even if other fds are ready. */
+	watch_shutdown = 0;
+
+	if (main_shutdown_fd() >= 0) {
+		ev.events = EPOLLIN;
+		ev.data.fd = main_shutdown_fd();
+
+		if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, main_shutdown_fd(), &ev) < 0) {
+			debug(LOG_ERR, "Could not watch shutdown pipe: [%s]", strerror(errno));
+		} else {
+			watch_shutdown = 1;
+		}
+	}
+
 	events = (struct epoll_event*) calloc(MAX_EVENT_SIZE, sizeof(struct epoll_event));
 
 	if (!events) {
@@ -138,14 +196,39 @@ thread_ndsctl(void *arg)
 	}
 
 	current_fd_count = 1;
+	accepting = 1;
 
 	debug(LOG_DEBUG, "Entering ndsctl thread loop");
 
 	while (1) {
+		int wait_ms = -1;
+
+		if (opennds_shutdown_requested()) {
+			free(events);
+			pthread_exit(NULL);
+		}
+
+		/* Without the pipe, a signal only sets the flag. Wake up to notice it. */
+		if (!watch_shutdown) {
+			wait_ms = 1000;
+		}
 		memset(&sa_un, 0, sizeof(sa_un));
 		len = (socklen_t) sizeof(sa_un);
 
-		number_of_count = epoll_wait(epoll_fd, events, current_fd_count, -1);
+		// events has MAX_EVENT_SIZE slots. current_fd_count grows with every
+		// accepted client that has not yet completed a command, so it must
+		// not be passed to epoll_wait once it is larger than the array.
+		maxevents = current_fd_count;
+
+		if (maxevents > MAX_EVENT_SIZE) {
+			maxevents = MAX_EVENT_SIZE;
+		}
+
+		if (maxevents < 1) {
+			maxevents = 1;
+		}
+
+		number_of_count = epoll_wait(epoll_fd, events, maxevents, wait_ms);
 
 		if (number_of_count == -1) {
 			// interupted is not an error
@@ -159,19 +242,58 @@ thread_ndsctl(void *arg)
 
 		for (i = 0; i < number_of_count; i++) {
 
+			if (events[i].data.fd == main_shutdown_fd()) {
+				free(events);
+				pthread_exit(NULL);
+			}
+
 			if ((events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP) ||
 					(!(events[i].events & EPOLLIN))) {
 				debug(LOG_ERR, "Socket is not ready for communication : %s", strerror(errno));
 
-				if (events[i].data.fd > 0) {
-					shutdown(events[i].data.fd, 2);
-					close(events[i].data.fd);
+				dead = events[i].data.fd;
+
+				if (dead > 0) {
+					shutdown(dead, 2);
+					close(dead);
 					events[i].data.fd = 0;
 				}
+
+				// close() drops the fd from the epoll set. A client that never
+				// sent a command must not keep its slot, or the cap stays full.
+				if (dead > 0 && dead != sock && current_fd_count > 1) {
+					current_fd_count -= 1;
+
+					if (!accepting && current_fd_count < MAX_EVENT_SIZE) {
+						if (ndsctl_resume_accept(epoll_fd, sock) == 0) {
+							accepting = 1;
+						} else {
+							free(events);
+							pthread_exit(NULL);
+						}
+					}
+				}
+
 				continue;
 			}
 
 			if (events[i].data.fd == sock) {
+				// The event array is full. Leave this connection in the listen
+				// backlog and stop watching the listen socket until a slot frees.
+				if (current_fd_count >= MAX_EVENT_SIZE) {
+					if (accepting) {
+						debug(LOG_WARNING, "Too many ndsctl connections, not accepting more");
+
+						if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, sock, NULL) < 0) {
+							debug(LOG_ERR, "Could not stop accepting ndsctl connections: %s", strerror(errno));
+						}
+
+						accepting = 0;
+					}
+
+					continue;
+				}
+
 				if ((fd = accept(events[i].data.fd, (struct sockaddr *)&sa_un, &len)) == -1) {
 					debug(LOG_ERR, "Accept failed on control socket: %s", strerror(errno));
 					free(events);
@@ -188,6 +310,16 @@ thread_ndsctl(void *arg)
 					}
 
 					current_fd_count += 1;
+
+					if (current_fd_count >= MAX_EVENT_SIZE) {
+						debug(LOG_WARNING, "Too many ndsctl connections, not accepting more");
+
+						if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, sock, NULL) < 0) {
+							debug(LOG_ERR, "Could not stop accepting ndsctl connections: %s", strerror(errno));
+						}
+
+						accepting = 0;
+					}
 				}
 
 			} else {
@@ -202,6 +334,15 @@ thread_ndsctl(void *arg)
 				if (events[i].data.fd > 0) {
 					events[i].data.fd = 0;
 				}
+
+				if (!accepting && current_fd_count < MAX_EVENT_SIZE) {
+					if (ndsctl_resume_accept(epoll_fd, sock) == 0) {
+						accepting = 1;
+					} else {
+						free(events);
+						pthread_exit(NULL);
+					}
+				}
 			}
 		}
 	}
@@ -214,8 +355,8 @@ ndsctl_handler(int fd)
 {
 	int done, i, ret = 0;
 	char request[MAX_BUF];
-	//ssize_t read_bytes, len;
-	int read_bytes, len;
+	int read_bytes;
+	ssize_t len;
 	FILE* fp;
 
 	debug(LOG_DEBUG, "Entering thread_ndsctl_handler....");
@@ -229,11 +370,25 @@ ndsctl_handler(int fd)
 	debug(LOG_DEBUG, "Read bytes and stuff from socket descriptor [%d], pointer [%lu]", fd, fp);
 
 	// Read....
-	while (!done && read_bytes < (sizeof(request) - 1)) {
-		len = read(fd, request + read_bytes, sizeof(request) - read_bytes);
+	// The accepted socket is non-blocking. read() returns -1 on EAGAIN and 0
+	// on EOF. Neither is a byte count: adding it walks off the front of
+	// request, and a 0 return spins this thread so later ndsctl commands stall.
+	while (!done && read_bytes < (int)sizeof(request) - 1) {
+		len = read(fd, request + read_bytes, sizeof(request) - (size_t)read_bytes - 1);
+
+		if (len < 0) {
+			if (errno == EINTR) {
+				continue;
+			}
+			break;
+		}
+
+		if (len == 0) {
+			break;
+		}
 
 		// Have we gotten a command yet?
-		for (i = read_bytes; i < (read_bytes + len); i++) {
+		for (i = read_bytes; i < read_bytes + (int)len; i++) {
 			if (request[i] == '\r' || request[i] == '\n') {
 				request[i] = '\0';
 				done = 1;
@@ -241,7 +396,7 @@ ndsctl_handler(int fd)
 		}
 
 		// Increment position
-		read_bytes += len;
+		read_bytes += (int)len;
 	}
 
 	debug(LOG_DEBUG, "ndsctl request received: [%s]", request);
@@ -295,6 +450,7 @@ ndsctl_auth(FILE *fp, char *arg)
 	char *msg2;
 	char *customdata;
 	char *argcopy;
+	char *argbase;
 	const char *arg2;
 	const char *arg3;
 	const char *arg4;
@@ -309,7 +465,15 @@ ndsctl_auth(FILE *fp, char *arg)
 
 	debug(LOG_DEBUG, "Entering ndsctl_auth [%s]", arg);
 
-	argcopy=strdup(arg);
+	argbase = strdup(arg);
+
+	if (argbase == NULL) {
+		debug(LOG_ERR, "ndsctl_auth: out of memory");
+		fprintf(fp, "No");
+		return;
+	}
+
+	argcopy = argbase;
 
 	// arg2 = ip|mac|tok
 	arg2 = strsep(&argcopy, ",");
@@ -414,6 +578,7 @@ ndsctl_auth(FILE *fp, char *arg)
 						if (client) {
 							id = client ? client->id : 0;
 							debug(LOG_DEBUG, "client id: [%d]", id);
+							free(client->client_type);
 							client->client_type = safe_strdup("preemptive");
 
 							// log the preemptive authentication
@@ -443,6 +608,7 @@ ndsctl_auth(FILE *fp, char *arg)
 
 		} else {
 			debug(LOG_DEBUG, "Client connection not found: Continuing...");
+			free(msg);
 			rc = -1;
 		}
 	}
@@ -469,8 +635,6 @@ ndsctl_auth(FILE *fp, char *arg)
 			rc = auth_client_auth_nolock(id, "ndsctl_auth", customdata);
 		}
 
-	free(argcopy);
-
 	} else {
 		// Client is neither preauthenticated nor authenticated
 		// If Preemptive authentication is enabled we should have tried to auth by mac
@@ -479,6 +643,8 @@ ndsctl_auth(FILE *fp, char *arg)
 	}
 
 	UNLOCK_CLIENT_LIST();
+
+	free(argbase);
 
 	if (rc == 0) {
 		fprintf(fp, "Yes");

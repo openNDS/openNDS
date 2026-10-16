@@ -38,6 +38,10 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <signal.h>
+#include <spawn.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 #include "common.h"
 
@@ -50,6 +54,7 @@
 #include "util.h"
 
 static int _iptables_init_marks(void);
+static int spawn_argv(char *const argv[]);
 
 // Used to mark packets, and characterize client state.  Unmarked packets are considered 'preauthenticated'
 unsigned int FW_MARK_PREAUTHENTICATED;	// @brief 0: Actually not used as a packet mark
@@ -164,16 +169,119 @@ nftables_do_command(const char *format, ...)
 	return rc;
 }
 
+// Run argv without a shell. The MAC is one argument, never part of a command string.
+static int
+spawn_argv(char *const argv[])
+{
+	struct sigaction sa;
+	struct sigaction oldsa;
+	pid_t pid;
+	pid_t waited;
+	int status = 0;
+	int rc;
+	int have_oldsa = 0;
+
+	memset(&sa, 0, sizeof(sa));
+	sa.sa_handler = SIG_DFL;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = SA_NOCLDSTOP | SA_RESTART;
+
+	if (sigaction(SIGCHLD, &sa, &oldsa) == 0) {
+		have_oldsa = 1;
+	}
+
+	rc = posix_spawnp(&pid, argv[0], NULL, NULL, argv, environ);
+
+	if (rc != 0) {
+		debug(LOG_ERR, "posix_spawnp(%s) failed: %s", argv[0], strerror(rc));
+		rc = -1;
+	} else {
+		do {
+			waited = waitpid(pid, &status, 0);
+		} while (waited < 0 && errno == EINTR);
+
+		if (waited < 0) {
+			debug(LOG_ERR, "waitpid(%s) failed: %s", argv[0], strerror(errno));
+			rc = -1;
+		} else if (WIFEXITED(status)) {
+			rc = WEXITSTATUS(status);
+		} else {
+			rc = -1;
+		}
+	}
+
+	if (have_oldsa && sigaction(SIGCHLD, &oldsa, NULL) == -1) {
+		debug(LOG_ERR, "sigaction() failed to restore SIGCHLD handler: %s", strerror(errno));
+	}
+
+	return rc;
+}
+
 int
 iptables_trust_mac(const char mac[])
 {
-	return nftables_do_command("add rule inet nds_mangle %s ether saddr %s counter meta mark set mark or 0x%x", CHAIN_TRUSTED, mac, FW_MARK_TRUSTED);
+	char mark[16];
+	char *argv[17];
+	int rc = -1;
+	int i;
+
+	if (!check_mac_format(mac)) {
+		debug(LOG_ERR, "Refusing to trust invalid MAC");
+		return -1;
+	}
+
+	snprintf(mark, sizeof(mark), "0x%x", FW_MARK_TRUSTED);
+	argv[0] = "nft";
+	argv[1] = "add";
+	argv[2] = "rule";
+	argv[3] = "inet";
+	argv[4] = "nds_mangle";
+	argv[5] = CHAIN_TRUSTED;
+	argv[6] = "ether";
+	argv[7] = "saddr";
+	argv[8] = (char *)mac;
+	argv[9] = "counter";
+	argv[10] = "meta";
+	argv[11] = "mark";
+	argv[12] = "set";
+	argv[13] = "mark";
+	argv[14] = "or";
+	argv[15] = mark;
+	argv[16] = NULL;
+
+	for (i = 0; i < 5; i++) {
+		rc = spawn_argv(argv);
+		debug(LOG_DEBUG, "nft trust mac [%s], iteration [%d] return code [%d]", mac, i, rc);
+
+		if (rc == 0) {
+			break;
+		}
+
+		sleep(1);
+	}
+
+	return rc;
 }
 
 int
 iptables_untrust_mac(const char mac[])
 {
-	return execute("/usr/lib/opennds/libopennds.sh delete_client_rule nds_mangle \"%s\" all \"%s\"", CHAIN_TRUSTED, mac);
+	char *argv[] = {
+		"/usr/lib/opennds/libopennds.sh",
+		"delete_client_rule",
+		"nds_mangle",
+		CHAIN_TRUSTED,
+		"all",
+		(char *)mac,
+		NULL
+	};
+
+	if (!check_mac_format(mac)) {
+		debug(LOG_ERR, "Refusing to untrust invalid MAC");
+		return -1;
+	}
+
+	return spawn_argv(argv);
 }
 
 int create_client_ruleset(char rulesetname[], char ruleset[])
@@ -358,8 +466,10 @@ iptables_fw_init(void)
 	// CHAIN_TO_ROUTER, packets to HTTP listening on gw_port on router ACCEPT
 	rc |= nftables_do_command("add rule inet nds_filter %s tcp dport %d counter accept", CHAIN_TO_ROUTER, gw_port);
 
-	// CHAIN_TO_ROUTER, packets to HTTP listening on fas_port on router ACCEPT
-	if (fas_port != gw_port && strcmp(fas_remoteip, gw_ip) == 0 && strcmp(fas_remotefqdn, gw_fqdn) == 0) {
+	// CHAIN_TO_ROUTER, packets to HTTP listening on fas_port on router ACCEPT.
+	// fas_remoteip is copied only when fas_port is non-zero. fasport 0 is local
+	// click-to-continue and has no fas port to accept.
+	if (fas_port != 0 && fas_port != gw_port && strcmp(fas_remoteip, gw_ip) == 0 && strcmp(fas_remotefqdn, gw_fqdn) == 0) {
 		rc |= nftables_do_command("add rule inet nds_filter %s tcp dport %d counter accept", CHAIN_TO_ROUTER, fas_port);
 	}
 

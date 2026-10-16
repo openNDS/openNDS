@@ -108,7 +108,7 @@ continue_form() {
 
 	echo "
 		<big-red>Welcome!</big-red><br>
-		<img style=\"width:100%; max-width: 100%;\" src=\"$banner1\" alt=\"Placeholder: Banner1.\"><br>
+		<img style=\"width:100%; max-width: 100%;\" src=\"$gatewayurl""$banner1\" alt=\"Placeholder: Banner1.\"><br>
 		<b>$banner1_message</b><hr>
 		<med-blue>You are connected to <br>$client_zone</med-blue><br>
 		<italic-black>
@@ -168,7 +168,7 @@ thankyou_page () {
 	echo "
 		<br>
 		<italic-black>
-			<img style=\"width:100%; max-width: 100%;\" src=\"$banner2\" alt=\"Placeholder: Banner2.\"><br>
+			<img style=\"width:100%; max-width: 100%;\" src=\"$gatewayurl""$banner2\" alt=\"Placeholder: Banner2.\"><br>
 			<b>$banner2_message</b><br>
 			$advert1
 			<hr>
@@ -181,12 +181,14 @@ thankyou_page () {
 		customhtml="<input type=\"hidden\" name=\"custom\" value=\"$custom\">"
 	fi
 
-	# Continue to the landing page, the client is authenticated there
+	# Continue to the landing page, the client is authenticated there.
+	# landing_page requires the acceptance field, which this request would otherwise drop.
 	echo "
 		<form action=\"/opennds_preauth/\" method=\"get\">
 			<input type=\"hidden\" name=\"fas\" value=\"$fas\">
 			$customhtml
 			$custom_passthrough
+			<input type=\"hidden\" name=\"continue\" value=\"clicked\">
 			<input type=\"hidden\" name=\"landing\" value=\"yes\">
 			<input type=\"submit\" value=\"Continue\" >
 		</form>
@@ -205,6 +207,12 @@ landing_page() {
 	configure_log_location
 	. $mountpoint/ndscids/ndsinfo
 
+	# landing=yes skips click_to_continue, which requires the acceptance field.
+	if [ "$continue" != "clicked" ]; then
+		continue_form
+		footer
+	fi
+
 	# authenticate and write to the log - returns with $ndsstatus set
 	auth_log
 
@@ -221,7 +229,7 @@ landing_page() {
 				You are now logged in and have been granted access to the Internet.
 			</big-red>
 			<hr>
-			<img style=\"width:100%; max-width: 100%;\" src=\"$banner3\" alt=\"Placeholder: Banner3.\"><br>
+			<img style=\"width:100%; max-width: 100%;\" src=\"$gatewayurl""$banner3\" alt=\"Placeholder: Banner3.\"><br>
 			<b>$banner3_message</b><br>
 		</p>
 		<hr>
@@ -245,7 +253,7 @@ landing_page() {
 				Something went wrong and you have failed to log in.
 			</big-red>
 			<hr>
-			<img style=\"width:100%; max-width: 100%;\" src=\"$banner3\" alt=\"Placeholder: Banner1.\"><br>
+			<img style=\"width:100%; max-width: 100%;\" src=\"$gatewayurl""$banner3\" alt=\"Placeholder: Banner1.\"><br>
 			<b>$banner3_message</b><br>
 		</p>
 

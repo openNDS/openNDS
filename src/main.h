@@ -30,8 +30,16 @@
 
 #define MINIMUM_STARTED_TIME 1178487900 /* 2007-05-06 */
 
-/** @brief exits cleanly and clear the firewall rules. */
+/** @brief exits cleanly and clear the firewall rules. Call from the main thread only.
+ *  s is the process status: 0 for an intentional stop, non-zero for a failed startup.
+ */
 void termination_handler(int s);
+
+/** @brief read end of the pipe written by the termination signal handler, or -1. */
+int main_shutdown_fd(void);
+
+/** @brief non-zero after SIGTERM, SIGQUIT, or SIGINT. */
+int opennds_shutdown_requested(void);
 
 
 #endif /* _MAIN_H_ */

@@ -33,6 +33,7 @@
 #include <string.h>
 #include <errno.h>
 #include <syslog.h>
+#include <unistd.h>
 
 #include "safe.h"
 #include "debug.h"
@@ -43,6 +44,8 @@ void * safe_calloc (size_t size)
 	retval = calloc(1, size);
 	if (!retval) {
 		debug(LOG_CRIT, "Failed to calloc %d bytes of memory: %s. Bailing out.", size, strerror(errno));
+		sleep(5);
+		abort();
 	}
 	return (retval);
 }
@@ -53,6 +56,8 @@ void * safe_malloc (size_t size)
 	retval = malloc(size);
 	if (!retval) {
 		debug(LOG_CRIT, "Failed to malloc %d bytes of memory: %s. Bailing out.", size, strerror(errno));
+		sleep(5);
+		abort();
 	}
 	return (retval);
 }
@@ -62,12 +67,14 @@ char * safe_strdup(const char s[])
 	char * retval = NULL;
 	if (!s) {
 		debug(LOG_CRIT, "safe_strdup called with NULL which would have crashed strdup. Bailing out.");
-		return ("error");
+		sleep(5);
+		abort();
 	}
 	retval = strdup(s);
 	if (!retval) {
 		debug(LOG_CRIT, "Failed to duplicate a string: %s. Bailing out.", strerror(errno));
-		return ("error");
+		sleep(5);
+		abort();
 	}
 	return (retval);
 }
@@ -82,6 +89,13 @@ int safe_snprintf(char *strp, size_t size, const char *fmt, ...)
 	va_end(ap);
 
 	debug(LOG_DEBUG, "safe_snprintf: [ %d ]", retval);
+
+	/* vsnprintf returns the length it would have written, excluding the NUL.
+	 * A negative result is an encoding error. A result >= size was truncated. */
+	if (retval < 0 || (size_t)retval >= size) {
+		debug(LOG_CRIT, "safe_snprintf: Failed");
+		return -1;
+	}
 
 	if (retval < 1) {
 		debug(LOG_CRIT, "safe_snprintf: Failed");
@@ -110,6 +124,7 @@ int safe_vasprintf(char **strp, const char *fmt, va_list ap)
 	retval = vasprintf(strp, fmt, ap);
 
 	if (retval == -1) {
+		*strp = NULL;
 		debug(LOG_CRIT, "Failed to vasprintf: %s.  Bailing out", strerror(errno));
 		return (retval);
 	}

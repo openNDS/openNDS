@@ -149,7 +149,7 @@ static int do_binauth(
 	char *custom_enc;
 	char *msg;
 	char *argv = NULL;
-	const char *user_agent;
+	const char *user_agent = NULL;
 	char *enc_user_agent;
 	int seconds;
 	unsigned long long int upload_rate;
@@ -158,9 +158,7 @@ static int do_binauth(
 	unsigned long long int download_quota;
 	int rc =1;
 
-	// Get the client user agent
-	user_agent = safe_calloc(USER_AGENT);
-
+	// Get the client user agent. The callback stores MHD's header pointer.
 	MHD_get_connection_values(connection, MHD_HEADER_KIND, get_user_agent_callback, &user_agent);
 
 	if (user_agent == NULL) {
@@ -485,7 +483,15 @@ enum MHD_Result libmicrohttpd_cb(
 		return send_error(connection, 503);
 	}
 
+	LOCK_CLIENT_LIST();
 	client = client_list_find(mac, ip);
+
+	if (client) {
+		client->refcount++;
+	}
+
+	UNLOCK_CLIENT_LIST();
+
 	if (!client) {
 		client = add_client(mac, ip);
 		if (!client) {
@@ -493,13 +499,16 @@ enum MHD_Result libmicrohttpd_cb(
 		}
 	}
 
-	if (client && (client->fw_connection_state == FW_MARK_AUTHENTICATED ||
-			client->fw_connection_state == FW_MARK_TRUSTED)) {
+	if (client->fw_connection_state == FW_MARK_AUTHENTICATED ||
+			client->fw_connection_state == FW_MARK_TRUSTED) {
 		// client is already authenticated, maybe they clicked/tapped "back" on the CPD browser or maybe they want the info page.
-		return authenticated(connection, url, client);
+		rc = authenticated(connection, url, client);
+	} else {
+		rc = preauthenticated(connection, url, client);
 	}
 
-	return preauthenticated(connection, url, client);
+	client_list_unpin(client);
+	return rc;
 }
 
 /**
@@ -748,7 +757,7 @@ static int authenticated(struct MHD_Connection *connection,
 	char *query;
 	char *msg;
 	char *clientif;
-	const char *accept;
+	const char *accept = NULL;
 	char *originurl_raw = NULL;
 	char *captive_json = NULL;
 	char *buff;
@@ -771,8 +780,7 @@ static int authenticated(struct MHD_Connection *connection,
 	}
 
 	// Is it an RFC8908 type request? - check Accept: header
-
-	accept = safe_calloc(SMALL_BUF);
+	// The callback stores MHD's header pointer. Do not allocate a buffer for it.
 	ret = MHD_get_connection_values(connection, MHD_HEADER_KIND, get_accept_callback, &accept);
 
 	if (ret < 1) {
@@ -937,8 +945,8 @@ static int authenticated(struct MHD_Connection *connection,
 		buff = safe_calloc(MID_BUF);
 
 		if (!buff) {
+			free(query);
 			ret = send_error(connection, 503);
-			free(buff);
 			return ret;
 		}
 
@@ -949,17 +957,21 @@ static int authenticated(struct MHD_Connection *connection,
 		msg = safe_calloc(HTMLMAXSIZE);
 
 		if (!msg) {
+			free(query);
+			free(buff);
 			ret = send_error(connection, 503);
-			free(msg);
 			return ret;
 		}
 
 		rc = execute_ret(msg, HTMLMAXSIZE - 1, "%s status '%s' '%s'", config->status_path, client->ip, buff);
 
+		free(query);
+		free(buff);
+
 		if (rc != 0) {
 			debug(LOG_WARNING, "Script: %s - failed to execute", config->status_path);
-			ret = send_error(connection, 503);
 			free(msg);
+			ret = send_error(connection, 503);
 			return ret;
 		}
 
@@ -967,6 +979,7 @@ static int authenticated(struct MHD_Connection *connection,
 		response = MHD_create_response_from_buffer(strlen(msg), (char *)msg, MHD_RESPMEM_MUST_FREE);
 
 		if (!response) {
+			free(msg);
 			return send_error(connection, 503);
 		}
 
@@ -988,7 +1001,7 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 	s_config *config = config_get_config();
 
 	char *msg;
-	const char *user_agent;
+	const char *user_agent = NULL;
 	char *enc_user_agent;
 	char *preauthpath;
 	char *cmd;
@@ -1106,7 +1119,8 @@ static int send_json(struct MHD_Connection *connection, const char *json)
 	MHD_add_response_header(response, "Content-Type", "application/captive+json");
 	ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
 	MHD_destroy_response(response);
-	free(msg);
+
+	// MHD will free(msg) when it has finished with it ( ie MHD_RESPMEM_MUST_FREE). Do not free here or MHD will page fault.
 	return ret;
 
 }
@@ -1149,6 +1163,7 @@ static int preauthenticated(struct MHD_Connection *connection, const char *url, 
 	// check if this is an RFC8910 login request
 	if (strcmp(url, "/login") == 0) {
 		debug(LOG_INFO, "preauthenticated: RFC8910 login request received from client at [%s] [%s]", client->ip, client->mac);
+		free(client->client_type);
 		client->client_type = safe_strdup("cpi_url");
 		return redirect_to_splashpage(connection, client, host, "/login");
 	}
@@ -1165,6 +1180,7 @@ static int preauthenticated(struct MHD_Connection *connection, const char *url, 
 		debug(LOG_DEBUG, "preauthenticated: Accept header [%s]", accept);
 		debug(LOG_NOTICE, "preauthenticated: RFC 8908 captive+json request received from client at [%s] [%s]", client->ip, client->mac);
 
+		free(client->client_type);
 		client->client_type = safe_strdup("cpi_api");
 
 		originurl_raw = safe_calloc(REDIRECT_URL);
@@ -1344,60 +1360,59 @@ static int encode_and_redirect_to_splashpage(struct MHD_Connection *connection, 
  */
 static int redirect_to_splashpage(struct MHD_Connection *connection, t_client *client, const char *host, const char *url)
 {
-	char *originurl_raw;
-	char *originurl;
-	char *query;
+	char *originurl_raw = NULL;
+	char *originurl = NULL;
+	char *query = NULL;
 	int ret = 0;
 	const char *separator = "&";
-	char *querystr;
+	char *querystr = NULL;
 
 	query = safe_calloc(QUERYMAXLEN);
 
 	if (!query) {
-		ret = send_error(connection, 503);
-		free(query);
-		return ret;
+		return send_error(connection, 503);
 	}
 
 	querystr = safe_calloc(ENC_QUERYSTR);
 
 	if (!querystr) {
-		ret = send_error(connection, 503);
-		free(querystr);
-		return ret;
-	}
-
-	originurl_raw = safe_calloc(MID_BUF);
-
-	if (!originurl_raw) {
-		ret = send_error(connection, 503);
-		free(originurl_raw);
-		return ret;
+		free(query);
+		return send_error(connection, 503);
 	}
 
 	originurl = safe_calloc(CUSTOM_ENC);
 
 	if (!originurl) {
-		ret = send_error(connection, 503);
-		free(originurl);
-		return ret;
+		free(query);
+		free(querystr);
+		return send_error(connection, 503);
 	}
 
 	get_query(connection, &query, separator);
 
 	if (!query) {
 		debug(LOG_DEBUG, "Unable to get query string - error 503");
-		free(query);
-		// probably no mem
+		free(querystr);
+		free(originurl);
 		return send_error(connection, 503);
 	}
 
 	debug(LOG_DEBUG, "Query string is [ %s ]", query);
 
-	safe_asprintf(&originurl_raw, "http://%s%s%s", host, url, query);
+	// asprintf allocates its own buffer. A calloc here would be leaked,
+	// and a failed vasprintf leaves the pointer undefined.
+	if (safe_asprintf(&originurl_raw, "http://%s%s%s", host, url, query) < 0) {
+		debug(LOG_ERR, "Failed to build origin url");
+		free(query);
+		free(querystr);
+		free(originurl);
+		return send_error(connection, 503);
+	}
+
 	uh_urlencode(originurl, CUSTOM_ENC, originurl_raw, strlen(originurl_raw));
 
 	if (strcmp(url, "/login") == 0) {
+		free(client->cpi_query);
 		client->cpi_query = safe_strdup(originurl);
 		debug(LOG_DEBUG, "RFC8910 request: %s", client->cpi_query);
 	}
@@ -1430,8 +1445,20 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 	char *gw_url_raw;
 	char *gw_url;
 	char *phpcmd;
+	const char *cpi_query;
+	const char *custom_params;
+	const char *custom_vars;
+	const char *custom_images;
+	const char *custom_files;
 
 	s_config *config = config_get_config();
+
+	// These stay NULL until set. Passing NULL to %s is undefined.
+	cpi_query = client->cpi_query ? client->cpi_query : "";
+	custom_params = config->custom_params ? config->custom_params : "";
+	custom_vars = config->custom_vars ? config->custom_vars : "";
+	custom_images = config->custom_images ? config->custom_images : "";
+	custom_files = config->custom_files ? config->custom_files : "";
 
 	gw_url_raw = safe_calloc(REDIRECT_URL);
 
@@ -1478,7 +1505,7 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 					client->ip, QUERYSEPARATOR,
 					client->mac, QUERYSEPARATOR,
 					clienttype, QUERYSEPARATOR,
-					client->cpi_query, QUERYSEPARATOR,
+					cpi_query, QUERYSEPARATOR,
 					config->url_encoded_gw_name, QUERYSEPARATOR,
 					gw_url, QUERYSEPARATOR,
 					VERSION, QUERYSEPARATOR,
@@ -1487,10 +1514,10 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 					originurl, QUERYSEPARATOR,
 					clientif, QUERYSEPARATOR,
 					config->themespec_path, QUERYSEPARATOR,
-					config->custom_params,
-					config->custom_vars,
-					config->custom_images,
-					config->custom_files
+					custom_params,
+					custom_vars,
+					custom_images,
+					custom_files
 				);
 
 				query_str_b64 = safe_calloc(ENC_QUERYSTR);
@@ -1503,11 +1530,18 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 				);
 
 				strncpy(cid, query_str_b64+5, 86);
-				client->cid = safe_strdup(cid);
 
 				// Write the new cidfile:
 				msg = safe_calloc(STATUS_BUF);
 				cidinfo = safe_calloc(SMALL_BUF);
+
+				if (client->cid && client->cid[0] != '\0') {
+					debug(LOG_DEBUG, "removing previous cid file [%s]", client->cid);
+					write_client_info(msg, SMALL_BUF, "rmcid", client->cid, "");
+				}
+
+				free(client->cid);
+				client->cid = safe_strdup(cid);
 				debug(LOG_DEBUG, "writing cid file [%s]", cid);
 
 				safe_snprintf(cidinfo, MID_BUF, "cid=\"%s\"", cid);
@@ -1522,7 +1556,7 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 				safe_snprintf(cidinfo, SMALL_BUF, "clientmac=\"%s\"\0", client->mac);
 				write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
-				safe_snprintf(cidinfo, SMALL_BUF, "cpi_query=\"%s\"\0", client->cpi_query);
+				safe_snprintf(cidinfo, SMALL_BUF, "cpi_query=\"%s\"\0", cpi_query);
 				write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 
 				safe_snprintf(cidinfo, SMALL_BUF, "client_type=\"%s\"\0", clienttype);
@@ -1602,7 +1636,7 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 			client->ip, QUERYSEPARATOR,
 			client->mac, QUERYSEPARATOR,
 			clienttype, QUERYSEPARATOR,
-			client->cpi_query, QUERYSEPARATOR,
+			cpi_query, QUERYSEPARATOR,
 			config->url_encoded_gw_name, QUERYSEPARATOR,
 			gw_url, QUERYSEPARATOR,
 			VERSION, QUERYSEPARATOR,
@@ -1612,10 +1646,10 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 			originurl, QUERYSEPARATOR,
 			clientif, QUERYSEPARATOR,
 			config->themespec_path, QUERYSEPARATOR,
-			config->custom_params,
-			config->custom_vars,
-			config->custom_images,
-			config->custom_files
+			custom_params,
+			custom_vars,
+			custom_images,
+			custom_files
 		);
 
 		phpcmd = safe_calloc(QUERYMAXLEN);
@@ -1678,13 +1712,8 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 static t_client *
 add_client(const char *mac, const char *ip)
 {
-	t_client *client;
-
-	LOCK_CLIENT_LIST();
-	client = client_list_add_client(mac, ip);
-	UNLOCK_CLIENT_LIST();
-
-	return client;
+	/* Pins the node. The dhcp check runs before the list lock is taken. */
+	return client_list_add_client_pinned(mac, ip);
 }
 
 int send_redirect_temp(struct MHD_Connection *connection, t_client *client, const char *url)
@@ -1692,19 +1721,32 @@ int send_redirect_temp(struct MHD_Connection *connection, t_client *client, cons
 	// Warning - *client will be undefined if not authenticated
 	struct MHD_Response *response;
 	int ret;
+	int needed;
 	char *redirect;
+	const char *fmt = "<html><head></head><body><a href='%s'>Click here to continue to<br>%s</a></body></html>";
 
-	redirect = safe_calloc(SMALL_BUF);
+	/* The destination is written twice. A splash query is longer than SMALL_BUF. */
+	needed = snprintf(NULL, 0, fmt, url, url);
 
-	safe_snprintf(redirect, SMALL_BUF, "<html><head></head><body><a href='%s'>Click here to continue to<br>%s</a></body></html", url, url);
+	if (needed < 1) {
+		return send_error(connection, 503);
+	}
+
+	redirect = safe_calloc((size_t)needed + 1);
+
+	if (safe_snprintf(redirect, (size_t)needed + 1, fmt, url, url) < 0) {
+		free(redirect);
+		return send_error(connection, 503);
+	}
 
 	debug(LOG_DEBUG, "send_redirect_temp: MHD_create_response_from_buffer. url [%s]", url);
 	debug(LOG_DEBUG, "send_redirect_temp: Redirect to [%s]", redirect);
 
-	response = MHD_create_response_from_buffer(SMALL_BUF, redirect, MHD_RESPMEM_MUST_FREE);
+	response = MHD_create_response_from_buffer(strlen(redirect), redirect, MHD_RESPMEM_MUST_FREE);
 
 	if (!response) {
 		debug(LOG_DEBUG, "send_redirect_temp: Failed to create response....");
+		free(redirect);
 		return send_error(connection, 503);
 	} else {
 		debug(LOG_DEBUG, "send_redirect_temp: Response created");
@@ -1742,17 +1784,22 @@ int send_redirect_temp(struct MHD_Connection *connection, t_client *client, cons
 }
 
 // save the query or empty string into **query.
+// *query is QUERYMAXLEN bytes. The result is "?" plus the arguments joined by
+// separator, or an empty string when there are none or they do not fit.
 static int get_query(struct MHD_Connection *connection, char **query, const char *separator)
 {
 	int element_counter;
 	char **elements;
-	char *query_str;
+	char *out;
 	struct collect_query collect_query;
 	int i;
-	int j = 4;
-	int length = 0;
+	size_t separator_len;
+	size_t used = 0;
+	int too_long = 0;
 
 	debug(LOG_DEBUG, " Getting query, separator is [%s].", separator);
+
+	separator_len = strlen(separator);
 
 	element_counter = MHD_get_connection_values(connection, MHD_GET_ARGUMENT_KIND, counter_iterator, NULL);
 	if (element_counter < 0) {
@@ -1769,17 +1816,6 @@ static int get_query(struct MHD_Connection *connection, char **query, const char
 	// Collect the arguments of the query string from MHD
 	MHD_get_connection_values(connection, MHD_GET_ARGUMENT_KIND, collect_query_string, &collect_query);
 
-	for (i = 0; i < element_counter; i++) {
-		if (!elements[i])
-			continue;
-		length += strlen(elements[i]);
-
-		if (i > 0) // q=foo&o=bar the '&' need also some space
-			length++;
-
-		debug(LOG_DEBUG, " cumulative element length is [%d]", length);
-	}
-
 	// don't miss the zero terminator
 	if (*query == NULL) {
 		for (i = 0; i < element_counter; i++) {
@@ -1789,39 +1825,62 @@ static int get_query(struct MHD_Connection *connection, char **query, const char
 		return 0;
 	}
 
-	query_str = safe_calloc(QUERYMAXLEN);
+	out = *query;
+	out[0] = '\0';
 
-	for (i = 0, j = 0; i < element_counter; i++) {
+	for (i = 0; i < element_counter; i++) {
+		size_t element_len;
+		size_t need;
+		size_t room;
+
 		if (!elements[i]) {
 			continue;
 		}
 
+		element_len = strlen(elements[i]);
 		debug(LOG_DEBUG, " element [%d] is [%s]", i, elements[i]);
 
-		if (length + j < QUERYMAXLEN) {
-
-			strncpy(*query + j, elements[i], length - j);
-
-			if (i == 0) {
-				// query_str is empty when i = 0 so safe to copy a single char into it
-				strcpy(query_str, "?");
-			} else {
-				if (QUERYMAXLEN - strlen(query_str) > length - j + 1) {
-					strncat(query_str, separator, QUERYMAXLEN - strlen(query_str));
-				}
-			}
-
-			strncat(query_str, *query, QUERYMAXLEN - strlen(query_str));
-		} else {
-			debug(LOG_WARNING, " Query string is too long, invalid or corrupt so is ignored.");
+		// A single argument can be longer than QUERYMAXLEN. Reject that before
+		// adding, or the size check wraps and the copy runs off the buffer.
+		if (element_len >= QUERYMAXLEN || separator_len >= QUERYMAXLEN) {
+			too_long = 1;
+			break;
 		}
 
+		// First MHD slot is prefixed with '?'. Later slots take separator, which
+		// is ", " (2 bytes) or "&" (1 byte). Reserve one byte for the NUL.
+		need = (i == 0) ? (1 + element_len) : (separator_len + element_len);
+		room = (QUERYMAXLEN - 1) - used;
+
+		if (need > room) {
+			too_long = 1;
+			break;
+		}
+
+		if (i == 0) {
+			out[used++] = '?';
+		} else {
+			memcpy(out + used, separator, separator_len);
+			used += separator_len;
+		}
+
+		memcpy(out + used, elements[i], element_len);
+		used += element_len;
+		out[used] = '\0';
+
+		debug(LOG_DEBUG, " cumulative element length is [%d]", (int)used);
+	}
+
+	if (too_long) {
+		debug(LOG_WARNING, " Query string is too long, invalid or corrupt so is ignored.");
+		out[0] = '\0';
+	}
+
+	for (i = 0; i < element_counter; i++) {
 		free(elements[i]);
 	}
 
-	debug(LOG_DEBUG, " query is [%s]", query_str);
-	strncpy(*query, query_str, QUERYMAXLEN);
-	free(query_str);
+	debug(LOG_DEBUG, " query is [%s]", out);
 	free(elements);
 	return 0;
 }
@@ -2126,12 +2185,16 @@ static int serve_file(struct MHD_Connection *connection, t_client *client, const
 
 	// serving file and creating response
 	size = lseek(fd, 0, SEEK_END);
-	if (size < 0)
+	if (size < 0) {
+		close(fd);
 		return send_error(connection, 404);
+	}
 
 	response = MHD_create_response_from_fd(size, fd);
-	if (!response)
+	if (!response) {
+		close(fd);
 		return send_error(connection, 503);
+	}
 
 	MHD_add_response_header(response, "Content-Type", mimetype);
 	ret = MHD_queue_response(connection, MHD_HTTP_OK, response);

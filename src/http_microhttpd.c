@@ -1721,11 +1721,23 @@ int send_redirect_temp(struct MHD_Connection *connection, t_client *client, cons
 	// Warning - *client will be undefined if not authenticated
 	struct MHD_Response *response;
 	int ret;
+	int needed;
 	char *redirect;
+	const char *fmt = "<html><head></head><body><a href='%s'>Click here to continue to<br>%s</a></body></html>";
 
-	redirect = safe_calloc(SMALL_BUF);
+	/* The destination is written twice. A splash query is longer than SMALL_BUF. */
+	needed = snprintf(NULL, 0, fmt, url, url);
 
-	safe_snprintf(redirect, SMALL_BUF, "<html><head></head><body><a href='%s'>Click here to continue to<br>%s</a></body></html>", url, url);
+	if (needed < 1) {
+		return send_error(connection, 503);
+	}
+
+	redirect = safe_calloc((size_t)needed + 1);
+
+	if (safe_snprintf(redirect, (size_t)needed + 1, fmt, url, url) < 0) {
+		free(redirect);
+		return send_error(connection, 503);
+	}
 
 	debug(LOG_DEBUG, "send_redirect_temp: MHD_create_response_from_buffer. url [%s]", url);
 	debug(LOG_DEBUG, "send_redirect_temp: Redirect to [%s]", redirect);

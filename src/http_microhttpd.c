@@ -470,6 +470,7 @@ enum MHD_Result libmicrohttpd_cb(
 			debug(LOG_DEBUG, "Client ip address [%s] is on our subnet using interface [%s]", ip, msg);
 		} else {
 			debug(LOG_NOTICE, "Client ip address [%s] is  NOT on our subnet and is using interface [%s]", ip, msg);
+			free(msg);
 			return send_error(connection, 403);
 		}
 	} else {

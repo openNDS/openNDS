@@ -398,7 +398,9 @@ get_theme_environment() {
 	# Get the other stuff we need:
 	user_agent_enc="$2"
 	mode="$3"
-	cid=${query_enc:$i+9:86}
+	# Same 86-character slice the daemon stores, with '/' replaced so it stays one file name.
+	cid=${fas:10:86}
+	cid=${cid//\//_}
 	ciddir="$mountpoint/ndscids"
 
 	if [ "$mode" = "0" ]; then
@@ -2753,7 +2755,14 @@ elif [ "$1" = "rmcid" ]; then
 	# Remove an existing cidfile
 	# $2 contains the cid
 	# $3 contains the mountpoint
-	rm "$3/ndscids/$2"
+	case "$2" in
+		""|*/*|.|..)
+			printf "%s" "invalid cid"
+			exit 1
+			;;
+	esac
+
+	rm -f "$3/ndscids/$2" || exit 1
 	printf "%s" "done"
 	exit 0
 
@@ -2762,8 +2771,19 @@ elif [ "$1" = "write" ]; then
 	# $2 contains the cid
 	# $3 contains the mountpoint
 	# $4 contains the info element
-	mkdir -p "$3/ndscids"
-	echo "$4" >> "$3/ndscids/$2"
+	case "$2" in
+		""|*/*|.|..)
+			printf "%s" "invalid cid"
+			exit 1
+			;;
+	esac
+
+	mkdir -p "$3/ndscids" || exit 1
+
+	if ! echo "$4" >> "$3/ndscids/$2"; then
+		exit 1
+	fi
+
 	printf "%s" "done"
 	exit 0
 
@@ -2772,12 +2792,22 @@ elif [ "$1" = "parse" ]; then
 	# $2 contains the cid
 	# $3 contains the mountpoint
 	# $4 contains the info elements
+	case "$2" in
+		""|*/*|.|..)
+			printf "%s" "invalid cid"
+			exit 1
+			;;
+	esac
+
 	list="$4"
 	list=${list//', '/'"; '}
 	list=${list//'='/'="'}
 	list=$(printf "${list//%/\\x}")
 
-	echo "$list" >> "$3/ndscids/$2"
+	if ! echo "$list" >> "$3/ndscids/$2"; then
+		exit 1
+	fi
+
 	printf "%s" "done"
 	exit 0
 

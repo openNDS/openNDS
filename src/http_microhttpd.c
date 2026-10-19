@@ -1532,6 +1532,13 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 
 				strncpy(cid, query_str_b64+5, 86);
 
+				/* Standard base64 includes '/'. The cid is one file name. */
+				for (char *slash = cid; *slash != '\0'; slash++) {
+					if (*slash == '/') {
+						*slash = '_';
+					}
+				}
+
 				// Write the new cidfile:
 				msg = safe_calloc(STATUS_BUF);
 				cidinfo = safe_calloc(SMALL_BUF);

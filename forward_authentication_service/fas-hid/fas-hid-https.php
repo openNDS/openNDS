@@ -138,7 +138,7 @@ if (isset($_GET['status'])) {
 	@$fas=$redir_r[1];
 
 } else if (isset($_GET['fas']))  {
-	$fas=$_GET['fas'];
+	$fas=fas_query_value();
 
 } else {
 	exit(0);
@@ -214,9 +214,13 @@ function decrypt_parse() {
 	$ndsparamlist=explode(" ", "clientip clientmac client_type gatewayname gatewayurl version hid gatewayaddress gatewaymac cpi_query originurl clientif admin_email location");
 
 	if (isset($_GET['fas']))  {
-		$string=$_GET['fas'];
+		$string=str_replace(" ", "+", fas_query_value());
 
-		$decrypted=base64_decode($string);
+		$decrypted=base64_decode($string, true);
+
+		if ($decrypted === false) {
+			$decrypted="";
+		}
 
 		$dec_r=explode(", ",$decrypted);
 
@@ -651,10 +655,27 @@ function thankyou_page() {
 	flush();
 }
 
+function fas_query_value() {
+	# QUERY_STRING keeps '+' which $_GET turns into a space.
+	if (isset($_SERVER["QUERY_STRING"])) {
+		foreach (explode("&", $_SERVER["QUERY_STRING"]) as $part) {
+			if (substr($part, 0, 4) === "fas=") {
+				return rawurldecode(substr($part, 4));
+			}
+		}
+	}
+
+	if (isset($_GET["fas"])) {
+		return str_replace(" ", "+", $_GET["fas"]);
+	}
+
+	return "";
+}
+
 function login_page() {
 	$fullname=$email="";
 	$me=$_SERVER['SCRIPT_NAME'];
-	$fas=$_GET["fas"];
+	$fas=fas_query_value();
 	$clientip=$GLOBALS["clientip"];
 	$clientmac=$GLOBALS["clientmac"];
 	$gatewayname=$GLOBALS["gatewayname"];
@@ -747,7 +768,7 @@ function status_page() {
 
 function landing_page() {
 	$me=$_SERVER['SCRIPT_NAME'];
-	$fas=$_GET["fas"];
+	$fas=fas_query_value();
 	$originurl=$GLOBALS["originurl"];
 	$gatewayaddress=$GLOBALS["gatewayaddress"];
 	$gatewayname=$GLOBALS["gatewayname"];

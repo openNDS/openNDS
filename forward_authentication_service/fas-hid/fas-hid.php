@@ -61,13 +61,18 @@ if (isset($_GET['status'])) {
 	$redir_r=explode("fas=", $redir);
 	$fas=$redir_r[1];
 } else if (isset($_GET['fas']))  {
-	$fas=$_GET['fas'];
+	$fas=fas_query_value();
 } else {
 	exit(0);
 }
 
 if (isset($fas)) {
-	$decoded=base64_decode($fas);
+	$fas=str_replace(" ", "+", $fas);
+	$decoded=base64_decode($fas, true);
+
+	if ($decoded === false) {
+		$decoded="";
+	}
 	$dec_r=explode(", ",$decoded);
 
 	foreach ($dec_r as $dec) {
@@ -237,10 +242,27 @@ function write_log() {
 	@file_put_contents($logfile, $log,  FILE_APPEND );
 }
 
+function fas_query_value() {
+	# QUERY_STRING keeps '+' which $_GET turns into a space.
+	if (isset($_SERVER["QUERY_STRING"])) {
+		foreach (explode("&", $_SERVER["QUERY_STRING"]) as $part) {
+			if (substr($part, 0, 4) === "fas=") {
+				return rawurldecode(substr($part, 4));
+			}
+		}
+	}
+
+	if (isset($_GET["fas"])) {
+		return str_replace(" ", "+", $_GET["fas"]);
+	}
+
+	return "";
+}
+
 function login_page() {
 	$fullname=$email="";
 	$me=$_SERVER['SCRIPT_NAME'];
-	$fas=$_GET["fas"];
+	$fas=fas_query_value();
 	$clientip=$GLOBALS["clientip"];
 	$clientmac=$GLOBALS["clientmac"];
 	$gatewayname=$GLOBALS["gatewayname"];
@@ -335,7 +357,7 @@ function status_page() {
 
 function landing_page() {
 	$me=$_SERVER['SCRIPT_NAME'];
-	$fas=$_GET["fas"];
+	$fas=fas_query_value();
 	$originurl=$GLOBALS["originurl"];
 	$gatewayaddress=$GLOBALS["gatewayaddress"];
 	$gatewayname=$GLOBALS["gatewayname"];

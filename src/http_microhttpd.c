@@ -1536,10 +1536,19 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 
 				b64_encode(query_str_b64, ENC_QUERYSTR, query_str, strlen(query_str));
 
-				snprintf(querystr, ENC_QUERYSTR,
-					"?fas=%s",
-					query_str_b64
-				);
+				/* '+' in the blob would be a space in the query, so percent-encode it. */
+				{
+					size_t raw_len = strlen(query_str_b64);
+					char *fas_enc = safe_calloc(raw_len * 3 + 1);
+					int enc_len = uh_urlencode(fas_enc, (int)(raw_len * 3 + 1), query_str_b64, (int)raw_len);
+
+					if (enc_len < 0 || safe_snprintf(querystr, ENC_QUERYSTR, "?fas=%s", fas_enc) < 0) {
+						debug(LOG_ERR, "FAS query does not fit");
+						querystr[0] = '\0';
+					}
+
+					free(fas_enc);
+				}
 
 				strncpy(cid, query_str_b64+5, 86);
 

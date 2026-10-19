@@ -181,9 +181,8 @@ sigchld_handler(int s)
 	(void)s;
 	saved_errno = errno;
 
-	/* Reap every exited child. debug() is not async-signal-safe. */
-	while (waitpid(-1, NULL, WNOHANG) > 0) {
-	}
+	/* Only background downloads are collected here. waitpid(-1) would take a child another thread is waiting for. */
+	reap_registered_children();
 
 	errno = saved_errno;
 }

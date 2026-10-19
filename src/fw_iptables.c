@@ -173,22 +173,10 @@ nftables_do_command(const char *format, ...)
 static int
 spawn_argv(char *const argv[])
 {
-	struct sigaction sa;
-	struct sigaction oldsa;
 	pid_t pid;
 	pid_t waited;
 	int status = 0;
 	int rc;
-	int have_oldsa = 0;
-
-	memset(&sa, 0, sizeof(sa));
-	sa.sa_handler = SIG_DFL;
-	sigemptyset(&sa.sa_mask);
-	sa.sa_flags = SA_NOCLDSTOP | SA_RESTART;
-
-	if (sigaction(SIGCHLD, &sa, &oldsa) == 0) {
-		have_oldsa = 1;
-	}
 
 	rc = posix_spawnp(&pid, argv[0], NULL, NULL, argv, environ);
 
@@ -208,10 +196,6 @@ spawn_argv(char *const argv[])
 		} else {
 			rc = -1;
 		}
-	}
-
-	if (have_oldsa && sigaction(SIGCHLD, &oldsa, NULL) == -1) {
-		debug(LOG_ERR, "sigaction() failed to restore SIGCHLD handler: %s", strerror(errno));
 	}
 
 	return rc;

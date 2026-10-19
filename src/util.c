@@ -45,6 +45,7 @@
 #include <ifaddrs.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <signal.h>
 #include <spawn.h>
 
 #if defined(__NetBSD__)
@@ -411,6 +412,58 @@ void ndsctl_unlock()
 }
 
 
+/* Pids the SIGCHLD handler may collect. It must not waitpid(-1): another thread
+ * may be blocked in waitpid for a command of its own.
+ */
+#define REAP_SLOTS 16
+static volatile sig_atomic_t reap_pids[REAP_SLOTS];
+static pthread_mutex_t reap_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void reap_registered_children(void)
+{
+	int i;
+	int saved_errno = errno;
+
+	for (i = 0; i < REAP_SLOTS; i++) {
+		pid_t pid = (pid_t)reap_pids[i];
+
+		if (pid > 0) {
+			pid_t got = waitpid(pid, NULL, WNOHANG);
+
+			if (got == pid || (got < 0 && errno == ECHILD)) {
+				/* Drop the slot only when it still holds this pid. */
+				if (reap_pids[i] == (sig_atomic_t)pid) {
+					reap_pids[i] = 0;
+				}
+			}
+		}
+	}
+
+	errno = saved_errno;
+}
+
+static int reap_register(pid_t pid)
+{
+	int i;
+
+	if (pid <= 0) {
+		return -1;
+	}
+
+	pthread_mutex_lock(&reap_mutex);
+
+	for (i = 0; i < REAP_SLOTS; i++) {
+		if (reap_pids[i] == 0) {
+			reap_pids[i] = (sig_atomic_t)pid;
+			pthread_mutex_unlock(&reap_mutex);
+			return 0;
+		}
+	}
+
+	pthread_mutex_unlock(&reap_mutex);
+	return -1;
+}
+
 int download_remotes(int refresh)
 {
 	s_config *config = config_get_config();
@@ -421,6 +474,9 @@ int download_remotes(int refresh)
 	char *argv[8];
 	pid_t pid;
 	posix_spawn_file_actions_t actions;
+	sigset_t block_chld;
+	sigset_t oldset;
+	int blocked = 0;
 	int rc;
 
 	// If themespec is not set then we do not need to download remotes
@@ -453,6 +509,12 @@ int download_remotes(int refresh)
 
 		/* Arguments stay out of the shell, so quotes and $() in the lists are data. */
 		rc = posix_spawn_file_actions_init(&actions);
+		sigemptyset(&block_chld);
+		sigaddset(&block_chld, SIGCHLD);
+
+		if (pthread_sigmask(SIG_BLOCK, &block_chld, &oldset) == 0) {
+			blocked = 1;
+		}
 
 		if (rc == 0) {
 			if (posix_spawn_file_actions_addopen(&actions, STDIN_FILENO, "/dev/null", O_RDONLY, 0) != 0
@@ -465,8 +527,23 @@ int download_remotes(int refresh)
 			posix_spawn_file_actions_destroy(&actions);
 		}
 
-		if (rc != 0) {
+		if (rc == 0) {
+			if (reap_register(pid) != 0) {
+				pid_t waited;
+
+				do {
+					waited = waitpid(pid, NULL, 0);
+				} while (waited < 0 && errno == EINTR);
+			} else {
+				/* The child may already have exited before its pid was recorded. */
+				reap_registered_children();
+			}
+		} else {
 			debug(LOG_DEBUG, "Cannot download remotes - failed to start");
+		}
+
+		if (blocked) {
+			pthread_sigmask(SIG_SETMASK, &oldset, NULL);
 		}
 	} else {
 		debug(LOG_DEBUG, "Cannot download remotes - upstream gateway(s) are offline");
@@ -610,20 +687,11 @@ int hash_str(char* hash, int hash_len, const char *src)
 
 static int _execute_ret(char* msg, int msg_len, const char *cmd)
 {
-	struct sigaction sa, oldsa;
 	FILE *fp;
 	int rc;
 	size_t byte_count;
 
 	debug(LOG_DEBUG, "Executing command: %s", cmd);
-
-	// Temporarily get rid of SIGCHLD handler (see main.c), until child exits.
-	sa.sa_handler = SIG_DFL;
-	sigemptyset(&sa.sa_mask);
-	sa.sa_flags = SA_NOCLDSTOP | SA_RESTART;
-	if (sigaction(SIGCHLD, &sa, &oldsa) == -1) {
-		debug(LOG_ERR, "sigaction() failed to set default SIGCHLD handler: %s", strerror(errno));
-	}
 
 	fp = popen(cmd, "r");
 	if (fp == NULL) {
@@ -633,8 +701,7 @@ static int _execute_ret(char* msg, int msg_len, const char *cmd)
 
 		if (fp == NULL) {
 			debug(LOG_INFO, "popen(): [%s] Giving up..", strerror(errno));
-			rc = -1;
-			goto abort;
+			return -1;
 		}
 	}
 
@@ -657,13 +724,6 @@ static int _execute_ret(char* msg, int msg_len, const char *cmd)
 		rc = WTERMSIG(rc);
 	} else {
 		rc = WEXITSTATUS(rc);
-	}
-
-abort:
-
-	// Restore signal handler
-	if (sigaction(SIGCHLD, &oldsa, NULL) == -1) {
-		debug(LOG_ERR, "sigaction() failed to restore SIGCHLD handler! Error %s", strerror(errno));
 	}
 
 	return rc;

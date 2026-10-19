@@ -134,9 +134,7 @@ auth_get();
 
 // Service requests for remote image
 if (isset($_GET["get_image"])) {
-	$url=$_GET["get_image"];
-	$imagetype=$_GET["imagetype"];
-	get_image($url, $imagetype);
+	get_image();
 	exit(0);
 }
 
@@ -249,10 +247,10 @@ function decrypt_parse() {
 	}
 }
 
-function get_image($url, $imagetype) {
-	// download the requested remote image
-	header("Content-type: image/$imagetype");
-	readfile($url);
+function get_image() {
+	// Serve the configured avatar. Request data is not a URL or a media type.
+	header("Content-type: image/".$GLOBALS["imagetype"]);
+	readfile($GLOBALS["imageurl"]);
 }
 
 function auth_get_custom() {

@@ -53,15 +53,38 @@
 
 $key="c775e7b757ede630cd0aa1113bd102661ab38829ca52a6422ab782862f268646";
 
+// Same value as fasremotefqdn on the router. HTTP redirects here, never to the request Host.
+// Leave this empty to skip that redirect.
+$fasremotefqdn="";
+
+function fas_https_location($host, $request_uri) {
+	$host=(string)$host;
+	$request_uri=(string)$request_uri;
+
+	if (strlen($host) > 259 || !preg_match('/\A(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)(?:\.(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?))*(?::[0-9]{1,5})?\z/', $host)) {
+		return "";
+	}
+
+	# A scheme-relative or control-bearing path would make this an open redirect again.
+	if (!preg_match('/\A\/(?![\/\\\\])[^\x00-\x20\x7f]*\z/', $request_uri)) {
+		return "";
+	}
+
+	return "https://".$host.$request_uri;
+}
+
 // Allow immediate flush to browser
 if (ob_get_level()){ob_end_clean();}
 
 //force redirect to secure page
 if(empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == "off"){
-    $redirect = 'https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
-    header('HTTP/1.1 301 Moved Permanently');
-    header('Location: ' . $redirect);
-    exit(0);
+	$redirect=fas_https_location($fasremotefqdn, isset($_SERVER["REQUEST_URI"]) ? $_SERVER["REQUEST_URI"] : "/");
+
+	if ($redirect !== "") {
+		header('HTTP/1.1 301 Moved Permanently');
+		header('Location: ' . $redirect);
+		exit(0);
+	}
 }
 
 // setup basic defaults
@@ -127,9 +150,7 @@ auth_get();
 
 // Service requests for remote image
 if (isset($_GET["get_image"])) {
-	$url=$_GET["get_image"];
-	$imagetype=$_GET["imagetype"];
-	get_image($url, $imagetype);
+	get_image();
 	exit(0);
 }
 
@@ -140,7 +161,7 @@ if (isset($_GET['status'])) {
 	@$fas=$redir_r[1];
 
 } else if (isset($_GET['fas']))  {
-	$fas=$_GET['fas'];
+	$fas=fas_query_value();
 
 } else {
 	exit(0);
@@ -216,9 +237,13 @@ function decrypt_parse() {
 	$ndsparamlist=explode(" ", "clientip clientmac client_type gatewayname gatewayurl version hid gatewayaddress gatewaymac cpi_query originurl clientif admin_email location");
 
 	if (isset($_GET['fas']))  {
-		$string=$_GET['fas'];
+		$string=str_replace(" ", "+", fas_query_value());
 
-		$decrypted=base64_decode($string);
+		$decrypted=base64_decode($string, true);
+
+		if ($decrypted === false) {
+			$decrypted="";
+		}
 
 		$dec_r=explode(", ",$decrypted);
 
@@ -234,10 +259,10 @@ function decrypt_parse() {
 	}
 }
 
-function get_image($url, $imagetype) {
-	// download the requested remote image
-	header("Content-type: image/$imagetype");
-	readfile($url);
+function get_image() {
+	// Serve the configured avatar. Request data is not a URL or a media type.
+	header("Content-type: image/".$GLOBALS["imagetype"]);
+	readfile($GLOBALS["imageurl"]);
 }
 
 function auth_get_custom() {
@@ -333,6 +358,29 @@ function auth_get() {
 			exit(0);
 		}
 
+		# The hash is one directory name under logpath. Reject anything else.
+		if (!preg_match('/^[0-9a-f]{64}$/', $gatewayhash)) {
+			exit(0);
+		}
+
+		# MAC over the action, gateway hash and payload, before any queue file is opened.
+		$payload="";
+		$authmac="";
+
+		if (isset($_GET["payload"])) {
+			$payload=$_GET["payload"];
+		}
+
+		if (isset($_GET["authmac"])) {
+			$authmac=$_GET["authmac"];
+		}
+
+		$expect=hash_hmac("sha256", $_GET["auth_get"]."\n".$gatewayhash."\n".$payload, $GLOBALS["key"]);
+
+		if ($GLOBALS["key"] === "" || !preg_match('/^[0-9a-f]{64}$/', $authmac) || !hash_equals($expect, $authmac)) {
+			exit(0);
+		}
+
 		if ($_GET["auth_get"] == "deauthed") {
 			auth_get_deauthed();
 			exit(0);
@@ -355,6 +403,10 @@ function auth_get() {
 			array_shift($auth_list);
 
 			foreach ($auth_list as $client) {
+				if (!preg_match('/^[0-9a-f]{64}$/', $client)) {
+					continue;
+				}
+
 				unlink("$logpath"."$gatewayhash/$client");
 			}
 			# Stale entries cleared, so:
@@ -372,6 +424,10 @@ function auth_get() {
 			array_shift($auth_list);
 
 			foreach ($auth_list as $client) {
+				if (!preg_match('/^[0-9a-f]{64}$/', $client)) {
+					continue;
+				}
+
 				$clientauth=file("$logpath"."$gatewayhash/$client");
 				$authlist=$authlist." ".rawurlencode(trim($clientauth[0]));
 				unlink("$logpath"."$gatewayhash/$client");
@@ -381,12 +437,11 @@ function auth_get() {
 		} else if ($_GET["auth_get"] == "view") {
 
 			if ($acklist != "none") {
-				$acklist_r=explode("\n",$acklist);
+				$acklist_r=preg_split('/\s+/', trim($acklist));
 
 				foreach ($acklist_r as $client) {
-					$client=ltrim($client, "* ");
-
-					if ($client != "") {
+					# Authmon sends "* <rhid> <rhid>" on one line. Only a 64-hex rhid is a file name.
+					if (preg_match('/^[0-9a-f]{64}$/', $client)) {
 						if (file_exists("$logpath"."$gatewayhash/$client")) {
 							unlink("$logpath"."$gatewayhash/$client");
 						}
@@ -399,6 +454,10 @@ function auth_get() {
 				array_shift($auth_list);
 
 				foreach ($auth_list as $client) {
+					if (!preg_match('/^[0-9a-f]{64}$/', $client)) {
+						continue;
+					}
+
 					$clientauth=file("$logpath"."$gatewayhash/$client");
 					$authlist=$authlist." ".rawurlencode(trim($clientauth[0]));
 				}
@@ -467,6 +526,31 @@ function write_log() {
 // Functions used to generate html:
 ###################################
 
+function h($value) {
+	return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, "UTF-8");
+}
+
+# A page may only navigate to an http(s) URL, with no control characters.
+function http_url_or_blank($url) {
+	$url=(string)$url;
+
+	if (preg_match('/[\x00-\x20\x7f]/', $url)) {
+		return "";
+	}
+
+	if (!preg_match('#\Ahttps?://#i', $url)) {
+		return "";
+	}
+
+	return $url;
+}
+
+function onclick_href($url) {
+	$js="location.href=".json_encode($url, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES);
+
+	return htmlspecialchars($js, ENT_QUOTES | ENT_SUBSTITUTE, "UTF-8");
+}
+
 function authenticate_page() {
 	# Display a "logged in" landing page once NDS has authenticated the client.
 	# or a timed out error if we do not get authenticated by NDS
@@ -480,7 +564,7 @@ function authenticate_page() {
 	$key=$GLOBALS["key"];
 	$clientif=$GLOBALS["clientif"];
 	$originurl=$GLOBALS["originurl"];
-	$redir=rawurldecode($originurl);
+	$redir=http_url_or_blank(rawurldecode($originurl));
 	$sessionlength=$GLOBALS["sessionlength"];
 	$uploadrate=$GLOBALS["uploadrate"];
 	$downloadrate=$GLOBALS["downloadrate"];
@@ -566,7 +650,7 @@ function authenticate_page() {
 			Click or tap Continue to try again.
 			</p>
 			<form>
-				<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='".$redir."'\" >
+				<input type=\"button\" VALUE=\"Continue\" onClick=\"".onclick_href($redir)."\" >
 			</form>
 		";
 	}
@@ -594,6 +678,10 @@ function thankyou_page() {
 	$email=$_GET["email"];
 	$fullname_url=rawurlencode($fullname);
 	$auth="yes";
+	$fullname=h($fullname);
+	$email=h($email);
+	$fas=h($fas);
+	$fullname_url=h($fullname_url);
 
 	echo "
 		<big-red>
@@ -619,10 +707,27 @@ function thankyou_page() {
 	flush();
 }
 
+function fas_query_value() {
+	# QUERY_STRING keeps '+' which $_GET turns into a space.
+	if (isset($_SERVER["QUERY_STRING"])) {
+		foreach (explode("&", $_SERVER["QUERY_STRING"]) as $part) {
+			if (substr($part, 0, 4) === "fas=") {
+				return rawurldecode(substr($part, 4));
+			}
+		}
+	}
+
+	if (isset($_GET["fas"])) {
+		return str_replace(" ", "+", $_GET["fas"]);
+	}
+
+	return "";
+}
+
 function login_page() {
 	$fullname=$email="";
 	$me=$_SERVER['SCRIPT_NAME'];
-	$fas=$_GET["fas"];
+	$fas=fas_query_value();
 	$clientip=$GLOBALS["clientip"];
 	$clientmac=$GLOBALS["clientmac"];
 	$gatewayname=$GLOBALS["gatewayname"];
@@ -641,6 +746,10 @@ function login_page() {
 	}
 
 	if ($fullname == "" or $email == "") {
+		$fullname=h($fullname);
+		$email=h($email);
+		$fas=h($fas);
+		$client_zone=h($client_zone);
 		echo "
 			<big-red>Welcome!</big-red><br>
 			<med-blue>You are connected to $client_zone</med-blue><br>
@@ -681,7 +790,7 @@ function status_page() {
 	$gatewaymac=$GLOBALS["gatewaymac"];
 	$clientif=$GLOBALS["clientif"];
 	$originurl=$GLOBALS["originurl"];
-	$redir=rawurldecode($originurl);
+	$redir=http_url_or_blank(rawurldecode($originurl));
 
 	// Is the client already logged in?
 	if ($_GET["status"] == "authenticated") {
@@ -695,12 +804,12 @@ function status_page() {
 
 		echo "
 			<p>
-			Your device originally requested <b>$redir</b>
+			Your device originally requested <b>".h($redir)."</b>
 			<br>
 			Click or tap Continue to go to there.
 			</p>
 			<form>
-				<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='".$redir."'\" >
+				<input type=\"button\" VALUE=\"Continue\" onClick=\"".onclick_href($redir)."\" >
 			</form>
 		";
 	} else {
@@ -715,16 +824,16 @@ function status_page() {
 
 function landing_page() {
 	$me=$_SERVER['SCRIPT_NAME'];
-	$fas=$_GET["fas"];
+	$fas=fas_query_value();
 	$originurl=$GLOBALS["originurl"];
 	$gatewayaddress=$GLOBALS["gatewayaddress"];
 	$gatewayname=$GLOBALS["gatewayname"];
 	$gatewayurl=rawurldecode($GLOBALS["gatewayurl"]);
 	$clientif=$GLOBALS["clientif"];
-	$client_zone=$GLOBALS["client_zone"];
+	$client_zone=h($GLOBALS["client_zone"]);
 	$fullname=$_GET["fullname"];
 	$email=$_GET["email"];
-	$redir=rawurldecode($originurl);
+	$redir=h(http_url_or_blank(rawurldecode($originurl)));
 
 	echo "
 		<p>
@@ -745,7 +854,7 @@ function landing_page() {
 		Click or tap Continue to show the status of your account.
 		</p>
 		<form>
-			<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='".$gatewayurl."'\" >
+			<input type=\"button\" VALUE=\"Continue\" onClick=\"".onclick_href(http_url_or_blank($gatewayurl))."\" >
 		</form>
 		<hr>
 	";
@@ -817,7 +926,6 @@ function err403() {
 		<b style=\"color:red; font-size:1.5em;\">Encryption Error <br> Access Forbidden</b><br>
 
 	";
-print_r ($GLOBALS);
 	flush();
 	footer();
 }
@@ -851,7 +959,7 @@ function footer() {
 function read_terms() {
 	#terms of service button
 	$me=$_SERVER['SCRIPT_NAME'];
-	$fas=$GLOBALS["fas"];
+	$fas=h($GLOBALS["fas"]);
 
 	echo "
 		<form action=\"$me\" method=\"get\">

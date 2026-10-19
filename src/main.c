@@ -181,9 +181,8 @@ sigchld_handler(int s)
 	(void)s;
 	saved_errno = errno;
 
-	/* Reap every exited child. debug() is not async-signal-safe. */
-	while (waitpid(-1, NULL, WNOHANG) > 0) {
-	}
+	/* Only background downloads are collected here. waitpid(-1) would take a child another thread is waiting for. */
+	reap_registered_children();
 
 	errno = saved_errno;
 }
@@ -532,23 +531,36 @@ setup_from_config(void)
 	}
 
 	if (config->dhcp_default_url_enable == 1) {
+		const char *cpid_name;
+		size_t cpidconf_len;
+
 		debug(LOG_DEBUG, "Enabling RFC8910 support");
-		dnscmd = safe_calloc(STATUS_BUF);
 
 		if (strcmp(config->gw_fqdn, "disable") != 0 && strcmp(config->gw_fqdn, "disabled") != 0 && strcmp(config->gw_fqdn, "status.client") != 0) {
-			safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"cpidconf\" \"%s\"", config->gw_fqdn);
+			cpid_name = config->gw_fqdn;
 		} else {
-			safe_snprintf(dnscmd, STATUS_BUF, "/usr/lib/opennds/dnsconfig.sh \"cpidconf\" \"%s\"", config->gw_address);
+			cpid_name = config->gw_address;
 		}
-		msg = safe_calloc(STATUS_BUF);
 
-		if (execute_ret_url_encoded(msg, STATUS_BUF - 1, dnscmd) == 0) {
-			debug(LOG_INFO, "RFC8910 support is enabled");
+		/* Fixed text plus the name. set_option_str allows a name longer than STATUS_BUF. */
+		cpidconf_len = sizeof("/usr/lib/opennds/dnsconfig.sh \"cpidconf\" \"\"") + strlen(cpid_name);
+		dnscmd = safe_calloc(cpidconf_len);
+
+		if (safe_snprintf(dnscmd, cpidconf_len, "/usr/lib/opennds/dnsconfig.sh \"cpidconf\" \"%s\"", cpid_name) < 1) {
+			debug(LOG_ERR, "RFC8910 setup command does not fit");
+			free(dnscmd);
 		} else {
-			debug(LOG_ERR, "RFC8910 setup script failed to execute");
+			msg = safe_calloc(STATUS_BUF);
+
+			if (execute_ret_url_encoded(msg, STATUS_BUF - 1, dnscmd) == 0) {
+				debug(LOG_INFO, "RFC8910 support is enabled");
+			} else {
+				debug(LOG_ERR, "RFC8910 setup script failed to execute");
+			}
+
+			free(dnscmd);
+			free(msg);
 		}
-		free(dnscmd);
-		free(msg);
 	} else {
 		debug(LOG_DEBUG, "Disabling RFC8910 support");
 		dnscmd = safe_calloc(STATUS_BUF);

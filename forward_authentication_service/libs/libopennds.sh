@@ -398,7 +398,9 @@ get_theme_environment() {
 	# Get the other stuff we need:
 	user_agent_enc="$2"
 	mode="$3"
-	cid=${query_enc:$i+9:86}
+	# Same 86-character slice the daemon stores, with '/' replaced so it stays one file name.
+	cid=${fas:10:86}
+	cid=${cid//\//_}
 	ciddir="$mountpoint/ndscids"
 
 	if [ "$mode" = "0" ]; then
@@ -2025,17 +2027,56 @@ hash_str () {
 	fi
 }
 
+# HMAC-SHA256 of "$2" under key "$1". Sets hmac_hex. Uses sha256sum, which openNDS already requires.
+hmac_sha256() {
+	keystr="$1"
+	msgstr="$2"
+	keylen=${#keystr}
+	keyhex=""
+	ipadhex=""
+	opadhex=""
+	i=0
+
+	if [ "$keylen" -gt 64 ]; then
+		keystr=$(printf '%s' "$keystr" | sha256sum | awk '{print $1}')
+		keystr=$(printf '%b' "$(printf '%s' "$keystr" | sed 's/../\\x&/g')")
+	fi
+
+	keyhex=$(printf '%s' "$keystr" | od -An -tx1 | tr -d ' \n')
+
+	while [ "${#keyhex}" -lt 128 ]; do
+		keyhex="${keyhex}00"
+	done
+
+	keyhex=${keyhex:0:128}
+
+	while [ "$i" -lt 128 ]; do
+		byte=$((0x${keyhex:$i:2}))
+		ipadhex="${ipadhex}$(printf '%02x' $((byte ^ 0x36)))"
+		opadhex="${opadhex}$(printf '%02x' $((byte ^ 0x5c)))"
+		i=$((i + 2))
+	done
+
+	inner=$(printf '%b%s' "$(printf '%s' "$ipadhex" | sed 's/../\\x&/g')" "$msgstr" | sha256sum | awk '{print $1}')
+	hmac_hex=$(printf '%b' "$(printf '%s%s' "$opadhex" "$inner" | sed 's/../\\x&/g')" | sha256sum | awk '{print $1}')
+}
+
 wget_request () {
 	spider=""
 	checkcert=""
+	payload_enc=""
 
 	ndsctlcmd="b64encode \"$payload\""
 	do_ndsctl
 
 	payload=$ndsctlout
+	get_key_from_config
+	authmsg=$(printf '%s\n%s\n%s' "$action" "$gatewayhash" "$payload")
+	hmac_sha256 "$key" "$authmsg"
+	payload_enc=$(printf '%s' "$payload" | sed -e 's/%/%25/g' -e 's/+/%2B/g' -e 's/\//%2F/g' -e 's/=/%3D/g' -e 's/ /%20/g' -e 's/&/%26/g' -e 's/?/%3F/g' -e 's/#/%23/g')
 
 	webget
-	retval=$($wret -O - -U "$user_agent" "$url?auth_get=$action&gatewayhash=$gatewayhash&payload=$payload")
+	retval=$($wret -O - -U "$user_agent" "$url?auth_get=$action&gatewayhash=$gatewayhash&payload=$payload_enc&authmac=$hmac_hex")
 	status=$?
  
 	if [ $status -ne 0 ]; then
@@ -2753,7 +2794,14 @@ elif [ "$1" = "rmcid" ]; then
 	# Remove an existing cidfile
 	# $2 contains the cid
 	# $3 contains the mountpoint
-	rm "$3/ndscids/$2"
+	case "$2" in
+		""|*/*|.|..)
+			printf "%s" "invalid cid"
+			exit 1
+			;;
+	esac
+
+	rm -f "$3/ndscids/$2" || exit 1
 	printf "%s" "done"
 	exit 0
 
@@ -2762,8 +2810,19 @@ elif [ "$1" = "write" ]; then
 	# $2 contains the cid
 	# $3 contains the mountpoint
 	# $4 contains the info element
-	mkdir -p "$3/ndscids"
-	echo "$4" >> "$3/ndscids/$2"
+	case "$2" in
+		""|*/*|.|..)
+			printf "%s" "invalid cid"
+			exit 1
+			;;
+	esac
+
+	mkdir -p "$3/ndscids" || exit 1
+
+	if ! echo "$4" >> "$3/ndscids/$2"; then
+		exit 1
+	fi
+
 	printf "%s" "done"
 	exit 0
 
@@ -2772,12 +2831,22 @@ elif [ "$1" = "parse" ]; then
 	# $2 contains the cid
 	# $3 contains the mountpoint
 	# $4 contains the info elements
+	case "$2" in
+		""|*/*|.|..)
+			printf "%s" "invalid cid"
+			exit 1
+			;;
+	esac
+
 	list="$4"
 	list=${list//', '/'"; '}
 	list=${list//'='/'="'}
 	list=$(printf "${list//%/\\x}")
 
-	echo "$list" >> "$3/ndscids/$2"
+	if ! echo "$list" >> "$3/ndscids/$2"; then
+		exit 1
+	fi
+
 	printf "%s" "done"
 	exit 0
 

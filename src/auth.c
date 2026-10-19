@@ -298,9 +298,6 @@ static int binauth_action(t_client *client, const char *reason, const char *cust
 	pid_t pid;
 	pid_t waited;
 	int status = 0;
-	struct sigaction sa;
-	struct sigaction oldsa;
-	int have_oldsa = 0;
 	int ret = 1;
 	int rc = 0;
 
@@ -367,17 +364,6 @@ static int binauth_action(t_client *client, const char *reason, const char *cust
 			binauth_argv[4], binauth_argv[5], binauth_argv[6], binauth_argv[7],
 			binauth_argv[8]);
 
-		memset(&sa, 0, sizeof(sa));
-		sa.sa_handler = SIG_DFL;
-		sigemptyset(&sa.sa_mask);
-		sa.sa_flags = SA_NOCLDSTOP | SA_RESTART;
-
-		if (sigaction(SIGCHLD, &sa, &oldsa) == -1) {
-			debug(LOG_ERR, "sigaction() failed to set default SIGCHLD handler: %s", strerror(errno));
-		} else {
-			have_oldsa = 1;
-		}
-
 		rc = posix_spawn(&pid, binauth_argv[0], NULL, NULL, binauth_argv, environ);
 
 		if (rc != 0) {
@@ -396,10 +382,6 @@ static int binauth_action(t_client *client, const char *reason, const char *cust
 			} else {
 				rc = status;
 			}
-		}
-
-		if (have_oldsa && sigaction(SIGCHLD, &oldsa, NULL) == -1) {
-			debug(LOG_ERR, "sigaction() failed to restore SIGCHLD handler: %s", strerror(errno));
 		}
 
 		debug(LOG_DEBUG, "binauth return code %d", rc);

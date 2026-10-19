@@ -68,6 +68,9 @@ int hash_str(char *buf, int hash_len, const char *src);
 // @brief Downloads remote files specified in the configured themespec
 int download_remotes(int refresh);
 
+/* Collect background children recorded by download_remotes. Safe to call from the SIGCHLD handler. */
+void reap_registered_children(void);
+
 // @brief locks ndsctl
 int ndsctl_lock();
 

@@ -9,15 +9,38 @@ if (isset($argv[4])) {$user_agent=$argv[4];} else {echo "missing argument\n"; ex
 if (isset($argv[5])) {$payload=$argv[5];} else {$payload="none";}
 
 $payload=base64_encode($payload);
+$faskey=faskey_from_config();
+$authmac=hash_hmac("sha256", $action."\n".$gatewayhash."\n".$payload, $faskey);
 
 $_p = array (
 	"auth_get"=>$action,
 	"gatewayhash"=>$gatewayhash,
-	"payload"=>$payload
+	"payload"=>$payload,
+	"authmac"=>$authmac
 );
 
 $response=SendPostData($_p, $remote_url, $user_agent);
 echo "$response";
+
+function faskey_from_config() {
+	$file="/etc/config/opennds";
+
+	if (!is_readable($file)) {
+		return "";
+	}
+
+	$text=file_get_contents($file);
+
+	if (preg_match("/^\\s*option\\s+faskey\\s+'([^']*)'/m", $text, $match)) {
+		return $match[1];
+	}
+
+	if (preg_match('/^\\s*option\\s+faskey\\s+"([^"]*)"/m', $text, $match)) {
+		return $match[1];
+	}
+
+	return "";
+}
 
 function SendPostData($_p, $remote_url, $user_agent) {
 	$fields_string = http_build_query($_p);

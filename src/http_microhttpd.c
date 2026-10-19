@@ -1093,22 +1093,26 @@ static int show_preauthpage(struct MHD_Connection *connection, const char *query
 static int send_json(struct MHD_Connection *connection, const char *json)
 {
 	char *msg;
+	size_t len;
 	int ret;
 	struct MHD_Response *response;
 
-	msg = safe_calloc(SMALL_BUF * 2);
-
-	if (!msg) {
-		ret = send_error(connection, 503);
-		free(msg);
-		return ret;
+	if (json == NULL) {
+		return send_error(connection, 503);
 	}
 
-	safe_snprintf(msg, SMALL_BUF * 2, "%s", json);
+	/* The preauth document is built in QUERYMAXLEN and does not fit in SMALL_BUF * 2. */
+	len = strlen(json);
+	msg = safe_calloc(len + 1);
 
-	debug(LOG_DEBUG, "json string [%s],  buffer [%s]", json, msg);
+	if (safe_snprintf(msg, len + 1, "%s", json) < 0) {
+		free(msg);
+		return send_error(connection, 503);
+	}
 
-	response = MHD_create_response_from_buffer(strlen(msg), (char *)msg, MHD_RESPMEM_MUST_FREE);
+	debug(LOG_DEBUG, "json string [%s]", json);
+
+	response = MHD_create_response_from_buffer(len, (char *)msg, MHD_RESPMEM_MUST_FREE);
 
 	if (!response) {
 		free(msg);
@@ -1221,7 +1225,14 @@ static int preauthenticated(struct MHD_Connection *connection, const char *url, 
 			return ret;
 		}
 
-		safe_snprintf(captive_json, QUERYMAXLEN, "{ \"captive\": true, \"user-portal-url\": \"%s%s\" }", config->fas_url, querystr);
+		if (safe_snprintf(captive_json, QUERYMAXLEN, "{ \"captive\": true, \"user-portal-url\": \"%s%s\" }", config->fas_url, querystr) < 0) {
+			debug(LOG_ERR, "Captive portal json does not fit");
+			free(originurl);
+			free(originurl_raw);
+			free(querystr);
+			free(captive_json);
+			return send_error(connection, 503);
+		}
 
 		debug(LOG_DEBUG, "captive_json [%s]", captive_json);
 		ret = send_json(connection, captive_json);

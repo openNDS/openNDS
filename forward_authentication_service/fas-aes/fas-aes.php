@@ -165,6 +165,32 @@ if (isset($_GET["terms"])) {
 }
 
 // Functions:
+
+function h($value) {
+	return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, "UTF-8");
+}
+
+# A page may only navigate to an http(s) URL, with no control characters.
+function http_url_or_blank($url) {
+	$url=(string)$url;
+
+	if (preg_match('/[\x00-\x20\x7f]/', $url)) {
+		return "";
+	}
+
+	if (!preg_match('#\Ahttps?://#i', $url)) {
+		return "";
+	}
+
+	return $url;
+}
+
+function onclick_href($url) {
+	$js="location.href=".json_encode($url, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES);
+
+	return htmlspecialchars($js, ENT_QUOTES | ENT_SUBSTITUTE, "UTF-8");
+}
+
 function thankyou_page() {
 	# Output the "Thankyou page" with a continue button
 	# You could include information or advertising on this page
@@ -198,6 +224,8 @@ function thankyou_page() {
 
 	$custom="fullname=$fullname, email=$email";
 	$custom=base64_encode($custom);
+	$fullname=h($fullname);
+	$redir=h($redir);
 
 
 	echo "
@@ -299,6 +327,11 @@ function login_page() {
 	}
 
 	if ($fullname == "" or $email == "") {
+		$fullname=h($fullname);
+		$email=h($email);
+		$fas=h($fas);
+		$iv=h($iv);
+		$client_zone=h($client_zone);
 		echo "
 			<big-red>Welcome!</big-red><br>
 			<med-blue>You are connected to $client_zone</med-blue><br>
@@ -340,7 +373,7 @@ function status_page() {
 	$gatewaymac=$GLOBALS["gatewaymac"];
 	$clientif=$GLOBALS["clientif"];
 	$originurl=$GLOBALS["originurl"];
-	$redir=rawurldecode($originurl);
+	$redir=http_url_or_blank(rawurldecode($originurl));
 
 	// Is the client already logged in?
 	if ($_GET["status"] == "authenticated") {
@@ -354,12 +387,12 @@ function status_page() {
 
 		echo "
 			<p>
-			Your device originally requested <b>$redir</b>
+			Your device originally requested <b>".h($redir)."</b>
 			<br>
 			Click or tap Continue to go to there.
 			</p>
 			<form>
-				<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='".$redir."'\" >
+				<input type=\"button\" VALUE=\"Continue\" onClick=\"".onclick_href($redir)."\" >
 			</form>
 		";
 	} else {
@@ -381,8 +414,8 @@ function landing_page() {
 	$gatewayname=$GLOBALS["gatewayname"];
 	$gatewayurl=$GLOBALS["gatewayurl"];
 	$clientif=$GLOBALS["clientif"];
-	$client_zone=$GLOBALS["client_zone"];
-	$redir=rawurldecode($originurl);
+	$client_zone=h($GLOBALS["client_zone"]);
+	$redir=h(http_url_or_blank(rawurldecode($originurl)));
 
 	echo "
 		<p>
@@ -403,7 +436,7 @@ function landing_page() {
 		Click or tap Continue to show the status of your account.
 		</p>
 		<form>
-			<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='".$gatewayurl."'\" >
+			<input type=\"button\" VALUE=\"Continue\" onClick=\"".onclick_href(http_url_or_blank($gatewayurl))."\" >
 		</form>
 		<hr>
 	";
@@ -469,8 +502,8 @@ function footer() {
 function read_terms() {
 	#terms of service button
 	$me=$_SERVER['SCRIPT_NAME'];
-	$fas=$GLOBALS["fas"];
-	$iv=$GLOBALS["iv"];
+	$fas=h($GLOBALS["fas"]);
+	$iv=h($GLOBALS["iv"]);
 
 	echo "
 		<form action=\"$me\" method=\"get\">

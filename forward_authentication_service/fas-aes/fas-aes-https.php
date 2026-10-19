@@ -351,6 +351,11 @@ function auth_get() {
 			exit(0);
 		}
 
+		# The hash is one directory name under logpath. Reject anything else.
+		if (!preg_match('/^[0-9a-f]{64}$/', $gatewayhash)) {
+			exit(0);
+		}
+
 		if ($_POST["auth_get"] == "deauthed") {
 			auth_get_deauthed();
 			exit(0);
@@ -372,6 +377,10 @@ function auth_get() {
 			array_shift($auth_list);
 
 			foreach ($auth_list as $client) {
+				if (!preg_match('/^[0-9a-f]{64}$/', $client)) {
+					continue;
+				}
+
 				unlink("$logpath"."$gatewayhash/$client");
 			}
 			# Stale entries cleared, so:
@@ -389,6 +398,10 @@ function auth_get() {
 			array_shift($auth_list);
 
 			foreach ($auth_list as $client) {
+				if (!preg_match('/^[0-9a-f]{64}$/', $client)) {
+					continue;
+				}
+
 				$clientauth=file("$logpath"."$gatewayhash/$client");
 				$authlist=$authlist." ".rawurlencode(trim($clientauth[0]));
 				unlink("$logpath"."$gatewayhash/$client");
@@ -415,6 +428,10 @@ function auth_get() {
 				array_shift($auth_list);
 
 				foreach ($auth_list as $client) {
+					if (!preg_match('/^[0-9a-f]{64}$/', $client)) {
+						continue;
+					}
+
 					$clientauth=file("$logpath"."$gatewayhash/$client");
 					$authlist=$authlist." ".rawurlencode(trim($clientauth[0]));
 				}

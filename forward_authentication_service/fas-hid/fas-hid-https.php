@@ -53,15 +53,38 @@
 
 $key="c775e7b757ede630cd0aa1113bd102661ab38829ca52a6422ab782862f268646";
 
+// Same value as fasremotefqdn on the router. HTTP redirects here, never to the request Host.
+// Leave this empty to skip that redirect.
+$fasremotefqdn="";
+
+function fas_https_location($host, $request_uri) {
+	$host=(string)$host;
+	$request_uri=(string)$request_uri;
+
+	if (strlen($host) > 259 || !preg_match('/\A(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)(?:\.(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?))*(?::[0-9]{1,5})?\z/', $host)) {
+		return "";
+	}
+
+	# A scheme-relative or control-bearing path would make this an open redirect again.
+	if (!preg_match('/\A\/(?![\/\\\\])[^\x00-\x20\x7f]*\z/', $request_uri)) {
+		return "";
+	}
+
+	return "https://".$host.$request_uri;
+}
+
 // Allow immediate flush to browser
 if (ob_get_level()){ob_end_clean();}
 
 //force redirect to secure page
 if(empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == "off"){
-    $redirect = 'https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
-    header('HTTP/1.1 301 Moved Permanently');
-    header('Location: ' . $redirect);
-    exit(0);
+	$redirect=fas_https_location($fasremotefqdn, isset($_SERVER["REQUEST_URI"]) ? $_SERVER["REQUEST_URI"] : "/");
+
+	if ($redirect !== "") {
+		header('HTTP/1.1 301 Moved Permanently');
+		header('Location: ' . $redirect);
+		exit(0);
+	}
 }
 
 // setup basic defaults

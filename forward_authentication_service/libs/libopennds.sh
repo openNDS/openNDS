@@ -1902,7 +1902,7 @@ create_client_ruleset () {
 						portnum=$param
 					fi
 
-					if [ "$to" = "to" ] || [ "$from" = "from" ]; then
+					if [ "$to_from" = "to" ] || [ "$to_from" = "from" ]; then
 						ipaddr=$param
 					fi
 
@@ -2632,6 +2632,13 @@ elif [ "$1" = "gatewayroute" ]; then
 				iface=$var
 				idx=0
 
+				# Point-to-point links such as PPPoE have no ARP neighbor.
+				# A default route on a NOARP interface is the upstream gateway.
+				if ip link show "$iface" 2>/dev/null | grep -q "NOARP"; then
+					gatewayinterfaces="$gatewayinterfaces$online:$ipaddr,$iface "
+					continue
+				fi
+
 				# Check arp for the upstream gateway
 				arptest=$(ip -f inet neigh show | grep -w  "$iface" | grep -w  "$ipaddr")
 
@@ -2644,7 +2651,7 @@ elif [ "$1" = "gatewayroute" ]; then
 
 						if [ "$arg" = "PROBE" ] || [ "$arg" = "INCOMPLETE" ] || [ "$arg" = "FAILED"  ]; then
 							gatewayinterfaces="$gatewayinterfaces$offline:$ipaddr,$iface "
-						elif [ "$arg" = "REACHABLE" ] || [ "$arg" = "STALE" ] || [ "$arg" = "DELAY"  ]; then
+						elif [ "$arg" = "REACHABLE" ] || [ "$arg" = "STALE" ] || [ "$arg" = "DELAY" ] || [ "$arg" = "NOARP" ] || [ "$arg" = "PERMANENT" ]; then
 							gatewayinterfaces="$gatewayinterfaces$online:$ipaddr,$iface "
 						fi
 					done

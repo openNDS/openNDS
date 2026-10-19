@@ -356,6 +356,24 @@ function auth_get() {
 			exit(0);
 		}
 
+		# MAC over the action, gateway hash and payload, before any queue file is opened.
+		$payload="";
+		$authmac="";
+
+		if (isset($_POST["payload"])) {
+			$payload=$_POST["payload"];
+		}
+
+		if (isset($_POST["authmac"])) {
+			$authmac=$_POST["authmac"];
+		}
+
+		$expect=hash_hmac("sha256", $_POST["auth_get"]."\n".$gatewayhash."\n".$payload, $GLOBALS["key"]);
+
+		if ($GLOBALS["key"] === "" || !preg_match('/^[0-9a-f]{64}$/', $authmac) || !hash_equals($expect, $authmac)) {
+			exit(0);
+		}
+
 		if ($_POST["auth_get"] == "deauthed") {
 			auth_get_deauthed();
 			exit(0);

@@ -398,12 +398,11 @@ function auth_get() {
 		} else if ($_POST["auth_get"] == "view") {
 
 			if ($acklist != "none") {
-				$acklist_r=explode("\n",$acklist);
+				$acklist_r=preg_split('/\s+/', trim($acklist));
 
 				foreach ($acklist_r as $client) {
-					$client=ltrim($client, "* ");
-
-					if ($client != "") {
+					# Authmon sends "* <rhid> <rhid>" on one line. Only a 64-hex rhid is a file name.
+					if (preg_match('/^[0-9a-f]{64}$/', $client)) {
 						if (file_exists("$logpath"."$gatewayhash/$client")) {
 							unlink("$logpath"."$gatewayhash/$client");
 						}

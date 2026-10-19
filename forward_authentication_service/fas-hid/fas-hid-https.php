@@ -849,7 +849,6 @@ function err403() {
 		<b style=\"color:red; font-size:1.5em;\">Encryption Error <br> Access Forbidden</b><br>
 
 	";
-print_r ($GLOBALS);
 	flush();
 	footer();
 }

@@ -1717,6 +1717,70 @@ add_client(const char *mac, const char *ip)
 	return client_list_add_client_pinned(mac, ip);
 }
 
+/* Escape a URL for a single-quoted HTML attribute. Reject controls so the
+ * Location header cannot be split. */
+static char *
+html_attr_escape(const char *src)
+{
+	const unsigned char *in;
+	size_t len = 0;
+	char *dst;
+	char *out;
+
+	if (src == NULL) {
+		return NULL;
+	}
+
+	for (in = (const unsigned char *)src; *in != '\0'; in++) {
+		if (*in < 0x20 || *in == 0x7f) {
+			return NULL;
+		}
+
+		if (*in == '&') {
+			len += 5;
+		} else if (*in == '"') {
+			len += 6;
+		} else if (*in == '\'') {
+			len += 5;
+		} else if (*in == '<' || *in == '>') {
+			len += 4;
+		} else {
+			len += 1;
+		}
+	}
+
+	dst = safe_calloc(len + 1);
+	out = dst;
+
+	for (in = (const unsigned char *)src; *in != '\0'; in++) {
+		const char *ent = NULL;
+
+		if (*in == '&') {
+			ent = "&amp;";
+		} else if (*in == '"') {
+			ent = "&quot;";
+		} else if (*in == '\'') {
+			ent = "&#39;";
+		} else if (*in == '<') {
+			ent = "&lt;";
+		} else if (*in == '>') {
+			ent = "&gt;";
+		}
+
+		if (ent != NULL) {
+			size_t n = strlen(ent);
+
+			memcpy(out, ent, n);
+			out += n;
+		} else {
+			*out++ = (char)*in;
+		}
+	}
+
+	*out = '\0';
+	return dst;
+}
+
 int send_redirect_temp(struct MHD_Connection *connection, t_client *client, const char *url)
 {
 	// Warning - *client will be undefined if not authenticated
@@ -1724,21 +1788,32 @@ int send_redirect_temp(struct MHD_Connection *connection, t_client *client, cons
 	int ret;
 	int needed;
 	char *redirect;
+	char *escaped;
 	const char *fmt = "<html><head></head><body><a href='%s'>Click here to continue to<br>%s</a></body></html>";
 
+	escaped = html_attr_escape(url);
+
+	if (escaped == NULL) {
+		return send_error(connection, 400);
+	}
+
 	/* The destination is written twice. A splash query is longer than SMALL_BUF. */
-	needed = snprintf(NULL, 0, fmt, url, url);
+	needed = snprintf(NULL, 0, fmt, escaped, escaped);
 
 	if (needed < 1) {
+		free(escaped);
 		return send_error(connection, 503);
 	}
 
 	redirect = safe_calloc((size_t)needed + 1);
 
-	if (safe_snprintf(redirect, (size_t)needed + 1, fmt, url, url) < 0) {
+	if (safe_snprintf(redirect, (size_t)needed + 1, fmt, escaped, escaped) < 0) {
+		free(escaped);
 		free(redirect);
 		return send_error(connection, 503);
 	}
+
+	free(escaped);
 
 	debug(LOG_DEBUG, "send_redirect_temp: MHD_create_response_from_buffer. url [%s]", url);
 	debug(LOG_DEBUG, "send_redirect_temp: Redirect to [%s]", redirect);

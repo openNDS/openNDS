@@ -302,16 +302,25 @@ static int binauth_action(t_client *client, const char *reason, const char *cust
 	int rc = 0;
 
 	if (config->binauth) {
+		char *custom_copy;
 
+		/* Deauth does not pass a new string. Keep the one stored at authentication.
+		   Copy before free: that stored value may be the source. */
 		custom_arg = customdata;
+
+		if ((!custom_arg || custom_arg[0] == '\0') && client->custom && client->custom[0] != '\0') {
+			custom_arg = client->custom;
+		}
 
 		if (!custom_arg || custom_arg[0] == '\0') {
 			custom_arg = "ZW1wdHk=";
 		}
 
-		debug(LOG_DEBUG, "customdata=%s", custom_arg);
+		custom_copy = safe_strdup(custom_arg);
+		debug(LOG_DEBUG, "customdata=%s", custom_copy);
 		free(client->custom);
-		client->custom = safe_strdup(custom_arg);
+		client->custom = custom_copy;
+		custom_arg = client->custom;
 		debug(LOG_DEBUG, "binauth_action: client->custom [%s]", client->custom);
 
 		// get client's current session start and end

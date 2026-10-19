@@ -106,7 +106,8 @@ check_voucher() {
 	#
 	##############################################################################################################################
 
-	output=$(grep -F -e "$voucher" -- "$voucher_roll" | head -n 1) # Store first occurence of voucher as variable
+	# Match field 1 only. A nine-digit window of a punched timestamp is not a voucher.
+	output=$(awk -F, -v v="$voucher" '$1 == v { print; exit }' "$voucher_roll")
 	#echo "$output <br>" #Matched line
  	if [ "$(printf '%s' "$output" | wc -w)" -ge 1 ]; then 
 		#echo "Voucher Found - Checking Validity <br>"
@@ -118,7 +119,11 @@ check_voucher() {
 		voucher_quota_up=$(printf '%s' "$output" | sed -r "s#([a-zA-Z0-9-]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+)#\5#")
 		voucher_time_limit=$(printf '%s' "$output" | sed -r "s#([a-zA-Z0-9-]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+)#\6#")
 		voucher_first_punched=$(printf '%s' "$output" | sed -r "s#([a-zA-Z0-9-]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+)#\7#")
-		
+
+		if [ "$voucher_token" != "$voucher" ]; then
+			return 1
+		fi
+
 		# Set limits according to voucher
 		upload_rate=$voucher_rate_up
 		download_rate=$voucher_rate_down
@@ -131,7 +136,7 @@ check_voucher() {
 			voucher_expiration=$(($current_time + $voucher_time_limit * 60))
 			# Override session length according to voucher
 			sessiontimeout=$voucher_time_limit
-			sed -i -r "s/($voucher.*,)(0)/\1$current_time/" "$voucher_roll"
+			sed -i -r "s/^($voucher,.*,)0$/\1$current_time/" "$voucher_roll"
 			return 0
 		else
 			#echo "Voucher Already Used, Checking validity <br>"
@@ -152,7 +157,7 @@ check_voucher() {
 			else
 				#echo "Voucher has expired, please try another one <br>"
 				# Delete expired voucher from roll
-				sed -i "/$voucher/d" "$voucher_roll"
+				sed -i "/^$voucher,/d" "$voucher_roll"
 				return 1
 			fi
 		fi

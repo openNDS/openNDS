@@ -1902,7 +1902,7 @@ create_client_ruleset () {
 						portnum=$param
 					fi
 
-					if [ "$to" = "to" ] || [ "$from" = "from" ]; then
+					if [ "$to_from" = "to" ] || [ "$to_from" = "from" ]; then
 						ipaddr=$param
 					fi
 

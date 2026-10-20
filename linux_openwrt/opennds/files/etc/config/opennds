@@ -376,6 +376,10 @@ config opennds 'setup'
 	# Default: /usr/lib/opennds/client_params.sh
 	# This is the script used to generate the GatewayFQDN client status and Error511 pages
 	#
+	# A package upgrade replaces files under /usr/lib/opennds.
+	# Copy this script to a path outside /usr/lib/opennds and set statuspath to that copy.
+	# You may then safely edit that copy.
+	#
 	#option statuspath '/mycustomscripts/custom_client_params.sh'
 	###########################################################################################
 
@@ -571,8 +575,8 @@ config opennds 'setup'
 	# This is automatically achieved by a call to the auth_restore() library function.
 	# After openNDS has restarted, clients that have remaining session time are reauthenticated.
 	#
-	# The custom binauth script /usr/lib/opennds/custombinauth.sh is called.
-	# This custom script can be edited to provide additional user defined functionality.
+	# A custom script is called from the default binauth script.
+	# Set option custombinauth. See CustomBinAuth below.
 	#
 	####
 	# WARNING:
@@ -580,6 +584,17 @@ config opennds 'setup'
 	####
 	#
 	#option binauth '/usr/lib/opennds/my_binauth_script.sh'
+	###########################################################################################
+
+	# CustomBinAuth
+	# Default: /usr/lib/opennds/custombinauth.sh
+	# Called by the default binauth script to add local policy.
+	#
+	# A package upgrade replaces files under /usr/lib/opennds.
+	# Copy this script to a path outside /usr/lib/opennds and set custombinauth to that copy.
+	# You may then safely edit that copy.
+	#
+	#option custombinauth '/mycustomscripts/custombinauth.sh'
 	###########################################################################################
 
 	# Set reauth_interval

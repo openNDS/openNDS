@@ -7,12 +7,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=opennds
-PKG_VERSION:=11.0.0
+PKG_VERSION:=11.1.0
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://codeload.github.com/opennds/opennds/tar.gz/v$(PKG_VERSION)?
+PKG_SOURCE_URL:=https://codeload.github.com/openNDS/openNDS/tar.gz/v$(PKG_VERSION)?
 PKG_HASH:=#shasum -a 256 of tar.gz of source files goes here
+PKG_BUILD_DIR:=$(BUILD_DIR)/openNDS-$(PKG_VERSION)
 
 PKG_MAINTAINER:=Rob White <rob@blue-wave.net>
 PKG_LICENSE:=GPL-2.0-only
@@ -30,7 +31,7 @@ define Package/opennds
   CATEGORY:=Network
   DEPENDS:=+libmicrohttpd-no-ssl
   TITLE:=open Network Demarcation Service
-  URL:=https://github.com/opennds/opennds
+  URL:=https://github.com/openNDS/openNDS
   CONFLICTS:=nodogsplash
 endef
 
@@ -94,6 +95,8 @@ endef
 
 define Package/opennds/conffiles
 /etc/config/opennds
+/etc/opennds/htdocs/splash.css
+/etc/opennds/htdocs/images/splash.jpg
 endef
 
 $(eval $(call BuildPackage,opennds))

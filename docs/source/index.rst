@@ -23,10 +23,8 @@ It is a fork of the NoDogSplash project that in turn was derived originally from
 openNDS is released under the GNU General Public License.
 
 * openNDS: https://github.com/openNDS/openNDS
-* Original Homepage *down*: http://kokoro.ucsd.edu/nodogsplash
-* Archive: https://web.archive.org/web/20140210131130/http://kokoro.ucsd.edu/nodogsplash
-* Wifidog *down*: http://dev.wifidog.org/
-* Archive: https://web.archive.org/web/20220518120459/http://dev.wifidog.org/wiki/About
+* Original Homepage (archived): https://web.archive.org/web/20140210131130/http://kokoro.ucsd.edu/nodogsplash
+* Wifidog (archived): https://web.archive.org/web/20220518120459/http://dev.wifidog.org/wiki/About
 * NoDogSplash: https://github.com/nodogsplash/nodogsplash
 * GNU GPL: http://www.gnu.org/copyleft/gpl.html
 
@@ -37,28 +35,60 @@ Contents:
 
 .. toctree::
    :maxdepth: 2
+   :caption: Introduction
 
+   whatsnew
    overview
-   changelog
    howitworks
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Getting Started
+
    install
+   compile
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Configuration Reference
+
+   config
+   config_clients
+   traffic
+   config_fas
+   config_access
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Customising the Portal
+
    splash
    customize
-   config
    customparams
-   fas
    themespec
-   preauth
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Authentication and Integration
+
    binauth
-   walledgarden
+   fas
    libraries
-   ndsctl
-   traffic
    clientstatus
-   faq
-   compile
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Operation and Troubleshooting
+
+   ndsctl
    debug
-   todo
+   faq
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Project
+
+   changelog
 
 Indices and tables
 ==================

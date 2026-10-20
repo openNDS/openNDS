@@ -224,7 +224,7 @@ Be aware that many client CPD processes will **automatically close** the landing
 BinAuth Post FAS Processing
 ***************************
 
-From v10.1.0 onwards, BinAuth is enabled at all times. Additional BinAuth functionality can be added by editing the file /usr/lib/opennds/custombinauth.sh.
+From v10.1.0 onwards, BinAuth is enabled at all times. Additional BinAuth functionality can be added with a custom script set by ``option custombinauth`` (default /usr/lib/opennds/custombinauth.sh). A package upgrade replaces files under /usr/lib/opennds, so edit a copy kept outside /usr/lib/opennds and point ``option custombinauth`` at it. See :doc:`config_fas`.
 
 The BinAuth script, binauth_log.sh, is designed to locally log details of each client authentication and receives client data including the token, ipaddress and macaddress. In addition it receives the custom data string sent from FAS.
 

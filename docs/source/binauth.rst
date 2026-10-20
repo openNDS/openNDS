@@ -19,9 +19,9 @@ Overview
 Custom Binauth Script
 *********************
 
-  The custom binauth script **/usr/lib/opennds/custombinauth.sh** is called by binauth.
+  The custom binauth script set by ``option custombinauth`` (default **/usr/lib/opennds/custombinauth.sh**) is called by binauth.
 
-  This custom script can be edited to provide additional user defined functionality.
+  This custom script can be used to provide additional user defined functionality. A package upgrade replaces files under /usr/lib/opennds, so copy the script to a path outside /usr/lib/opennds, edit the copy and set ``option custombinauth`` to that copy. See :doc:`config_fas`.
 
   **WARNING:** The default binauth script can be replaced using ``option binauth``, but this will disable the **auth_restore** and other significant functionality.
 

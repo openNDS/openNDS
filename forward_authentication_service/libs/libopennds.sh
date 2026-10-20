@@ -2028,6 +2028,7 @@ hash_str () {
 }
 
 # HMAC-SHA256 of "$2" under key "$1". Sets hmac_hex. Uses sha256sum, which openNDS already requires.
+# Each key byte is read with printf's leading-quote form, which BusyBox and POSIX printf provide.
 hmac_sha256() {
 	keystr="$1"
 	msgstr="$2"
@@ -2042,7 +2043,11 @@ hmac_sha256() {
 		keystr=$(printf '%b' "$(printf '%s' "$keystr" | sed 's/../\\x&/g')")
 	fi
 
-	keyhex=$(printf '%s' "$keystr" | od -An -tx1 | tr -d ' \n')
+	while [ -n "$keystr" ]; do
+		c=${keystr%"${keystr#?}"}
+		keystr=${keystr#?}
+		keyhex="${keyhex}$(printf '%02x' "'${c}")"
+	done
 
 	while [ "${#keyhex}" -lt 128 ]; do
 		keyhex="${keyhex}00"

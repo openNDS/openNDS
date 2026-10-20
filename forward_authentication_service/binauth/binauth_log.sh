@@ -162,7 +162,8 @@ if [ -z "$action" ]; then
 	exit 1
 fi
 
-/usr/lib/opennds/libopennds.sh syslog "binauth action [ $action ]" "debug"
+# The daemon reads stdout as the five quota numbers. A library acknowledgement must not be part of it.
+/usr/lib/opennds/libopennds.sh syslog "binauth action [ $action ]" "debug" >/dev/null
 
 if [ "$action" = "auth_client" ]; then
 	# Arguments passed are as follows
@@ -268,16 +269,21 @@ fi
 if [ -e "$checkreauthintervalpath" ]; then
 	. $checkreauthintervalpath
 else
-	/usr/lib/opennds/libopennds.sh syslog "reauth_interval script [ $checkreauthintervalpath ] not found" "error"
+	/usr/lib/opennds/libopennds.sh syslog "reauth_interval script [ $checkreauthintervalpath ] not found" "error" >/dev/null
 fi
 
-# Include custom binauth script if exitlevel is still 0
+# Include custom binauth script if exitlevel is still 0.
+# The daemon's default is this path when the UCI option is unset. ndsctl status shows that default.
 custombinauthpath=$(ndscfg get_option_from_config custombinauth 2> /dev/null)
 
-if [ ! -z "$custombinauthpath" ] && [ -e "$custombinauthpath" ] && [ "$exitlevel" -eq 0 ]; then
-	. $custombinauthpath
-elif [ ! -z "$custombinauthpath" ] && [ ! -e "$custombinauthpath" ]; then
-	/usr/lib/opennds/libopennds.sh syslog "custom binauth script [ $custombinauthpath ] not found" "error"
+if [ -z "$custombinauthpath" ]; then
+	custombinauthpath="/usr/lib/opennds/custombinauth.sh"
+fi
+
+if [ -e "$custombinauthpath" ] && [ "$exitlevel" -eq 0 ]; then
+	. "$custombinauthpath"
+elif [ ! -e "$custombinauthpath" ]; then
+	/usr/lib/opennds/libopennds.sh syslog "custom binauth script [ $custombinauthpath ] not found" "error" >/dev/null
 fi
 
 # Add client quota variables to the log entry
@@ -315,10 +321,10 @@ fi
 echo "$sessiontimeout $upload_rate $download_rate $upload_quota $download_quota"
 
 # For other methods, write the values to the client cid file
-/usr/lib/opennds/libopennds.sh syslog "cid  [ $mountpoint/ndscids/$cidfile ]" "debug"
+/usr/lib/opennds/libopennds.sh syslog "cid  [ $mountpoint/ndscids/$cidfile ]" "debug" >/dev/null
 
 if [ ! -z "$cidfile" ] && [ -z "$binauth_quotas" ]; then
-	/usr/lib/opennds/libopennds.sh syslog "binauth appending  [ $mountpoint/ndscids/$cidfile ]" "debug"
+	/usr/lib/opennds/libopennds.sh syslog "binauth appending  [ $mountpoint/ndscids/$cidfile ]" "debug" >/dev/null
 	echo "binauth_quotas=1" >> $mountpoint/ndscids/$cidfile
 	echo "sessiontimeout=$sessiontimeout" >> $mountpoint/ndscids/$cidfile
 	echo "upload_rate=$upload_rate" >> $mountpoint/ndscids/$cidfile

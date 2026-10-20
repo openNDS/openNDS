@@ -271,12 +271,17 @@ else
 	/usr/lib/opennds/libopennds.sh syslog "reauth_interval script [ $checkreauthintervalpath ] not found" "error"
 fi
 
-# Include custom binauth script if exitlevel is still 0
+# Include custom binauth script if exitlevel is still 0.
+# The daemon's default is this path when the UCI option is unset. ndsctl status shows that default.
 custombinauthpath=$(ndscfg get_option_from_config custombinauth 2> /dev/null)
 
-if [ ! -z "$custombinauthpath" ] && [ -e "$custombinauthpath" ] && [ "$exitlevel" -eq 0 ]; then
-	. $custombinauthpath
-elif [ ! -z "$custombinauthpath" ] && [ ! -e "$custombinauthpath" ]; then
+if [ -z "$custombinauthpath" ]; then
+	custombinauthpath="/usr/lib/opennds/custombinauth.sh"
+fi
+
+if [ -e "$custombinauthpath" ] && [ "$exitlevel" -eq 0 ]; then
+	. "$custombinauthpath"
+elif [ ! -e "$custombinauthpath" ]; then
 	/usr/lib/opennds/libopennds.sh syslog "custom binauth script [ $custombinauthpath ] not found" "error"
 fi
 

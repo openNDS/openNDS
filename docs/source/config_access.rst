@@ -197,8 +197,10 @@ Access is automatically granted to resources required for normal operation of th
 
 By default the user to router access rules are **not** passed through to the system firewall for additional processing.
 
-Users to Router Passthrough
-===========================
+.. _users-to-router-passthrough:
+
+users_to_router_passthrough - Users to Router Passthrough
+=========================================================
 
 (Applies to OpenWrt only)
 

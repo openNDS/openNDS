@@ -1,8 +1,10 @@
 Configuration Options - BinAuth and FAS
 #######################################
 
-Enable BinAuth Support.
-***********************
+.. _enable-binauth-support:
+
+binauth - Enable BinAuth Support
+********************************
 
 Default: Enabled
 
@@ -49,8 +51,10 @@ This is enabled by the following option:
 
 ``option binauth '/usr/lib/opennds/binauth_log.sh'``
 
-Set CustomBinAuth
-*****************
+.. _set-custombinauth:
+
+custombinauth - Custom BinAuth
+******************************
 
 Default: /usr/lib/opennds/custombinauth.sh
 
@@ -63,8 +67,10 @@ Example:
 
 ``option custombinauth '/mycustomscripts/custombinauth.sh'``
 
-Set reauth_interval
-*******************
+.. _set-reauth-interval:
+
+reauth_interval - Reauthentication Interval
+*******************************************
 
 Set the interval in seconds after which a deauthed client can log back in again.
 
@@ -76,8 +82,10 @@ Example, disallow re-authentication for 10 minutes (600 seconds):
 
 ``option reauth_interval '600'``
 
-Set Fasport
-***********
+.. _set-fasport:
+
+fasport - FAS Port
+******************
 
 Default: Not set.
 
@@ -96,8 +104,10 @@ Typical Locally Hosted example (ie fasremoteip not set):
 
 ``option fasport '2090'``
 
-Set Fasremotefqdn
-*****************
+.. _set-fasremotefqdn:
+
+fasremotefqdn - FAS Remote FQDN
+*******************************
 
 Default: Not set.
 
@@ -121,8 +131,10 @@ CDN (Content Delivery Network) hosted server
 
 For a CDN (Content Delivery Network) hosted server, the configuration is the same as for Remote Shared Hosting but fasremotefqdn must also be added to the Walled Garden list of FQDNs
 
-Set the Fasremoteip
-*******************
+.. _set-the-fasremoteip:
+
+fasremoteip - FAS Remote IP
+***************************
 
 Default: GatewayAddress (the IP of NDS)
 
@@ -132,8 +144,10 @@ Typical Remote Shared Hosting Example (replace this with your own remote FAS IP)
 
 ``option fasremoteip '46.32.240.41'``
 
-Set the Faspath
-***************
+.. _set-the-faspath:
+
+faspath - FAS Path
+******************
 
 Default: /
 
@@ -153,8 +167,10 @@ In the following examples, replace with your own values for faspath:
 
 		``option faspath '/fas/fas-hid.php'``
 
-Set the Faskey
-**************
+.. _set-the-faskey:
+
+faskey - FAS Key
+****************
 
 Default: A system generated sha256 string
 
@@ -170,8 +186,10 @@ Option faskey must be pre-shared with FAS. (It is automatically pre-shared with 
 
 ``option faskey '328411b33fe55127421fa394995711658526ed47d0affad3fe56a0b3930c8689'``
 
-Set Security Level: fas_secure_enabled
-**************************************
+.. _set-security-level-fas-secure-enabled:
+
+fas_secure_enabled - Security Level
+***********************************
 
 Default: 1
 
@@ -226,8 +244,10 @@ Example:
 
 ``option fas_secure_enabled '3'``
 
-Set NAT Traversal Poll Interval
-*******************************
+.. _set-nat-traversal-poll-interval:
+
+nat_traversal_poll_interval - NAT Traversal Poll Interval
+*********************************************************
 
 Sets the polling interval for NAT Traversal in seconds
 

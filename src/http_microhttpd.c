@@ -1616,22 +1616,22 @@ static char *construct_querystring(struct MHD_Connection *connection, t_client *
 					write_client_info(msg, STATUS_BUF, "write", cid, cidinfo);
 				}
 
-				if (config->custom_params) {
+				if (config->custom_params && config->custom_params[0] != '\0') {
 					safe_snprintf(cidinfo, SMALL_BUF, "%s\0", config->custom_params);
 					write_client_info(msg, STATUS_BUF, "parse", cid, cidinfo);
 				}
 
-				if (config->custom_vars) {
+				if (config->custom_vars && config->custom_vars[0] != '\0') {
 					safe_snprintf(cidinfo, SMALL_BUF, "%s\0", config->custom_vars);
 					write_client_info(msg, STATUS_BUF, "parse", cid, cidinfo);
 				}
 
-				if (config->custom_images) {
+				if (config->custom_images && config->custom_images[0] != '\0') {
 					safe_snprintf(cidinfo, SMALL_BUF, "%s\0", config->custom_images);
 					write_client_info(msg, STATUS_BUF, "parse", cid, cidinfo);
 				}
 
-				if (config->custom_files) {
+				if (config->custom_files && config->custom_files[0] != '\0') {
 					safe_snprintf(cidinfo, SMALL_BUF, "%s\0", config->custom_files);
 					write_client_info(msg, STATUS_BUF, "parse", cid, cidinfo);
 				}

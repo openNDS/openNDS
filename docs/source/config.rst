@@ -369,6 +369,9 @@ This is the script used to generate the GatewayFQDN client status page.
 
 Example:
 
+.. warning::
+ A package upgrade replaces files under /usr/lib/opennds. Copy this script to a path outside /usr/lib/opennds and set statuspath to that copy. You may then safely edit that copy.
+
 ``option statuspath '/mycustomscripts/custom_client_params.sh'``
 
 Set MaxClients

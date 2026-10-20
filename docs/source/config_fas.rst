@@ -49,6 +49,33 @@ This is enabled by the following option:
 
 ``option binauth '/usr/lib/opennds/binauth_log.sh'``
 
+Set CustomBinAuth
+*****************
+
+Default: /usr/lib/opennds/custombinauth.sh
+
+The default BinAuth script calls this custom script so that you can add your own local policy.
+
+.. warning::
+ A package upgrade replaces files under /usr/lib/opennds. Do not edit /usr/lib/opennds/custombinauth.sh in place. Copy it to a path outside /usr/lib/opennds, edit the copy and set custombinauth to that copy.
+
+Example:
+
+``option custombinauth '/mycustomscripts/custombinauth.sh'``
+
+Set reauth_interval
+*******************
+
+Set the interval in seconds after which a deauthed client can log back in again.
+
+Default: Not set, meaning a deauthed client can log back in immediately.
+
+If set to 0, this is the equivalent of not set.
+
+Example, disallow re-authentication for 10 minutes (600 seconds):
+
+``option reauth_interval '600'``
+
 Set Fasport
 ***********
 

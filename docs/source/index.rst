@@ -37,6 +37,7 @@ Contents:
    :maxdepth: 2
    :caption: Introduction
 
+   whatsnew
    overview
    howitworks
 
@@ -88,7 +89,6 @@ Contents:
    :caption: Project
 
    changelog
-   todo
 
 Indices and tables
 ==================

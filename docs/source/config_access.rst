@@ -282,7 +282,7 @@ openNDS supports Autonomous Walled Garden by means of a simple configuration opt
 OpenWrt Walled Garden
 =====================
 
-The additional dependencies are the ipset (openWrt 23.03.x and earlier) and dnsmasq-full packages.
+The additional dependencies are the ipset (OpenWrt 22.03.x and earlier) and dnsmasq-full packages.
 Install these by running the following commands:
 
 .. code::

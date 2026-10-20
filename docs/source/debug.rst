@@ -32,9 +32,9 @@ openNDS supports four levels of debugging to syslog.
 Firewall Cleanup
 ****************
 
- When stopped, openNDS deletes its iptables rules, attempting to leave the router's firewall in its original state. If not (for example, if openNDS crashes instead of exiting cleanly) subsequently starting and stopping openNDS should remove its rules.
+ When stopped, openNDS deletes its nftables rules (in the tables inet nds_filter, inet nds_mangle and inet nds_nat), attempting to leave the router's firewall in its original state. If not (for example, if openNDS crashes instead of exiting cleanly) subsequently starting and stopping openNDS should remove its rules.
 
- On OpenWrt, restarting the firewall will overwrite openNDS's iptables rules, so when the firewall is restarted it will automatically restart openNDS if it is running.
+ On OpenWrt with Firewall 4 (FW4), when the firewall restarts, the firewall restart hook (``option fwhook_enabled``, default 1) notifies openNDS so that it can reinsert the rules it needs. See :doc:`config`.
 
 Packet Marking
 **************
@@ -43,12 +43,19 @@ Packet Marking
 
  By default, openNDS marks its packets in such a way that conflicts are unlikely to occur but the masks used by openNDS can be changed if necessary in the configuration file.
 
-IPtables Conflicts
-******************
+Firewall (nftables) Conflicts
+*****************************
 
- Potential conflicts may be investigated by looking at your overall iptables setup. To list all the rules in all the chains, run
+ Potential conflicts may be investigated by looking at your overall nftables setup. To list all the rules in all the tables, run
 
-    ``iptables -L``
+    ``nft list ruleset``
+
+ The openNDS tables can be listed individually, for example:
+
+    ``nft list table inet nds_filter``
+
+.. note::
+ The following tutorial covers the older iptables firewall. openNDS now uses nftables, but the general concepts may still be useful:
 
  For extensive suggestions on debugging iptables, see for example, Oskar Andreasson's tutorial at:
 

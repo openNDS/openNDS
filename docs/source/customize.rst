@@ -168,13 +168,13 @@ Both these also require custom parameter, variable, image and file lists:
 
 ``list fas_custom_images_list 'logo_png=https://openwrt.org/_media/logo.png'``
 
-``list fas_custom_images_list 'banner1_jpg=https://raw.githubusercontent.com/openNDS/openNDS/9.0.0/resources/bannerbw.jpg'``
+``list fas_custom_images_list 'banner1_jpg=https://raw.githubusercontent.com/openNDS/openNDS/v9.0.0/resources/bannerbw.jpg'``
 
-``list fas_custom_images_list 'banner2_jpg=https://raw.githubusercontent.com/openNDS/openNDS/9.0.0/resources/bannerpickle.jpg'``
+``list fas_custom_images_list 'banner2_jpg=https://raw.githubusercontent.com/openNDS/openNDS/v9.0.0/resources/bannerpickle.jpg'``
 
-``list fas_custom_images_list 'banner3_jpg=https://raw.githubusercontent.com/openNDS/openNDS/9.0.0/resources/bannerseawolf.jpg'``
+``list fas_custom_images_list 'banner3_jpg=https://raw.githubusercontent.com/openNDS/openNDS/v9.0.0/resources/bannerseawolf.jpg'``
 
-``list fas_custom_files_list 'advert1_htm=https://raw.githubusercontent.com/openNDS/openNDS/9.0.0/resources/bannerpickle.htm'``
+``list fas_custom_files_list 'advert1_htm=https://raw.githubusercontent.com/openNDS/openNDS/v9.0.0/resources/bannerpickle.htm'``
 
 Once configured these two example ThemeSpec scripts will download custom image files, a custom html file and inject custom user input forms for phone number and home postcode.
 

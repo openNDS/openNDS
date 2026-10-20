@@ -37,27 +37,59 @@ Contents:
 
 .. toctree::
    :maxdepth: 2
+   :caption: Introduction
 
    overview
-   changelog
    howitworks
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Getting Started
+
    install
+   compile
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Configuration Reference
+
+   config
+   config_clients
+   traffic
+   config_fas
+   config_access
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Customising the Portal
+
    splash
    customize
-   config
    customparams
-   fas
    themespec
-   preauth
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Authentication and Integration
+
    binauth
-   walledgarden
+   fas
    libraries
-   ndsctl
-   traffic
    clientstatus
-   faq
-   compile
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Operation and Troubleshooting
+
+   ndsctl
    debug
+   faq
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Project
+
+   changelog
    todo
 
 Indices and tables

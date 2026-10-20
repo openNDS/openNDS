@@ -5,6 +5,9 @@ Overview
 ********
 ThemeSpec Script files are an evolution of the original PreAuth/Login-Option scripts that were introduced to provide dynamic splash page sequences without requiring a separate web server or additional dependencies.
 
+.. note::
+ PreAuth as a separate option was deprecated with the introduction of openNDS version 9 and removed with the introduction of version 10. It is replaced entirely with ThemeSpec script support. ThemeSpec is a wrapper around the underlying PreAuth technology, replacing complicated authentication code with the single library function call, *auth_log()*.
+
 From openNDS version 9 onwards, a library script provides resources for openNDS to use. In addition, a standardised method for including themed specification files is provided. These files are used by the library script to generate the required html for the specified theme and functionality required for the venue.
 
 Pre-installed ThemeSpec script files

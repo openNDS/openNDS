@@ -12,7 +12,34 @@ custombinauth_description="Set minimum time between deauthentication and reauthe
 #Define a function
 parse_timestamp() {
 	local action="$1"
-	eval $(grep "$clientmac" "$logdir""binauthlog.log" | grep "$action" | awk -F", " '{print $4}' | tail -n 1)
+	local line
+	timestamp=""
+
+	# Deauth lines look like method="idle_deauth", ..., timestamp=<seconds>, bytes_incoming=.
+	# Take the first timestamp's digits. Do not execute the line: later fields can come from the client.
+	if [ -n "$clientmac" ] && [ -n "$logdir" ]; then
+		line=$(grep -F -- "$clientmac" "${logdir}binauthlog.log" 2>/dev/null | grep 'method="[^"]*_deauth"' | tail -n 1)
+		timestamp=$(printf '%s\n' "$line" | awk '
+			{
+				i = index($0, "timestamp=")
+				if (i == 0) {
+					exit
+				}
+				s = substr($0, i + 10)
+				n = ""
+				while (length(s) > 0) {
+					c = substr(s, 1, 1)
+					if (c < "0" || c > "9") {
+						break
+					}
+					n = n c
+					s = substr(s, 2)
+				}
+				printf "%s", n
+			}
+		')
+	fi
+
 	syslogmessage="clientmac [$clientmac] action [$action] timestamp [$timestamp]"
 	debuglevel="debug"
 	write_to_syslog

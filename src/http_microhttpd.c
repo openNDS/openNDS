@@ -244,9 +244,9 @@ static int do_binauth(
 			*upload_rate_ret = MAX(upload_rate, 0);
 		case 1:
 			*seconds_ret = MAX(seconds, 0);
-		case 0:
 			break;
 		default:
+			/* No number was read. Refuse, rather than accept with the defaults. */
 			return -1;
 	}
 

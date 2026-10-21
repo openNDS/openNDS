@@ -199,7 +199,7 @@ stopdaemon:
 
         arg2: contains the pid of the daemon to stop
 
-    *returns*: "done" if sucessful or "nack" with exit code 1 if unsuccessful
+    *returns*: "done" if successful or "nack" with exit code 1 if unsuccessful
 
 get_interface_by_ip:
 --------------------

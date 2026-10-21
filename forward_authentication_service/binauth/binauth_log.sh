@@ -237,12 +237,31 @@ fi
 # banner3_jpg
 # advert1_htm
 
-# Parse the database by client mac ($2):
-cidfile=$(grep -r "$2" "$mountpoint/ndscids" | tail -n 1 | awk -F 'ndscids/' '{print $2}' | awk -F ':' '{printf $1}')
+# Parse the database by client mac ($2).
+# Cid files are regular files in ndscids. preemptive_auth is a subdirectory of restore data, not shell.
+cidfile=""
 
-if [ ! -z "$cidfile" ]; then
+if [ -n "$2" ]; then
+	for cidpath in "$mountpoint/ndscids"/*; do
+		[ -f "$cidpath" ] || continue
+
+		cidname=${cidpath##*/}
+
+		case "$cidname" in
+			ndsinfo|authmonargs|heartbeat)
+				continue
+				;;
+		esac
+
+		if grep -F -q -- "$2" "$cidpath" 2>/dev/null; then
+			cidfile=$cidname
+		fi
+	done
+fi
+
+if [ -n "$cidfile" ]; then
 	# populate the local variables:
-	. $mountpoint/ndscids/$cidfile
+	. "$mountpoint/ndscids/$cidfile"
 
 	# Add a selection of client data variables to the log entry
 	loginfo="$loginfo, client_type=\"$client_type\", gatewayname=\"$gatewayname\", ndsversion=\"$version\", originurl=\"$originurl\""
@@ -323,14 +342,14 @@ echo "$sessiontimeout $upload_rate $download_rate $upload_quota $download_quota"
 # For other methods, write the values to the client cid file
 /usr/lib/opennds/libopennds.sh syslog "cid  [ $mountpoint/ndscids/$cidfile ]" "debug" >/dev/null
 
-if [ ! -z "$cidfile" ] && [ -z "$binauth_quotas" ]; then
+if [ -n "$cidfile" ] && [ -z "$binauth_quotas" ]; then
 	/usr/lib/opennds/libopennds.sh syslog "binauth appending  [ $mountpoint/ndscids/$cidfile ]" "debug" >/dev/null
-	echo "binauth_quotas=1" >> $mountpoint/ndscids/$cidfile
-	echo "sessiontimeout=$sessiontimeout" >> $mountpoint/ndscids/$cidfile
-	echo "upload_rate=$upload_rate" >> $mountpoint/ndscids/$cidfile
-	echo "download_rate=$download_rate" >> $mountpoint/ndscids/$cidfile
-	echo "upload_quota=$upload_quota" >> $mountpoint/ndscids/$cidfile
-	echo "download_quota=$download_quota" >> $mountpoint/ndscids/$cidfile
+	echo "binauth_quotas=1" >> "$mountpoint/ndscids/$cidfile"
+	echo "sessiontimeout=$sessiontimeout" >> "$mountpoint/ndscids/$cidfile"
+	echo "upload_rate=$upload_rate" >> "$mountpoint/ndscids/$cidfile"
+	echo "download_rate=$download_rate" >> "$mountpoint/ndscids/$cidfile"
+	echo "upload_quota=$upload_quota" >> "$mountpoint/ndscids/$cidfile"
+	echo "download_quota=$download_quota" >> "$mountpoint/ndscids/$cidfile"
 fi
 
 # Exit, setting level

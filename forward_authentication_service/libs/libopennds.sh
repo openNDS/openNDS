@@ -2277,12 +2277,29 @@ convert_from_la() {
 get_quotas_by_mac() {
 	quotas="0 0 0 0 0"
 	configure_log_location
-	cidfile=$(grep -r "$clientmac" "$mountpoint/ndscids" | tail -n 1 | awk -F 'ndscids/' '{print $2}' | awk -F ':' '{printf $1}')
+	# Cid files are regular files in ndscids. Do not read preemptive_auth: those files are not shell.
+	cidfile=""
 
-	if [ ! -z "$cidfile" ]; then
-		if [ -e "$mountpoint/ndscids/$cidfile" ]; then
-			. $mountpoint/ndscids/$cidfile
-		fi
+	if [ -n "$clientmac" ]; then
+		for cidpath in "$mountpoint/ndscids"/*; do
+			[ -f "$cidpath" ] || continue
+
+			cidname=${cidpath##*/}
+
+			case "$cidname" in
+				ndsinfo|authmonargs|heartbeat)
+					continue
+					;;
+			esac
+
+			if grep -F -q -- "$clientmac" "$cidpath" 2>/dev/null; then
+				cidfile=$cidname
+			fi
+		done
+	fi
+
+	if [ -n "$cidfile" ] && [ -f "$mountpoint/ndscids/$cidfile" ]; then
+		. "$mountpoint/ndscids/$cidfile"
 
 		if [ ! -z "$binauth_quotas" ] && [ "$binauth_quotas" -eq 1 ]; then
 			quotas="$sessiontimeout $upload_rate $download_rate $upload_quota $download_quota"
@@ -3551,23 +3568,18 @@ elif [ "$1" = "get_meshnode_list" ]; then
 
 elif [ "$1" = "get_next_preemptive_auth" ]; then
 	configure_log_location
-	auth_files=$(ls $mountpoint/ndscids/preemptive_auth)
+	preemptive_auth="$mountpoint/ndscids/preemptive_auth"
 
-	if [ -z $auth_files ]; then
-		exit 1
-	fi
-
-	for auth_file in $auth_files; do
-
-		if [ -e "$mountpoint/ndscids/preemptive_auth/$auth_file" ]; then
-			cat "$mountpoint/ndscids/preemptive_auth/$auth_file"
-			rm "$mountpoint/ndscids/preemptive_auth/$auth_file"
+	# One restore file per call. Skip names that are not files. An empty directory leaves the glob literal, so the loop exits 1.
+	for auth_file in "$preemptive_auth"/*; do
+		if [ -f "$auth_file" ]; then
+			cat "$auth_file"
+			rm -f "$auth_file"
+			exit 0
 		fi
-
-		break
 	done
 
-	exit 0
+	exit 1
 
 elif [ "$1" = "ipv6_routing" ]; then
 

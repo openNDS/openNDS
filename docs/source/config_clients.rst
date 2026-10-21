@@ -4,8 +4,10 @@ Configuration Options - Clients and Timeouts
 Client timeouts in minutes
 **************************
 
-Preauthidletimeout
-==================
+.. _preauthidletimeout:
+
+preauthidletimeout - Preauthenticated Idle Timeout
+==================================================
 
 Default 30
 
@@ -17,8 +19,10 @@ Example:
 
 ``option preauthidletimeout '60'``
 
-Authidletimeout
-===============
+.. _authidletimeout:
+
+authidletimeout - Authenticated Idle Timeout
+============================================
 
 Default 120
 
@@ -29,8 +33,10 @@ Example:
 
 ``option authidletimeout '60'``
 
-Session Timeout
-===============
+.. _session-timeout:
+
+sessiontimeout - Session Timeout
+================================
 
 Default 1440 minutes (24 hours).
 
@@ -42,8 +48,10 @@ Example: Set to 20 hours (1200 minutes).
 
 ``option sessiontimeout '1200'``
 
-Set the Checkinterval
-*********************
+.. _set-the-checkinterval:
+
+checkinterval - Check Interval
+******************************
 
 The interval in seconds at which openNDS checks client timeouts, quota usage and runs watchdog checks.
 
@@ -53,8 +61,10 @@ Example: Set to 30 seconds.
 
 ``option checkinterval '30'``
 
-Trusted Clients
-***************
+.. _trusted-clients:
+
+trustedmac - Trusted Clients
+****************************
 
 A list of the MAC addresses of trusted client devices.
 
@@ -73,8 +83,10 @@ Example:
 
 ``list trustedmac '00:00:C0:01:D0:1D'``
 
-Pre-emptive Clients
-*******************
+.. _pre-emptive-clients:
+
+preemptivemac - Pre-emptive Clients
+***********************************
 
 A list of the MAC addresses and access conditions of pre-emptively authenticated client devices.
 
@@ -104,8 +116,10 @@ Examples:
 ``list preemptivemac 'mac=00:00:E0:01:D0:03;sessiontimeout=4200;uploadrate=100;downloadrate=0;uploadquota=0;downloadquota=0;custom=custom_string_for_preemptivemac3'``
 
 
-Dhcp option 114 Enable - RFC8910
-********************************
+.. _dhcp-option-114-enable-rfc8910:
+
+dhcp_default_url_enable - Dhcp option 114 Enable - RFC8910
+**********************************************************
 
 Sends "default_url" (dhcp option 114) with all replies to dhcp requests
 

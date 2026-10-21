@@ -118,8 +118,10 @@ Configuration Reference
 
 The following was previously part of the Configuration Options page.
 
-Define Custom Parameters
-========================
+.. _define-custom-parameters:
+
+fas_custom_parameters_list - Custom Parameters
+==============================================
 
 Custom parameters are sent as fixed values to FAS
 
@@ -160,8 +162,10 @@ theme_user-email-login-custom-placeholders
 
 ``list fas_custom_parameters_list 'banner3_message=SeaWolf%20Cruiser%20Racer'``
 
-Define Custom Variables
-=======================
+.. _define-custom-variables:
+
+fas_custom_variables_list - Custom Variables
+============================================
 
 Custom Variables are used by FAS to dynamically collect information from clients
 
@@ -215,8 +219,10 @@ This example inserts Phone Number and Home Post Code fields:
 
 ``list fas_custom_variables_list 'input=phone:Phone%20Number:text;postcode:Home%20Post%20Code:text'``
 
-Define Custom Images
-====================
+.. _define-custom-images:
+
+fas_custom_images_list - Custom Images
+======================================
 
 Custom Images are served by a local FAS where required in dynamic portal pages
 
@@ -257,8 +263,10 @@ theme_user-email-login-custom-placeholders
 
 ``list fas_custom_images_list 'banner3_jpg=https://raw.githubusercontent.com/openNDS/openNDS/v9.0.0/resources/bannerseawolf.jpg'``
 
-Define Custom Files
-===================
+.. _define-custom-files:
+
+fas_custom_files_list - Custom Files
+====================================
 
 Custom Files are served by a local FAS where required in dynamic portal pages
 

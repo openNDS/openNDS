@@ -115,8 +115,10 @@ If a fixed ceiling data rate is required, third party traffic shaping packages c
 Configuration Reference - Rate and Volume Quotas
 ************************************************
 
-Set Rate Quotas
-===============
+.. _set-rate-quotas:
+
+Rate Quotas
+===========
 
 Defaults 0
 
@@ -139,8 +141,10 @@ Rates:
 
 ``option downloadrate '800'``
 
-Set Bucket Ratio
-================
+.. _set-bucket-ratio:
+
+Bucket Ratio
+============
 
 Default 10
 
@@ -169,8 +173,10 @@ Examples:
 	`option download_bucket_ratio '5'`
 
 
-MaxDownloadBucketSize
-=====================
+.. _maxdownloadbucketsize:
+
+max_download_bucket_size - Max Download Bucket Size
+===================================================
 
 Default: 250
 
@@ -184,8 +190,10 @@ Example:
 
 `option max_download_bucket_size '100'`
 
-MaxUploadBucketSize
-===================
+.. _maxuploadbucketsize:
+
+max_upload_bucket_size - Max Upload Bucket Size
+===============================================
 
 Default 250
 
@@ -199,8 +207,10 @@ Example:
 
 `option max_upload_bucket_size '100'`
 
-DownLoadUnrestrictedBursting
-============================
+.. _downloadunrestrictedbursting:
+
+download_unrestricted_bursting - Download Unrestricted Bursting
+===============================================================
 
 Default: 0
 
@@ -220,8 +230,10 @@ Example:
 
 `option download_unrestricted_bursting '1'`
 
-UpLoadUnrestrictedBursting
-==========================
+.. _uploadunrestrictedbursting:
+
+upload_unrestricted_bursting - Upload Unrestricted Bursting
+===========================================================
 
 Default: 0
 
@@ -241,8 +253,10 @@ Example:
 
 `option upload_unrestricted_bursting '1'`
 
-Set RateCheckWindow
-===================
+.. _set-ratecheckwindow:
+
+ratecheckwindow - Rate Check Window
+===================================
 
 Default: 2
 
@@ -265,8 +279,10 @@ Example: Disable all rate quotas for all clients, overriding settings made in FA
 
 ``option ratecheckwindow '0'``
 
-Set Volume Quotas
-=================
+.. _set-volume-quotas:
+
+Volume Quotas
+=============
 
 If the client data quota exceeds the value set here, the client will be deauthenticated or rate limited as defined by the Fair Usage Policy throttle rate.
 
@@ -284,8 +300,10 @@ If set to 0, there is no limit
 
 ``option downloadquota '0'``
 
-Set Fair Usage Policy Throttle Rate
-===================================
+.. _set-fair-usage-policy-throttle-rate:
+
+Fair Usage Policy Throttle Rate
+===============================
 
 If Volume quota is set, a download throttle rate can be configured.
 

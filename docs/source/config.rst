@@ -3,22 +3,28 @@ Configuration Options - General
 
 Configuration is split into topic pages: this page (general and gateway settings), :doc:`config_clients`, :doc:`traffic`, :doc:`config_fas`, :doc:`config_access` and :doc:`customparams`.
 
-Enable openNDS
-**************
+.. _enable-opennds:
+
+enabled - Enable openNDS
+************************
 
 Set to 0 to disable opennds
 
 ``option enabled 1``
 
-Use deprecated generic configuration file
-******************************************
+.. _use-deprecated-generic-configuration-file:
+
+config - Deprecated generic configuration file
+**********************************************
 
 Use of this setting is no longer supported and if present is ignored.
 
 ``option config '/etc/opennds/opennds.conf'``
 
-Enable debug output (0-3)
-*************************
+.. _enable-debug-output-0-3:
+
+debuglevel - Debug output (0-3)
+*******************************
 
 Default: 1
 
@@ -40,8 +46,10 @@ debuglevel 2 + LOG_DEBUG
 
 ``option debuglevel '1'``
 
-Firewall Restart hook
-*********************
+.. _firewall-restart-hook:
+
+fwhook_enabled - Firewall Restart hook
+**************************************
 
 Specific to OpenWrt only, Firewall 4 (FW4) informs openNDS when it is restarting.
 
@@ -51,8 +59,10 @@ Default: 1
 
 ``option fwhook_enabled '1'``
 
-Ndsctl Socket Access
-********************
+.. _ndsctl-socket-access:
+
+ndsctlsocket - Ndsctl Socket Access
+***********************************
 
 Set the socket name to use for ndsctl socket access, relative to the tmpfs mountpoint.
 
@@ -66,8 +76,10 @@ Example:
 
 ``option ndsctlsocket 'sockets/ndsctl.sock'``
 
-Local Log Mountpoint
-********************
+.. _local-log-mountpoint:
+
+log_mountpoint - Local Log Mountpoint
+*************************************
 
 Default: router's volatile tmpfs storage eg on OpenWrt '/tmp'
 
@@ -80,8 +92,10 @@ Example:
 
 ``option log_mountpoint '/logs'``
 
-Maximum number of Local Log Entries
-***********************************
+.. _maximum-number-of-local-log-entries:
+
+max_log_entries - Maximum number of Local Log Entries
+*****************************************************
 
 Set the maximum number of local log entries to be kept.
 Default 100
@@ -106,8 +120,10 @@ Example:
 
 ``option max_log_entries '1000'``
 
-Login Option
-************
+.. _login-option:
+
+login_option_enabled - Login Option
+***********************************
 
 Default: 1
 
@@ -147,8 +163,10 @@ Use Theme defined in ThemeSpec path (option themespec_path)
 
 `option login_option_enabled '1'`
 
-Allow Preemptive Authentication
-*******************************
+.. _allow-preemptive-authentication:
+
+allow_preemptive_authentication - Allow Preemptive Authentication
+*****************************************************************
 
 Default: 1 - Enabled
 
@@ -164,8 +182,10 @@ Example:
 
 ``option allow_preemptive_authentication '0'``
 
-ThemeSpec Path
-**************
+.. _themespec-path:
+
+themespec_path - ThemeSpec Path
+*******************************
 
 Default: None
 
@@ -185,8 +205,10 @@ The file must be flagged as executable and have the correct shebang for the defa
 
 ``option themespec_path '/usr/lib/opennds/<filename>'``
 
-DHCP Leases File
-****************
+.. _dhcp-leases-file:
+
+dhcp_leases_file - DHCP Leases File
+***********************************
 
 Default: Try /tmp/dhcp.leases, /var/lib/misc/dnsmasq.lease or /var/db/dnsmasq.leases
 
@@ -196,8 +218,10 @@ Example:
 
 ``option dhcp_leases_file '/tmp/dhcp.leases.special'``
 
-Set refresh interval for downloads
-**********************************
+.. _set-refresh-interval-for-downloads:
+
+remotes_refresh_interval - Refresh interval for downloads
+*********************************************************
 
 Set refresh interval for downloaded remote files (in minutes)
 
@@ -211,8 +235,10 @@ Example, set to twelve hours (720 minutes):
 
 ``option remotes_refresh_interval '720'``
 
-Use outdated libmicrohttpd (MHD)
-********************************
+.. _use-outdated-libmicrohttpd-mhd:
+
+use_outdated_mhd - Use outdated libmicrohttpd (MHD)
+***************************************************
 
 Default 0 (Disabled)
 
@@ -234,8 +260,10 @@ If this option is set to 1, NDS will attempt to start and log an error.
 
 ``option use_outdated_mhd '1'``
 
-Maximum Page Size to be served by MHD
-*************************************
+.. _maximum-page-size-to-be-served-by-mhd:
+
+max_page_size - Maximum Page Size to be served by MHD
+*****************************************************
 
 Default 10240 bytes
 
@@ -254,8 +282,10 @@ Example:
 
 ``option max_page_size '4096'``
 
-Set the MHD WebRoot
-*******************
+.. _set-the-mhd-webroot:
+
+webroot - MHD WebRoot
+*********************
 
 Default: /etc/opennds/htdocs
 
@@ -267,8 +297,10 @@ Example:
 
 ``option webroot '/etc/opennds/htdocs'``
 
-Set the GatewayInterface
-************************
+.. _set-the-gatewayinterface:
+
+gatewayinterface - Gateway Interface
+************************************
 
 Default: br-lan
 
@@ -282,8 +314,10 @@ In OpenWrt this is normally br-lan, in generic Linux it might be wlan0
 
 ``option gatewayinterface 'br-lan'``
 
-Set the GatewayPort
-*******************
+.. _set-the-gatewayport:
+
+gatewayport - Gateway Port
+**************************
 
 Default: 2050
 
@@ -295,8 +329,10 @@ Example:
 
 ``option gatewayport '2080'``
 
-Set the GatewayName
-*******************
+.. _set-the-gatewayname:
+
+gatewayname - Gateway Name
+**************************
 
 Default: openNDS
 
@@ -322,8 +358,10 @@ Example:
 
 ``option gatewayname 'OpenWrt openNDS'``
 
-Serial Number Suffix Enable
-***************************
+.. _serial-number-suffix-enable:
+
+enable_serial_number_suffix - Serial Number Suffix Enable
+*********************************************************
 
 Appends a serial number suffix to the gatewayname string.
 
@@ -337,8 +375,10 @@ Example:
 
 ``option enable_serial_number_suffix '0'``
 
-Set GatewayFQDN
-***************
+.. _set-gatewayfqdn:
+
+gatewayfqdn - Gateway FQDN
+**************************
 
 Default: status.client
 
@@ -360,8 +400,10 @@ Alternate Useful Example:
 
 ``option gatewayfqdn 'login.page'``
 
-Set StatusPath
-**************
+.. _set-statuspath:
+
+statuspath - Status Path
+************************
 
 Default: /usr/lib/opennds/client_params.sh
 
@@ -374,8 +416,10 @@ Example:
 
 ``option statuspath '/mycustomscripts/custom_client_params.sh'``
 
-Set MaxClients
-**************
+.. _set-maxclients:
+
+maxclients - Max Clients
+************************
 
 Default 250
 
@@ -387,8 +431,10 @@ Example:
 
 ``option maxclients '500'``
 
-Set Fast Client Scan
-********************
+.. _set-fast-client-scan:
+
+fast_client_scan - Fast Client Scan
+***********************************
 
 Default 1 (enabled)
 

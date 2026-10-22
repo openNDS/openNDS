@@ -36,3 +36,15 @@ stop_service() {
 		/usr/lib/opennds/libopennds.sh ipv6_routing allow
 	fi
 }
+
+service_stopped() {
+	# procd_kill returns before opennds exits. Removal then deletes
+	# libopennds.sh, so wait for the daemon's own cleanup first.
+	i=0
+	while pidof opennds >/dev/null && [ "$i" -lt 10 ]; do
+		sleep 1
+		i=$((i + 1))
+	done
+
+	/usr/lib/opennds/libopennds.sh delete_chains >/dev/null 2>&1
+}

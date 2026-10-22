@@ -33,6 +33,8 @@ define Package/opennds
   TITLE:=open Network Demarcation Service
   URL:=https://github.com/openNDS/openNDS
   CONFLICTS:=nodogsplash
+  # apk (25.12 onwards, including snapshot) ignores CONFLICTS. The version constraint is required.
+  EXTRA_DEPENDS:=$(if $(CONFIG_USE_APK),!nodogsplash (>=0))
 endef
 
 define Package/opennds/description

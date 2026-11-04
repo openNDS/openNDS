@@ -418,7 +418,7 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 	int action;
 	int exitcode;
 	time_t sessionseconds_binauth;
-	time_t sessionseconds_config = 60 * config->sessiontimeout;
+	int session_end_explicit;
 	unsigned long long int upload_rate;		/**< @brief Client Upload rate limit, kb/s */
 	unsigned long long int download_rate;		/**< @brief Client Download rate limit, kb/s */
 	unsigned long long int uprate;			/**< @brief Current Client Upload rate, kb/s */
@@ -430,6 +430,10 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 		return -1;
 	} else if (state == FW_MARK_PREAUTHENTICATED) {
 		if (new_state == FW_MARK_AUTHENTICATED) {
+
+			// Read and clear the flag here, so it cannot outlive this attempt if binauth refuses
+			session_end_explicit = client->session_end_explicit;
+			client->session_end_explicit = 0;
 
 			exitcode = binauth_action(client, reason, customdata);
 
@@ -479,13 +483,11 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 
 			debug(LOG_DEBUG, "sessionseconds_binauth [ %ld ]", (long)sessionseconds_binauth);
 
-			/* Zero is unlimited. Storing "now" makes the next refresh deauthenticate the client. */
-			if (sessionseconds_binauth > 0) {
+			/* The caller (ndsctl auth, client_auth or preemptive_auth) has already set session_end,
+			   from its own duration or the global sessiontimeout. Zero from binauth is "no override".
+			   A duration given explicitly to ndsctl auth is never overridden. */
+			if (sessionseconds_binauth > 0 && session_end_explicit == 0) {
 				client->session_end = now + sessionseconds_binauth;
-			} else if (sessionseconds_config > 0) {
-				client->session_end = now + sessionseconds_config;
-			} else {
-				client->session_end = 0;
 			}
 
 			/* A zero from the quota script is "no override", not "replace with the global".

@@ -440,7 +440,7 @@ ndsctl_auth(FILE *fp, char *arg)
 	unsigned id;
 	int rc = -1;
 	int seconds = 60 * config->sessiontimeout;
-	int custom_seconds;
+	int custom_seconds = 0;
 	int uploadrate = config->upload_rate;
 	int downloadrate = config->download_rate;
 	unsigned long long int uploadquota = config->upload_quota;
@@ -624,6 +624,9 @@ ndsctl_auth(FILE *fp, char *arg)
 			} else {
 				client->session_end = 0;
 			}
+
+			// An explicit duration (eg from a remote FAS) wins over binauth
+			client->session_end_explicit = (custom_seconds > 0);
 
 			client->upload_rate = uploadrate;
 			client->download_rate = downloadrate;

@@ -60,6 +60,7 @@ typedef struct _t_client {
 	time_t session_start;				/**< @brief Actual Time the client was authenticated */
 	time_t window_start;				/**< @brief Actual Time the client rate check window begins */
 	time_t session_end;				/**< @brief Scheduled Time the client will be deauthenticated */
+	int session_end_explicit;			/**< @brief 1 if ndsctl auth gave a duration, binauth must not replace it */
 	t_counters counters;				/**< @brief Counters for input/output of the client. */
 	int window_counter;				/**< @brief Rate Check Window counter */
 	int rate_exceeded;				/**< @brief Rate Exceeded Check flag */

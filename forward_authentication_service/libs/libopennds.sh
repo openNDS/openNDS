@@ -1221,11 +1221,16 @@ wait_for_interface () {
 		# A bridge reads operstate UNKNOWN while it has no up member (the
 	# kernel derives a bridge's operstate from its ports), so grepping
 	# the state word can never succeed for a memberless bridge and the
-	# daemon waits out the full timeout and exits. Match the interface's
-	# admin-up FLAG instead: the UP token inside the <> flags list is set
-	# by "ip link set up" on any interface type, and -w keeps it from
-	# matching the UP inside LOWER_UP (no word boundary before it).
-	if [ $(ip link show $ifname 2> /dev/null | grep -c -w "UP") -eq 1 ]; then
+	# daemon waits out the full timeout and exits. Test the invariant
+	# instead: extract the flags block and ask whether it carries the
+	# UP token, i.e. whether the interface is administratively up. The
+	# flags block is the only <> bracketed token on the line, so altname
+	# lines and any future per-interface fields iproute2 adds cannot
+	# affect the match, and -w keeps LOWER_UP out (the underscore is a
+	# word constituent). check_gw_ip still fails loudly when the
+	# interface carries no address, so the memberless-bridge start fails
+	# immediately and legibly instead of hanging and crash-looping.
+		if ip -o link show dev $ifname 2> /dev/null | grep -o '<[^>]*>' | grep -q -w "UP"; then
 			ifstatus="up"
 			break
 		fi
@@ -1236,7 +1241,7 @@ wait_for_interface () {
 
 		sleep 2
 
-		if [ $i == $timeout ] ; then
+		if [ $i = $timeout ] ; then
 			syslogmessage="Iteration [ $i ], Interface [ $ifname ] is not up - giving up for now."
 			debugtype="warn"
 			write_to_syslog

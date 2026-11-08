@@ -1218,19 +1218,21 @@ wait_for_interface () {
 
 	for i in $(seq $timeout); do
 
-		# A bridge reads operstate UNKNOWN while it has no up member (the
-	# kernel derives a bridge's operstate from its ports), so grepping
-	# the state word can never succeed for a memberless bridge and the
-	# daemon waits out the full timeout and exits. Test the invariant
-	# instead: extract the flags block and ask whether it carries the
-	# UP token, i.e. whether the interface is administratively up. The
-	# flags block is the only <> bracketed token on the line, so altname
-	# lines and any future per-interface fields iproute2 adds cannot
-	# affect the match, and -w keeps LOWER_UP out (the underscore is a
-	# word constituent). check_gw_ip still fails loudly when the
-	# interface carries no address, so the memberless-bridge start fails
-	# immediately and legibly instead of hanging and crash-looping.
-		if ip -o link show dev $ifname 2> /dev/null | grep -o '<[^>]*>' | grep -q -w "UP"; then
+			# A bridge reads operstate UNKNOWN while it has no up member (the
+		# kernel derives a bridge's operstate from its ports), so grepping
+		# the state word can never succeed for a memberless bridge and the
+		# daemon waits out the full timeout and exits. Test the invariant
+		# instead: extract the flags block and ask whether it carries the
+		# UP token, i.e. whether the interface is administratively up. The
+		# flags block is the only <> bracketed token on the line, so altname
+		# lines and any future per-interface fields iproute2 adds cannot
+		# affect the match, and -w keeps LOWER_UP out (the underscore is a
+		# word constituent). check_gw_ip still refuses an address-less
+		# interface (its alias-count error path is silent at the shell
+		# layer; the daemon's own log then names the missing address), so
+		# the memberless-bridge start fails immediately instead of hanging
+		# and crash-looping.
+		if ip -o link show dev "$ifname" 2> /dev/null | grep -o '<[^>]*>' | grep -q -w "UP"; then
 			ifstatus="up"
 			break
 		fi

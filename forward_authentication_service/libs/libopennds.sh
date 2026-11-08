@@ -1218,7 +1218,14 @@ wait_for_interface () {
 
 	for i in $(seq $timeout); do
 
-		if [ $(ip link show $ifname 2> /dev/null | grep -c -w "state UP") -eq 1 ]; then
+		# A bridge reads operstate UNKNOWN while it has no up member (the
+	# kernel derives a bridge's operstate from its ports), so grepping
+	# the state word can never succeed for a memberless bridge and the
+	# daemon waits out the full timeout and exits. Match the interface's
+	# admin-up FLAG instead: the UP token inside the <> flags list is set
+	# by "ip link set up" on any interface type, and -w keeps it from
+	# matching the UP inside LOWER_UP (no word boundary before it).
+	if [ $(ip link show $ifname 2> /dev/null | grep -c -w "UP") -eq 1 ]; then
 			ifstatus="up"
 			break
 		fi

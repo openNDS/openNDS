@@ -1069,6 +1069,62 @@ nft_get_status() {
 	fi
 }
 
+# normalize a flowtable device list, whatever shape produced it (the
+# create string or the kernel-rendered clause): trim, strip the braces,
+# quotes and trailing semicolon, deduplicate and sort, so the create
+# string and the update comparison share one canonical form
+nds_ftdevs_norm() {
+	printf '%s' "$1" | sed 's/^[[:space:]]*//;s/}.*$//;s/[;[:space:]]*$//;s/^{ *//;s/ *}$//' | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//;s/^"//;s/"$//' | grep -v '^$' | sort -u | tr '\n' ',' | sed 's/,$//;s/,/, /g'
+}
+
+# create the ndsftINC download flowtable and its rule pair inside
+# nds_mangle, bound to the canonical device list $wandevices. Every
+# failure path removes the table again, so a persistently failing add
+# cannot turn the reconciliation into a create/delete churn loop: the
+# next cycle finds no table and retries the add from a clean state
+# remove the ndsftINC table and every rule in its chain (by name); the
+# return status is the delete's, so callers can warn when the table is
+# still referenced (for example by flows not yet expired)
+nds_ftinc_teardown() {
+	nft flush chain inet nds_mangle nds_ft_INC 2> /dev/null
+	nft delete flowtable inet nds_mangle ndsftINC 2> /dev/null
+}
+
+nds_ftinc_apply() {
+	if ! nft list table inet nds_mangle > /dev/null 2>&1; then
+		syslogmessage="The nds_mangle table is missing; cannot provision download offload this cycle"
+		debugtype="warn"
+		write_to_syslog
+		return 1
+	fi
+	# idempotent and silenced: a wiped chain would otherwise turn every
+	# cycle into a rule-add failure with offload permanently off
+	nft add chain inet nds_mangle nds_ft_INC 2> /dev/null
+	# the chain's exact content is the rule pair below: flush first so a
+	# leftover rule from any earlier state cannot duplicate it
+	nft flush chain inet nds_mangle nds_ft_INC 2> /dev/null
+	if ! nft add flowtable inet nds_mangle ndsftINC "{ hook ingress priority -100 ; devices = { $wandevices } ; }" 2> /dev/null; then
+		syslogmessage="Cannot create flowtable ndsftINC (a device in the list may not exist); download offload stays off this cycle"
+		debugtype="warn"
+		write_to_syslog
+		return 1
+	fi
+	if ! nft add rule inet nds_mangle nds_ft_INC meta l4proto { tcp, udp } flow offload @ndsftINC counter 2> /dev/null; then
+		nds_ftinc_teardown
+		syslogmessage="Cannot add the nds_ft_INC flow offload rule; download offload stays off this cycle"
+		debugtype="warn"
+		write_to_syslog
+		return 1
+	fi
+	if ! nft add rule inet nds_mangle nds_ft_INC counter return 2> /dev/null; then
+		nds_ftinc_teardown
+		syslogmessage="Cannot add the nds_ft_INC return rule; download offload stays off this cycle"
+		debugtype="warn"
+		write_to_syslog
+		return 1
+	fi
+}
+
 mhd_get_status() {
 
 	if [ "$fetch" -eq 1 ]; then
@@ -2738,32 +2794,102 @@ elif [ "$1" = "gatewayroute" ]; then
 			if [ -z "$wandevices" ]; then
 				wandevices="$wandevice"
 			else
-				wandevices=", $wandevice"
+				wandevices="$wandevices, $wandevice"
 			fi
 		done
 
-		handle=$(nft -a list flowtables | grep -w "ndsftINC" | awk -F "handle " '{printf "%s", $2}')
+		# With no WAN route (the offline state) the old code's device
+		# comparison deleted the flowtable and its empty-device add
+		# failed, leaving download offload off for the outage: keep
+		# exactly that end-state rather than provisioning a gateway-only
+		# flowtable in an untested state
+		if [ -z "$wandevices" ]; then
+			ftdev=$(nft -a list flowtable inet nds_mangle ndsftINC 2> /dev/null)
 
-		if [ ! -z "$handle" ]; then
-			ftdevices=$(nft -a list flowtables | grep -w -A 4 "ndsftINC" | awk -F "devices = " 'NF>1 {printf "%s", $2}' | tr -d "\"")
-
-			if [ "$ftdevices" != "{ $wandevices }" ]; then
-
-				rulehandles=$(nft -a list chain inet nds_mangle nds_ft_INC | grep "@ndsftINC"| awk -F "handle " '{printf "%s ", $2}')
-
-				for rulehandle in $rulehandles; do
-					nft delete rule inet nds_mangle nds_ft_INC handle "$rulehandle"
-				done
-
-				nft delete flowtable inet nds_mangle handle "$handle"
-				nft add flowtable inet nds_mangle ndsftINC "{ hook ingress priority -100 ; devices = { $wandevices } ; }" 2> /dev/null
-				nft add rule inet nds_mangle nds_ft_INC flow offload @ndsftINC counter
-				nft add rule inet nds_mangle nds_ft_INC counter return
+			if [ ! -z "$ftdev" ] && ! nds_ftinc_teardown; then
+				syslogmessage="Cannot delete the stale flowtable ndsftINC (still referenced?); download offload stays off this cycle"
+				debugtype="warn"
+				write_to_syslog
 			fi
 		else
-			nft add flowtable inet nds_mangle ndsftINC "{ hook ingress priority -100 ; devices = { $wandevices } ; }" 2> /dev/null
-			nft add rule inet nds_mangle nds_ft_INC meta l4proto { tcp, udp } flow offload @ndsftINC counter
-			nft add rule inet nds_mangle nds_ft_INC counter return
+
+			# The download flowtable must also own the gateway (LAN) side of
+			# the flow. Flows are added for traffic egressing the gateway
+			# interface (the nds_ft_INC jump matches oifname
+			# "$gatewayinterface"), so a flowtable whose device list holds
+			# only the WAN devices gets flows whose other endpoint device it
+			# does not own: offloaded packets are delivered on a device
+			# outside the table and never reach the wire. Observed on a
+			# bridged gatewayinterface (a Linux bridge over a wifi vif):
+			# authenticated client traffic passed the firewall chains and
+			# vanished before any interface egress until the nds_mangle
+			# table was deleted (issue #764).
+			# $ifname is the interface the daemon passed and the one the
+			# ndsINC jump rule matches on, so the flowtable stays bound to
+			# the same device the flows are added for; on manual invocation
+			# without the argument, read the configured option like the
+			# ndsftOUT block below does
+			if [ -z "$ifname" ]; then
+				option="gatewayinterface"
+				get_option_from_config
+
+				if [ -z "$gatewayinterface" ]; then
+					gatewayinterface="br-lan"
+				fi
+
+				ifname="$gatewayinterface"
+			fi
+
+			wandevices="$wandevices, $ifname"
+
+			# nft renders a flowtable's device list in whatever order the
+			# kernel stores its device array, not in the creation order and
+			# not in a guaranteed order (observed on the test box: creating
+			# devices = { eth0, br-lan } renders devices = { br-lan, eth0 }),
+			# so BOTH the create string and the update comparison must go
+			# through this normalizer: a list built in route order renders
+			# mismatched forever and the update path would delete and
+			# recreate the table every checkinterval, and a duplicated
+			# device makes the flowtable add itself fail on kernels that
+			# reject duplicate devices. The helper also strips the braces
+			# and quotes of the kernel-rendered shape so both inputs
+			# normalize the same way
+			wandevices=$(nds_ftdevs_norm "$wandevices")
+
+			ftdev=$(nft -a list flowtable inet nds_mangle ndsftINC 2> /dev/null)
+
+			if [ ! -z "$ftdev" ]; then
+				ftdevices=$(printf '%s' "$ftdev" | awk -F "devices = " 'NF>1 {printf "%s", $2}')
+				ftdevs_in=$(nds_ftdevs_norm "$ftdevices")
+
+				# a flowtable can exist with matching devices while its rules
+				# are missing (a transient add failure leaves the offload rule
+				# absent and nothing else in the codebase recreates it), so
+				# reconcile on the device set OR an unhealthy chain. The
+				# needles are tolerant of the exact rendering: the offload
+				# rule carries @ndsftINC (rendered "flow add @ndsftINC"),
+				# and the return rule renders as "counter ... return", so
+				# " return" is the marker; only the two rules this handler
+				# manages live in the chain
+				chainhealth=$(nft list chain inet nds_mangle nds_ft_INC 2> /dev/null)
+				if [ "$ftdevs_in" != "$wandevices" ] || ! printf '%s' "$chainhealth" | grep -q "@ndsftINC" || ! printf '%s' "$chainhealth" | grep -q " return"; then
+
+					# the rules must go before the table delete (the flowtable
+					# cannot be deleted while the offload rule references it)
+					# and the delete runs by name: a captured handle can go
+					# stale between the listing and the delete, the name is
+					# unique inside the table
+					if ! nds_ftinc_teardown; then
+						syslogmessage="Cannot delete the stale flowtable ndsftINC (still referenced?); download offload stays off this cycle"
+						debugtype="warn"
+						write_to_syslog
+					else
+						nds_ftinc_apply
+					fi
+				fi
+			else
+				nds_ftinc_apply
+			fi
 		fi
 	fi
 

@@ -12,6 +12,27 @@ Set to 0 to disable opennds
 
 ``option enabled 1``
 
+.. _set-auto-run:
+
+auto_run - Run on the Gateway Interface
+***************************************
+
+Default: 0
+
+Set to 1 to let openNDS run on the configured gatewayinterface.
+
+While auto_run is not 1, openNDS is dormant. The daemon starts but sets up no firewall rules, no portal and no dnsmasq changes, so a new install cannot cut off access to the router.
+
+While dormant, openNDS logs a message every few minutes. It lists the candidate gateway interfaces (bridges that have an IPv4 address), for example:
+
+``auto_run is 0 - openNDS is dormant - candidate gateway interfaces: br-lan 192.168.1.1, br-guest 192.168.2.1 - set gatewayinterface, then set auto_run 1``
+
+It also reports missing optional packages, such as dnsmasq-full.
+
+Set gatewayinterface, then set auto_run to 1. openNDS checks again every 15 seconds and starts without a restart. Alternatively, restart it with ``service opennds restart``.
+
+``option auto_run '1'``
+
 .. _use-deprecated-generic-configuration-file:
 
 config - Deprecated generic configuration file
@@ -306,11 +327,11 @@ Default: br-lan
 
 Use this option to set the device opennds will bind to.
 
-The value may be an interface section in /etc/config/network or a device name such as br-lan.
+The value must be a bridge device name such as br-lan, and the bridge must have an IPv4 address.
 
-The selected interface must be allocated an IPv4 address.
+If the interface does not exist, is not a bridge, or has no IPv4 address, openNDS stays dormant (see auto_run) and checks again every 15 seconds. An interface that gets its address later, for example by DHCP, is picked up without a restart.
 
-In OpenWrt this is normally br-lan, in generic Linux it might be wlan0
+In OpenWrt this is normally br-lan.
 
 ``option gatewayinterface 'br-lan'``
 

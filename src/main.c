@@ -1029,6 +1029,12 @@ main_loop(int argc, char **argv)
 	}
 
 	debug(LOG_NOTICE, "openNDS is now running.\n");
+
+	// Let users reach the router through the system firewall. openNDS rules now control this access.
+	if (execute("/usr/lib/opennds/libopennds.sh users_to_router allow > /dev/null 2>&1") != 0) {
+		debug(LOG_WARNING, "users_to_router allow failed");
+	}
+
 	safe_asprintf(&cmd, "/usr/lib/opennds/libopennds.sh \"auth_restore\" &");
 	if (system(cmd) != 0) {
 		debug(LOG_ERR, "failure: %s", cmd);

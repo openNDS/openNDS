@@ -28,7 +28,8 @@ start_service() {
 	procd_set_param stdout 0
 	procd_close_instance
 
-	/usr/lib/opennds/libopennds.sh users_to_router allow
+	# opennds runs "users_to_router allow" itself once it is set up.
+	# It does not while it is dormant (auto_run is not 1, or the gateway interface is not ready).
 }
 
 stop_service() {

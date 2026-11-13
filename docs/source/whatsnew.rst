@@ -4,6 +4,11 @@ What's New - openNDS 11
 Changes in the current major version, 11.0.0 onwards. For earlier versions see :doc:`changelog`.
 
 opennds (11.1.0)
+  * Add - auto_run option, default 0; stay dormant until configured, logging candidate gateway bridges and missing optional packages every 15 seconds [bluewavenet]
+  * Fix - add the firewall include without committing other staged uci changes [bluewavenet]
+  * Fix - run users_to_router allow from the daemon after setup [bluewavenet]
+  * Fix - require gatewayinterface to be a bridge [bluewavenet]
+  * Fix - wait_for_interface: test the UP flag rather than the operstate word, so a bridge with no up member does not crash loop [bluewavenet] [paoloantinori]
   * Fix - accept an empty result from safe snprintf [bluewavenet]
   * Fix - read the reauth time from the deauth log [bluewavenet]
   * Fix - read the binauth session values [bluewavenet]

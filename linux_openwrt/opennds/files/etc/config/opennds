@@ -6,6 +6,19 @@ config opennds 'setup'
 	#option enabled 0
 	###########################################################################################
 
+	# auto_run
+	# Default: 0 (dormant)
+	# Set to 1 to let openNDS run on the configured gatewayinterface.
+	#
+	# While auto_run is not 1, openNDS is dormant. It starts, but sets up no firewall rules,
+	# no portal and no dnsmasq changes, so it cannot cut off access to the router.
+	# It logs the bridges that have an IPv4 address, as candidates for gatewayinterface.
+	#
+	# Set gatewayinterface below, then set auto_run to 1.
+	# The change is picked up within about 15 seconds, or restart openNDS.
+	#option auto_run '1'
+	###########################################################################################
+
 	# debuglevel
 	# Set Debug Level (0-3)
 	# Default: 1
@@ -301,8 +314,9 @@ config opennds 'setup'
 	# GateWayInterface
 	# Default br-lan
 	# Use this option to set the device opennds will bind to.
-	# The value may be an interface section in /etc/config/network or a device name such as br-lan.
-	# The selected interface must be allocated an IPv4 address.
+	# The value must be a bridge device name such as br-lan, and the bridge must have an IPv4 address.
+	# If the interface does not exist, is not a bridge, or has no IPv4 address yet
+	# (eg it gets one by DHCP), openNDS stays dormant and checks again every 15 seconds.
 	# In OpenWrt this is normally br-lan, in generic Linux it might be something else.
 	#
 	#option gatewayinterface 'br-lan'

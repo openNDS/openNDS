@@ -43,6 +43,7 @@
 #include <arpa/inet.h>
 #include <sys/time.h>
 #include <ifaddrs.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -810,6 +811,150 @@ get_iface_ip(const char ifname[], int ip6)
 		free(cmd);
 		return "error";
 	}
+}
+
+/* Returns 1 if /sys/class/net/<ifname><suffix> exists, otherwise 0 */
+static int iface_sysfs_exists(const char ifname[], const char suffix[])
+{
+	char path[128];
+	struct stat sb;
+	int len;
+
+	if (ifname == NULL || ifname[0] == '\0') {
+		return 0;
+	}
+
+	if (strchr(ifname, '/') != NULL) {
+		return 0;
+	}
+
+	len = snprintf(path, sizeof(path), "/sys/class/net/%s%s", ifname, suffix);
+
+	if (len < 0 || (size_t)len >= sizeof(path)) {
+		return 0;
+	}
+
+	if (stat(path, &sb) != 0) {
+		return 0;
+	}
+
+	return 1;
+}
+
+/* Returns 1 if the network interface exists */
+int iface_exists(const char ifname[])
+{
+	return iface_sysfs_exists(ifname, "");
+}
+
+/* Returns 1 if the network interface is a bridge */
+int iface_is_bridge(const char ifname[])
+{
+	return iface_sysfs_exists(ifname, "/bridge");
+}
+
+/* Copies the first IPv4 address of the interface into addr.
+ * Returns 1 if the interface has an IPv4 address, otherwise 0
+ */
+int get_iface_ipv4(const char ifname[], char *addr, size_t addr_len)
+{
+	struct ifaddrs *ifaddr;
+	struct ifaddrs *ifa;
+	struct sockaddr_in *sin;
+	int found = 0;
+
+	if (getifaddrs(&ifaddr) != 0) {
+		return 0;
+	}
+
+	for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+
+		if (ifa->ifa_addr == NULL || ifa->ifa_name == NULL) {
+			continue;
+		}
+
+		if (ifa->ifa_addr->sa_family != AF_INET) {
+			continue;
+		}
+
+		if (strcmp(ifa->ifa_name, ifname) != 0) {
+			continue;
+		}
+
+		sin = (struct sockaddr_in *)ifa->ifa_addr;
+
+		if (inet_ntop(AF_INET, &sin->sin_addr, addr, addr_len) != NULL) {
+			found = 1;
+		}
+
+		break;
+	}
+
+	freeifaddrs(ifaddr);
+	return found;
+}
+
+/* Writes a list of bridges that have an IPv4 address into buf,
+ * in the form "br-lan 192.168.1.1, br-guest 192.168.2.1".
+ * buf is an empty string if there are none.
+ */
+void get_gateway_candidates(char *buf, size_t buf_len)
+{
+	struct ifaddrs *ifaddr;
+	struct ifaddrs *ifa;
+	struct sockaddr_in *sin;
+	char addr[INET_ADDRSTRLEN];
+	char entry[IFNAMSIZ + INET_ADDRSTRLEN + 4];
+	int len;
+
+	if (buf_len == 0) {
+		return;
+	}
+
+	buf[0] = '\0';
+
+	if (getifaddrs(&ifaddr) != 0) {
+		return;
+	}
+
+	for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+
+		if (ifa->ifa_addr == NULL || ifa->ifa_name == NULL) {
+			continue;
+		}
+
+		if (ifa->ifa_addr->sa_family != AF_INET) {
+			continue;
+		}
+
+		if (iface_is_bridge(ifa->ifa_name) != 1) {
+			continue;
+		}
+
+		sin = (struct sockaddr_in *)ifa->ifa_addr;
+
+		if (inet_ntop(AF_INET, &sin->sin_addr, addr, sizeof(addr)) == NULL) {
+			continue;
+		}
+
+		if (buf[0] == '\0') {
+			len = snprintf(entry, sizeof(entry), "%s %s", ifa->ifa_name, addr);
+		} else {
+			len = snprintf(entry, sizeof(entry), ", %s %s", ifa->ifa_name, addr);
+		}
+
+		if (len < 0 || (size_t)len >= sizeof(entry)) {
+			continue;
+		}
+
+		if (strlen(buf) + strlen(entry) >= buf_len) {
+			break;
+		}
+
+		strcat(buf, entry);
+	}
+
+	freeifaddrs(ifaddr);
 }
 
 char *

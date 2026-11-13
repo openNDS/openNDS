@@ -17,6 +17,9 @@ service_data() {
 }
 
 start_service() {
+	# Make sure the firewall include that runs restart.sh is present.
+	/usr/lib/opennds/fw_include.sh add
+
 	procd_open_instance
 	procd_set_param command /usr/bin/opennds $OPTIONS
 	procd_set_param respawn 360 20 15

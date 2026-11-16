@@ -1453,6 +1453,15 @@ replace_client_rule () {
 	done
 }
 
+get_dnsmasq_section() {
+	# Use the shared helper in dnsconfig.sh (see issue #770 / #582)
+	dnsmasq_section=$(/usr/lib/opennds/dnsconfig.sh get_dnsmasq_section)
+
+	if [ -z "$dnsmasq_section" ]; then
+		dnsmasq_section="@dnsmasq[0]"
+	fi
+}
+
 nft_set () {
 	# Check for dnsmasq compiled options
 	dnsmasq --version | grep ' nftset ' &>/dev/null
@@ -1507,7 +1516,12 @@ nft_set () {
 			sed "$linnum""d" "/etc/dnsmasq.conf" &>/dev/null
 		else
 			uci -q delete dhcp.nds_nftset
-			uci -q delete dhcp.@dnsmasq[0].ipset
+			get_dnsmasq_section
+			uci -q delete dhcp.$dnsmasq_section.ipset
+
+			if [ "$dnsmasq_section" != "@dnsmasq[0]" ]; then
+				uci -q delete dhcp.@dnsmasq[0].ipset
+			fi
 		fi
 
 		ipset destroy "$nftsetname" &>/dev/null
@@ -1646,10 +1660,15 @@ nft_set () {
 					if [ ! -z "$ipsetconf" ]; then
 						ipsetconf="$ipsetconf/$nftsetname"
 
-						del_ipset="del_list dhcp.@dnsmasq[0].ipset='$ipsetconf'"
-						add_ipset="add_list dhcp.@dnsmasq[0].ipset='$ipsetconf'"
+						get_dnsmasq_section
+						del_ipset="del_list dhcp.$dnsmasq_section.ipset='$ipsetconf'"
+						add_ipset="add_list dhcp.$dnsmasq_section.ipset='$ipsetconf'"
 						echo $del_ipset | uci -q batch
 						echo $add_ipset | uci -q batch
+
+						if [ "$dnsmasq_section" != "@dnsmasq[0]" ]; then
+							echo "del_list dhcp.@dnsmasq[0].ipset='$ipsetconf'" | uci -q batch
+						fi
 					fi
 				fi
 			fi

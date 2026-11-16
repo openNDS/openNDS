@@ -1246,6 +1246,17 @@ dhcp_check() {
 	fi
 }
 
+normalise_devices() {
+	# Return a device list as a sorted, comma separated list with no duplicates
+	# $1 is a device list, either comma separated or as listed by nft
+	echo "$1" |
+		tr ',{}";' '     ' |
+		xargs -n1 |
+		sort -u |
+		tr '\n' ',' |
+		sed 's/,$//'
+}
+
 wait_for_interface () {
 	local ifname="$1"
 	local timeout=30
@@ -2769,15 +2780,6 @@ elif [ "$1" = "gatewayroute" ]; then
 
 		# nft lists flowtable devices in sorted order, so build the
 		# create string and the comparisons from one sorted list
-		normalise_devices() {
-			echo "$1" |
-				tr ',{}";' '     ' |
-				xargs -n1 |
-				sort -u |
-				tr '\n' ',' |
-				sed 's/,$//'
-		}
-
 		wandevices=$(normalise_devices "$wandevices")
 
 		handle=$(nft -a list flowtables | grep -w "ndsftINC" | awk -F "handle " '{printf "%s", $2}')
@@ -2825,7 +2827,9 @@ elif [ "$1" = "gatewayroute" ]; then
 			nft add flowtable inet nds_filter ndsftOUT "{ hook ingress priority -100 ; devices = { $wandevices } ; }" 2> /dev/null
 		fi
 	else
-		[ -z "$wandevices" ] && wandevices="$ifname"
+		if [ -z "$wandevices" ]; then
+			wandevices="$ifname"
+		fi
 
 		nft add flowtable inet nds_filter ndsftOUT "{ hook ingress priority -100 ; devices = { $wandevices } ; }" 2> /dev/null
 	fi

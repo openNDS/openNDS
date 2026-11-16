@@ -11,6 +11,7 @@ opennds (11.1.0)
   * Fix - wait_for_interface: test the UP flag rather than the operstate word, so a bridge with no up member does not crash loop [bluewavenet] [paoloantinori]
   * Fix - log an error at startup if the mode 3 ThemeSpec is missing or not readable, and use the installed click-to-continue ThemeSpec as the mode 1 default [bluewavenet] [juanriccio]
   * Fix - write gatewayfqdn and walled-garden DNS entries to the correct dnsmasq instance, chosen by a helper in dnsconfig.sh [bluewavenet] [juanriccio]
+  * Fix - gatewayroute: give both offload flowtables the WAN and gateway devices, and update the upload flowtable when the WAN changes [bluewavenet] [paoloantinori]
   * Fix - accept an empty result from safe snprintf [bluewavenet]
   * Fix - read the reauth time from the deauth log [bluewavenet]
   * Fix - read the binauth session values [bluewavenet]

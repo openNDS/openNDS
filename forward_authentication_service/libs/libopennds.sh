@@ -2738,26 +2738,42 @@ elif [ "$1" = "gatewayroute" ]; then
 			if [ -z "$wandevices" ]; then
 				wandevices="$wandevice"
 			else
-				wandevices=", $wandevice"
+				wandevices="$wandevices, $wandevice"
 			fi
 		done
+
+		# the flowtable must also own the gateway device: the
+		# nds_ft_INC flow-add rule matches egress on it
+		wandevices="$wandevices, $ifname"
+
+		# nft lists flowtable devices in sorted order, so build the
+		# create string and the comparisons from one sorted list
+		normalise_devices() {
+			echo "$1" |
+				tr ',{}";' '     ' |
+				xargs -n1 |
+				sort -u |
+				tr '\n' ',' |
+				sed 's/,$//'
+		}
+
+		wandevices=$(normalise_devices "$wandevices")
 
 		handle=$(nft -a list flowtables | grep -w "ndsftINC" | awk -F "handle " '{printf "%s", $2}')
 
 		if [ ! -z "$handle" ]; then
-			ftdevices=$(nft -a list flowtables | grep -w -A 4 "ndsftINC" | awk -F "devices = " 'NF>1 {printf "%s", $2}' | tr -d "\"")
+			ftdevices=$(nft -a list flowtables | grep -w -A 4 "ndsftINC" | awk -F "devices = " 'NF>1 {printf "%s", $2}')
 
-			if [ "$ftdevices" != "{ $wandevices }" ]; then
+			ftdevices=$(normalise_devices "$ftdevices")
 
-				rulehandles=$(nft -a list chain inet nds_mangle nds_ft_INC | grep "@ndsftINC"| awk -F "handle " '{printf "%s ", $2}')
+			if [ "$ftdevices" != "$wandevices" ]; then
 
-				for rulehandle in $rulehandles; do
-					nft delete rule inet nds_mangle nds_ft_INC handle "$rulehandle"
-				done
-
+				# flush the chain first: the flowtable cannot be
+				# deleted while the offload rule references it
+				nft flush chain inet nds_mangle nds_ft_INC
 				nft delete flowtable inet nds_mangle handle "$handle"
 				nft add flowtable inet nds_mangle ndsftINC "{ hook ingress priority -100 ; devices = { $wandevices } ; }" 2> /dev/null
-				nft add rule inet nds_mangle nds_ft_INC flow offload @ndsftINC counter
+				nft add rule inet nds_mangle nds_ft_INC meta l4proto { tcp, udp } flow offload @ndsftINC counter
 				nft add rule inet nds_mangle nds_ft_INC counter return
 			fi
 		else
@@ -2767,19 +2783,30 @@ elif [ "$1" = "gatewayroute" ]; then
 		fi
 	fi
 
-	# add upload flowtable
+	# add or update the upload flowtable the same way, so upload
+	# flows own the full path too and a table created before the
+	# WAN route existed does not stay gateway-only forever
 
-	fttest=$(nft list flowtable inet nds_filter ndsftOUT &> /dev/null ; echo $?)
+	handle=$(nft -a list flowtables | grep -w "ndsftOUT" | awk -F "handle " '{printf "%s", $2}')
 
-	if [ $fttest -gt 0 ]; then
-		option="gatewayinterface"
-		get_option_from_config
+	if [ ! -z "$handle" ]; then
+		ftdevices=$(nft -a list flowtables | grep -w -A 4 "ndsftOUT" | awk -F "devices = " 'NF>1 {printf "%s", $2}')
 
-		if [ -z "$gatewayinterface" ]; then
-			gatewayinterface="br-lan"
+		ftdevices=$(normalise_devices "$ftdevices")
+
+		if [ "$ftdevices" != "$wandevices" ]; then
+
+			# flush the chain first: the flowtable cannot be
+			# deleted while the offload rule references it; the
+			# rule block below re-lands the two rules
+			nft flush chain inet nds_filter nds_ft_OUT
+			nft delete flowtable inet nds_filter handle "$handle"
+			nft add flowtable inet nds_filter ndsftOUT "{ hook ingress priority -100 ; devices = { $wandevices } ; }" 2> /dev/null
 		fi
+	else
+		[ -z "$wandevices" ] && wandevices="$ifname"
 
-		nft add flowtable inet nds_filter ndsftOUT "{ hook ingress priority -100 ; devices = { $gatewayinterface } ; }"
+		nft add flowtable inet nds_filter ndsftOUT "{ hook ingress priority -100 ; devices = { $wandevices } ; }" 2> /dev/null
 	fi
 
 	ftruletest=$(nft list chain inet nds_filter nds_ft_OUT 2> /dev/null | grep -q -w "meta l4proto"; echo $?)

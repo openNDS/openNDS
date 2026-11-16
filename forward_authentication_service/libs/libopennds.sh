@@ -1252,7 +1252,9 @@ wait_for_interface () {
 
 	for i in $(seq $timeout); do
 
-		if [ $(ip link show $ifname 2> /dev/null | grep -c -w "state UP") -eq 1 ]; then
+		# A bridge with no up member reports operstate UNKNOWN while admin UP,
+		# so test the UP flag in the <...> block, not the state word.
+		if ip -o link show dev "$ifname" 2> /dev/null | grep -o '<[^>]*>' | grep -q -w "UP"; then
 			ifstatus="up"
 			break
 		fi
@@ -1263,7 +1265,7 @@ wait_for_interface () {
 
 		sleep 2
 
-		if [ $i == $timeout ] ; then
+		if [ $i = $timeout ] ; then
 			syslogmessage="Iteration [ $i ], Interface [ $ifname ] is not up - giving up for now."
 			debugtype="warn"
 			write_to_syslog

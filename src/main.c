@@ -342,7 +342,7 @@ setup_from_config(void)
 	char *preauth_dir = NULL;
 	char *debuglevel = NULL;
 	char libscript[] = "/usr/lib/opennds/libopennds.sh";
-	char themespec1[] = "/usr/lib/opennds/theme_click-to-continue.sh";
+	char themespec1[] = "/usr/lib/opennds/theme_click-to-continue-basic.sh";
 	char themespec2[] = "/usr/lib/opennds/theme_user-email-login-basic.sh";
 	char gw_name_entityencoded[256] = {0};
 	char gw_name_urlencoded[256] = {0};
@@ -658,6 +658,14 @@ setup_from_config(void)
 	} else if (config->login_option_enabled == 0 && config->fas_port >= 1 ) {
 		debug(LOG_NOTICE, "FAS Enabled.\n");
 		config->preauth = NULL;
+	}
+
+	if (config->login_option_enabled == 3) {
+		if (config->themespec_path == NULL || config->themespec_path[0] == '\0') {
+			debug(LOG_ERR, "ThemeSpec path is empty; clients will see \"Bad or Missing ThemeSpec\"\n");
+		} else if (access(config->themespec_path, R_OK) != 0) {
+			debug(LOG_ERR, "ThemeSpec file [%s] is missing or not readable; clients will see \"Bad or Missing ThemeSpec\"\n", config->themespec_path);
+		}
 	}
 
 	// Check sha256sum command is available

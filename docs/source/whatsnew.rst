@@ -9,6 +9,7 @@ opennds (11.1.0)
   * Fix - run users_to_router allow from the daemon after setup [bluewavenet]
   * Fix - require gatewayinterface to be a bridge [bluewavenet]
   * Fix - wait_for_interface: test the UP flag rather than the operstate word, so a bridge with no up member does not crash loop [bluewavenet] [paoloantinori]
+  * Fix - log an error at startup if the mode 3 ThemeSpec is missing or not readable, and use the installed click-to-continue ThemeSpec as the mode 1 default [bluewavenet] [juanriccio]
   * Fix - accept an empty result from safe snprintf [bluewavenet]
   * Fix - read the reauth time from the deauth log [bluewavenet]
   * Fix - read the binauth session values [bluewavenet]

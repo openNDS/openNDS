@@ -63,7 +63,7 @@ config opennds 'setup'
 	###########################################################################################
 
 	# Login Option
-	# Default: 0
+	# Default: 1
 	# Integer value sent to PreAuth script as login mode
 	#
 	# opennds comes preconfigured for three basic modes of operation

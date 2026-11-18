@@ -133,7 +133,8 @@ payload="none"
 acklist="*"
 
 
-ret=$(eval "$remoterequest" "\"$url\"" "\"$action\"" "\"$gatewayhash\"" "\"$user_agent\"" "\"$payload\"")
+# Only $remoterequest is parsed by eval. The single quoted arguments are expanded as data.
+ret=$(eval "$remoterequest" '"$url"' '"$action"' '"$gatewayhash"' '"$user_agent"' '"$payload"')
 
 if [ "$debuglevel" -ge 3 ]; then
 	echo "authmon - action $action, response [$ret]" | logger -p "daemon.debug" -t "authmon[$ndspid]"
@@ -157,7 +158,7 @@ while true; do
 	payload="none"
 	acklist="*"
 
-	authlist=$(eval "$remoterequest" "\"$url\"" "\"$action\"" "\"$gatewayhash\"" "\"$user_agent\"" "\"$payload\"")
+	authlist=$(eval "$remoterequest" '"$url"' '"$action"' '"$gatewayhash"' '"$user_agent"' '"$payload"')
 
 	if [ $debuglevel -ge 3 ]; then
 		echo "authmon - authlist $authlist" | logger -p "daemon.debug" -t "authmon[$ndspid]"
@@ -216,7 +217,7 @@ while true; do
 	# acklist is a space separated list of the rhid's of sucessfully authenticated clients.
 	# Send acklist to the FAS for upstream processing:
 
-	ackresponse=$(eval "$remoterequest" "\"$url\"" "\"$action\"" "\"$gatewayhash\"" "\"$user_agent\"" "\"$acklist\"")
+	ackresponse=$(eval "$remoterequest" '"$url"' '"$action"' '"$gatewayhash"' '"$user_agent"' '"$acklist"')
 
 	if [ $debuglevel -ge 3 ]; then
 		echo "authmon - remote FAS response [$ackresponse]" | logger -p "daemon.debug" -t "authmon[$ndspid]"

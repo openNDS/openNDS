@@ -2174,7 +2174,8 @@ send_post_data () {
 		. $mountpoint/ndscids/ndsinfo
 		. $mountpoint/ndscids/authmonargs
 
-		returned_data=$(eval "$remoterequest" "\"$url\"" "\"$action\"" "\"$gatewayhash\"" "\"$user_agent\"" "\"$payload\"")
+		# Only $remoterequest is parsed by eval. The single quoted arguments are expanded as data.
+		returned_data=$(eval "$remoterequest" '"$url"' '"$action"' '"$gatewayhash"' '"$user_agent"' '"$payload"')
 
 		syslogmessage="send_post_data - action [$action], payload [$payload], fas_response [$returned_data]."
 		debugtype="info"

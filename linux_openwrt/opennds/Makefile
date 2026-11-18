@@ -54,7 +54,6 @@ define Package/opennds/install
 	$(INSTALL_DIR) $(1)/etc/opennds/htdocs/images
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_DIR) $(1)/etc/init.d
-	$(INSTALL_DIR) $(1)/etc/uci-defaults
 	$(INSTALL_DIR) $(1)/usr/lib/opennds
 	$(INSTALL_CONF) $(PKG_BUILD_DIR)/linux_openwrt/opennds/files/etc/config/opennds $(1)/etc/config/
 	$(INSTALL_CONF) $(PKG_BUILD_DIR)/linux_openwrt/opennds/files/etc/config/opennds $(1)/etc/opennds/config.uci
@@ -62,8 +61,8 @@ define Package/opennds/install
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/ndsctl $(1)/usr/bin/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/forward_authentication_service/libs/ndscfg $(1)/usr/bin/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/linux_openwrt/opennds/files/etc/init.d/opennds $(1)/etc/init.d/
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/linux_openwrt/opennds/files/etc/uci-defaults/40_opennds $(1)/etc/uci-defaults/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/linux_openwrt/opennds/files/usr/lib/opennds/restart.sh $(1)/usr/lib/opennds/
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/linux_openwrt/opennds/files/usr/lib/opennds/fw_include.sh $(1)/usr/lib/opennds/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/forward_authentication_service/binauth/binauth_log.sh $(1)/usr/lib/opennds/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/forward_authentication_service/binauth/custombinauth.sh $(1)/usr/lib/opennds/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/forward_authentication_service/binauth/check_reauth_interval.sh $(1)/usr/lib/opennds/
@@ -89,10 +88,12 @@ define Package/opennds/install
 
 endef
 
-define Package/opennds/postrm
+define Package/opennds/prerm
 #!/bin/sh
-uci delete firewall.opennds
-uci commit firewall
+# Remove the firewall include without committing other staged firewall changes.
+if [ -z "$${IPKG_INSTROOT}" ]; then
+	/usr/lib/opennds/fw_include.sh remove
+fi
 endef
 
 define Package/opennds/conffiles

@@ -4,6 +4,14 @@ What's New - openNDS 11
 Changes in the current major version, 11.0.0 onwards. For earlier versions see :doc:`changelog`.
 
 opennds (11.1.0)
+  * Add - auto_run option, default 0; stay dormant until configured, logging candidate gateway bridges and missing optional packages every 15 seconds [bluewavenet]
+  * Fix - add the firewall include without committing other staged uci changes [bluewavenet]
+  * Fix - run users_to_router allow from the daemon after setup [bluewavenet]
+  * Fix - require gatewayinterface to be a bridge [bluewavenet]
+  * Fix - wait_for_interface: test the UP flag rather than the operstate word, so a bridge with no up member does not crash loop [bluewavenet] [paoloantinori]
+  * Fix - log an error at startup if the mode 3 ThemeSpec is missing or not readable, and use the installed click-to-continue ThemeSpec as the mode 1 default [bluewavenet] [juanriccio]
+  * Fix - write gatewayfqdn and walled-garden DNS entries to the correct dnsmasq instance, chosen by a helper in dnsconfig.sh [bluewavenet] [juanriccio]
+  * Fix - gatewayroute: give both offload flowtables the WAN and gateway devices, and update the upload flowtable when the WAN changes [bluewavenet] [paoloantinori]
   * Fix - accept an empty result from safe snprintf [bluewavenet]
   * Fix - read the reauth time from the deauth log [bluewavenet]
   * Fix - read the binauth session values [bluewavenet]
@@ -86,6 +94,12 @@ opennds (11.1.0)
   * Fix - path to check_reauth_interval.sh [bluewavenet]
   * Fix - ensure querystr is allocated ENC_QUERYSTR before calling construct_querystring [bluewavenet]
   * Fix - querystring check for CPI login [bluewavenet]
+  * Fix - pass client data to ndsctl without eval [bluewavenet]
+  * Fix - send only a base64 custom string with a client auth [bluewavenet]
+  * Fix - check the whole fas value before it is used [bluewavenet]
+  * Fix - validate status page variable names [bluewavenet]
+  * Fix - pass fas request arguments to the request command as data [bluewavenet]
+  * Fix - show the correct login_option_enabled default in the config file [bluewavenet]
 
  -- Rob White <dot@blue-wave.net>  (11.1.0beta - release date to be added on release)
 

@@ -47,6 +47,16 @@ int get_list_from_config(char* msg, int msg_len, const char *list);
 /* @brief Get IP address of an interface */
 char *get_iface_ip(const char ifname[], int ip6);
 
+/* @brief Check a network interface (return 1 if true) */
+int iface_exists(const char ifname[]);
+int iface_is_bridge(const char ifname[]);
+
+/* @brief Get the first IPv4 address of an interface (return 1 if found) */
+int get_iface_ipv4(const char ifname[], char *addr, size_t addr_len);
+
+/* @brief List the bridges that have an IPv4 address */
+void get_gateway_candidates(char *buf, size_t buf_len);
+
 /* @brief Get MAC address of an interface */
 char *get_iface_mac(const char ifname[]);
 

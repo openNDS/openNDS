@@ -34,6 +34,8 @@
 #include <pthread.h>
 
 #include <string.h>
+#include <time.h>
+#include <unistd.h>
 #include <ctype.h>
 #include <sys/stat.h>
 #include <arpa/inet.h>
@@ -48,6 +50,7 @@
 #include "http_microhttpd_utils.h"
 #include "fw_iptables.h"
 #include "commandline.h"
+#include "main.h"
 
 /** @internal
  * Holds the current configuration of the gateway */
@@ -128,6 +131,144 @@ char *set_option_str(char *option, const char *default_option, char *debug_level
 }
 
 
+
+// While dormant, check the configuration every DORMANT_CHECK_INTERVAL seconds
+#define DORMANT_CHECK_INTERVAL 15
+
+// While dormant, repeat the log message every DORMANT_LOG_INTERVAL seconds, or sooner if it changes
+#define DORMANT_LOG_INTERVAL 300
+
+/* Returns NULL if the gateway interface can be used,
+ * otherwise a short reason why it cannot.
+ */
+static const char *gateway_not_ready_reason(const char gw_interface[])
+{
+	char addr[INET_ADDRSTRLEN];
+
+	if (iface_exists(gw_interface) != 1) {
+		return "does not exist";
+	}
+
+	if (iface_is_bridge(gw_interface) != 1) {
+		return "is not a bridge, which is required";
+	}
+
+	if (get_iface_ipv4(gw_interface, addr, sizeof(addr)) != 1) {
+		return "is a bridge with no IPv4 address";
+	}
+
+	return NULL;
+}
+
+/* Logs optional packages that are missing */
+static void log_missing_dependencies(void)
+{
+	if (execute("dnsmasq --version 2> /dev/null | grep -q ' nftset '") != 0) {
+		debug(LOG_NOTICE, "Optional: dnsmasq-full (dnsmasq with nftset support) is not installed. It is needed for walledgarden_fqdn_list and blocklist_fqdn_list.");
+	}
+}
+
+/* Stays dormant until auto_run is 1 and the gateway interface is usable.
+ *
+ * While dormant, openNDS sets up no firewall rules, no portal and no dnsmasq changes.
+ * auto_run and gatewayinterface are read again on every check, so setting them,
+ * or the gateway interface getting an IPv4 address later (eg by DHCP), ends the
+ * dormant state without a restart. The rest of the configuration is read after
+ * this returns.
+ */
+static void wait_while_dormant(void)
+{
+	char *option;
+	char *gw_interface;
+	const char *reason;
+	char candidates[SMALL_BUF];
+	char message[MID_BUF];
+	char last_message[MID_BUF];
+	unsigned int auto_run;
+	int dormant = 0;
+	int waited;
+	time_t last_log = 0;
+	time_t now;
+
+	last_message[0] = '\0';
+
+	for (;;) {
+		option = set_option_str("auto_run", DEFAULT_AUTO_RUN, "0");
+		auto_run = 0;
+		sscanf(option, "%u", &auto_run);
+		free(option);
+
+		gw_interface = set_option_str("gatewayinterface", DEFAULT_GATEWAYINTERFACE, "0");
+		reason = NULL;
+
+		if (auto_run == 1) {
+			reason = gateway_not_ready_reason(gw_interface);
+
+			if (reason == NULL) {
+
+				if (dormant == 1) {
+					debug(LOG_NOTICE, "auto_run is 1 and gateway interface %s is ready - openNDS is leaving the dormant state", gw_interface);
+				}
+
+				free(gw_interface);
+				return;
+			}
+		}
+
+		if (dormant == 0) {
+			// Remove anything left by an earlier run that did not exit cleanly
+			iptables_fw_destroy();
+			execute("/usr/lib/opennds/libopennds.sh users_to_router cleanup > /dev/null 2>&1");
+			dormant = 1;
+		}
+
+		get_gateway_candidates(candidates, sizeof(candidates));
+
+		if (candidates[0] == '\0') {
+			strncpy(candidates, "none - no bridge has an IPv4 address", sizeof(candidates) - 1);
+			candidates[sizeof(candidates) - 1] = '\0';
+		}
+
+		if (auto_run != 1) {
+			snprintf(message, sizeof(message),
+				"auto_run is %u - openNDS is dormant - candidate gateway interfaces: %s - set gatewayinterface, then set auto_run 1",
+				auto_run,
+				candidates
+			);
+		} else {
+			snprintf(message, sizeof(message),
+				"Gateway interface %s %s - openNDS is dormant and checks again every %d seconds - candidate gateway interfaces: %s",
+				gw_interface,
+				reason,
+				DORMANT_CHECK_INTERVAL,
+				candidates
+			);
+		}
+
+		free(gw_interface);
+
+		now = time(NULL);
+
+		if (strcmp(message, last_message) != 0 || (now - last_log) >= DORMANT_LOG_INTERVAL) {
+			debug(LOG_NOTICE, "%s", message);
+			log_missing_dependencies();
+			strncpy(last_message, message, sizeof(last_message) - 1);
+			last_message[sizeof(last_message) - 1] = '\0';
+			last_log = now;
+		}
+
+		for (waited = 0; waited < DORMANT_CHECK_INTERVAL; waited++) {
+
+			if (opennds_shutdown_requested()) {
+				debug(LOG_NOTICE, "openNDS is stopping from the dormant state");
+				exit(0);
+			}
+
+			sleep(1);
+		}
+	}
+}
+
 // Sets the default config parameters and initialises the configuration system
 void
 config_init(int argc, char **argv)
@@ -176,6 +317,9 @@ config_init(int argc, char **argv)
 	closelog ();
 
 	printf ("openNDS Version %s is in startup - Please wait....\n", VERSION);
+
+	// Stay dormant until auto_run is set and the gateway interface is usable
+	wait_while_dormant();
 
 	// get configured debuglevel
 	memset(debug_level, 0, STATUS_BUF);

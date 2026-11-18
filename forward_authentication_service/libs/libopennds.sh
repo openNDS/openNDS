@@ -64,8 +64,7 @@ get_debuglevel() {
 
 # Encode the custom string
 encode_custom() {
-	ndsctlcmd="b64encode \"$binauth_custom\""
-	do_ndsctl
+	do_ndsctl b64encode "$binauth_custom"
 
 	if [ "$ndsstatus" = "ready" ]; then
 		custom=$ndsctlout
@@ -301,12 +300,15 @@ get_data_file() {
 }
 
 # Function to send commands to openNDS:
+# The ndsctl command and each of its arguments are passed as separate arguments, eg:
+# do_ndsctl b64decode "$b64frag"
+# They are passed to ndsctl unchanged and are never evaluated as shell code.
 do_ndsctl () {
 	local timeout=16
 
 	for tic in $(seq $timeout); do
 		ndsstatus="ready"
-		ndsctlout=$(eval ndsctl "$ndsctlcmd")
+		ndsctlout=$(ndsctl "$@")
 
 		for keyword in $ndsctlout; do
 
@@ -395,6 +397,16 @@ get_theme_environment() {
 	# $fas will be the urlDECODED but still b64ENCODED query string containing parameters passed from openNDS to this FAS script
 	fas=$querysplitremainder
 
+	# The value after "?fas=" must be base64. Reject anything else before it is used.
+	case "${fas:5}" in
+		*[!A-Za-z0-9+/=]*)
+			syslogmessage="Probable attempted code injection detected"
+			debugtype="warn"
+			write_to_syslog
+			exit 1
+			;;
+	esac
+
 	# Get the other stuff we need:
 	user_agent_enc="$2"
 	mode="$3"
@@ -463,10 +475,8 @@ get_theme_environment() {
 			fi
 
 			#base64 decode the current fragment
-			ndsctlcmd="b64decode $b64frag"
-			do_ndsctl
+			do_ndsctl b64decode "$b64frag"
 			frag=$ndsctlout
-			ndsctlcmd=""
 			ndsctlout=""
 
 			# parse variables in this fragment (each time round this loop we will add more parsed variables)
@@ -753,9 +763,28 @@ auth_log () {
 	# We are ready to authenticate the client
 
 	rhid=$(printf "$hid$key" | sha256sum | awk -F' ' '{printf $1}')
-	ndsctlcmd="auth $rhid $quotas $custom"
 
-	do_ndsctl
+	# The custom string is sent to openNDS base64 encoded. Anything else is not sent.
+	case "$custom" in
+		*[!A-Za-z0-9+/=]*)
+			syslogmessage="Custom string is not base64 encoded and is not sent"
+			debugtype="warn"
+			write_to_syslog
+			custom=""
+			;;
+	esac
+
+	# quotas is a space separated list of numbers set by the ThemeSpec, so it is split into arguments.
+	set -f
+
+	if [ -z "$custom" ]; then
+		do_ndsctl auth "$rhid" $quotas
+	else
+		do_ndsctl auth "$rhid" $quotas "$custom"
+	fi
+
+	set +f
+
 	authstat=$ndsctlout
 	# $authstat contains the response from do_ndsctl
 
@@ -1246,13 +1275,26 @@ dhcp_check() {
 	fi
 }
 
+normalise_devices() {
+	# Return a device list as a sorted, comma separated list with no duplicates
+	# $1 is a device list, either comma separated or as listed by nft
+	echo "$1" |
+		tr ',{}";' '     ' |
+		xargs -n1 |
+		sort -u |
+		tr '\n' ',' |
+		sed 's/,$//'
+}
+
 wait_for_interface () {
 	local ifname="$1"
 	local timeout=30
 
 	for i in $(seq $timeout); do
 
-		if [ $(ip link show $ifname 2> /dev/null | grep -c -w "state UP") -eq 1 ]; then
+		# A bridge with no up member reports operstate UNKNOWN while admin UP,
+		# so test the UP flag in the <...> block, not the state word.
+		if ip -o link show dev "$ifname" 2> /dev/null | grep -o '<[^>]*>' | grep -q -w "UP"; then
 			ifstatus="up"
 			break
 		fi
@@ -1263,7 +1305,7 @@ wait_for_interface () {
 
 		sleep 2
 
-		if [ $i == $timeout ] ; then
+		if [ $i = $timeout ] ; then
 			syslogmessage="Iteration [ $i ], Interface [ $ifname ] is not up - giving up for now."
 			debugtype="warn"
 			write_to_syslog
@@ -1451,6 +1493,15 @@ replace_client_rule () {
 	done
 }
 
+get_dnsmasq_section() {
+	# Use the shared helper in dnsconfig.sh (see issue #770 / #582)
+	dnsmasq_section=$(/usr/lib/opennds/dnsconfig.sh get_dnsmasq_section)
+
+	if [ -z "$dnsmasq_section" ]; then
+		dnsmasq_section="@dnsmasq[0]"
+	fi
+}
+
 nft_set () {
 	# Check for dnsmasq compiled options
 	dnsmasq --version | grep ' nftset ' &>/dev/null
@@ -1505,7 +1556,12 @@ nft_set () {
 			sed "$linnum""d" "/etc/dnsmasq.conf" &>/dev/null
 		else
 			uci -q delete dhcp.nds_nftset
-			uci -q delete dhcp.@dnsmasq[0].ipset
+			get_dnsmasq_section
+			uci -q delete dhcp.$dnsmasq_section.ipset
+
+			if [ "$dnsmasq_section" != "@dnsmasq[0]" ]; then
+				uci -q delete dhcp.@dnsmasq[0].ipset
+			fi
 		fi
 
 		ipset destroy "$nftsetname" &>/dev/null
@@ -1644,10 +1700,15 @@ nft_set () {
 					if [ ! -z "$ipsetconf" ]; then
 						ipsetconf="$ipsetconf/$nftsetname"
 
-						del_ipset="del_list dhcp.@dnsmasq[0].ipset='$ipsetconf'"
-						add_ipset="add_list dhcp.@dnsmasq[0].ipset='$ipsetconf'"
+						get_dnsmasq_section
+						del_ipset="del_list dhcp.$dnsmasq_section.ipset='$ipsetconf'"
+						add_ipset="add_list dhcp.$dnsmasq_section.ipset='$ipsetconf'"
 						echo $del_ipset | uci -q batch
 						echo $add_ipset | uci -q batch
+
+						if [ "$dnsmasq_section" != "@dnsmasq[0]" ]; then
+							echo "del_list dhcp.@dnsmasq[0].ipset='$ipsetconf'" | uci -q batch
+						fi
 					fi
 				fi
 			fi
@@ -2071,8 +2132,7 @@ wget_request () {
 	checkcert=""
 	payload_enc=""
 
-	ndsctlcmd="b64encode \"$payload\""
-	do_ndsctl
+	do_ndsctl b64encode "$payload"
 
 	payload=$ndsctlout
 	get_key_from_config
@@ -2114,7 +2174,8 @@ send_post_data () {
 		. $mountpoint/ndscids/ndsinfo
 		. $mountpoint/ndscids/authmonargs
 
-		returned_data=$(eval "$remoterequest" "\"$url\"" "\"$action\"" "\"$gatewayhash\"" "\"$user_agent\"" "\"$payload\"")
+		# Only $remoterequest is parsed by eval. The single quoted arguments are expanded as data.
+		returned_data=$(eval "$remoterequest" '"$url"' '"$action"' '"$gatewayhash"' '"$user_agent"' '"$payload"')
 
 		syslogmessage="send_post_data - action [$action], payload [$payload], fas_response [$returned_data]."
 		debugtype="info"
@@ -2354,9 +2415,9 @@ if [ "$query_type" = "%3ffas%3d" ]; then
 	query_frag=${querystr:9}
 	query_frag=$(printf "${query_frag//%/\\x}")
 
-	# Form fields and an encrypted "&iv=" tail are not part of the fas value.
-	query_frag_b64=${query_frag%%,*}
-	query_frag_b64=${query_frag_b64%%&*}
+	# Form fields follow the fas value, separated by ", " as in get_theme_environment().
+	# Everything before the first separator is the fas value and must be base64.
+	query_frag_b64=${query_frag%%', '*}
 
 	syslogmessage="query_frag_b64 [ $query_frag_b64 ]"
 	debugtype="debug"
@@ -2738,26 +2799,33 @@ elif [ "$1" = "gatewayroute" ]; then
 			if [ -z "$wandevices" ]; then
 				wandevices="$wandevice"
 			else
-				wandevices=", $wandevice"
+				wandevices="$wandevices, $wandevice"
 			fi
 		done
+
+		# the flowtable must also own the gateway device: the
+		# nds_ft_INC flow-add rule matches egress on it
+		wandevices="$wandevices, $ifname"
+
+		# nft lists flowtable devices in sorted order, so build the
+		# create string and the comparisons from one sorted list
+		wandevices=$(normalise_devices "$wandevices")
 
 		handle=$(nft -a list flowtables | grep -w "ndsftINC" | awk -F "handle " '{printf "%s", $2}')
 
 		if [ ! -z "$handle" ]; then
-			ftdevices=$(nft -a list flowtables | grep -w -A 4 "ndsftINC" | awk -F "devices = " 'NF>1 {printf "%s", $2}' | tr -d "\"")
+			ftdevices=$(nft -a list flowtables | grep -w -A 4 "ndsftINC" | awk -F "devices = " 'NF>1 {printf "%s", $2}')
 
-			if [ "$ftdevices" != "{ $wandevices }" ]; then
+			ftdevices=$(normalise_devices "$ftdevices")
 
-				rulehandles=$(nft -a list chain inet nds_mangle nds_ft_INC | grep "@ndsftINC"| awk -F "handle " '{printf "%s ", $2}')
+			if [ "$ftdevices" != "$wandevices" ]; then
 
-				for rulehandle in $rulehandles; do
-					nft delete rule inet nds_mangle nds_ft_INC handle "$rulehandle"
-				done
-
+				# flush the chain first: the flowtable cannot be
+				# deleted while the offload rule references it
+				nft flush chain inet nds_mangle nds_ft_INC
 				nft delete flowtable inet nds_mangle handle "$handle"
 				nft add flowtable inet nds_mangle ndsftINC "{ hook ingress priority -100 ; devices = { $wandevices } ; }" 2> /dev/null
-				nft add rule inet nds_mangle nds_ft_INC flow offload @ndsftINC counter
+				nft add rule inet nds_mangle nds_ft_INC meta l4proto { tcp, udp } flow offload @ndsftINC counter
 				nft add rule inet nds_mangle nds_ft_INC counter return
 			fi
 		else
@@ -2767,19 +2835,32 @@ elif [ "$1" = "gatewayroute" ]; then
 		fi
 	fi
 
-	# add upload flowtable
+	# add or update the upload flowtable the same way, so upload
+	# flows own the full path too and a table created before the
+	# WAN route existed does not stay gateway-only forever
 
-	fttest=$(nft list flowtable inet nds_filter ndsftOUT &> /dev/null ; echo $?)
+	handle=$(nft -a list flowtables | grep -w "ndsftOUT" | awk -F "handle " '{printf "%s", $2}')
 
-	if [ $fttest -gt 0 ]; then
-		option="gatewayinterface"
-		get_option_from_config
+	if [ ! -z "$handle" ]; then
+		ftdevices=$(nft -a list flowtables | grep -w -A 4 "ndsftOUT" | awk -F "devices = " 'NF>1 {printf "%s", $2}')
 
-		if [ -z "$gatewayinterface" ]; then
-			gatewayinterface="br-lan"
+		ftdevices=$(normalise_devices "$ftdevices")
+
+		if [ "$ftdevices" != "$wandevices" ]; then
+
+			# flush the chain first: the flowtable cannot be
+			# deleted while the offload rule references it; the
+			# rule block below re-lands the two rules
+			nft flush chain inet nds_filter nds_ft_OUT
+			nft delete flowtable inet nds_filter handle "$handle"
+			nft add flowtable inet nds_filter ndsftOUT "{ hook ingress priority -100 ; devices = { $wandevices } ; }" 2> /dev/null
+		fi
+	else
+		if [ -z "$wandevices" ]; then
+			wandevices="$ifname"
 		fi
 
-		nft add flowtable inet nds_filter ndsftOUT "{ hook ingress priority -100 ; devices = { $gatewayinterface } ; }"
+		nft add flowtable inet nds_filter ndsftOUT "{ hook ingress priority -100 ; devices = { $wandevices } ; }" 2> /dev/null
 	fi
 
 	ftruletest=$(nft list chain inet nds_filter nds_ft_OUT 2> /dev/null | grep -q -w "meta l4proto"; echo $?)
@@ -2958,8 +3039,7 @@ elif [ "$1" = "syslog" ]; then
 elif [ "$1" = "startdaemon" ]; then
 	# Start a daemon process
 	# $2 contains the b64 encoded daemon startup command
-	ndsctlcmd="b64decode $2"
-	do_ndsctl
+	do_ndsctl b64decode "$2"
 
 	if [ "$ndsstatus" = "ready" ]; then
 		daemoncmd="$ndsctlout </dev/null &>/dev/null &"
@@ -3084,8 +3164,11 @@ elif [ "$1" = "auth" ]; then
 		authstr=$(ndsctl b64decode "$2")
 
 		libcall="yes"
-		ndsctlcmd="auth $authstr"
-		do_ndsctl
+
+		# authstr is a space separated list of fields, so it is split into arguments.
+		set -f
+		do_ndsctl auth $authstr
+		set +f
 
 		if [ "$ndsstatus" = "authenticated" ]; then
 			debugtype="notice"
@@ -3115,8 +3198,7 @@ elif [ "$1" = "daemon_auth" ]; then
 		b64authstr="$2"
 
 		daemoncmd="/usr/lib/opennds/libopennds.sh auth $b64authstr"
-		ndsctlcmd="b64encode \"$daemoncmd\""
-		do_ndsctl
+		do_ndsctl b64encode "$daemoncmd"
 
 		daemon_pid=$(/usr/lib/opennds/libopennds.sh "startdaemon" "$ndsctlout")
 
@@ -3138,8 +3220,7 @@ elif [ "$1" = "deauth" ]; then
 	else
 		clientaddress=$2
 		libcall="yes"
-		ndsctlcmd="deauth $clientaddress"
-		do_ndsctl
+		do_ndsctl deauth "$clientaddress"
 
 		authstat=$ndsctlout
 		# $authstat contains the response from do_ndsctl
@@ -3160,8 +3241,7 @@ elif [ "$1" = "daemon_deauth" ]; then
 	else
 		clientaddress=$2
 		daemoncmd="/usr/lib/opennds/libopennds.sh deauth $clientaddress"
-		ndsctlcmd="b64encode \"$daemoncmd\""
-		do_ndsctl
+		do_ndsctl b64encode "$daemoncmd"
 
 		daemon_pid=$(/usr/lib/opennds/libopennds.sh "startdaemon" "$ndsctlout")
 

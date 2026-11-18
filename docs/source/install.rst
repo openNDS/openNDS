@@ -40,10 +40,11 @@ Installing on OpenWrt
 
     ``opkg install opennds``
 
-* openNDS is enabled by default and will start automatically on reboot or can be started and stopped manually.
+* After install, openNDS is dormant until auto_run is set. It sets up no firewall rules, so it cannot cut off access to the router. The system log lists the candidate gateway interfaces.
 
-* If the interface that you want openNDS to manage is not br-lan,
-  edit /etc/config/opennds and set the gatewayinterface option.
+* Edit /etc/config/opennds and set the gatewayinterface option to the bridge that you want openNDS to manage (the default is br-lan), then set ``option auto_run '1'``.
+
+* openNDS will then start within about 15 seconds, and automatically on reboot. It can also be started and stopped manually.
 
 * To start openNDS, run the following, or just reboot the router:
 
@@ -68,6 +69,13 @@ Installing on OpenWrt
 * To uninstall openNDS:
 
     ``opkg remove opennds``
+
+Upgrading to v11.1.0 or later
+*****************************
+
+openNDS v11.1.0 adds the option auto_run, with a default of 0. After an upgrade from an earlier version, an existing configuration that does not set it leaves openNDS dormant.
+
+To run as before, add ``option auto_run '1'`` to /etc/config/opennds, then restart openNDS or wait about 15 seconds.
 
 Generic Linux
 *************

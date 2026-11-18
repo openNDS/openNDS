@@ -78,6 +78,50 @@ reload_dnsmasq() {
 	fi
 }
 
+get_dnsmasq_section() {
+	# Same network-zone lookup as issue #582, then the dnsmasq section whose
+	# interface list contains that network. Fall back to @dnsmasq[0].
+	local section ifaces iface first_section matched_section
+
+	dnsmasq_section="@dnsmasq[0]"
+	gwif=$(uci get opennds.@opennds[0].gatewayinterface 2>/dev/null | awk '{printf "%s", $1}')
+
+	if [ -z "$gwif" ]; then
+		gwif="br-lan"
+	fi
+
+	network_zone=$(uci show network 2>/dev/null | grep "device='$gwif'" | awk -F "." '{printf "%s", $2}')
+	first_section=""
+	matched_section=""
+
+	for section in $(uci -X show dhcp 2>/dev/null | awk -F= '$2 == "dnsmasq" { split($1, a, "."); printf "%s ", a[2] }'); do
+		if [ -z "$first_section" ]; then
+			first_section="$section"
+		fi
+
+		ifaces=$(uci -q get dhcp."$section".interface)
+
+		for iface in $ifaces; do
+			if [ "$iface" = "$network_zone" ]; then
+				matched_section="$section"
+				break
+			fi
+		done
+
+		if [ -n "$matched_section" ]; then
+			break
+		fi
+	done
+
+	if [ -n "$matched_section" ]; then
+		dnsmasq_section="$matched_section"
+	fi
+
+	if [ "$dnsmasq_section" = "$first_section" ]; then
+		dnsmasq_section="@dnsmasq[0]"
+	fi
+}
+
 
 if [ "$setconf" = "" ]; then
 	exit 1
@@ -137,10 +181,16 @@ elif [ "$setconf" = "hostconf" ]; then
 		# OpenWrt
 		# Note we do not commit here so that the config changes do NOT survive a reboot and can be reverted without writing to config files
 		host_entry="/$gw_fqdn/$gw_ip"
-		del_dns="del_list dhcp.@dnsmasq[0].address='$host_entry'"
-		add_dns="add_list dhcp.@dnsmasq[0].address='$host_entry'"
+		get_dnsmasq_section
+		del_dns="del_list dhcp.$dnsmasq_section.address='$host_entry'"
+		add_dns="add_list dhcp.$dnsmasq_section.address='$host_entry'"
 		echo $del_dns | uci batch
 		echo $add_dns | uci batch
+
+		# Remove a leftover from earlier versions that always wrote to @dnsmasq[0]
+		if [ "$dnsmasq_section" != "@dnsmasq[0]" ]; then
+			echo "del_list dhcp.@dnsmasq[0].address='$host_entry'" | uci batch
+		fi
 	fi
 
 	printf "%s" "done"
@@ -200,6 +250,11 @@ elif [ "$1" = "ipset_to_nftset" ]; then
 
 	ipset_to_nftset
 	exit 0
+elif [ "$setconf" = "get_dnsmasq_section" ]; then
+	get_dnsmasq_section
+	printf "%s" "$dnsmasq_section"
+	exit 0
+
 else
 	exit 1 
 fi

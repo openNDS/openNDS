@@ -10,13 +10,14 @@ get_option_from_config() {
 }
 
 # Function to send commands to openNDS:
+# The ndsctl command and each of its arguments are passed as separate arguments.
+# They are passed to ndsctl unchanged and are never evaluated as shell code.
 do_ndsctl () {
 	local timeout=15
 
 	for tic in $(seq $timeout); do
 		ndsstatus="ready"
-		ndsctlcmd="$ndsctlcmd 2>&1"
-		ndsctlout=$(eval ndsctl "$ndsctlcmd")
+		ndsctlout=$(ndsctl "$@" 2>&1)
 
 		for keyword in $ndsctlout; do
 
@@ -85,8 +86,7 @@ fi
 sleep 5
 
 # Get status as ndsctlout
-ndsctlcmd="status 2>/dev/null"
-do_ndsctl
+do_ndsctl status
 
 # Get the configured debuglevel and version
 debuglevel=$(echo "$ndsctlout" | grep "Debug Level" | awk '{printf $4}')
@@ -133,7 +133,8 @@ payload="none"
 acklist="*"
 
 
-ret=$(eval "$remoterequest" "\"$url\"" "\"$action\"" "\"$gatewayhash\"" "\"$user_agent\"" "\"$payload\"")
+# Only $remoterequest is parsed by eval. The single quoted arguments are expanded as data.
+ret=$(eval "$remoterequest" '"$url"' '"$action"' '"$gatewayhash"' '"$user_agent"' '"$payload"')
 
 if [ "$debuglevel" -ge 3 ]; then
 	echo "authmon - action $action, response [$ret]" | logger -p "daemon.debug" -t "authmon[$ndspid]"
@@ -157,7 +158,7 @@ while true; do
 	payload="none"
 	acklist="*"
 
-	authlist=$(eval "$remoterequest" "\"$url\"" "\"$action\"" "\"$gatewayhash\"" "\"$user_agent\"" "\"$payload\"")
+	authlist=$(eval "$remoterequest" '"$url"' '"$action"' '"$gatewayhash"' '"$user_agent"' '"$payload"')
 
 	if [ $debuglevel -ge 3 ]; then
 		echo "authmon - authlist $authlist" | logger -p "daemon.debug" -t "authmon[$ndspid]"
@@ -181,8 +182,10 @@ while true; do
 					echo "authmon - authentication parameters $authparams" | logger -p "daemon.info" -t "authmon[$ndspid]"
 				fi
 
-				ndsctlcmd="auth $authparams 2>/dev/null"
-				do_ndsctl
+				# authparams is a space separated list of fields, so it is split into arguments.
+				set -f
+				do_ndsctl auth $authparams
+				set +f
 				authcount=$((--authcount))
 
 				if [ "$ndsstatus" = "authenticated" ]; then
@@ -214,7 +217,7 @@ while true; do
 	# acklist is a space separated list of the rhid's of sucessfully authenticated clients.
 	# Send acklist to the FAS for upstream processing:
 
-	ackresponse=$(eval "$remoterequest" "\"$url\"" "\"$action\"" "\"$gatewayhash\"" "\"$user_agent\"" "\"$acklist\"")
+	ackresponse=$(eval "$remoterequest" '"$url"' '"$action"' '"$gatewayhash"' '"$user_agent"' '"$acklist"')
 
 	if [ $debuglevel -ge 3 ]; then
 		echo "authmon - remote FAS response [$ackresponse]" | logger -p "daemon.debug" -t "authmon[$ndspid]"

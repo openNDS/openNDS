@@ -96,6 +96,7 @@ opennds (11.1.0)
   * Fix - querystring check for CPI login [bluewavenet]
   * Fix - pass client data to ndsctl without eval [bluewavenet]
   * Fix - send only a base64 custom string with a client auth [bluewavenet]
+  * Fix - check the whole fas value before it is used [bluewavenet]
 
  -- Rob White <dot@blue-wave.net>  (11.1.0beta - release date to be added on release)
 

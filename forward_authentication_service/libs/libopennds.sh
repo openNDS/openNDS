@@ -397,6 +397,16 @@ get_theme_environment() {
 	# $fas will be the urlDECODED but still b64ENCODED query string containing parameters passed from openNDS to this FAS script
 	fas=$querysplitremainder
 
+	# The value after "?fas=" must be base64. Reject anything else before it is used.
+	case "${fas:5}" in
+		*[!A-Za-z0-9+/=]*)
+			syslogmessage="Probable attempted code injection detected"
+			debugtype="warn"
+			write_to_syslog
+			exit 1
+			;;
+	esac
+
 	# Get the other stuff we need:
 	user_agent_enc="$2"
 	mode="$3"
@@ -2404,9 +2414,9 @@ if [ "$query_type" = "%3ffas%3d" ]; then
 	query_frag=${querystr:9}
 	query_frag=$(printf "${query_frag//%/\\x}")
 
-	# Form fields and an encrypted "&iv=" tail are not part of the fas value.
-	query_frag_b64=${query_frag%%,*}
-	query_frag_b64=${query_frag_b64%%&*}
+	# Form fields follow the fas value, separated by ", " as in get_theme_environment().
+	# Everything before the first separator is the fas value and must be base64.
+	query_frag_b64=${query_frag%%', '*}
 
 	syslogmessage="query_frag_b64 [ $query_frag_b64 ]"
 	debugtype="debug"

@@ -6,12 +6,14 @@ status=$1
 clientip=$2
 b64query=$3
 
+# The ndsctl command and each of its arguments are passed as separate arguments.
+# They are passed to ndsctl unchanged and are never evaluated as shell code.
 do_ndsctl () {
 	local timeout=4
 
 	for tic in $(seq $timeout); do
 		ndsstatus="ready"
-		ndsctlout=$(eval ndsctl "$ndsctlcmd")
+		ndsctlout=$(ndsctl "$@")
 
 		for keyword in $ndsctlout; do
 
@@ -125,8 +127,7 @@ parse_variables() {
 parse_parameters() {
 
 	if [ "$status" = "status" ]; then
-		ndsctlcmd="json $clientip"
-		do_ndsctl
+		do_ndsctl json "$clientip"
 
 		if [ "$ndsstatus" = "ready" ]; then
 			param_str=$ndsctlout
@@ -369,8 +370,7 @@ if [ "$status" = "status" ] || [ "$status" = "err511" ]; then
 	querystr=""
 
 	if [ ! -z "$b64query" ]; then
-		ndsctlcmd="b64decode $b64query"
-		do_ndsctl
+		do_ndsctl b64decode "$b64query"
 		querystr=$ndsctlout	
 
 		# strip off leading "?" character

@@ -94,6 +94,7 @@ opennds (11.1.0)
   * Fix - path to check_reauth_interval.sh [bluewavenet]
   * Fix - ensure querystr is allocated ENC_QUERYSTR before calling construct_querystring [bluewavenet]
   * Fix - querystring check for CPI login [bluewavenet]
+  * Fix - pass client data to ndsctl without eval [bluewavenet]
 
  -- Rob White <dot@blue-wave.net>  (11.1.0beta - release date to be added on release)
 

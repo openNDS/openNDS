@@ -10,13 +10,14 @@ get_option_from_config() {
 }
 
 # Function to send commands to openNDS:
+# The ndsctl command and each of its arguments are passed as separate arguments.
+# They are passed to ndsctl unchanged and are never evaluated as shell code.
 do_ndsctl () {
 	local timeout=15
 
 	for tic in $(seq $timeout); do
 		ndsstatus="ready"
-		ndsctlcmd="$ndsctlcmd 2>&1"
-		ndsctlout=$(eval ndsctl "$ndsctlcmd")
+		ndsctlout=$(ndsctl "$@" 2>&1)
 
 		for keyword in $ndsctlout; do
 
@@ -85,8 +86,7 @@ fi
 sleep 5
 
 # Get status as ndsctlout
-ndsctlcmd="status 2>/dev/null"
-do_ndsctl
+do_ndsctl status
 
 # Get the configured debuglevel and version
 debuglevel=$(echo "$ndsctlout" | grep "Debug Level" | awk '{printf $4}')
@@ -181,8 +181,10 @@ while true; do
 					echo "authmon - authentication parameters $authparams" | logger -p "daemon.info" -t "authmon[$ndspid]"
 				fi
 
-				ndsctlcmd="auth $authparams 2>/dev/null"
-				do_ndsctl
+				# authparams is a space separated list of fields, so it is split into arguments.
+				set -f
+				do_ndsctl auth $authparams
+				set +f
 				authcount=$((--authcount))
 
 				if [ "$ndsstatus" = "authenticated" ]; then

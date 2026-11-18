@@ -64,8 +64,7 @@ get_debuglevel() {
 
 # Encode the custom string
 encode_custom() {
-	ndsctlcmd="b64encode \"$binauth_custom\""
-	do_ndsctl
+	do_ndsctl b64encode "$binauth_custom"
 
 	if [ "$ndsstatus" = "ready" ]; then
 		custom=$ndsctlout
@@ -301,12 +300,15 @@ get_data_file() {
 }
 
 # Function to send commands to openNDS:
+# The ndsctl command and each of its arguments are passed as separate arguments, eg:
+# do_ndsctl b64decode "$b64frag"
+# They are passed to ndsctl unchanged and are never evaluated as shell code.
 do_ndsctl () {
 	local timeout=16
 
 	for tic in $(seq $timeout); do
 		ndsstatus="ready"
-		ndsctlout=$(eval ndsctl "$ndsctlcmd")
+		ndsctlout=$(ndsctl "$@")
 
 		for keyword in $ndsctlout; do
 
@@ -463,10 +465,8 @@ get_theme_environment() {
 			fi
 
 			#base64 decode the current fragment
-			ndsctlcmd="b64decode $b64frag"
-			do_ndsctl
+			do_ndsctl b64decode "$b64frag"
 			frag=$ndsctlout
-			ndsctlcmd=""
 			ndsctlout=""
 
 			# parse variables in this fragment (each time round this loop we will add more parsed variables)
@@ -753,9 +753,18 @@ auth_log () {
 	# We are ready to authenticate the client
 
 	rhid=$(printf "$hid$key" | sha256sum | awk -F' ' '{printf $1}')
-	ndsctlcmd="auth $rhid $quotas $custom"
 
-	do_ndsctl
+	# quotas is a space separated list of numbers set by the ThemeSpec, so it is split into arguments.
+	set -f
+
+	if [ -z "$custom" ]; then
+		do_ndsctl auth "$rhid" $quotas
+	else
+		do_ndsctl auth "$rhid" $quotas "$custom"
+	fi
+
+	set +f
+
 	authstat=$ndsctlout
 	# $authstat contains the response from do_ndsctl
 
@@ -2103,8 +2112,7 @@ wget_request () {
 	checkcert=""
 	payload_enc=""
 
-	ndsctlcmd="b64encode \"$payload\""
-	do_ndsctl
+	do_ndsctl b64encode "$payload"
 
 	payload=$ndsctlout
 	get_key_from_config
@@ -3010,8 +3018,7 @@ elif [ "$1" = "syslog" ]; then
 elif [ "$1" = "startdaemon" ]; then
 	# Start a daemon process
 	# $2 contains the b64 encoded daemon startup command
-	ndsctlcmd="b64decode $2"
-	do_ndsctl
+	do_ndsctl b64decode "$2"
 
 	if [ "$ndsstatus" = "ready" ]; then
 		daemoncmd="$ndsctlout </dev/null &>/dev/null &"
@@ -3136,8 +3143,11 @@ elif [ "$1" = "auth" ]; then
 		authstr=$(ndsctl b64decode "$2")
 
 		libcall="yes"
-		ndsctlcmd="auth $authstr"
-		do_ndsctl
+
+		# authstr is a space separated list of fields, so it is split into arguments.
+		set -f
+		do_ndsctl auth $authstr
+		set +f
 
 		if [ "$ndsstatus" = "authenticated" ]; then
 			debugtype="notice"
@@ -3167,8 +3177,7 @@ elif [ "$1" = "daemon_auth" ]; then
 		b64authstr="$2"
 
 		daemoncmd="/usr/lib/opennds/libopennds.sh auth $b64authstr"
-		ndsctlcmd="b64encode \"$daemoncmd\""
-		do_ndsctl
+		do_ndsctl b64encode "$daemoncmd"
 
 		daemon_pid=$(/usr/lib/opennds/libopennds.sh "startdaemon" "$ndsctlout")
 
@@ -3190,8 +3199,7 @@ elif [ "$1" = "deauth" ]; then
 	else
 		clientaddress=$2
 		libcall="yes"
-		ndsctlcmd="deauth $clientaddress"
-		do_ndsctl
+		do_ndsctl deauth "$clientaddress"
 
 		authstat=$ndsctlout
 		# $authstat contains the response from do_ndsctl
@@ -3212,8 +3220,7 @@ elif [ "$1" = "daemon_deauth" ]; then
 	else
 		clientaddress=$2
 		daemoncmd="/usr/lib/opennds/libopennds.sh deauth $clientaddress"
-		ndsctlcmd="b64encode \"$daemoncmd\""
-		do_ndsctl
+		do_ndsctl b64encode "$daemoncmd"
 
 		daemon_pid=$(/usr/lib/opennds/libopennds.sh "startdaemon" "$ndsctlout")
 

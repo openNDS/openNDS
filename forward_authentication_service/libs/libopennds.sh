@@ -754,6 +754,16 @@ auth_log () {
 
 	rhid=$(printf "$hid$key" | sha256sum | awk -F' ' '{printf $1}')
 
+	# The custom string is sent to openNDS base64 encoded. Anything else is not sent.
+	case "$custom" in
+		*[!A-Za-z0-9+/=]*)
+			syslogmessage="Custom string is not base64 encoded and is not sent"
+			debugtype="warn"
+			write_to_syslog
+			custom=""
+			;;
+	esac
+
 	# quotas is a space separated list of numbers set by the ThemeSpec, so it is split into arguments.
 	set -f
 

@@ -8,6 +8,7 @@ opennds (11.1.0)
   * Fix - write gatewayfqdn and walled-garden DNS entries to the correct dnsmasq instance, chosen by a helper in dnsconfig.sh [bluewavenet] [juanriccio]
   * Fix - gatewayroute: give both offload flowtables the WAN and gateway devices, and update the upload flowtable when the WAN changes [bluewavenet] [paoloantinori]
   * Fix - pass client data to ndsctl without eval [bluewavenet]
+  * Fix - send only a base64 custom string with a client auth [bluewavenet]
 
  -- Rob White <dot@blue-wave.net>  (11.1.0beta - release date to be added on release)
 

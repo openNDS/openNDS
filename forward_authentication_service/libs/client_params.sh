@@ -118,7 +118,8 @@ parse_variables() {
 			continue
 		fi
 
-		eval $var=$(echo "\"$evalstr\"")
+		# The value is assigned as data. It is not parsed as shell syntax.
+		eval "$var=\$evalstr"
 		evalstr=""
 	done
 	query=""
@@ -381,6 +382,14 @@ if [ "$status" = "status" ] || [ "$status" = "err511" ]; then
 			htmlentityencode "$element"
 			element=$entityencoded
 			varname=$(echo "$element" | awk -F'=' '$2!="" {printf "%s", $1}')
+
+			# Accept only a valid shell variable name
+			case "$varname" in
+				""|[0-9]*|*[!A-Za-z0-9_]*)
+					continue
+					;;
+			esac
+
 			queryvarlist="$queryvarlist $varname"
 		done
 

@@ -101,7 +101,7 @@ opennds (11.1.0)
   * Fix - pass fas request arguments to the request command as data [bluewavenet]
   * Fix - show the correct login_option_enabled default in the config file [bluewavenet]
 
- -- Rob White <dot@blue-wave.net>  (11.1.0beta - release date to be added on release)
+ -- Rob White <dot@blue-wave.net>  Thu, 19 Nov 2026 16:55:38 +0000
 
 opennds (11.0.0)
   * Fix - Preemptivemac not taking config values [bluewavenet]

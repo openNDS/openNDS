@@ -521,6 +521,9 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 				client->upload_rate
 			);
 
+			// The limits are now set. A client with any limit must not have its flows offloaded.
+			iptables_fw_offload_update(client);
+
 			client->window_start = now;
 			client->window_counter = config->rate_check_window;
 			client->initial_loop = 1;

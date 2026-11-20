@@ -1447,6 +1447,11 @@ pre_setup () {
 	nft add chain inet nds_mangle ndsINC
 	nft add chain inet nds_mangle nds_ft_INC
 	nft add chain inet nds_filter nds_ft_OUT
+
+	# clients with a rate limit or a quota are added to these sets, so their flows are not offloaded
+	nft add set inet nds_mangle ndsftSKIP "{ type ipv4_addr ; }"
+	nft add set inet nds_filter ndsftSKIP "{ type ipv4_addr ; }"
+
 	nft add chain inet nds_filter nds_allow_INP "{ type filter hook input priority 100 ; }"
 	nft add chain inet nds_filter nds_allow_FWD "{ type filter hook forward priority 100 ; }"
 
@@ -2825,11 +2830,15 @@ elif [ "$1" = "gatewayroute" ]; then
 				nft flush chain inet nds_mangle nds_ft_INC
 				nft delete flowtable inet nds_mangle handle "$handle"
 				nft add flowtable inet nds_mangle ndsftINC "{ hook ingress priority -100 ; devices = { $wandevices } ; }" 2> /dev/null
+				# clients with a rate limit or a quota must not be offloaded, or their packets are not counted
+				nft add rule inet nds_mangle nds_ft_INC ip daddr @ndsftSKIP counter return
 				nft add rule inet nds_mangle nds_ft_INC meta l4proto { tcp, udp } flow offload @ndsftINC counter
 				nft add rule inet nds_mangle nds_ft_INC counter return
 			fi
 		else
 			nft add flowtable inet nds_mangle ndsftINC "{ hook ingress priority -100 ; devices = { $wandevices } ; }" 2> /dev/null
+			# clients with a rate limit or a quota must not be offloaded, or their packets are not counted
+			nft add rule inet nds_mangle nds_ft_INC ip daddr @ndsftSKIP counter return
 			nft add rule inet nds_mangle nds_ft_INC meta l4proto { tcp, udp } flow offload @ndsftINC counter
 			nft add rule inet nds_mangle nds_ft_INC counter return
 		fi
@@ -2866,6 +2875,8 @@ elif [ "$1" = "gatewayroute" ]; then
 	ftruletest=$(nft list chain inet nds_filter nds_ft_OUT 2> /dev/null | grep -q -w "meta l4proto"; echo $?)
 
 	if [ $ftruletest -gt 0 ]; then
+		# clients with a rate limit or a quota must not be offloaded, or their packets are not counted
+		nft add rule inet nds_filter nds_ft_OUT ip saddr @ndsftSKIP counter return
 		nft add rule inet nds_filter nds_ft_OUT meta l4proto { tcp, udp } flow offload @ndsftOUT counter
 		nft add rule inet nds_filter nds_ft_OUT counter return
 	fi

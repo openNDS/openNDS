@@ -717,6 +717,16 @@ static int authenticate_client(struct MHD_Connection *connection,
 		client->upload_quota = uploadquota;
 	}
 
+	// A limit set here may be new, so check the offload setting again
+	if (rc == 0) {
+		LOCK_CLIENT_LIST();
+
+		if (client->dead == 0 && client->fw_connection_state == FW_MARK_AUTHENTICATED) {
+			iptables_fw_offload_update(client);
+		}
+
+		UNLOCK_CLIENT_LIST();
+	}
 
 	// error checking
 	if (rc != 0) {

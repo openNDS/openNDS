@@ -49,6 +49,7 @@
 #define CHAIN_DOWNLOAD_RATE  "ndsDLR"
 #define CHAIN_AUTHENTICATED     "ndsAUT"
 #define CHAIN_TRUSTED    "ndsTRU"
+#define SET_FT_SKIP    "ndsftSKIP"
 /*@}*/
 
 
@@ -78,6 +79,9 @@ int iptables_upload_ratelimit_enable(t_client *client, int enable);
 
 /** @brief Enable/Disable Download Rate Limiting of a specific client */
 int iptables_download_ratelimit_enable(t_client *client, int enable);
+
+/** @brief Stop or allow flowtable offload of a specific client, depending on its rate limits and quotas */
+int iptables_fw_offload_update(t_client *client);
 
 /** @brief Return the total download usage in bytes */
 unsigned long long int iptables_fw_total_download();

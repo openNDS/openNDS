@@ -55,6 +55,7 @@
 
 static int _iptables_init_marks(void);
 static int spawn_argv(char *const argv[]);
+static int iptables_offload_skip_delete(t_client *client);
 
 // Used to mark packets, and characterize client state.  Unmarked packets are considered 'preauthenticated'
 unsigned int FW_MARK_PREAUTHENTICATED;	// @brief 0: Actually not used as a packet mark
@@ -801,6 +802,61 @@ iptables_fw_deauthenticate(t_client *client)
 	rc = execute("/usr/lib/opennds/libopennds.sh delete_client_rule nds_filter \"%s\" all \"%s\"", CHAIN_UPLOAD_RATE, client->ip);
 	rc = execute("/usr/lib/opennds/libopennds.sh delete_client_rule nds_mangle \"%s\" all \"%s\"", CHAIN_INCOMING, client->ip);
 	rc = execute("/usr/lib/opennds/libopennds.sh delete_client_rule nds_mangle \"%s\" all \"%s\"", CHAIN_DOWNLOAD_RATE, client->ip);
+
+	if (client->offload_skip == 1) {
+		rc = iptables_offload_skip_delete(client);
+	}
+
+	return rc;
+}
+
+/* Flowtable offload and client limits.
+ * An offloaded flow bypasses all our chains, so its packets are not counted
+ * and the rate limit rules never see them. The rules ahead of the flow offload
+ * rules in CHAIN_FT_INC and CHAIN_FT_OUT return early for any address in the
+ * SET_FT_SKIP sets, so a client with a rate limit or a quota goes in the sets.
+ * Clients with no limits stay out of the sets and keep the offload.
+ */
+int
+iptables_fw_offload_update(t_client *client)
+{
+	int rc = 0;
+	int skip = 0;
+
+	if (client->upload_rate > 0
+		|| client->download_rate > 0
+		|| client->upload_quota > 0
+		|| client->download_quota > 0
+	) {
+		skip = 1;
+	}
+
+	if (skip == 1 && client->offload_skip == 0) {
+		debug(LOG_INFO, "Client [%s %s] has a rate limit or quota, so its flows will not be offloaded", client->ip, client->mac);
+
+		// Set the flag first, so a partial failure is still cleaned up on deauth
+		client->offload_skip = 1;
+		rc |= nftables_do_command("add element inet nds_mangle %s \"{ %s }\"", SET_FT_SKIP, client->ip);
+		rc |= nftables_do_command("add element inet nds_filter %s \"{ %s }\"", SET_FT_SKIP, client->ip);
+	}
+
+	if (skip == 0 && client->offload_skip == 1) {
+		debug(LOG_INFO, "Client [%s %s] has no rate limit or quota, so its flows can be offloaded", client->ip, client->mac);
+		rc |= iptables_offload_skip_delete(client);
+	}
+
+	return rc;
+}
+
+// Remove a client from the SET_FT_SKIP sets. Try once only, the element may already be gone.
+static int
+iptables_offload_skip_delete(t_client *client)
+{
+	int rc = 0;
+
+	rc |= execute("nft delete element inet nds_mangle %s \"{ %s }\" 2> /dev/null", SET_FT_SKIP, client->ip);
+	rc |= execute("nft delete element inet nds_filter %s \"{ %s }\" 2> /dev/null", SET_FT_SKIP, client->ip);
+	client->offload_skip = 0;
 
 	return rc;
 }

@@ -3,6 +3,9 @@ What's New - openNDS 11
 
 Changes in the current major version, 11.0.0 onwards. For earlier versions see :doc:`changelog`.
 
+opennds (11.1.1)
+  * Fix - do not offload the flows of clients with a rate limit or a quota, so their traffic is counted and their limits work [bluewavenet]
+
 opennds (11.1.0)
   * Add - auto_run option, default 0; stay dormant until configured, logging candidate gateway bridges and missing optional packages every 15 seconds [bluewavenet]
   * Fix - add the firewall include without committing other staged uci changes [bluewavenet]

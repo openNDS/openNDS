@@ -756,8 +756,8 @@ fw_refresh_client_list(void)
 		if (cp1->session_end > 0 && cp1->session_end <= now) {
 			// Session Timeout so deauthenticate the client
 
-			debug(LOG_NOTICE, "Session end time reached, deauthenticating: %s %s, connected: %lu, in: %llukB, out: %llukB",
-				cp1->ip, cp1->mac, now - cp1->session_end,
+			debug(LOG_NOTICE, "Session end time reached, deauthenticating: %s %s, connected: %lus, in: %llukB, out: %llukB",
+				cp1->ip, cp1->mac, (unsigned long)(now - cp1->session_start),
 				cp1->counters.incoming / 1024,
 				cp1->counters.outgoing / 1024
 			);
@@ -774,7 +774,7 @@ fw_refresh_client_list(void)
 				debug(LOG_NOTICE, "Download quota exceeded, deauthenticating: %s %s, connected: %lus, in: %llukB, out: %llukB",
 					cp1->ip,
 					cp1->mac,
-					now - cp1->session_end,
+					(unsigned long)(now - cp1->session_start),
 					cp1->counters.incoming / 1024,
 					cp1->counters.outgoing / 1024
 				);
@@ -788,7 +788,7 @@ fw_refresh_client_list(void)
 					debug(LOG_NOTICE, "Download quota exceeded, throttling: %s %s, connected: %lus, in: %llukB, out: %llukB, rate: %llukbits/s",
 						cp1->ip,
 						cp1->mac,
-						now - cp1->session_end,
+						(unsigned long)(now - cp1->session_start),
 						cp1->counters.incoming / 1024,
 						cp1->counters.outgoing / 1024,
 						config->fup_download_throttle_rate
@@ -809,7 +809,7 @@ fw_refresh_client_list(void)
 				debug(LOG_NOTICE, "Upload quota exceeded, deauthenticating: %s %s, connected: %lus, in: %llukB, out: %llukB",
 					cp1->ip,
 					cp1->mac,
-					now - cp1->session_end,
+					(unsigned long)(now - cp1->session_start),
 					cp1->counters.incoming / 1024,
 					cp1->counters.outgoing / 1024
 				);
@@ -823,7 +823,7 @@ fw_refresh_client_list(void)
 					debug(LOG_NOTICE, "Upload quota exceeded, throttling: %s %s, connected: %lus, in: %llukB, out: %llukB, rate: %llukbits/s",
 						cp1->ip,
 						cp1->mac,
-						now - cp1->session_end,
+						(unsigned long)(now - cp1->session_start),
 						cp1->counters.incoming / 1024,
 						cp1->counters.outgoing / 1024,
 						config->fup_upload_throttle_rate

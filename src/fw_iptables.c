@@ -816,12 +816,18 @@ iptables_fw_deauthenticate(t_client *client)
  * rules in CHAIN_FT_INC and CHAIN_FT_OUT return early for any address in the
  * SET_FT_SKIP sets, so a client with a rate limit or a quota goes in the sets.
  * Clients with no limits stay out of the sets and keep the offload.
+ * If flow_offloading_enable is not 1 there are no flowtables, so nothing is offloaded.
  */
 int
 iptables_fw_offload_update(t_client *client)
 {
+	s_config *config = config_get_config();
 	int rc = 0;
 	int skip = 0;
+
+	if (config->flow_offloading_enable != 1) {
+		return 0;
+	}
 
 	if (client->upload_rate > 0
 		|| client->download_rate > 0

@@ -107,6 +107,20 @@ These levels can either use BinAuth to set quota values determined by the FAS, o
 
 If using BinAuth, the FAS would utilise the BinAuth custom variable to send quota values to a BinAuth script configured to interpret the data passed to it in the variable. There is no set method for doing this, it is left to individual installers to develop their own method.
 
+Flow Offloading
+***************
+
+openNDS can offload the flows of authenticated clients to an nftables flowtable. Packets of an offloaded flow bypass the nftables chains, which reduces the load on the router CPU.
+
+Flow offloading is disabled by default. It mainly benefits slow legacy devices. It makes little difference on modern devices.
+
+When flow offloading is enabled:
+
+* Clients with no rate limit and no quota are offloaded. The packets of their offloaded flows are not counted, so their counters stop updating. ndsctl status, ndsctl json and the RFC 8910 login/status page then report stale data usage and data rates for these clients.
+* Clients with a rate limit or a quota are never offloaded, so their traffic is counted and their limits always work.
+
+See :ref:`flow-offloading-enable`.
+
 Traffic Shaping
 ***************
 
@@ -319,4 +333,21 @@ If set to 0, the client will be deauthenticated when the volume quota is exceede
 
 ``option fup_download_throttle_rate '0'``
 
+.. _flow-offloading-enable:
 
+flow_offloading_enable - Flow Offloading
+========================================
+
+Default 0 (disabled)
+
+If set to 1, the flows of authenticated clients that have no rate limit and no quota are offloaded to an nftables flowtable.
+
+This mainly benefits slow legacy devices. It makes little difference on modern devices.
+
+The packets of offloaded flows are not counted, so the counters of those clients stop updating. ndsctl status, ndsctl json and the RFC 8910 login/status page then report stale data usage and data rates for them.
+
+Clients with a rate limit or a quota are never offloaded.
+
+If set to 0, openNDS creates no flowtables and no flows are offloaded.
+
+``option flow_offloading_enable '1'``

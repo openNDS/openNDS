@@ -2792,6 +2792,43 @@ elif [ "$1" = "gatewayroute" ]; then
 
 	printf "$gatewayinterfaces"
 
+	option="flow_offloading_enable"
+	get_option_from_config
+
+	if [ "$flow_offloading_enable" != "1" ]; then
+		# Flow offloading is disabled, so there must be no flowtables.
+		# Delete any that exist. A flowtable cannot be deleted while
+		# a rule references it, so flush the chain first.
+		handle=$(nft -a list flowtables | grep -w "ndsftINC" | awk -F "handle " '{printf "%s", $2}')
+
+		if [ ! -z "$handle" ]; then
+			nft flush chain inet nds_mangle nds_ft_INC
+			nft delete flowtable inet nds_mangle handle "$handle"
+		fi
+
+		handle=$(nft -a list flowtables | grep -w "ndsftOUT" | awk -F "handle " '{printf "%s", $2}')
+
+		if [ ! -z "$handle" ]; then
+			nft flush chain inet nds_filter nds_ft_OUT
+			nft delete flowtable inet nds_filter handle "$handle"
+		fi
+
+		# the flowtable chains only return
+		ftruletest=$(nft list chain inet nds_mangle nds_ft_INC 2> /dev/null | grep -q -w "return"; echo $?)
+
+		if [ $ftruletest -gt 0 ]; then
+			nft add rule inet nds_mangle nds_ft_INC counter return
+		fi
+
+		ftruletest=$(nft list chain inet nds_filter nds_ft_OUT 2> /dev/null | grep -q -w "return"; echo $?)
+
+		if [ $ftruletest -gt 0 ]; then
+			nft add rule inet nds_filter nds_ft_OUT counter return
+		fi
+
+		exit 0
+	fi
+
 	if [ ! -z "$gatewayinterfaces" ]; then
 		# check if flowtables exist and create or update them as required
 

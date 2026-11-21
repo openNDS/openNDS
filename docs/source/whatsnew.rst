@@ -12,6 +12,8 @@ opennds (11.2.0)
   * Add - forward ipv6 for authenticated clients with no rate limit or quota; clients with limits stay ipv4 only, and the redirect, walled garden and FAS are ipv4 only [bluewavenet]
   * Fix - allow ipv6 neighbour discovery, router solicitation and dhcpv6 from clients to the router [bluewavenet]
 
+ -- Rob White <dot@blue-wave.net>  Sat, 21 Nov 2026 12:48:05 +0000
+
 opennds (11.1.0)
   * Add - auto_run option, default 0; stay dormant until configured, logging candidate gateway bridges and missing optional packages every 15 seconds [bluewavenet]
   * Fix - add the firewall include without committing other staged uci changes [bluewavenet]

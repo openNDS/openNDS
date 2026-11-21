@@ -70,6 +70,13 @@ Installing on OpenWrt
 
     ``opkg remove opennds``
 
+Upgrading to v11.2.0 or later
+*****************************
+
+openNDS v11.2.0 adds the option flow_offloading_enable, with a default of 0, so flow offloading is now disabled by default. To enable it, add ``option flow_offloading_enable '1'`` to /etc/config/opennds, then restart openNDS. See :ref:`flow-offloading-enable`.
+
+fw4 flow offloading bypasses openNDS client accounting, rate limits and quotas. If it is enabled, openNDS disables it at startup, reloads the firewall and logs a warning.
+
 Upgrading to v11.1.0 or later
 *****************************
 

@@ -591,6 +591,10 @@ config opennds 'setup'
 	#
 	# Clients with a rate limit or a quota are never offloaded, so their limits always work.
 	#
+	# Note: fw4 flow offloading (the "flow_offloading" and "flow_offloading_hw" options in the
+	# system firewall config) bypasses openNDS client accounting, rate limits and quotas for all clients.
+	# If it is enabled, openNDS disables it when it starts, reloads the firewall and logs a warning.
+	#
 	# Example: enable flow offloading:
 	#option flow_offloading_enable '1'
 	###########################################################################################

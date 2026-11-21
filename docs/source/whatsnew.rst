@@ -7,6 +7,7 @@ opennds (11.1.1)
   * Fix - do not offload the flows of clients with a rate limit or a quota, so their traffic is counted and their limits work [bluewavenet]
   * Fix - log the correct connected time when a client is deauthenticated or throttled for a session timeout or quota [bluewavenet]
   * Add - option flow_offloading_enable, default 0; flows are offloaded only if it is set to 1, and then only for clients with no rate limit or quota. Their counters stop updating while offloaded, so usage and data rates reported for them are stale [bluewavenet]
+  * Fix - disable fw4 flow offloading at startup and log a warning, as it bypasses client accounting, rate limits and quotas [bluewavenet]
 
 opennds (11.1.0)
   * Add - auto_run option, default 0; stay dormant until configured, logging candidate gateway bridges and missing optional packages every 15 seconds [bluewavenet]

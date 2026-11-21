@@ -3,7 +3,11 @@
 # Add or remove the openNDS include in /etc/config/firewall.
 # The include runs restart.sh when the firewall restarts.
 #
-# Usage: fw_include.sh add|remove
+# "offload_off" sets the fw4 flow_offloading and flow_offloading_hw
+# defaults to 0 if either is 1. fw4 flow offloading bypasses openNDS
+# client accounting, rate limits and quotas.
+#
+# Usage: fw_include.sh add|remove|offload_off
 #
 # Other packages may stage firewall changes in /tmp/.uci on purpose,
 # without committing them. "uci commit firewall" would write those to
@@ -72,6 +76,29 @@ cleanup() {
 edit_copy() {
 	local current
 
+	if [ "$action" = "offload_off" ]; then
+		local offload
+		local offloadhw
+
+		offload=$(uci_copy get "$copyname.@defaults[0].flow_offloading")
+		offloadhw=$(uci_copy get "$copyname.@defaults[0].flow_offloading_hw")
+
+		if [ "$offload" != "1" ] && [ "$offloadhw" != "1" ]; then
+			return 1
+		fi
+
+		if [ "$offload" = "1" ]; then
+			uci_copy set "$copyname.@defaults[0].flow_offloading=0"
+		fi
+
+		if [ "$offloadhw" = "1" ]; then
+			uci_copy set "$copyname.@defaults[0].flow_offloading_hw=0"
+		fi
+
+		uci_copy commit "$copyname"
+		return 0
+	fi
+
 	current=$(uci_copy get "$copyname.opennds")
 
 	if [ "$action" = "add" ]; then
@@ -102,8 +129,8 @@ edit_copy() {
 	return 0
 }
 
-if [ "$action" != "add" ] && [ "$action" != "remove" ]; then
-	echo "Usage: $0 add|remove"
+if [ "$action" != "add" ] && [ "$action" != "remove" ] && [ "$action" != "offload_off" ]; then
+	echo "Usage: $0 add|remove|offload_off"
 	exit 1
 fi
 

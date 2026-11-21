@@ -121,6 +121,15 @@ When flow offloading is enabled:
 
 See :ref:`flow-offloading-enable`.
 
+fw4 Flow Offloading
+===================
+
+The OpenWrt system firewall (fw4) has its own flow offloading, set by the ``flow_offloading`` and ``flow_offloading_hw`` options in the defaults section of ``/etc/config/firewall``.
+
+fw4 flow offloading bypasses openNDS client accounting, rate limits and quotas for all clients, so it is a security risk on a captive portal.
+
+If either option is set to 1 when openNDS starts, openNDS sets it to 0 in ``/etc/config/firewall``, reloads the firewall and logs a warning. Firewall changes staged by other packages are not committed. If an uncommitted firewall change enables fw4 flow offloading, openNDS cannot disable it and logs a warning instead.
+
 Traffic Shaping
 ***************
 

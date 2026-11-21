@@ -1389,6 +1389,57 @@ delete_rule () {
 	fi
 }
 
+fw4_flow_offloading_disable () {
+	# fw4 flow offloading moves forwarded flows to the fw4 flowtable.
+	# Offloaded packets bypass the openNDS chains, so client accounting,
+	# rate limits and quotas no longer work. If it is enabled, disable it.
+	#
+	# fw_include.sh changes only the two firewall defaults options. It does
+	# not use "uci commit firewall", so firewall changes staged by other
+	# packages are not committed and stay staged.
+	type uci &> /dev/null
+	uci_status=$?
+
+	type fw4 &> /dev/null
+	fw4_status=$?
+
+	if [ $uci_status -ne 0 ] || [ $fw4_status -ne 0 ]; then
+		return 0
+	fi
+
+	fwoffload=$(uci -q get firewall.@defaults[0].flow_offloading)
+	fwoffloadhw=$(uci -q get firewall.@defaults[0].flow_offloading_hw)
+
+	if [ "$fwoffload" != "1" ] && [ "$fwoffloadhw" != "1" ]; then
+		return 0
+	fi
+
+	/usr/lib/opennds/fw_include.sh offload_off
+
+	# A change staged by another package still overrides the saved setting
+	fwoffload=$(uci -q get firewall.@defaults[0].flow_offloading)
+	fwoffloadhw=$(uci -q get firewall.@defaults[0].flow_offloading_hw)
+
+	if [ "$fwoffload" = "1" ] || [ "$fwoffloadhw" = "1" ]; then
+		syslogmessage="WARNING: fw4 flow offloading is enabled. It bypasses openNDS client accounting, rate limits and quotas and is a security risk. It could not be disabled, as an uncommitted firewall change enables it. Disable it in the system firewall settings."
+		debugtype="err"
+		write_to_syslog
+		return 0
+	fi
+
+	# Reload fw4 only if it is running. If not, it reads the new setting when it starts.
+	nft list table inet fw4 &> /dev/null
+	fw4_status=$?
+
+	if [ $fw4_status -eq 0 ]; then
+		/etc/init.d/firewall reload &> /dev/null
+	fi
+
+	syslogmessage="WARNING: fw4 flow offloading was enabled. It bypasses openNDS client accounting, rate limits and quotas and is a security risk. It has been disabled."
+	debugtype="err"
+	write_to_syslog
+}
+
 pre_setup () {
 	nft=$(type nft)
 	ret=$?
@@ -1409,6 +1460,9 @@ pre_setup () {
 		exit 1
 
 	fi
+
+	# fw4 flow offloading bypasses client accounting, rate limits and quotas
+	fw4_flow_offloading_disable
 
 	option="gatewayinterface"
 	get_option_from_config

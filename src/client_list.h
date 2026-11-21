@@ -78,6 +78,7 @@ typedef struct _t_client {
 	unsigned long long int inc_packet_limit;	/**< @brief Incoming packet limit */
 	unsigned long long int out_packet_limit;	/**< @brief Outgoing packet limit */
 	int offload_skip;				/**< @brief 1 if the client is in the ndsftSKIP sets, so its flows are not offloaded */
+	int ipv6_allowed;				/**< @brief 1 if the client MAC is in the ndsAUTH6 set, so its IPv6 packets are forwarded */
 	unsigned id;
 	unsigned int refcount;				/**< @brief Requests currently using this node */
 	int dead;					/**< @brief Unlinked; free when refcount reaches 0 */

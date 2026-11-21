@@ -130,6 +130,19 @@ fw4 flow offloading bypasses openNDS client accounting, rate limits and quotas f
 
 If either option is set to 1 when openNDS starts, openNDS sets it to 0 in ``/etc/config/firewall``, reloads the firewall and logs a warning. Firewall changes staged by other packages are not committed. If an uncommitted firewall change enables fw4 flow offloading, openNDS cannot disable it and logs a warning instead.
 
+IPv6
+****
+
+openNDS forwards IPv6 for authenticated clients that have no rate limit and no quota.
+
+The data volume counters and the rate limit rules work on IPv4 only. IPv6 traffic is not counted and cannot be rate limited, so clients with a rate limit or a quota stay IPv4 only. If a limit is applied to a client after it has authenticated, its IPv6 access is removed.
+
+IPv6 from preauthenticated clients is rejected, as is IPv6 from authenticated clients that have a limit. Devices fall back to IPv4 for these connections.
+
+The splash page redirect, the walled garden and FAS are IPv4 only. A client still needs IPv4 to log in.
+
+Clients get IPv6 addresses only if the router advertises an IPv6 prefix on the gateway interface. openNDS always allows IPv6 neighbour discovery, router solicitation and DHCPv6 from clients to the router.
+
 Traffic Shaping
 ***************
 

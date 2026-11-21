@@ -1506,6 +1506,9 @@ pre_setup () {
 	nft add set inet nds_mangle ndsftSKIP "{ type ipv4_addr ; }"
 	nft add set inet nds_filter ndsftSKIP "{ type ipv4_addr ; }"
 
+	# authenticated clients with no rate limit and no quota are added to this set, so their ipv6 packets are forwarded
+	nft add set inet nds_mangle ndsAUTH6 "{ type ether_addr ; }"
+
 	nft add chain inet nds_filter nds_allow_INP "{ type filter hook input priority 100 ; }"
 	nft add chain inet nds_filter nds_allow_FWD "{ type filter hook forward priority 100 ; }"
 
@@ -2129,6 +2132,9 @@ create_client_ruleset () {
 		# allow ping4 max 4 per second
 		nft insert rule inet nds_filter ndsRTR icmp type echo-request counter drop
 		nft insert rule inet nds_filter ndsRTR icmp type echo-request limit rate 4/second counter accept
+		# allow ipv6 neighbour discovery, router solicitation and dhcpv6, needed for ipv6 on the client link
+		nft insert rule inet nds_filter ndsRTR icmpv6 type { nd-neighbor-solicit, nd-neighbor-advert, nd-router-solicit } counter accept
+		nft insert rule inet nds_filter ndsRTR udp dport 547 counter accept
 		# Block everything else
 		nft add rule inet nds_filter $chain counter reject
 	fi

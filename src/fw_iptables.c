@@ -56,6 +56,8 @@
 static int _iptables_init_marks(void);
 static int spawn_argv(char *const argv[]);
 static int iptables_offload_skip_delete(t_client *client);
+static int client_has_limits(t_client *client);
+static int iptables_ipv6_delete(t_client *client);
 
 // Used to mark packets, and characterize client state.  Unmarked packets are considered 'preauthenticated'
 unsigned int FW_MARK_PREAUTHENTICATED;	// @brief 0: Actually not used as a packet mark
@@ -356,6 +358,10 @@ iptables_fw_init(void)
 	rc |= nftables_do_command("insert rule inet nds_mangle %s oifname \"%s\" counter jump %s", CHAIN_POSTROUTING, gw_interface, CHAIN_INCOMING);
 	rc |= nftables_do_command("insert rule inet nds_mangle %s oifname \"%s\" counter jump %s", CHAIN_INCOMING, gw_interface, CHAIN_FT_INC);
 	rc |= nftables_do_command("insert rule inet nds_mangle %s oifname \"%s\" counter jump %s", CHAIN_INCOMING, gw_interface, CHAIN_DOWNLOAD_RATE);
+
+	// IPv6 packets from the MAC addresses in SET_AUTH6 are marked as authenticated.
+	// The IPv4 mark rules are per client, in CHAIN_OUTGOING.
+	rc |= nftables_do_command("add rule inet nds_mangle %s iifname \"%s\" meta nfproto ipv6 ether saddr @%s counter meta mark set mark or 0x%x", CHAIN_PREROUTING, gw_interface, SET_AUTH6, FW_MARK_AUTHENTICATED);
 
 	// Rules to mark as trusted MAC address packets in mangle PREROUTING
 	for (; pt != NULL; pt = pt->next) {
@@ -807,7 +813,26 @@ iptables_fw_deauthenticate(t_client *client)
 		rc = iptables_offload_skip_delete(client);
 	}
 
+	if (client->ipv6_allowed == 1) {
+		rc = iptables_ipv6_delete(client);
+	}
+
 	return rc;
+}
+
+// Return 1 if the client has an upload or download rate limit or quota, 0 if not.
+static int
+client_has_limits(t_client *client)
+{
+	if (client->upload_rate > 0
+		|| client->download_rate > 0
+		|| client->upload_quota > 0
+		|| client->download_quota > 0
+	) {
+		return 1;
+	}
+
+	return 0;
 }
 
 /* Flowtable offload and client limits.
@@ -829,13 +854,7 @@ iptables_fw_offload_update(t_client *client)
 		return 0;
 	}
 
-	if (client->upload_rate > 0
-		|| client->download_rate > 0
-		|| client->upload_quota > 0
-		|| client->download_quota > 0
-	) {
-		skip = 1;
-	}
+	skip = client_has_limits(client);
 
 	if (skip == 1 && client->offload_skip == 0) {
 		debug(LOG_INFO, "Client [%s %s] has a rate limit or quota, so its flows will not be offloaded", client->ip, client->mac);
@@ -863,6 +882,55 @@ iptables_offload_skip_delete(t_client *client)
 	rc |= execute("nft delete element inet nds_mangle %s \"{ %s }\" 2> /dev/null", SET_FT_SKIP, client->ip);
 	rc |= execute("nft delete element inet nds_filter %s \"{ %s }\" 2> /dev/null", SET_FT_SKIP, client->ip);
 	client->offload_skip = 0;
+
+	return rc;
+}
+
+/* IPv6 and client limits.
+ * The counters and the rate limit rules match IPv4 addresses only, so IPv6
+ * packets are not counted and are not rate limited. The authenticated mark is
+ * given to IPv6 packets from the MAC addresses in the SET_AUTH6 set, so only a
+ * client with no rate limit and no quota goes in the set. Clients with limits
+ * stay IPv4 only, and their IPv6 packets are rejected in CHAIN_TO_INTERNET.
+ */
+int
+iptables_fw_ipv6_update(t_client *client)
+{
+	int rc = 0;
+	int limited;
+
+	limited = client_has_limits(client);
+
+	if (limited == 0 && client->ipv6_allowed == 0) {
+
+		if (!check_mac_format(client->mac)) {
+			debug(LOG_ERR, "Client [%s] has an invalid MAC, so IPv6 is not allowed", client->ip);
+			return -1;
+		}
+
+		debug(LOG_INFO, "Client [%s %s] has no rate limit or quota, so IPv6 is allowed", client->ip, client->mac);
+
+		// Set the flag first, so a partial failure is still cleaned up on deauth
+		client->ipv6_allowed = 1;
+		rc |= nftables_do_command("add element inet nds_mangle %s \"{ %s }\"", SET_AUTH6, client->mac);
+	}
+
+	if (limited == 1 && client->ipv6_allowed == 1) {
+		debug(LOG_INFO, "Client [%s %s] has a rate limit or quota, so IPv6 is not allowed", client->ip, client->mac);
+		rc |= iptables_ipv6_delete(client);
+	}
+
+	return rc;
+}
+
+// Remove a client from the SET_AUTH6 set. Try once only, the element may already be gone.
+static int
+iptables_ipv6_delete(t_client *client)
+{
+	int rc = 0;
+
+	rc |= execute("nft delete element inet nds_mangle %s \"{ %s }\" 2> /dev/null", SET_AUTH6, client->mac);
+	client->ipv6_allowed = 0;
 
 	return rc;
 }

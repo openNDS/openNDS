@@ -578,6 +578,27 @@ config opennds 'setup'
 	#option fup_download_throttle_rate '0'
 	###########################################################################################
 
+	# Flow Offloading
+	# Default 0 (disabled)
+	#
+	# If enabled, the flows of authenticated clients that have no rate limit and no quota
+	# are offloaded to an nftables flowtable, so their packets bypass the nftables chains.
+	# This mainly benefits slow legacy devices. It makes little difference on modern devices.
+	#
+	# The packets of offloaded flows are not counted, so the counters of those clients stop updating.
+	# ndsctl status, ndsctl json and the RFC 8910 login/status page then report stale data usage
+	# and data rates for them.
+	#
+	# Clients with a rate limit or a quota are never offloaded, so their limits always work.
+	#
+	# Note: fw4 flow offloading (the "flow_offloading" and "flow_offloading_hw" options in the
+	# system firewall config) bypasses openNDS client accounting, rate limits and quotas for all clients.
+	# If it is enabled, openNDS disables it when it starts, reloads the firewall and logs a warning.
+	#
+	# Example: enable flow offloading:
+	#option flow_offloading_enable '1'
+	###########################################################################################
+
 	# BinAuth facilitates POST AUTHENTICATION PROCESSING
 	#
 	# Cannot be disabled

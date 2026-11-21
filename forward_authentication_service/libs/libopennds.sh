@@ -1389,6 +1389,57 @@ delete_rule () {
 	fi
 }
 
+fw4_flow_offloading_disable () {
+	# fw4 flow offloading moves forwarded flows to the fw4 flowtable.
+	# Offloaded packets bypass the openNDS chains, so client accounting,
+	# rate limits and quotas no longer work. If it is enabled, disable it.
+	#
+	# fw_include.sh changes only the two firewall defaults options. It does
+	# not use "uci commit firewall", so firewall changes staged by other
+	# packages are not committed and stay staged.
+	type uci &> /dev/null
+	uci_status=$?
+
+	type fw4 &> /dev/null
+	fw4_status=$?
+
+	if [ $uci_status -ne 0 ] || [ $fw4_status -ne 0 ]; then
+		return 0
+	fi
+
+	fwoffload=$(uci -q get firewall.@defaults[0].flow_offloading)
+	fwoffloadhw=$(uci -q get firewall.@defaults[0].flow_offloading_hw)
+
+	if [ "$fwoffload" != "1" ] && [ "$fwoffloadhw" != "1" ]; then
+		return 0
+	fi
+
+	/usr/lib/opennds/fw_include.sh offload_off
+
+	# A change staged by another package still overrides the saved setting
+	fwoffload=$(uci -q get firewall.@defaults[0].flow_offloading)
+	fwoffloadhw=$(uci -q get firewall.@defaults[0].flow_offloading_hw)
+
+	if [ "$fwoffload" = "1" ] || [ "$fwoffloadhw" = "1" ]; then
+		syslogmessage="WARNING: fw4 flow offloading is enabled. It bypasses openNDS client accounting, rate limits and quotas and is a security risk. It could not be disabled, as an uncommitted firewall change enables it. Disable it in the system firewall settings."
+		debugtype="err"
+		write_to_syslog
+		return 0
+	fi
+
+	# Reload fw4 only if it is running. If not, it reads the new setting when it starts.
+	nft list table inet fw4 &> /dev/null
+	fw4_status=$?
+
+	if [ $fw4_status -eq 0 ]; then
+		/etc/init.d/firewall reload &> /dev/null
+	fi
+
+	syslogmessage="WARNING: fw4 flow offloading was enabled. It bypasses openNDS client accounting, rate limits and quotas and is a security risk. It has been disabled."
+	debugtype="err"
+	write_to_syslog
+}
+
 pre_setup () {
 	nft=$(type nft)
 	ret=$?
@@ -1409,6 +1460,9 @@ pre_setup () {
 		exit 1
 
 	fi
+
+	# fw4 flow offloading bypasses client accounting, rate limits and quotas
+	fw4_flow_offloading_disable
 
 	option="gatewayinterface"
 	get_option_from_config
@@ -1447,6 +1501,14 @@ pre_setup () {
 	nft add chain inet nds_mangle ndsINC
 	nft add chain inet nds_mangle nds_ft_INC
 	nft add chain inet nds_filter nds_ft_OUT
+
+	# clients with a rate limit or a quota are added to these sets, so their flows are not offloaded
+	nft add set inet nds_mangle ndsftSKIP "{ type ipv4_addr ; }"
+	nft add set inet nds_filter ndsftSKIP "{ type ipv4_addr ; }"
+
+	# authenticated clients with no rate limit and no quota are added to this set, so their ipv6 packets are forwarded
+	nft add set inet nds_mangle ndsAUTH6 "{ type ether_addr ; }"
+
 	nft add chain inet nds_filter nds_allow_INP "{ type filter hook input priority 100 ; }"
 	nft add chain inet nds_filter nds_allow_FWD "{ type filter hook forward priority 100 ; }"
 
@@ -2070,6 +2132,9 @@ create_client_ruleset () {
 		# allow ping4 max 4 per second
 		nft insert rule inet nds_filter ndsRTR icmp type echo-request counter drop
 		nft insert rule inet nds_filter ndsRTR icmp type echo-request limit rate 4/second counter accept
+		# allow ipv6 neighbour discovery, router solicitation and dhcpv6, needed for ipv6 on the client link
+		nft insert rule inet nds_filter ndsRTR icmpv6 type { nd-neighbor-solicit, nd-neighbor-advert, nd-router-solicit } counter accept
+		nft insert rule inet nds_filter ndsRTR udp dport 547 counter accept
 		# Block everything else
 		nft add rule inet nds_filter $chain counter reject
 	fi
@@ -2787,6 +2852,43 @@ elif [ "$1" = "gatewayroute" ]; then
 
 	printf "$gatewayinterfaces"
 
+	option="flow_offloading_enable"
+	get_option_from_config
+
+	if [ "$flow_offloading_enable" != "1" ]; then
+		# Flow offloading is disabled, so there must be no flowtables.
+		# Delete any that exist. A flowtable cannot be deleted while
+		# a rule references it, so flush the chain first.
+		handle=$(nft -a list flowtables | grep -w "ndsftINC" | awk -F "handle " '{printf "%s", $2}')
+
+		if [ ! -z "$handle" ]; then
+			nft flush chain inet nds_mangle nds_ft_INC
+			nft delete flowtable inet nds_mangle handle "$handle"
+		fi
+
+		handle=$(nft -a list flowtables | grep -w "ndsftOUT" | awk -F "handle " '{printf "%s", $2}')
+
+		if [ ! -z "$handle" ]; then
+			nft flush chain inet nds_filter nds_ft_OUT
+			nft delete flowtable inet nds_filter handle "$handle"
+		fi
+
+		# the flowtable chains only return
+		ftruletest=$(nft list chain inet nds_mangle nds_ft_INC 2> /dev/null | grep -q -w "return"; echo $?)
+
+		if [ $ftruletest -gt 0 ]; then
+			nft add rule inet nds_mangle nds_ft_INC counter return
+		fi
+
+		ftruletest=$(nft list chain inet nds_filter nds_ft_OUT 2> /dev/null | grep -q -w "return"; echo $?)
+
+		if [ $ftruletest -gt 0 ]; then
+			nft add rule inet nds_filter nds_ft_OUT counter return
+		fi
+
+		exit 0
+	fi
+
 	if [ ! -z "$gatewayinterfaces" ]; then
 		# check if flowtables exist and create or update them as required
 
@@ -2825,11 +2927,15 @@ elif [ "$1" = "gatewayroute" ]; then
 				nft flush chain inet nds_mangle nds_ft_INC
 				nft delete flowtable inet nds_mangle handle "$handle"
 				nft add flowtable inet nds_mangle ndsftINC "{ hook ingress priority -100 ; devices = { $wandevices } ; }" 2> /dev/null
+				# clients with a rate limit or a quota must not be offloaded, or their packets are not counted
+				nft add rule inet nds_mangle nds_ft_INC ip daddr @ndsftSKIP counter return
 				nft add rule inet nds_mangle nds_ft_INC meta l4proto { tcp, udp } flow offload @ndsftINC counter
 				nft add rule inet nds_mangle nds_ft_INC counter return
 			fi
 		else
 			nft add flowtable inet nds_mangle ndsftINC "{ hook ingress priority -100 ; devices = { $wandevices } ; }" 2> /dev/null
+			# clients with a rate limit or a quota must not be offloaded, or their packets are not counted
+			nft add rule inet nds_mangle nds_ft_INC ip daddr @ndsftSKIP counter return
 			nft add rule inet nds_mangle nds_ft_INC meta l4proto { tcp, udp } flow offload @ndsftINC counter
 			nft add rule inet nds_mangle nds_ft_INC counter return
 		fi
@@ -2866,6 +2972,8 @@ elif [ "$1" = "gatewayroute" ]; then
 	ftruletest=$(nft list chain inet nds_filter nds_ft_OUT 2> /dev/null | grep -q -w "meta l4proto"; echo $?)
 
 	if [ $ftruletest -gt 0 ]; then
+		# clients with a rate limit or a quota must not be offloaded, or their packets are not counted
+		nft add rule inet nds_filter nds_ft_OUT ip saddr @ndsftSKIP counter return
 		nft add rule inet nds_filter nds_ft_OUT meta l4proto { tcp, udp } flow offload @ndsftOUT counter
 		nft add rule inet nds_filter nds_ft_OUT counter return
 	fi

@@ -1203,6 +1203,12 @@ ndsctl_status(FILE *fp)
 		fprintf(fp, "Upload quota (default per client): no limit\n");
 	}
 
+	if (config->flow_offloading_enable == 1) {
+		fprintf(fp, "Flow offloading: Enabled (usage and rates of clients with no rate limit or quota are not updated)\n");
+	} else {
+		fprintf(fp, "Flow offloading: Disabled\n");
+	}
+
 
 	download_bytes = iptables_fw_total_download();
 	fprintf(fp, "Total download: %llu kByte", download_bytes / 1024);

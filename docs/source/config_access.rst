@@ -226,6 +226,8 @@ Essential Access
 
 Essential access for DNS and DHCP is granted by default.
 
+IPv6 neighbour discovery, router solicitation and DHCPv6 (udp port 547) are always allowed, so clients can set up IPv6 on the client network. Ping (IPv4) is allowed at up to 4 per second.
+
 If additional optional access is required, it is essential that you specifically allow ports for DNS and DHCP (unless you have a very specific reason for not doing so and know what you are doing. **Disabling these will soft brick your router!**):
 
 ``list users_to_router 'allow tcp port 53'``

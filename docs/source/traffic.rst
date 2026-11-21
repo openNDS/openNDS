@@ -107,6 +107,42 @@ These levels can either use BinAuth to set quota values determined by the FAS, o
 
 If using BinAuth, the FAS would utilise the BinAuth custom variable to send quota values to a BinAuth script configured to interpret the data passed to it in the variable. There is no set method for doing this, it is left to individual installers to develop their own method.
 
+Flow Offloading
+***************
+
+openNDS can offload the flows of authenticated clients to an nftables flowtable. Packets of an offloaded flow bypass the nftables chains, which reduces the load on the router CPU.
+
+Flow offloading is disabled by default. It mainly benefits slow legacy devices. It makes little difference on modern devices.
+
+When flow offloading is enabled:
+
+* Clients with no rate limit and no quota are offloaded. The packets of their offloaded flows are not counted, so their counters stop updating. ndsctl status, ndsctl json and the RFC 8910 login/status page then report stale data usage and data rates for these clients.
+* Clients with a rate limit or a quota are never offloaded, so their traffic is counted and their limits always work.
+
+See :ref:`flow-offloading-enable`.
+
+fw4 Flow Offloading
+===================
+
+The OpenWrt system firewall (fw4) has its own flow offloading, set by the ``flow_offloading`` and ``flow_offloading_hw`` options in the defaults section of ``/etc/config/firewall``.
+
+fw4 flow offloading bypasses openNDS client accounting, rate limits and quotas for all clients, so it is a security risk on a captive portal.
+
+If either option is set to 1 when openNDS starts, openNDS sets it to 0 in ``/etc/config/firewall``, reloads the firewall and logs a warning. Firewall changes staged by other packages are not committed. If an uncommitted firewall change enables fw4 flow offloading, openNDS cannot disable it and logs a warning instead.
+
+IPv6
+****
+
+openNDS forwards IPv6 for authenticated clients that have no rate limit and no quota.
+
+The data volume counters and the rate limit rules work on IPv4 only. IPv6 traffic is not counted and cannot be rate limited, so clients with a rate limit or a quota stay IPv4 only. If a limit is applied to a client after it has authenticated, its IPv6 access is removed.
+
+IPv6 from preauthenticated clients is rejected, as is IPv6 from authenticated clients that have a limit. Devices fall back to IPv4 for these connections.
+
+The splash page redirect, the walled garden and FAS are IPv4 only. A client still needs IPv4 to log in.
+
+Clients get IPv6 addresses only if the router advertises an IPv6 prefix on the gateway interface. openNDS always allows IPv6 neighbour discovery, router solicitation and DHCPv6 from clients to the router.
+
 Traffic Shaping
 ***************
 
@@ -319,4 +355,21 @@ If set to 0, the client will be deauthenticated when the volume quota is exceede
 
 ``option fup_download_throttle_rate '0'``
 
+.. _flow-offloading-enable:
 
+flow_offloading_enable - Flow Offloading
+========================================
+
+Default 0 (disabled)
+
+If set to 1, the flows of authenticated clients that have no rate limit and no quota are offloaded to an nftables flowtable.
+
+This mainly benefits slow legacy devices. It makes little difference on modern devices.
+
+The packets of offloaded flows are not counted, so the counters of those clients stop updating. ndsctl status, ndsctl json and the RFC 8910 login/status page then report stale data usage and data rates for them.
+
+Clients with a rate limit or a quota are never offloaded.
+
+If set to 0, openNDS creates no flowtables and no flows are offloaded.
+
+``option flow_offloading_enable '1'``

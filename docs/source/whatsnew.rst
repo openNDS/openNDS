@@ -3,6 +3,15 @@ What's New - openNDS 11
 
 Changes in the current major version, 11.0.0 onwards. For earlier versions see :doc:`changelog`.
 
+opennds (11.2.0)
+  * Fix - do not offload the flows of clients with a rate limit or a quota, so their traffic is counted and their limits work [bluewavenet]
+  * Fix - log the correct connected time when a client is deauthenticated or throttled for a session timeout or quota [bluewavenet]
+  * Add - option flow_offloading_enable, default 0; flows are offloaded only if it is set to 1, and then only for clients with no rate limit or quota. Their counters stop updating while offloaded, so usage and data rates reported for them are stale [bluewavenet]
+  * Fix - disable fw4 flow offloading at startup and log a warning, as it bypasses client accounting, rate limits and quotas [bluewavenet]
+  * Add - show the flow offloading state in ndsctl status [bluewavenet]
+  * Add - forward ipv6 for authenticated clients with no rate limit or quota; clients with limits stay ipv4 only, and the redirect, walled garden and FAS are ipv4 only [bluewavenet]
+  * Fix - allow ipv6 neighbour discovery, router solicitation and dhcpv6 from clients to the router [bluewavenet]
+
 opennds (11.1.0)
   * Add - auto_run option, default 0; stay dormant until configured, logging candidate gateway bridges and missing optional packages every 15 seconds [bluewavenet]
   * Fix - add the firewall include without committing other staged uci changes [bluewavenet]

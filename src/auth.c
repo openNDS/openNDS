@@ -521,6 +521,11 @@ static int auth_change_state(t_client *client, const unsigned int new_state, con
 				client->upload_rate
 			);
 
+			// The limits are now set. A client with any limit must not have its flows offloaded
+			// and stays IPv4 only, as IPv6 is not counted.
+			iptables_fw_offload_update(client);
+			iptables_fw_ipv6_update(client);
+
 			client->window_start = now;
 			client->window_counter = config->rate_check_window;
 			client->initial_loop = 1;
@@ -753,8 +758,8 @@ fw_refresh_client_list(void)
 		if (cp1->session_end > 0 && cp1->session_end <= now) {
 			// Session Timeout so deauthenticate the client
 
-			debug(LOG_NOTICE, "Session end time reached, deauthenticating: %s %s, connected: %lu, in: %llukB, out: %llukB",
-				cp1->ip, cp1->mac, now - cp1->session_end,
+			debug(LOG_NOTICE, "Session end time reached, deauthenticating: %s %s, connected: %lus, in: %llukB, out: %llukB",
+				cp1->ip, cp1->mac, (unsigned long)(now - cp1->session_start),
 				cp1->counters.incoming / 1024,
 				cp1->counters.outgoing / 1024
 			);
@@ -771,7 +776,7 @@ fw_refresh_client_list(void)
 				debug(LOG_NOTICE, "Download quota exceeded, deauthenticating: %s %s, connected: %lus, in: %llukB, out: %llukB",
 					cp1->ip,
 					cp1->mac,
-					now - cp1->session_end,
+					(unsigned long)(now - cp1->session_start),
 					cp1->counters.incoming / 1024,
 					cp1->counters.outgoing / 1024
 				);
@@ -785,7 +790,7 @@ fw_refresh_client_list(void)
 					debug(LOG_NOTICE, "Download quota exceeded, throttling: %s %s, connected: %lus, in: %llukB, out: %llukB, rate: %llukbits/s",
 						cp1->ip,
 						cp1->mac,
-						now - cp1->session_end,
+						(unsigned long)(now - cp1->session_start),
 						cp1->counters.incoming / 1024,
 						cp1->counters.outgoing / 1024,
 						config->fup_download_throttle_rate
@@ -806,7 +811,7 @@ fw_refresh_client_list(void)
 				debug(LOG_NOTICE, "Upload quota exceeded, deauthenticating: %s %s, connected: %lus, in: %llukB, out: %llukB",
 					cp1->ip,
 					cp1->mac,
-					now - cp1->session_end,
+					(unsigned long)(now - cp1->session_start),
 					cp1->counters.incoming / 1024,
 					cp1->counters.outgoing / 1024
 				);
@@ -820,7 +825,7 @@ fw_refresh_client_list(void)
 					debug(LOG_NOTICE, "Upload quota exceeded, throttling: %s %s, connected: %lus, in: %llukB, out: %llukB, rate: %llukbits/s",
 						cp1->ip,
 						cp1->mac,
-						now - cp1->session_end,
+						(unsigned long)(now - cp1->session_start),
 						cp1->counters.incoming / 1024,
 						cp1->counters.outgoing / 1024,
 						config->fup_upload_throttle_rate

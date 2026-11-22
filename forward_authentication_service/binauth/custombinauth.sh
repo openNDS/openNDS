@@ -1,7 +1,7 @@
 #!/bin/sh
 #Copyright (C) The openNDS Contributors 2004-2022
 #Copyright (C) BlueWave Projects and Services 2015-2026
-#This software is released under the GNU GPL license.
+# SPDX-License-Identifier: GPL-2.0-or-later
 
 # This is a stub for a custom binauth script.
 # It is included conditionally by the default binauth_log.sh script when it runs.

@@ -1,6 +1,6 @@
 #!/bin/sh
 #Copyright (C) BlueWave Projects and Services 2015-2026
-#This software is released under the GNU GPL license.
+# SPDX-License-Identifier: GPL-2.0-or-later
 #
 # Warning - shebang sh is for compatibliity with busybox ash (eg on OpenWrt)
 # This is changed to bash automatically by Makefile for generic Linux

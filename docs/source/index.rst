@@ -20,7 +20,7 @@ Internet hosted **https portals** can be implemented with no security errors, to
 
 It is a fork of the NoDogSplash project that in turn was derived originally from the codebase of the Wifi Guard Dog project.
 
-openNDS is released under the GNU General Public License.
+openNDS is released under the GNU General Public License, version 2 or later.
 
 * openNDS: https://github.com/openNDS/openNDS
 * Original Homepage (archived): https://web.archive.org/web/20140210131130/http://kokoro.ucsd.edu/nodogsplash

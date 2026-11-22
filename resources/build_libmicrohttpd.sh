@@ -1,4 +1,5 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-2.0-or-later
 # builds and install libmicrohttp to /tmp/libmicrohttp_install
 #
 # this script is intended for test environments like travis.

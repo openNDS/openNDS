@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: GPL-2.0-only
+# SPDX-License-Identifier: GPL-2.0-or-later
 #
 # Copyright (C) 2022 - 2026 BlueWave Projects and Services  <licence@blue-wave.net>
 #
@@ -16,7 +16,7 @@ PKG_HASH:=#shasum -a 256 of tar.gz of source files goes here
 PKG_BUILD_DIR:=$(BUILD_DIR)/openNDS-$(PKG_VERSION)
 
 PKG_MAINTAINER:=Rob White <rob@blue-wave.net>
-PKG_LICENSE:=GPL-2.0-only
+PKG_LICENSE:=GPL-2.0-or-later
 PKG_LICENSE_FILES:=COPYING
 PKG_CPE_ID:=cpe:/a:opennds:captive_portal
 

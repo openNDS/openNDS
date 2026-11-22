@@ -1,7 +1,7 @@
 #!/bin/bash
 #Copyright (C) The openNDS Contributors 2004-2022
 #Copyright (C) BlueWave Projects and Services 2015-2024
-#This software is released under the GNU GPL license.
+# SPDX-License-Identifier: GPL-2.0-or-later
 #
 # Warning - shebang bash is for compatibliity with BASH shell (Generic Linux)
 # This script is expected to be run on a client device

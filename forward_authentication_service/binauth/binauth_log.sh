@@ -1,7 +1,7 @@
 #!/bin/sh
 #Copyright (C) The openNDS Contributors 2004-2022
 #Copyright (C) BlueWave Projects and Services 2015-2026
-#This software is released under the GNU GPL license.
+# SPDX-License-Identifier: GPL-2.0-or-later
 
 
 ########################################################################

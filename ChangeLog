@@ -1,3 +1,8 @@
+opennds (11.2.1)
+  * Fix - make licence identifiers consistent (GPL-2.0-or-later) [bluewavenet]
+
+ -- Rob White <dot@blue-wave.net>  (11.2.1beta - release date to be added on release)
+
 opennds (11.2.0)
   * Fix - do not offload the flows of clients with a rate limit or a quota, so their traffic is counted and their limits work [bluewavenet]
   * Fix - log the correct connected time when a client is deauthenticated or throttled for a session timeout or quota [bluewavenet]

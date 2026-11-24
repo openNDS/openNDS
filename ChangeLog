@@ -1,6 +1,7 @@
 opennds (11.2.1)
   * Fix - make licence identifiers consistent (GPL-2.0-or-later) [bluewavenet]
   * Remove - unused /etc/opennds/config.uci copy of the default config [bluewavenet]
+  * Fix - auth_restore: do not restore an expired session or one with less than a minute left, as it was given the global sessiontimeout (issue #776) [bluewavenet] [arafatrahmanzami]
 
  -- Rob White <dot@blue-wave.net>  (11.2.1beta - release date to be added on release)
 

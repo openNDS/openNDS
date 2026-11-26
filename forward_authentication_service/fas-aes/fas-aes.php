@@ -1,5 +1,6 @@
 <?php
-/* (c) Blue Wave Projects and Services 2015-2026. This software is released under the GNU GPL license.
+/* (c) Blue Wave Projects and Services 2015-2026.
+ * SPDX-License-Identifier: GPL-2.0-or-later
 
  This is a FAS script providing an example of remote Forward Authentication for openNDS (NDS) on an http web server supporting PHP.
 

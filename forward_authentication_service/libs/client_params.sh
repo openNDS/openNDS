@@ -1,6 +1,6 @@
 #!/bin/sh
 #Copyright (C) BlueWave Projects and Services 2015-2026
-#This software is released under the GNU GPL license.
+# SPDX-License-Identifier: GPL-2.0-or-later
 #
 status=$1
 clientip=$2

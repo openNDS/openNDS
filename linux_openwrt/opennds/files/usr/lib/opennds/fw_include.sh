@@ -1,4 +1,5 @@
 #!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-or-later
 #
 # Add or remove the openNDS include in /etc/config/firewall.
 # The include runs restart.sh when the firewall restarts.

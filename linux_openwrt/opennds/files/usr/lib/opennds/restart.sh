@@ -1,4 +1,5 @@
 #!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-or-later
 
 # Check if opennds is running
 ndspid=$(pidof opennds)

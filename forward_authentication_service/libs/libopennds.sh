@@ -1,6 +1,6 @@
 #!/bin/sh
 #Copyright (C) BlueWave Projects and Services 2015-2026
-#This software is released under the GNU GPL license.
+# SPDX-License-Identifier: GPL-2.0-or-later
 #
 # WARNING - shebang "sh" is for compatiblity with busybox ash (eg on OpenWrt)
 # This is changed to "bash" automatically by Makefile for generic Linux
@@ -1925,11 +1925,23 @@ auth_restore () {
 		now=$(date +%s)
 		session_end="$(echo "$client" | awk -F"=" '{printf("%s", $2)}')"
 
-		session_left=$(($session_end - $now))
-		sessiontimeout=$(($session_left / 60))
+		if [ -z "$session_end" ]; then
+			continue
+		fi
 
-		if [ $session_left -lt 0 ]; then
-			sessiontimeout=""
+		# A session_end of 0 means no time limit (global sessiontimeout of 0), so restore with the global value
+		if [ "$session_end" -eq 0 ]; then
+			sessiontimeout=0
+		else
+			session_left=$(($session_end - $now))
+
+			# Do not restore an expired session or one with less than a minute left.
+			# An empty or zero duration would make ndsctl auth use the global sessiontimeout
+			if [ $session_left -lt 60 ]; then
+				continue
+			fi
+
+			sessiontimeout=$(($session_left / 60))
 		fi
 
 		was_authed=$(grep "$client_mac" "$binauthlog" | tail -1 | awk -F"method=" '{print $2}' | awk -F", " '{print $1}' | grep "deauth")

@@ -1,5 +1,6 @@
 # Hotspot Voucher Generator
 #Copyright (C) Francesco Servida 2023
+# SPDX-License-Identifier: GPL-2.0-or-later
 
 import random
 import string

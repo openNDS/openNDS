@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: ISC */
 /*
  * Imprted from uhttpd - Tiny single-threaded httpd
  *
